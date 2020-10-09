@@ -5,7 +5,7 @@
   code is likely to be broken at times and support will be limited.**
 
 This is a Python package for processing [WikiMedia dump
-files](https://dumps;.wikimedia.org) from Wiktionary, Wikipedia, etc.,
+files](https://dumps.wikimedia.org) from Wiktionary, Wikipedia, etc.,
 for data extraction, error checking, offline conversion into HTML or
 other formats, and other uses.  Key features include:
 
