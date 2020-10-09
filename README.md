@@ -5,22 +5,28 @@
   code is likely to be broken at times and support will be limited.**
 
 This is a Python package for processing [WikiMedia dump
-files](https://dumps.wikimedia.org) from Wiktionary, Wikipedia, etc.,
-for data extraction, error checking, offline conversion into HTML or
-other formats, and other uses.  Key features include:
+files](https://dumps.wikimedia.org) for
+[Wiktionary](https://www.wiktionary.org),
+[Wikipedia](https://www.wikipedia.org), etc., for data extraction,
+error checking, offline conversion into HTML or other formats, and
+other uses.  Key features include:
 
 * Parsing WikiMedia dumps, including built-in support for processing pages
   in parallel
-* WikiText syntax parser that converts the whole page into a parse tree
-* Extracting template definitions and Lua module definitions from dump files
+* [WikiText](https://en.wikipedia.org/wiki/Help:Wikitext) syntax
+  parser that converts the whole page into a parse tree
+* Extracting template definitions and [Scribunto Lua
+  module]](https://www.mediawiki.org/wiki/Extension:Scribunto/Lua_reference_manual)
+  definitions from dump files
 * Expanding selected templates or all templates, and code for
   heuristically identifying templates that need to be expanded before
   parsing is reasonably possible (e.g., templates that emit table
   start and end tags)
 * Processing and expanding parser functions
-* Processing, executing, and expanding Lua modules (they are very
-  widely used in, e.g., Wiktionary, such as for generating IPA strings
-  for many languages)
+* Processing, executing, and expanding Scribunto Lua modules (they are
+  very widely used in, e.g., Wiktionary, such as for generating
+  [IPA](https://en.wikipedia.org/wiki/International_Phonetic_Alphabet)
+  strings for many languages)
 * Controlled expansion of selected page parts
 * Capturing information from template arguments while expanding them,
   as tempate arguments often contain useful information not available
@@ -39,8 +45,8 @@ extracting rich machine-readable dictionaries from Wiktionary.
 
 ### Installing
 
-The best way to install this package is from pypi (XXX may not yet be
-available):
+The best way to install this package is from [pypi](https://pypi.org)
+(XXX may not yet be available):
 ```
 pip3 install wikitextprocessor
 ```
