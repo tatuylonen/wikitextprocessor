@@ -91,6 +91,20 @@ pages per second, depending on the speed and number of cores.
 ## API documentation
 
 XXX tentative plan:
+```
+   from wikitextprocessor import Wtp
+   ctx = Wtp()
+
+   def page_handler(title, text, XXX):
+       ctx.start_page(title)
+       tree = ctx.parse(text, pre_expand=True)
+       ... process parse tree
+         ... value = ctx.expand_node(node)
+
+   ctx.process("enwiktionary-20200901-pages-articles.xml.bz2", page_handler)
+
+
+XXX tentative class outline
 
 ```
 class Wtp(object):
@@ -119,11 +133,12 @@ class Wtp(object):
         done when calling expand the first time; however, when multiprocessing,
         it may be desirable to perform this once before forking.
 
-    start_page(title, fullpage=None)
+    start_page(title)
       - this must be called to start processing a new page
 
-    expand(text, pre_only=False, template_cb=None, expand=None,
-           expand_parserfn=True, expand_invoke=True)
+    expand(text, pre_only=False, template_fn=None,
+           templates_to_expand=None,
+           expand_parserfns=True, expand_invoke=True)
       - expands templates, parser functions, and Lua macros from
         the text.  start_page() must be called before this.
 
@@ -133,6 +148,12 @@ class Wtp(object):
         Wikitext syntax.  If expand_all is True, then expands all templates
         and Lua macros before parsing.  start_page() must be called before
         this.
+
+    expand_node(node, template_fn=None, templates_to_expand=None,
+                expand_parserfns=True, expand_invoke=True)
+      - expands the wikitext covered by the given node in a parse tree
+        returned by parse()
+
 ```
 
 XXX processing dump files, parallelization
