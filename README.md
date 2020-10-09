@@ -5,7 +5,7 @@
   code is likely to be broken at times and support will be limited.
   Most of the code exists and will be moved here from another
   repository and cleaned up during this time.  [This is not quite yet
-  ready from experimentation.]**
+  ready for experimentation though.]**
 
 This is a Python package for processing [WikiMedia dump
 files](https://dumps.wikimedia.org) for
