@@ -2,7 +2,9 @@
 
 **This is currently work in progress and expected to be relased in
   October-November 2020.  Until then, feel free to experiment but the
-  code is likely to be broken at times and support will be limited.**
+  code is likely to be broken at times and support will be limited.
+  Most of the code exists and will be moved here from another repository and
+  cleaned up during this time.**
 
 This is a Python package for processing [WikiMedia dump
 files](https://dumps.wikimedia.org) for
@@ -13,11 +15,11 @@ other uses.  Key features include:
 
 * Parsing WikiMedia dumps, including built-in support for processing pages
   in parallel
-* [WikiText](https://en.wikipedia.org/wiki/Help:Wikitext) syntax
+* [Wikitext](https://en.wikipedia.org/wiki/Help:Wikitext) syntax
   parser that converts the whole page into a parse tree
-* Extracting template definitions and [Scribunto Lua
-  module]](https://www.mediawiki.org/wiki/Extension:Scribunto/Lua_reference_manual)
-  definitions from dump files
+* Extracting template definitions and
+  [Scribunto](https://www.mediawiki.org/wiki/Extension:Scribunto/Lua_reference_manual)
+  Lua module definitions from dump files
 * Expanding selected templates or all templates, and code for
   heuristically identifying templates that need to be expanded before
   parsing is reasonably possible (e.g., templates that emit table
