@@ -3,8 +3,9 @@
 **This is currently work in progress and expected to be relased in
   October-November 2020.  Until then, feel free to experiment but the
   code is likely to be broken at times and support will be limited.
-  Most of the code exists and will be moved here from another repository and
-  cleaned up during this time.**
+  Most of the code exists and will be moved here from another
+  repository and cleaned up during this time.  [This is not quite yet
+  ready from experimentation.]**
 
 This is a Python package for processing [WikiMedia dump
 files](https://dumps.wikimedia.org) for
