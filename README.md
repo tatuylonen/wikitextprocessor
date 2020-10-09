@@ -76,7 +76,7 @@ nosetests
 This package is primarily intended for processing Wiktionary and
 Wikipedia dump files (though you can also use it for processing
 individual pages or files that are in Wikitext format).  To download
-WikiMedia dump files, go to [WikiMedia dump download
+WikiMedia dump files, go to the [dump download
 page](https://dumps.wikimedia.org/backup-index.html).  We recommend
 using the <name>-<date>-pages-articles.xml.bz2 files (for Wiktionary,
 this is about 17GB as of October 2020).
