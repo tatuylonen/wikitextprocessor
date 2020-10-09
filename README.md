@@ -81,6 +81,58 @@ page](https://dumps.wikimedia.org/backup-index.html).  We recommend
 using the <name>-<date>-pages-articles.xml.bz2 files (for Wiktionary,
 this is about 17GB as of October 2020).
 
+## Expected performance
+
+This can generally process a few pages second per processor core,
+including expansion of all templates, Lua macros, and parsing the full
+page.  On a multi-core machine, this can generally process a few dozen
+pages per second, depending on the speed and number of cores.
+
 ## API documentation
 
-XXX
+XXX tentative plan:
+
+```
+class Wtp(object):
+
+    __init__(self)
+
+    set_backend(XXX)
+      - optional, to set backend for storing captured templates and modules
+        and pages somewhere else than main memory (or perhaps give relevant
+        parameters, such as directory path, as argument to constructor)
+
+    collect_specials(XXX)
+      - intended to be directly used as a capture callback for dumpparser
+      - XXX memory use, storage backend?
+
+    import_specials(path)
+      - import special page data from the given file
+
+    export_specials(path)
+      - save special page data to the given file
+
+    analyze_templates()
+      - analyzes which templates should be expanded before parsing (that
+        affect the overall Wikitext syntax, for example by generating table
+        start or end).  This will be automatically performed if not already
+        done when calling expand the first time; however, when multiprocessing,
+        it may be desirable to perform this once before forking.
+
+    start_page(title, fullpage=None)
+      - this must be called to start processing a new page
+
+    expand(text, pre_only=False, template_cb=None, expand=None,
+           expand_parserfn=True, expand_invoke=True)
+      - expands templates, parser functions, and Lua macros from
+        the text.  start_page() must be called before this.
+
+    parse(text, pre_expand=False, expand_all=False)
+      - parses the text as Wikitext, returning a parse tree.  If pre_expand
+        is True, first expands those templates that affect the overall
+        Wikitext syntax.  If expand_all is True, then expands all templates
+        and Lua macros before parsing.  start_page() must be called before
+        this.
+```
+
+XXX processing dump files, parallelization
