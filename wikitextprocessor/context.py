@@ -1,4 +1,5 @@
-# Definition of the processing context for Wikitext processing
+# Definition of the processing context for Wikitext processing, and code for
+# expanding templates, parser functions, and Lua macros.
 #
 # Copyright (c) 2020 Tatu Ylonen.  See file LICENSE and https://ylonen.org
 
@@ -14,10 +15,12 @@ from .wikihtml import ALLOWED_HTML_TAGS
 from .languages import ALL_LANGUAGES
 from .luaexec import call_lua_sandbox
 
-# Character used for marking magic sequences.  This package assumes that this
-# character does not occur on Wikitext pages.  This is a random character
-# from a Unicode private area.
-MAGIC_CHAR = "\U0010b03e"
+# Character range used for marking magic sequences.  This package
+# assumes that these characters do not occur on Wikitext pages.  These
+# characters are in the Unicode private use area U+100000..U+10FFFF.
+MAGIC_FIRST = 0x0010203e
+MAGIC_LAST = 0x0010fff0
+MAX_MAGICS = MAGIC_LAST - MAGIC_FIRST + 1
 
 # Set of HTML tags that need an explicit end tag.
 PAIRED_HTML_TAGS = set(k for k, v in ALLOWED_HTML_TAGS.items()
@@ -43,7 +46,7 @@ class Wtp(object):
         "buf_used",	 # Number of bytes in the buffer when reading
         "buf_size",      # Allocated size of buf, in bytes
         "cookies",	 # Mapping from magic cookie -> expansion data
-        "cookies_base",  # Cookies for processing template bodies
+        "cookies_base",  # Cookies for processing template bodies  XXX remove?
         "errors",	 # List of error messages (cleared for each new page)
         "fullpage",	 # The unprocessed text of the current page (or None)
         "lua",		 # Lua runtime or None if not yet initialized
@@ -54,7 +57,7 @@ class Wtp(object):
         "page_seq",	 # All content pages (title, ofs, len) in sequence
         "redirects",	 # Redirects in the wikimedia project
         "rev_ht",	 # Mapping from text to magic cookie
-        "rev_ht_base",   # Rev_ht from processing template bodies
+        "rev_ht_base",   # Rev_ht from processing template bodies XXX remove?
         "stack",	 # Saved stack before calling Lua function
         "template_name", # name of template currently being expanded
         "templates",     # dict temlate name -> definition
@@ -146,13 +149,14 @@ class Wtp(object):
         args = tuple(args)
         v = (kind, args)
         if v in self.rev_ht_base:
-            return MAGIC_CHAR + kind + str(self.rev_ht[v]) + MAGIC_CHAR
+            return self.rev_ht_base[v]
         if v in self.rev_ht:
-            return MAGIC_CHAR + kind + str(self.rev_ht[v]) + MAGIC_CHAR
+            return self.rev_ht[v]
         idx = len(self.cookies)
         self.cookies.append(v)
-        self.rev_ht[v] = idx
-        ret = MAGIC_CHAR + kind + str(idx) + MAGIC_CHAR
+        ch = chr(MAGIC_FIRST + idx)
+        self.rev_ht[v] = ch
+        ret = ch
         return ret
 
     def _encode(self, text):
@@ -529,19 +533,17 @@ class Wtp(object):
                 assert isinstance(argmap, dict)
                 parts = []
                 pos = 0
-                for m in re.finditer(r"{}(.)(\d+){}"
-                                     .format(MAGIC_CHAR, MAGIC_CHAR),
+                for m in re.finditer(r"[{:c}-{:c}]"
+                                     .format(MAGIC_FIRST, MAGIC_LAST),
                                      coded):
                     new_pos = m.start()
                     if new_pos > pos:
                         parts.append(coded[pos:new_pos])
                     pos = m.end()
-                    kind = m.group(1)
-                    idx = int(m.group(2))
-                    kind = m.group(1)
-                    kind2, args = self.cookies[idx]
+                    ch = m.group(0)
+                    idx = ord(ch) - MAGIC_FIRST
+                    kind, args = self.cookies[idx]
                     assert isinstance(args, tuple)
-                    assert kind == kind2
                     if kind == "T":
                         # Template transclusion - map arguments in its arguments
                         new_args = tuple(map(lambda x: expand_args(x, argmap),
@@ -612,17 +614,17 @@ class Wtp(object):
             # Main code of expand()
             parts = []
             pos = 0
-            for m in re.finditer(r"{}(.)(\d+){}".format(MAGIC_CHAR, MAGIC_CHAR),
+            for m in re.finditer(r"[{:c}-{:c}]"
+                                 .format(MAGIC_FIRST, MAGIC_LAST),
                                  coded):
                 new_pos = m.start()
                 if new_pos > pos:
                     parts.append(coded[pos:new_pos])
                 pos = m.end()
-                kind = m.group(1)
-                idx = int(m.group(2))
-                kind2, args = self.cookies[idx]
+                ch = m.group(0)
+                idx = ord(ch) - MAGIC_FIRST
+                kind, args = self.cookies[idx]
                 assert isinstance(args, tuple)
-                assert kind == kind2
                 if kind == "T":
                     # Template transclusion or parser function call
                     # Limit recursion depth

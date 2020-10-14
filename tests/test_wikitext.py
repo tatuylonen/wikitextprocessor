@@ -3,8 +3,8 @@
 # Copyright (c) 2020 Tatu Ylonen.  See file LICENSE and https://ylonen.org
 
 import unittest
-from wiktextract.wikitext import (parse, parse_with_ctx, print_tree, NodeKind,
-                                  WikiNode)
+from wikitextprocessor.wikitext import (
+    parse, parse_with_ctx, print_tree, NodeKind, WikiNode)
 
 class WikiTextTests(unittest.TestCase):
 
