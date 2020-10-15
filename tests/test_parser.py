@@ -3,10 +3,26 @@
 # Copyright (c) 2020 Tatu Ylonen.  See file LICENSE and https://ylonen.org
 
 import unittest
-from wikitextprocessor.wikitext import (
-    parse, parse_with_ctx, print_tree, NodeKind, WikiNode)
+from wikitextprocessor import Wtp
+from wikitextprocessor.parser import (print_tree, NodeKind, WikiNode)
 
-class WikiTextTests(unittest.TestCase):
+
+def parse_with_ctx(title, text, **kwargs):
+    assert isinstance(title, str)
+    assert isinstance(text, str)
+    ctx = Wtp()
+    ctx.start_page(title)
+    root = ctx.parse(text, **kwargs)
+    print("root", type(root), root)
+    return root, ctx
+
+def parse(title, text, **kwargs):
+    root, ctx = parse_with_ctx(title, text, **kwargs)
+    assert isinstance(root, WikiNode)
+    assert isinstance(ctx, Wtp)
+    return root
+
+class ParserTests(unittest.TestCase):
 
     def test_empty(self):
         tree = parse("test", "")
@@ -837,7 +853,7 @@ def foo(x):
         self.assertIsInstance(c, list)
         self.assertEqual(len(c), 1)
         d = c[0]
-        self.assertEqual(d.kind, NodeKind.TEMPLATEVAR)
+        self.assertEqual(d.kind, NodeKind.TEMPLATE_ARG)
         self.assertEqual(d.args, [["foo"]])
         self.assertEqual(d.children, [])
         self.assertEqual(b.args[1], ["bar"])
@@ -861,7 +877,7 @@ def foo(x):
         self.assertEqual(b.args, [[":xyz"]])
 
     def test_template10(self):
-        tree = parse("test", "{{{{a}}}}")
+        tree = parse("test", "{{{{a}} }}")
         self.assertEqual(len(tree.children), 1)
         t = tree.children[0]
         self.assertEqual(t.kind, NodeKind.TEMPLATE)
@@ -880,7 +896,7 @@ def foo(x):
         self.assertEqual(t.children, [])
         self.assertEqual(len(t.args), 1)
         tt = t.args[0][0]
-        self.assertEqual(tt.kind, NodeKind.TEMPLATEVAR)
+        self.assertEqual(tt.kind, NodeKind.TEMPLATE_ARG)
         self.assertEqual(tt.args, [["a"]])
         self.assertEqual(tt.children, [])
 
@@ -892,18 +908,19 @@ def foo(x):
         self.assertEqual(t.children, [])
         self.assertEqual(len(t.args), 1)
         tt = t.args[0][0]
-        self.assertEqual(tt.kind, NodeKind.TEMPLATEVAR)
+        self.assertEqual(tt.kind, NodeKind.TEMPLATE_ARG)
         self.assertEqual(tt.args, [["a"], []])
         self.assertEqual(tt.children, [])
 
     def test_template13(self):
-        tree = parse("test", "{{{{a|}}}}")
+        tree = parse("test", "{{ {{a|}}}}")
         self.assertEqual(len(tree.children), 1)
         t = tree.children[0]
         self.assertEqual(t.kind, NodeKind.TEMPLATE)
         self.assertEqual(t.children, [])
         self.assertEqual(len(t.args), 1)
-        tt = t.args[0][0]
+        self.assertEqual(t.args[0][0], " ")
+        tt = t.args[0][1]
         self.assertEqual(tt.kind, NodeKind.TEMPLATE)
         self.assertEqual(tt.args, [["a"], []])
         self.assertEqual(tt.children, [])
@@ -912,7 +929,7 @@ def foo(x):
         tree = parse("test", "{{{foo}}}")
         self.assertEqual(len(tree.children), 1)
         b = tree.children[0]
-        self.assertEqual(b.kind, NodeKind.TEMPLATEVAR)
+        self.assertEqual(b.kind, NodeKind.TEMPLATE_ARG)
         self.assertEqual(b.args, [["foo"]])
         self.assertEqual(b.children, [])
 
@@ -920,7 +937,7 @@ def foo(x):
         tree = parse("test", "{{{foo|bar|baz}}}")
         self.assertEqual(len(tree.children), 1)
         b = tree.children[0]
-        self.assertEqual(b.kind, NodeKind.TEMPLATEVAR)
+        self.assertEqual(b.kind, NodeKind.TEMPLATE_ARG)
         self.assertEqual(b.args, [["foo"], ["bar"], ["baz"]])
         self.assertEqual(b.children, [])
 
@@ -928,9 +945,9 @@ def foo(x):
         tree = parse("test", "{{{{{{foo}}}|bar|baz}}}")
         self.assertEqual(len(tree.children), 1)
         b = tree.children[0]
-        self.assertEqual(b.kind, NodeKind.TEMPLATEVAR)
+        self.assertEqual(b.kind, NodeKind.TEMPLATE_ARG)
         c = b.args[0][0]
-        self.assertEqual(c.kind, NodeKind.TEMPLATEVAR)
+        self.assertEqual(c.kind, NodeKind.TEMPLATE_ARG)
         self.assertEqual(c.args, [["foo"]])
         self.assertEqual(b.args[1:], [["bar"], ["baz"]])
         self.assertEqual(b.children, [])
@@ -939,11 +956,11 @@ def foo(x):
         tree = parse("test", "{{{{{{1}}}}}}")
         self.assertEqual(len(tree.children), 1)
         t = tree.children[0]
-        self.assertEqual(t.kind, NodeKind.TEMPLATEVAR)
+        self.assertEqual(t.kind, NodeKind.TEMPLATE_ARG)
         self.assertEqual(t.children, [])
         self.assertEqual(len(t.args), 1)
         tt = t.args[0][0]
-        self.assertEqual(tt.kind, NodeKind.TEMPLATEVAR)
+        self.assertEqual(tt.kind, NodeKind.TEMPLATE_ARG)
         self.assertEqual(tt.args, [["1"]])
         self.assertEqual(tt.children, [])
 
@@ -951,11 +968,11 @@ def foo(x):
         tree = parse("test", "{{{{{{1|}}}}}}")
         self.assertEqual(len(tree.children), 1)
         t = tree.children[0]
-        self.assertEqual(t.kind, NodeKind.TEMPLATEVAR)
+        self.assertEqual(t.kind, NodeKind.TEMPLATE_ARG)
         self.assertEqual(t.children, [])
         self.assertEqual(len(t.args), 1)
         tt = t.args[0][0]
-        self.assertEqual(tt.kind, NodeKind.TEMPLATEVAR)
+        self.assertEqual(tt.kind, NodeKind.TEMPLATE_ARG)
         self.assertEqual(tt.args, [["1"], []])
         self.assertEqual(tt.children, [])
 
@@ -963,7 +980,7 @@ def foo(x):
         tree = parse("test", "{{CURRENTYEAR}}x")
         self.assertEqual(len(tree.children), 2)
         b = tree.children[0]
-        self.assertEqual(b.kind, NodeKind.PARSERFN)
+        self.assertEqual(b.kind, NodeKind.PARSER_FN)
         self.assertEqual(b.args, [["CURRENTYEAR"]])
         self.assertEqual(b.children, [])
         self.assertEqual(tree.children[1], "x")
@@ -972,7 +989,7 @@ def foo(x):
         tree = parse("test", "{{PAGESIZE:TestPage}}")
         self.assertEqual(len(tree.children), 1)
         b = tree.children[0]
-        self.assertEqual(b.kind, NodeKind.PARSERFN)
+        self.assertEqual(b.kind, NodeKind.PARSER_FN)
         self.assertEqual(b.args, [["PAGESIZE"], ["TestPage"]])
         self.assertEqual(b.children, [])
 
@@ -980,7 +997,7 @@ def foo(x):
         tree = parse("test", "{{#invoke:testmod|testfn|testarg1|testarg2}}")
         self.assertEqual(len(tree.children), 1)
         b = tree.children[0]
-        self.assertEqual(b.kind, NodeKind.PARSERFN)
+        self.assertEqual(b.kind, NodeKind.PARSER_FN)
         self.assertEqual(b.args, [["#invoke"], ["testmod"], ["testfn"],
                                   ["testarg1"], ["testarg2"]])
         self.assertEqual(b.children, [])
@@ -1058,6 +1075,18 @@ def foo(x):
         b = a.children[0]
         self.assertEqual(b.kind, NodeKind.TABLE_HEADER_CELL)
         self.assertEqual(b.children, ["Header\n"])
+
+    def test_table_hdr2(self):
+        tree = parse("test", "{|\n{{#if:a|!!b|!!c}}\n|}", pre_expand=True)
+        t = tree.children[0]
+        self.assertEqual(t.kind, NodeKind.TABLE)
+        self.assertEqual(len(t.children), 1)
+        a = t.children[0]
+        self.assertEqual(a.kind, NodeKind.TABLE_ROW)
+        self.assertEqual(len(a.children), 1)
+        b = a.children[0]
+        self.assertEqual(b.kind, NodeKind.TABLE_HEADER_CELL)
+        self.assertEqual(b.children, ["b\n"])
 
     def test_table_complex1(self):
         tree = parse("test",
@@ -1248,7 +1277,7 @@ def foo(x):
     def test_error7(self):
         tree, ctx = parse_with_ctx("test", "{{{foo|'''x}}}")
         self.assertEqual(len(ctx.errors), 1)
-        self.assertEqual(tree.children[0].kind, NodeKind.TEMPLATEVAR)
+        self.assertEqual(tree.children[0].kind, NodeKind.TEMPLATE_ARG)
 
     def test_error8(self):
         tree, ctx = parse_with_ctx("test", "</pre>")
@@ -1325,7 +1354,8 @@ def foo(x):
 
     def test_nonsense2(self):
         tree, ctx = parse_with_ctx("test", "{{{{{{{{")
-        self.assertEqual(len(ctx.errors), 3)
+        self.assertEqual(tree.children, ["{{{{{{{{"])
+        self.assertEqual(len(ctx.errors), 0)
 
     def test_nonsense3(self):
         tree, ctx = parse_with_ctx("test", "}}}}}}}}")
@@ -1414,12 +1444,12 @@ def foo(x):
 
     def test_file_Babel(self):
         text = open("tests/Babel.txt", "r").read()
-        tree, ctx = parse_with_ctx("Babel", text)
+        tree, ctx = parse_with_ctx("Babel", text, pre_expand=True)
         self.assertEqual(len(ctx.errors), 0)
 
     def test_file_fi_gradation(self):
         text = open("tests/fi-gradation.txt", "r").read()
-        tree, ctx = parse_with_ctx("fi-gradation", text)
+        tree, ctx = parse_with_ctx("fi-gradation", text, pre_expand=True)
         self.assertEqual(len(ctx.errors), 0)
 
 # Note: Magic links (e.g., ISBN, RFC) are not supported and there is

@@ -14,13 +14,8 @@ from .wikiparserfns import (PARSER_FUNCTIONS, call_parser_function, tag_fn)
 from .wikihtml import ALLOWED_HTML_TAGS
 from .languages import ALL_LANGUAGES
 from .luaexec import call_lua_sandbox
-
-# Character range used for marking magic sequences.  This package
-# assumes that these characters do not occur on Wikitext pages.  These
-# characters are in the Unicode private use area U+100000..U+10FFFF.
-MAGIC_FIRST = 0x0010203e
-MAGIC_LAST = 0x0010fff0
-MAX_MAGICS = MAGIC_LAST - MAGIC_FIRST + 1
+from .parser import parse_encoded, preprocess_text, NodeKind
+from .common import MAGIC_FIRST, MAGIC_LAST, MAX_MAGICS
 
 # Set of HTML tags that need an explicit end tag.
 PAIRED_HTML_TAGS = set(k for k, v in ALLOWED_HTML_TAGS.items()
@@ -65,6 +60,12 @@ class Wtp(object):
         "tmp_file",	 # Temporary file used to store templates and pages
         "tmp_ofs",	 # Next write offset
         "warnings",	 # List of warning messages (cleared for each new page)
+        # Data for parsing
+        "beginning_of_line", # Parser at beginning of line
+        "linenum",	 # Current line number
+        "pre_parse",	 # XXX is pre-parsing still needed?
+        "stack",	 # Parser stack
+        "suppress_special",  # XXX never set to True???
     )
     def __init__(self):
         self.buf_ofs = 0
@@ -153,6 +154,9 @@ class Wtp(object):
         if v in self.rev_ht:
             return self.rev_ht[v]
         idx = len(self.cookies)
+        if idx >= MAX_MAGICS:
+            ctx.error("too many templates, arguments, or parser function calls")
+            return ""
         self.cookies.append(v)
         ch = chr(MAGIC_FIRST + idx)
         self.rev_ht[v] = ch
@@ -545,7 +549,8 @@ class Wtp(object):
                     kind, args = self.cookies[idx]
                     assert isinstance(args, tuple)
                     if kind == "T":
-                        # Template transclusion - map arguments in its arguments
+                        # Template transclusion or parser function call.
+                        # Expand its arguments.
                         new_args = tuple(map(lambda x: expand_args(x, argmap),
                                              args))
                         parts.append(self._save_value(kind, new_args))
@@ -679,8 +684,8 @@ class Wtp(object):
                     # Check for undefined templates
                     if name not in self.templates:
                         if not quiet:
-                            self.error("undefined template {!r} at {}"
-                                       .format(tname, stack))
+                            self.warning("undefined template {!r} at {}"
+                                         .format(tname, stack))
                         parts.append(unexpanded_template(args))
                         continue
 
@@ -840,8 +845,35 @@ class Wtp(object):
             page_cb(title, rawtext)
 
     def parse(self, text, pre_expand=False, expand_all=False):
-        # XXX
-        pass
+        """Parses the given text into a parse tree (WikiNode tree).  If
+        ``pre_expand`` is True, then before parsing this will expand those
+        templates that have been detected to potentially influence the parsing
+        results (e.g., they might produce table start or end or table rows).
+        Likewise, if ``expand_all`` is True, this will expand all templates
+        that have definitions (usually all of them).  Parser function calls
+        and Lua macro invocations are expanded if they are inside expanded
+        templates."""
+
+        # Expand some or all templates in the text as requested
+        if expand_all:
+            text = self.expand(text)
+        elif pre_expand:
+            text = self.expand(text, pre_only=True)
+
+        # The Wikitext syntax is not context-free.  Also, tokenizing the
+        # syntax properly does not seem to be possible without reference to
+        # the overall structure.  We handle this with inside-out parsing
+        # (which I haven't seen used elsewhere though it may have been).
+        # The basic idea is that we replace template / template argument /
+        # parser function call by a magic character, starting from the
+        # innermost one, and then keep doing this until there is no more work
+        # to do.  This allows us to disambiguate how braces group into
+        # double and triple brace groups.  After the encoding, we do
+        # a more traditional parsing of the rest, recursing into encoded parts.
+        text = preprocess_text(text)  # XXX replace by handling <nowiki> better
+        encoded = self._encode(text)
+        root = parse_encoded(self, encoded)  # In parser.py
+        return root
 
 def phase1_to_ctx(pages):
     """Creates a context and adds the given pages to it.  THIS IS MOSTLY
@@ -854,8 +886,9 @@ def phase1_to_ctx(pages):
     ctx.analyze_templates()
     return ctx
 
-    # XXX collect_specials(self)
-    # XXX import_specials(self, path)
-    # XXX export_specials(self, path)
+
+
+# XXX import_specials(self, path)
+# XXX export_specials(self, path)
 
 # XXX store errors and debug messages in the context
