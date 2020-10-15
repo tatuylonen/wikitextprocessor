@@ -191,6 +191,10 @@ dasfasddasfdas
         self.assertEqual(tree.children, ["&lt;&excl;-- revealed --&gt;"])
 
     def test_nowiki11(self):
+        tree = parse("test", "__HIDDENCAT<nowiki />__")
+        self.assertEqual(tree.children, ["__HIDDENCAT__"])
+
+    def test_nowiki12(self):
         tree = parse("test", "[<nowiki />[x]]")
         self.assertEqual(tree.children, ["[[x]]"])
 
@@ -1487,6 +1491,11 @@ def foo(x):
 # XXX implement <nowiki/> marking for links, templates
 #  - https://en.wikipedia.org/wiki/Help:Wikitext#Nowiki
 #  - fix test_nowiki11 and continue
+#  - basically <nowiki/> can be anywhere between {{}}[[]] or in first
+#    argument (before first pipe or first colon) OR in nested structure
+#    in any parameter
+#  - however, escaping outer structure does not escape inner structures
+#  - test nowiki in HTML tags (must go right after <)
 
 # Note: Magic links (e.g., ISBN, RFC) are not supported and there is
 # currently no plan to start supporting them unless someone comes up
