@@ -166,9 +166,41 @@ dasfasddasfdas
         self.assertEqual(tree.children, ["a</nowiki>b"])
         self.assertEqual(len(ctx.warnings), 1)
 
+    def test_nowiki5(self):
+        tree = parse("test", "<nowiki />#b")
+        self.assertEqual(tree.children, ["#b"])
+
+    def test_nowiki6(self):
+        tree = parse("test", "a<nowiki>\n</nowiki>b")
+        self.assertEqual(tree.children, ["a b"])
+
+    def test_nowiki7(self):
+        tree = parse("test", "a<nowiki>\nb</nowiki>c")
+        self.assertEqual(tree.children, ["a bc"])
+
+    def test_nowiki8(self):
+        tree = parse("test", "'<nowiki />'Italics' markup'<nowiki />'")
+        self.assertEqual(tree.children, ["''Italics' markup''"])
+
+    def test_nowiki9(self):
+        tree = parse("test", "<nowiki>[[Example]]</nowiki>")
+        self.assertEqual(tree.children, ["&lsqb;&lsqb;Example&rsqb;&rsqb;"])
+
+    def test_nowiki10(self):
+        tree = parse("test", "<nowiki><!-- revealed --></nowiki>")
+        self.assertEqual(tree.children, ["&lt;&excl;-- revealed --&gt;"])
+
+    def test_nowiki11(self):
+        tree = parse("test", "[<nowiki />[x]]")
+        self.assertEqual(tree.children, ["[[x]]"])
+
     def test_entity_noexpand(self):
         tree = parse("test", "R&amp;D")
         self.assertEqual(tree.children, ["R&amp;D"])  # Should be expanded later
+
+    def test_processonce1(self):
+        tree = parse("test", "&amp;amp;")
+        self.assertEqual(tree.children, ["&amp;amp;"])
 
     def test_html1(self):
         tree = parse("test", "<b>foo</b>")
@@ -662,7 +694,6 @@ dasfasddasfdas
         self.assertEqual(b.kind, NodeKind.URL)
         self.assertEqual(b.args, [["https://wikipedia.com"]])
         self.assertEqual(b.children, [])
-
         self.assertEqual(c, " link")
 
     def test_url2(self):
@@ -1452,6 +1483,11 @@ def foo(x):
         tree, ctx = parse_with_ctx("fi-gradation", text, pre_expand=True)
         self.assertEqual(len(ctx.errors), 0)
 
+
+# XXX implement <nowiki/> marking for links, templates
+#  - https://en.wikipedia.org/wiki/Help:Wikitext#Nowiki
+#  - fix test_nowiki11 and continue
+
 # Note: Magic links (e.g., ISBN, RFC) are not supported and there is
 # currently no plan to start supporting them unless someone comes up
 # with a real need.  They are disabled by default in MediaWiki since
@@ -1461,8 +1497,6 @@ def foo(x):
 
 # XXX currently handling of <nowiki> does not conform.  Check out and test
 # all examples on: https://en.wikipedia.org/wiki/Help:Wikitext
-
-# XXX implement <nowiki/> marking for links, templates
 
 # XXX test nowiki vs. table markup.  See last paragraph before subtitle "Pre"
 # on https://en.wikipedia.org/wiki/Help:Wikitext

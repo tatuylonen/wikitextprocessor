@@ -7,7 +7,7 @@ import enum
 import html
 from .wikiparserfns import PARSER_FUNCTIONS
 from .wikihtml import ALLOWED_HTML_TAGS
-from .common import MAGIC_FIRST, MAGIC_LAST
+from .common import MAGIC_NOWIKI, MAGIC_FIRST, MAGIC_LAST
 
 
 # HTML tags that are also parsed in the preparse phase
@@ -244,11 +244,11 @@ class WikiNode(object):
         self.loc = loc
 
     def __str__(self):
-        return "{}({}){} {}".format(self.kind.name,
-                                    self.args if isinstance(self.args, str)
-                                    else ", ".join(map(repr, self.args)),
-                                    self.attrs,
-                                    ", ".join(map(repr, self.children)))
+        return "<{}({}){} {}>".format(self.kind.name,
+                                      self.args if isinstance(self.args, str)
+                                      else ", ".join(map(repr, self.args)),
+                                      self.attrs,
+                                      ", ".join(map(repr, self.children)))
 
     def __repr__(self):
         return self.__str__()
@@ -273,20 +273,25 @@ def _parser_merge_str_children(ctx):
     node = ctx.stack[-1]
     lst = node.children
     lstlen = len(lst)
-    if lstlen < 2:
-        return
     for i in range(lstlen - 1, -1, -1):
         if not isinstance(lst[i], str):
             break
     else:
         # All children are strings
-        node.children = ["".join(lst)]
+        s = "".join(lst)
+        s = re.sub(r"{:c}".format(MAGIC_NOWIKI), "", s)
+        node.children = []
+        if s:
+            node.children.append(s)
         return
     cnt = lstlen - i - 1
-    if cnt < 2:
+    if cnt == 0:
         return
     node.children = lst[:-cnt]
-    node.children.append("".join(lst[-cnt:]))
+    s = "".join(lst[-cnt:])
+    s = re.sub(r"{:c}".format(MAGIC_NOWIKI), "", s)
+    if s:
+        node.children.append(s)
 
 def _parser_pop(ctx, warn_unclosed):
     """Pops a node from the stack.  If the node has arguments, this moves
@@ -1237,6 +1242,8 @@ def preprocess_text(text):
     # XXX this will be eliminated, needs to be handled differently
     assert isinstance(text, str)
     text = re.sub(r"(?si)<\s*nowiki\s*>(.*?)<\s*/\s*nowiki\s*>", nowiki_sub_fn,
+                  text)
+    text = re.sub(r"(?si)<\s*nowiki\s*/\s*>", r"{:c}".format(MAGIC_NOWIKI),
                   text)
     text = re.sub(r"(?s)<!\s*--.*?--\s*>", "", text)
     return text

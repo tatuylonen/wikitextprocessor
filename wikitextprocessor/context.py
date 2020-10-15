@@ -853,6 +853,7 @@ class Wtp(object):
         that have definitions (usually all of them).  Parser function calls
         and Lua macro invocations are expanded if they are inside expanded
         templates."""
+        text = preprocess_text(text)  # XXX replace by handling <nowiki> better
 
         # Expand some or all templates in the text as requested
         if expand_all:
@@ -870,7 +871,6 @@ class Wtp(object):
         # to do.  This allows us to disambiguate how braces group into
         # double and triple brace groups.  After the encoding, we do
         # a more traditional parsing of the rest, recursing into encoded parts.
-        text = preprocess_text(text)  # XXX replace by handling <nowiki> better
         encoded = self._encode(text)
         root = parse_encoded(self, encoded)  # In parser.py
         return root
