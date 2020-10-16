@@ -15,7 +15,7 @@ from .wikihtml import ALLOWED_HTML_TAGS
 from .languages import ALL_LANGUAGES
 from .luaexec import call_lua_sandbox
 from .parser import parse_encoded, preprocess_text, NodeKind
-from .common import MAGIC_FIRST, MAGIC_LAST, MAX_MAGICS
+from .common import MAGIC_FIRST, MAGIC_LAST, MAX_MAGICS, MAGIC_NOWIKI_CHAR
 
 # Set of HTML tags that need an explicit end tag.
 PAIRED_HTML_TAGS = set(k for k, v in ALLOWED_HTML_TAGS.items()
@@ -41,7 +41,6 @@ class Wtp(object):
         "buf_used",	 # Number of bytes in the buffer when reading
         "buf_size",      # Allocated size of buf, in bytes
         "cookies",	 # Mapping from magic cookie -> expansion data
-        "cookies_base",  # Cookies for processing template bodies  XXX remove?
         "errors",	 # List of error messages (cleared for each new page)
         "fullpage",	 # The unprocessed text of the current page (or None)
         "lua",		 # Lua runtime or None if not yet initialized
@@ -52,7 +51,6 @@ class Wtp(object):
         "page_seq",	 # All content pages (title, ofs, len) in sequence
         "redirects",	 # Redirects in the wikimedia project
         "rev_ht",	 # Mapping from text to magic cookie
-        "rev_ht_base",   # Rev_ht from processing template bodies XXX remove?
         "stack",	 # Saved stack before calling Lua function
         "template_name", # name of template currently being expanded
         "templates",     # dict temlate name -> definition
@@ -71,14 +69,12 @@ class Wtp(object):
         self.buf_ofs = 0
         self.buf_size = 4 * 1024 * 1024
         self.buf = bytearray(self.buf_size)
-        self.cookies_base = []  # XXX currently unused
         self.cookies = []
         self.errors = []
         self.warnings = []
         self.lua = None
         self.page_contents = {}
         self.page_seq = []
-        self.rev_ht_base = {}
         self.rev_ht = {}
         self.stack = []
         self.modules = {}
@@ -142,15 +138,15 @@ class Wtp(object):
             name = name.lower()  # Parser function names are case-insensitive
         return name
 
-    def _save_value(self, kind, args):
+    def _save_value(self, kind, args, nowiki):
         """Saves a value of a particular kind and returns a unique magic
         cookie for it."""
         assert kind in ("T", "A", "L")  # Template/parserfn, arg, link
         assert isinstance(args, (list, tuple))
+        assert nowiki in (True, False)
+        print("save_value", kind, args, nowiki)
         args = tuple(args)
-        v = (kind, args)
-        if v in self.rev_ht_base:
-            return self.rev_ht_base[v]
+        v = (kind, args, nowiki)
         if v in self.rev_ht:
             return self.rev_ht[v]
         idx = len(self.cookies)
@@ -169,20 +165,23 @@ class Wtp(object):
 
         def repl_arg(m):
             """Replacement function for template arguments."""
+            nowiki = m.group(0).find(MAGIC_NOWIKI_CHAR) >= 0
             orig = m.group(1)
             args = orig.split("|")
-            return self._save_value("A", args)
+            return self._save_value("A", args, nowiki)
 
         def repl_templ(m):
             """Replacement function for templates {{...}} and parser
             functions."""
+            nowiki = m.group(0).find(MAGIC_NOWIKI_CHAR) >= 0
             args = m.group(1).split("|")
-            return self._save_value("T", args)
+            return self._save_value("T", args, nowiki)
 
         def repl_link(m):
             """Replacement function for links [[...]]."""
+            nowiki = m.group(0).find(MAGIC_NOWIKI_CHAR) >= 0
             orig = m.group(1)
-            return self._save_value("L", (orig,))
+            return self._save_value("L", (orig,), nowiki)
 
         # Main loop of encoding.  We encode repeatedly, always the innermost
         # template, argument, or parser function call first.  We also encode
@@ -190,18 +189,26 @@ class Wtp(object):
         while True:
             prev = text
             # Encode links.
-            text = re.sub(r"\[\[([^][{}]+)\]\]", repl_link, text)
+            text = re.sub(r"\[" + MAGIC_NOWIKI_CHAR + r"?\[([^][{}]+)\]" +
+                          MAGIC_NOWIKI_CHAR + r"?\]",
+                          repl_link, text)
             # Encode template arguments.  We repeat this until there are
             # no more matches, because otherwise we could encode the two
             # innermost braces as a template transclusion.
             while True:
                 prev2 = text
-                text = re.sub(r"(?s)\{\{\{(([^{}]|\}[^}]|\}\}[^}])*?)\}\}\}",
+                text = re.sub(r"(?s)\{" + MAGIC_NOWIKI_CHAR +
+                              r"?\{" + MAGIC_NOWIKI_CHAR +
+                              r"?\{(([^{}]|\}[^}]|\}\}[^}])*?)\}" +
+                              MAGIC_NOWIKI_CHAR + r"?\}" +
+                              MAGIC_NOWIKI_CHAR + r"?\}",
                               repl_arg, text)
                 if text == prev2:
                     break
             # Encode templates
-            text = re.sub(r"(?s)\{\{(([^{}]|\}[^}])+?)\}\}",
+            text = re.sub(r"(?s)\{" + MAGIC_NOWIKI_CHAR +
+                          r"?\{(([^{}]|\}[^}])+?)\}" +
+                          MAGIC_NOWIKI_CHAR + r"?\}",
                           repl_templ, text)
             # We keep looping until there is no change during the iteration
             if text == prev:
@@ -490,6 +497,9 @@ class Wtp(object):
         assert self.title is not None  # start_page() must have been called
         assert quiet in (False, True)
 
+        # Handle <nowiki> in a preprocessing step
+        text = preprocess_text(text)
+
         # If requesting to only pre_expand, then force templates to be expanded
         # to be those we detected as requiring pre-expansion
         if pre_only:
@@ -546,14 +556,19 @@ class Wtp(object):
                     pos = m.end()
                     ch = m.group(0)
                     idx = ord(ch) - MAGIC_FIRST
-                    kind, args = self.cookies[idx]
+                    kind, args, nowiki = self.cookies[idx]
                     assert isinstance(args, tuple)
+                    if nowiki:
+                        # If this template/link/arg has <nowiki />, then just
+                        # keep it as-is (it won't be expanded)
+                        parts.append(ch)
+                        continue
                     if kind == "T":
                         # Template transclusion or parser function call.
                         # Expand its arguments.
                         new_args = tuple(map(lambda x: expand_args(x, argmap),
                                              args))
-                        parts.append(self._save_value(kind, new_args))
+                        parts.append(self._save_value(kind, new_args, nowiki))
                         continue
                     if kind == "A":
                         # Template argument reference
@@ -628,9 +643,14 @@ class Wtp(object):
                 pos = m.end()
                 ch = m.group(0)
                 idx = ord(ch) - MAGIC_FIRST
-                kind, args = self.cookies[idx]
+                kind, args, nowiki = self.cookies[idx]
                 assert isinstance(args, tuple)
                 if kind == "T":
+                    if nowiki:
+                        parts.append("&lbrace;&lbrace;" +
+                                     "&vert;".join(args) +
+                                     "&rbrace;&rbrace;")
+                        continue
                     # Template transclusion or parser function call
                     # Limit recursion depth
                     if len(stack) >= 100:
@@ -780,17 +800,26 @@ class Wtp(object):
                     stack.pop()  # template name
                     parts.append(t)
                 elif kind == "A":
-                    # The argument is outside transcluded template body
-                    arg = "{{{" + "|".join(args) + "}}}"
-                    parts.append(arg)
+                    if nowiki:
+                        parts.append("&lbrace;&lbrace;&lbrace;" +
+                                     "&vert;".join(args) +
+                                     "&rbrace;&rbrace;&rbrace;")
+                    else:
+                        # The argument is outside transcluded template body
+                        arg = "{{{" + "|".join(args) + "}}}"
+                        parts.append(arg)
                 elif kind == "L":
-                    # Link to another page
-                    content = args[0]
-                    stack.append("[[link]]")
-                    content = expand(content, stack, parent,
-                                     templates_to_expand)
-                    stack.pop()
-                    parts.append("[[" + content + "]]")
+                    assert len(args) == 1
+                    if nowiki:
+                        parts.append("&lsqb;&lsqb;" + args[0] + "&rsqb;&rsqb;")
+                    else:
+                        # Link to another page
+                        content = args[0]
+                        stack.append("[[link]]")
+                        content = expand(content, stack, parent,
+                                         templates_to_expand)
+                        stack.pop()
+                        parts.append("[[" + content + "]]")
                 else:
                     self.error("expand: unsupported cookie kind {!r} in {}"
                                .format(kind, m.group(0)))
@@ -853,7 +882,7 @@ class Wtp(object):
         that have definitions (usually all of them).  Parser function calls
         and Lua macro invocations are expanded if they are inside expanded
         templates."""
-        text = preprocess_text(text)  # XXX replace by handling <nowiki> better
+        text = preprocess_text(text)
 
         # Expand some or all templates in the text as requested
         if expand_all:

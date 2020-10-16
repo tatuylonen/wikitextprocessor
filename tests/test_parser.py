@@ -196,7 +196,52 @@ dasfasddasfdas
 
     def test_nowiki12(self):
         tree = parse("test", "[<nowiki />[x]]")
-        self.assertEqual(tree.children, ["[[x]]"])
+        self.assertEqual(tree.children, ["&lsqb;&lsqb;x&rsqb;&rsqb;"])
+
+    def test_nowiki13(self):
+        tree = parse("test", "[[x]<nowiki />]")
+        self.assertEqual(tree.children, ["&lsqb;&lsqb;x&rsqb;&rsqb;"])
+
+    def test_nowiki14(self):
+        tree = parse("test", "[[<nowiki />x]]")
+        self.assertEqual(tree.children, ["&lsqb;&lsqb;x&rsqb;&rsqb;"])
+
+    def test_nowiki15(self):
+        tree = parse("test", "{<nowiki />{x}}")
+        self.assertEqual(tree.children, ["&lbrace;&lbrace;x&rbrace;&rbrace;"])
+
+    def test_nowiki16(self):
+        tree = parse("test", "{{x}<nowiki />}")
+        self.assertEqual(tree.children, ["&lbrace;&lbrace;x&rbrace;&rbrace;"])
+
+    def test_nowiki17(self):
+        tree = parse("test", "{{x<nowiki />}}")
+        self.assertEqual(tree.children, ["&lbrace;&lbrace;x&rbrace;&rbrace;"])
+
+    def test_nowiki18(self):
+        tree = parse("test", "{{<nowiki />{x}}}")
+        self.assertEqual(tree.children, ["&lbrace;&lbrace;&lbrace;x"
+                                         "&rbrace;&rbrace;&rbrace;"])
+
+    def test_nowiki19(self):
+        tree = parse("test", "{<nowiki />{{x}}}")
+        self.assertEqual(tree.children, ["&lbrace;&lbrace;&lbrace;x"
+                                         "&rbrace;&rbrace;&rbrace;"])
+
+    def test_nowiki20(self):
+        tree = parse("test", "{{{x|1}<nowiki />}}")
+        self.assertEqual(tree.children, ["&lbrace;&lbrace;&lbrace;x&vert;1"
+                                         "&rbrace;&rbrace;&rbrace;"])
+
+    def test_nowiki21(self):
+        tree = parse("test", "{{{x}}<nowiki />}")
+        self.assertEqual(tree.children, ["&lbrace;&lbrace;&lbrace;x"
+                                         "&rbrace;&rbrace;&rbrace;"])
+
+    def test_nowiki22(self):
+        tree = parse("test", "{{{x<nowiki />|}}}")
+        self.assertEqual(tree.children, ["&lbrace;&lbrace;&lbrace;x&vert;"
+                                         "&rbrace;&rbrace;&rbrace;"])
 
     def test_entity_noexpand(self):
         tree = parse("test", "R&amp;D")

@@ -7,7 +7,7 @@ import enum
 import html
 from .wikiparserfns import PARSER_FUNCTIONS
 from .wikihtml import ALLOWED_HTML_TAGS
-from .common import MAGIC_NOWIKI, MAGIC_FIRST, MAGIC_LAST
+from .common import MAGIC_NOWIKI_CHAR, MAGIC_FIRST, MAGIC_LAST
 
 
 # HTML tags that are also parsed in the preparse phase
@@ -279,7 +279,7 @@ def _parser_merge_str_children(ctx):
     else:
         # All children are strings
         s = "".join(lst)
-        s = re.sub(r"{:c}".format(MAGIC_NOWIKI), "", s)
+        s = re.sub(MAGIC_NOWIKI_CHAR, "", s)
         node.children = []
         if s:
             node.children.append(s)
@@ -289,7 +289,7 @@ def _parser_merge_str_children(ctx):
         return
     node.children = lst[:-cnt]
     s = "".join(lst[-cnt:])
-    s = re.sub(r"{:c}".format(MAGIC_NOWIKI), "", s)
+    s = re.sub(MAGIC_NOWIKI_CHAR, "", s)
     if s:
         node.children.append(s)
 
@@ -593,9 +593,14 @@ def magic_fn(ctx, token):
     """Handler for a magic character used to encode templates, template
     arguments, and parser function calls."""
     idx = ord(token) - MAGIC_FIRST
-    kind, args = ctx.cookies[idx]
+    kind, args, nowiki = ctx.cookies[idx]
     ctx.beginning_of_line = False
     if kind == "T":
+        if nowiki:
+            process_text(ctx, "&lbrace;&lbrace;" +
+                         "&vert;".join(args) +
+                         "&rbrace;&rbrace;")
+            return
         # Template tranclusion or parser function call
         _parser_push(ctx, NodeKind.TEMPLATE)
 
@@ -615,6 +620,11 @@ def magic_fn(ctx, token):
             _parser_pop(ctx, True)
 
     elif kind == "A":
+        if nowiki:
+            process_text(ctx, "&lbrace;&lbrace;&lbrace;" +
+                         "&vert;".join(args) +
+                         "&rbrace;&rbrace;&rbrace;")
+            return
         # Template argument reference
         _parser_push(ctx, NodeKind.TEMPLATE_ARG)
 
@@ -634,6 +644,10 @@ def magic_fn(ctx, token):
             _parser_pop(ctx, True)
 
     elif kind == "L":
+        assert len(args) == 1
+        if nowiki:
+            process_text(ctx, "&lsqb;&lsqb;" + args[0] + "&rsqb;&rsqb;")
+            return
         # Link to another page
         _parser_push(ctx, NodeKind.LINK)
 
@@ -1243,8 +1257,7 @@ def preprocess_text(text):
     assert isinstance(text, str)
     text = re.sub(r"(?si)<\s*nowiki\s*>(.*?)<\s*/\s*nowiki\s*>", nowiki_sub_fn,
                   text)
-    text = re.sub(r"(?si)<\s*nowiki\s*/\s*>", r"{:c}".format(MAGIC_NOWIKI),
-                  text)
+    text = re.sub(r"(?si)<\s*nowiki\s*/\s*>", MAGIC_NOWIKI_CHAR, text)
     text = re.sub(r"(?s)<!\s*--.*?--\s*>", "", text)
     return text
 
