@@ -3,6 +3,7 @@
 #
 # Copyright (c) 2020 Tatu Ylonen.  See file LICENSE and https://ylonen.org
 
+import os
 import re
 import sys
 import html
@@ -848,6 +849,7 @@ class Wtp(object):
         self.buf_ofs = 0
         self.buf_used = 0
         self.tmp_ofs = 0
+        # XXX use this in phase2 or remove this function
         for title, ofs, page_size, ck in self.page_seq:
             parts = []
             while page_size > 0:
@@ -863,6 +865,9 @@ class Wtp(object):
                     continue
                 # Buffer must not contain any of the data
                 self.buf_ofs = data
+                # XXX change to use pread?  In case this would be called in
+                # parallel, or there would be intervening calls to read
+                # a single page?
                 self.tmp_file.seek(ofs, 0)
                 self.buf_used = self.tmp_file.readinto(self.buf)
                 self.buf_ofs = 0
@@ -872,6 +877,18 @@ class Wtp(object):
             assert h.digest() == ck
             text = rawtext.decode("utf-8")
             page_cb(title, rawtext)
+
+    def read_by_title(self, title):
+        assert isinstance(title, str)
+        if title not in self.page_contents:
+            return None
+        # The page seems to exist
+        title, ofs, page_size = self.page_contents[title]
+        # Use os.pread() so that we won't change the file offset; otherwise we
+        # might cause a race condition with parallel scanning of the temporary
+        # file.
+        rawdata = os.pread(self.tmp_file.fileno(), page_size, ofs)
+        return rawdata.decode("utf-8")
 
     def parse(self, text, pre_expand=False, expand_all=False):
         """Parses the given text into a parse tree (WikiNode tree).  If
@@ -914,10 +931,3 @@ def phase1_to_ctx(pages):
         ctx.collect_page(tag, title, text)
     ctx.analyze_templates()
     return ctx
-
-
-
-# XXX import_specials(self, path)
-# XXX export_specials(self, path)
-
-# XXX store errors and debug messages in the context

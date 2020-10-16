@@ -213,7 +213,7 @@ def make_chunk_iter(f, ctx, config):
         yield [config_kwargs, chunk]
 
 
-def process_input(path, config, ctx, make_iter, chunk_fn):
+def process_input(ctx, path, config, make_iter, chunk_fn):
     """Processes the entire input once, calling chunk_fn for each chunk.
     A chunk is a list (config_kwargs, data) where ``data`` is a dict
     containing at least "title" and "text" keys.  This returns a list
@@ -221,7 +221,6 @@ def process_input(path, config, ctx, make_iter, chunk_fn):
     value must be json-serializable."""
     assert isinstance(path, str)
     assert isinstance(config, WiktionaryConfig)
-    assert isinstance(ctx, WiktionaryTarget)
     assert callable(make_iter)
     assert callable(chunk_fn)
 
@@ -396,57 +395,42 @@ def article_chunk_fn(chunk):
     return stats, lst
 
 
-def parse_wiktionary(path, config, word_cb, capture_cb=None):
-    """Parses Wiktionary from the dump file ``path`` (which should point
-    to a "enwiktionary-<date>-pages-articles.xml.bz2" file.  This
-    calls ``capture_cb(title)`` for each raw page (if provided), and
-    if it returns True, and calls ``word_cb(data)`` for all words
-    defined for languages in ``languages``."""
+def process_dump(ctx, path, page_handler):
+    """Parses a WikiMedia dump file ``path`` (which should point
+    to a "<project>-<date>-pages-articles.xml.bz2" file.  This
+    calls ``page_handler(title, page)`` for each raw page.  This works in
+    two phases - in the first phase this calls ctx.collect_specials() for
+    each page to collect raw pages, especially templates and Lua modules.
+    Then this goes over the articles a second time, calling page_handler
+    for each page (this automatically calls ctx.start_page(title) for
+    each page before calling page_handler).  The page_handler will be called
+    in parallel using the multiprocessing package, and thus it cannot
+    save data in ``ctx`` or global variables.  It can only return its results.
+    This function will return a list containing all the results returned by
+    page_handler (in arbirary order)."""
     assert isinstance(path, str)
-    assert isinstance(config, WiktionaryConfig)
-    assert callable(word_cb)
-    assert capture_cb is None or callable(capture_cb)
-    languages = config.capture_languages
-    if languages is not None:
-        assert isinstance(languages, (list, tuple, set))
-        for x in languages:
-            assert isinstance(x, str)
-            assert x in wiktionary_languages
+    assert callable(page_handler)
 
+    # Run Phase 1 in a single thread; this mostly just extracts pages into
+    # a temporary file.
     print("First pass - extracting macros and certain special pages")
-    ctx = WiktionaryTarget(config, None)
-    results = process_input(path, WiktionaryConfig(), ctx,
-                            make_chunk_iter,
-                            capture_chunk_fn)
-    specials = []
-    for x in results:
-        specials.extend(x)
+    process_input(ctx, path, phase1_page_handler)
 
-    # XXX this is temporary code
-    if True:
-        with open("tempXXXspecials.json", "w") as f:
-            json.dump(specials, f, indent=2, sort_keys=True)
+    def phase2_handler(title):
+        data = ctx.read_by_title(title)
+        assert data
+        XXX
 
-    print("Second pass - extracting words")
-    ctx = WiktionaryTarget(config, capture_cb)
-    results = process_input(path, config, ctx, make_chunk_iter,
-                            article_chunk_fn)
 
-    words = []
-    for stats, lst in results:
-        config.merge_return(stats)
-        words.extend(lst)
+    # For Phase 2, process pages in parallel
+    pool = multiprocessing.Pool()
+    lst = []
+    for ret in pool.imap_unordered(phase2_handler,
+                                   [x[0] for x in ctx.page_seq]):
+        lst.append(ret)
+        if len(lst) % 1000 == 0:
+            print("  ... {}/{} pages ({:.1%}) processed"
+                  .format(len(lst), len(ctx.page_seq),
+                          len(lst) / len(ctx.page_seq)))
 
-    # XXX temporary for testing
-    with open("temp.json", "w") as f:
-        json.dump(words, f, indent=2, sort_keys=True)
-
-    for w in words:
-        word_cb(w)
-
-    # XXX check for "translation_link" and postpone if
-    # present, process after all others using
-    # translations from separate translation pages
-
-    # Return the parsing context.
-    return ctx
+    return lst

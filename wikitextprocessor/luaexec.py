@@ -127,20 +127,15 @@ def get_page_content(ctx, title):
     False if the page does not exist (currently not implemented)."""
     assert isinstance(title, str)
     title = title.strip()
-    # XXX should we canonicalize here?
-    if title not in ctx.page_contents:
+
+    # Read the page by its title
+    data = ctx.read_by_title(title)
+    if data is None:
         ctx.warning("attempted to access page content for {!r} which "
                     "is not available"
                     .format(title))
         return ""
-    # The page seems to exist
-    title, ofs, page_size = ctx.page_contents[title]
-    # Use os.pread() so that we won't change the file offset; otherwise we
-    # might cause a race condition with parallel scanning of the temporary
-    # file.
-    rawdata = os.pread(ctx.tmp_file.fileno(), page_size, ofs)
-    return rawdata.decode("utf-8")
-
+    return data
 
 def fetch_language_name(code):
     """This function is called from Lua code as part of the mw.language
@@ -363,7 +358,7 @@ def call_lua_sandbox(ctx, invoke_args, expander, stack, parent):
             new_args = [title]
             for k, v in sorted(args.items(), key=lambda x: str(x[0])):
                 new_args.append("{}={}".format(k, v))
-            encoded = ctx._save_value("T", new_args)
+            encoded = ctx._save_value("T", new_args, False)
             stack.append("frame:expandTemplate()")
             ret = expand_all_templates(encoded)
             stack.pop()

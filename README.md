@@ -2,10 +2,7 @@
 
 **This is currently work in progress and expected to be relased in
   October-November 2020.  Until then, feel free to experiment but the
-  code is likely to be broken at times and support will be limited.
-  Most of the code exists and will be moved here from another
-  repository and cleaned up during this time.  [This is not quite yet
-  ready for experimentation though.]**
+  code is likely to be broken at times and support will be limited.**
 
 This is a Python package for processing [WikiMedia dump
 files](https://dumps.wikimedia.org) for
@@ -49,7 +46,7 @@ extracting rich machine-readable dictionaries from Wiktionary.
 ### Installing
 
 The best way to install this package is from [pypi](https://pypi.org)
-(XXX may not yet be available):
+(XXX not yet available):
 ```
 pip3 install wikitextprocessor
 ```
@@ -97,7 +94,6 @@ XXX tentative plan:
    ctx = Wtp()
 
    def page_handler(title, text, XXX):
-       ctx.start_page(title)
        tree = ctx.parse(text, pre_expand=True)
        ... process parse tree
          ... value = ctx.expand_node(node)
@@ -136,6 +132,8 @@ class Wtp(object):
 
     start_page(title)
       - this must be called to start processing a new page
+      - automatically called by process() during the second page before
+        calling the page handler
 
     expand(text, pre_only=False, template_fn=None,
            templates_to_expand=None,
