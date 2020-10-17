@@ -2,7 +2,8 @@
 
 **This is currently work in progress and expected to be relased in
   October-November 2020.  Until then, feel free to experiment but the
-  code is likely to be broken at times and support will be limited.**
+  code has not yet been fully tested and may be broken on some days.
+  Most things should already work.**
 
 This is a Python package for processing [WikiMedia dump
 files](https://dumps.wikimedia.org) for
@@ -22,14 +23,16 @@ other uses.  Key features include:
   heuristically identifying templates that need to be expanded before
   parsing is reasonably possible (e.g., templates that emit table
   start and end tags)
-* Processing and expanding parser functions
+* Processing and expanding Wikitext parser functions
 * Processing, executing, and expanding Scribunto Lua modules (they are
-  very widely used in, e.g., Wiktionary, such as for generating
+  very widely used in, e.g., Wiktionary, for example for generating
   [IPA](https://en.wikipedia.org/wiki/International_Phonetic_Alphabet)
   strings for many languages)
-* Controlled expansion of selected page parts
+* Controlled expansion parts of pages for applications that parse
+  overall page structure before parsing but then expand templates on
+  certain sections of the page
 * Capturing information from template arguments while expanding them,
-  as tempate arguments often contain useful information not available
+  as template arguments often contain useful information not available
   in the expanded content.
 
 This module is primarily intended as a building block for other
@@ -88,58 +91,32 @@ pages per second, depending on the speed and number of cores.
 
 ## API documentation
 
-XXX tentative plan:
+Usage example:
+
 ```
    from wikitextprocessor import Wtp
    ctx = Wtp()
 
-   def page_handler(title, text, XXX):
+   def page_handler(model, title, text):
+       if model != "wikitext" or title.startswith("Template:"):
+           return None
        tree = ctx.parse(text, pre_expand=True)
        ... process parse tree
          ... value = ctx.expand_node(node)
 
    ctx.process("enwiktionary-20200901-pages-articles.xml.bz2", page_handler)
+```
 
-
-XXX tentative class outline
+XXX
 
 ```
 class Wtp(object):
 
     __init__(self)
 
-    set_backend(XXX)
-      - optional, to set backend for storing captured templates and modules
-        and pages somewhere else than main memory (or perhaps give relevant
-        parameters, such as directory path, as argument to constructor)
-
-    collect_specials(XXX)
-      - intended to be directly used as a capture callback for dumpparser
-      - XXX memory use, storage backend?
-
-    import_specials(path)
-      - import special page data from the given file
-
-    export_specials(path)
-      - save special page data to the given file
-
-    analyze_templates()
-      - analyzes which templates should be expanded before parsing (that
-        affect the overall Wikitext syntax, for example by generating table
-        start or end).  This will be automatically performed if not already
-        done when calling expand the first time; however, when multiprocessing,
-        it may be desirable to perform this once before forking.
-
-    start_page(title)
-      - this must be called to start processing a new page
-      - automatically called by process() during the second page before
-        calling the page handler
-
-    expand(text, pre_only=False, template_fn=None,
-           templates_to_expand=None,
-           expand_parserfns=True, expand_invoke=True)
-      - expands templates, parser functions, and Lua macros from
-        the text.  start_page() must be called before this.
+    process(path, page_handler)
+      - parses dump file, calls page_handler(title, text) for each page
+        (in parallel using multiprocessing) and returns list of results
 
     parse(text, pre_expand=False, expand_all=False)
       - parses the text as Wikitext, returning a parse tree.  If pre_expand
@@ -148,11 +125,23 @@ class Wtp(object):
         and Lua macros before parsing.  start_page() must be called before
         this.
 
+    expand(text, pre_only=False, template_fn=None,
+           templates_to_expand=None,
+           expand_parserfns=True, expand_invoke=True)
+      - expands templates, parser functions, and Lua macros from
+        the text.  start_page() must be called before this.
+
     expand_node(node, template_fn=None, templates_to_expand=None,
                 expand_parserfns=True, expand_invoke=True)
       - expands the wikitext covered by the given node in a parse tree
         returned by parse()
+      - XXX this function has not yet been implemented
+
+    start_page(title)
+      - this must be called to start processing a new page
+      - automatically called by process() during the second page before
+        calling the page handler
+      - no need to call this when processing pages via process(), but this
+        must be called if processing pages obtained otherwise
 
 ```
-
-XXX processing dump files, parallelization

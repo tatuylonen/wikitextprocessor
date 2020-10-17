@@ -2706,8 +2706,16 @@ return export
         self.scribunto("False", r"""
         return _G["os"].clock == nil""")
 
+# XXX test expand() with expand_parserfns=False
+# XXX test expand() with expand_templates=False
+# XXX test expand() with template_fn (return None and return string)
+# XXX test expand() with pre_only
+# XXX test expand() with templates_to_expand as a given set
+# XXX test expand() with templates_to_expand=None (meaning all templates)
+
 # XXX title:getContent() must be implemented at least for Thesaurus pages
 # (we can easily capture Thesaurus pages in phase1)
+#  - should now be implemented, but test
 
 # XXX Implement:
 #   #time
