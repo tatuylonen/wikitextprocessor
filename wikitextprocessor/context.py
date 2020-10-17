@@ -6,7 +6,6 @@
 import os
 import re
 import sys
-import html
 import hashlib  # XXX temporary
 import tempfile
 import collections
@@ -17,6 +16,7 @@ from .languages import ALL_LANGUAGES
 from .luaexec import call_lua_sandbox
 from .parser import parse_encoded, preprocess_text, NodeKind
 from .common import MAGIC_FIRST, MAGIC_LAST, MAX_MAGICS, MAGIC_NOWIKI_CHAR
+from .dumpparser import process_dump
 
 # Set of HTML tags that need an explicit end tag.
 PAIRED_HTML_TAGS = set(k for k, v in ALLOWED_HTML_TAGS.items()
@@ -49,7 +49,7 @@ class Wtp(object):
         "modules",	 # Lua code for defined Lua modules
         "need_pre_expand",  # Set of template names to be expanded before parse
         "page_contents",  # Full content for selected pages (e.g., Thesaurus)
-        "page_seq",	 # All content pages (title, ofs, len) in sequence
+        "page_seq",	 # All content pages (title, model, ofs, len) in order
         "redirects",	 # Redirects in the wikimedia project
         "rev_ht",	 # Mapping from text to magic cookie
         "stack",	 # Saved stack before calling Lua function
@@ -145,7 +145,7 @@ class Wtp(object):
         assert kind in ("T", "A", "L")  # Template/parserfn, arg, link
         assert isinstance(args, (list, tuple))
         assert nowiki in (True, False)
-        print("save_value", kind, args, nowiki)
+        # print("save_value", kind, args, nowiki)
         args = tuple(args)
         v = (kind, args, nowiki)
         if v in self.rev_ht:
@@ -251,7 +251,7 @@ class Wtp(object):
                self.error("unbalanced {}".format(m.group(0)))
         return text
 
-    def collect_page(self, tag, title, text, save_pages=True):
+    def collect_page(self, model, title, text, save_pages=True):
         """Collects information about the page.  For templates and modules,
         this keeps the content in memory.  For other pages, this saves the
         content in a temporary file so that it can be accessed later.  There
@@ -259,23 +259,16 @@ class Wtp(object):
         to store the entire contents of the uncompressed WikiMedia dump.
         The content is saved because it is common for Wiktionary Lua macros
         to access content from arbitrary pages.  Furthermore, this way we
-        only need to decompress and parse the dump file once."""
-        title = html.unescape(title)
-        text = html.unescape(text)
-        if tag == "#redirect":
-            self.redirects[title] = text
-            return
-        if tag == "Scribunto":
-            modname1 = re.sub(" ", "_", title)
-            self.modules[modname1] = text
-            return
-        if title.endswith("/testcases"):
-            return
-        if title.startswith("User:"):
-            return
-        if tag != "Template":
-            if not save_pages:
-                return
+        only need to decompress and parse the dump file once.  ``model``
+        is "wikitext" for normal pages, "redirect" for redirects (in which
+        case ``text`` is the page pointed to), or "Scribunto" for Lua code;
+        other values may also be encountered."""
+        assert isinstance(model, str)
+        assert isinstance(title, str)
+        assert isinstance(text, str)
+        assert save_pages in (True, False)
+        print("collect_page", model, title)
+        if save_pages:
             rawtext = text.encode("utf-8")
             if self.buf_ofs + len(rawtext) > self.buf_size:
                 bufview = memoryview(self.buf)[0: self.buf_ofs]
@@ -288,13 +281,30 @@ class Wtp(object):
             else:
                 self.buf[self.buf_ofs: self.buf_ofs + len(rawtext)] = rawtext
             # XXX should we canonicalize title in page_contents
-            self.page_contents[title] = (title, ofs, len(rawtext))
             h = hashlib.sha256()  # XXX
             h.update(rawtext)
-            self.page_seq.append((title, ofs, len(rawtext), h.digest()))
+            self.page_contents[title] = (title, model, ofs, len(rawtext),
+                                         h.digest())
+            self.page_seq.append((model, title))
+
+        if model == "redirect":
+            self.redirects[title] = text
+            return
+        if model == "Scribunto":
+            if title.startswith("Module:"):
+                title = title[7:]
+            modname1 = self._canonicalize_template_name(title)
+            self.modules[modname1] = text
+            return
+        if not title.startswith("Template:"):
+            return
+        if title.endswith("/documentation"):
+            return
+        if title.endswith("/testcases"):
             return
 
         # It is a template
+        title = title[9:]  # Remove Template:
         name = self._canonicalize_template_name(title)
         body = self._template_to_body(title, text)
         assert isinstance(body, str)
@@ -842,52 +852,38 @@ class Wtp(object):
 
         return expanded
 
-    def reprocess(self, page_fn):
-        """Reprocesses all non-Template, non-Module, non-Redirect pages
-        from the saved temporary copy of the input."""
-        assert callable(page_fn)
-        self.buf_ofs = 0
-        self.buf_used = 0
-        self.tmp_ofs = 0
-        # XXX use this in phase2 or remove this function
-        for title, ofs, page_size, ck in self.page_seq:
-            parts = []
-            while page_size > 0:
-                if ofs >= tmp_ofs and ofs < tmp_ofs + self.buf_used:
-                    st = ofs - self.buf_ofs
-                    cnt = min(self.buf_ofs + self.buf_used - ofs,
-                              self.page_size - st)
-                    p = self.buf[st: st + cnt]
-                    self.buf_ofs += cnt
-                    ofs += cnt
-                    page_size -= cnt
-                    parts.append(p)
-                    continue
-                # Buffer must not contain any of the data
-                self.buf_ofs = data
-                # XXX change to use pread?  In case this would be called in
-                # parallel, or there would be intervening calls to read
-                # a single page?
-                self.tmp_file.seek(ofs, 0)
-                self.buf_used = self.tmp_file.readinto(self.buf)
-                self.buf_ofs = 0
-            rawtext = b"".join(parts)
-            h = hashlib.sha256()
-            h.update(rawtext)
-            assert h.digest() == ck
-            text = rawtext.decode("utf-8")
-            page_cb(title, rawtext)
+    def process(self, path, page_handler):
+        """Parses a WikiMedia dump file ``path`` (which should point to a
+        "<project>-<date>-pages-articles.xml.bz2" file.  This calls
+        ``page_handler(model, title, page)`` for each raw page.  This works
+        in two phases - in the first phase this calls
+        ctx.collect_specials() for each page to collect raw pages,
+        especially templates and Lua modules.  Then this goes over the
+        articles a second time, calling page_handler for each page
+        (this automatically calls ctx.start_page(title) for each page
+        before calling page_handler).  The page_handler will be called
+        in parallel using the multiprocessing package, and thus it
+        cannot save data in ``ctx`` or global variables.  It can only
+        return its results.  This function will return a list
+        containing all the results returned by page_handler (in
+        arbirary order), except None values will be ignored."""
+        assert isinstance(path, str)
+        assert callable(page_handler)
+        return process_dump(self, path, page_handler)
 
     def read_by_title(self, title):
         assert isinstance(title, str)
         if title not in self.page_contents:
             return None
         # The page seems to exist
-        title, ofs, page_size = self.page_contents[title]
+        title, model, ofs, page_size, ck = self.page_contents[title]
         # Use os.pread() so that we won't change the file offset; otherwise we
         # might cause a race condition with parallel scanning of the temporary
         # file.
         rawdata = os.pread(self.tmp_file.fileno(), page_size, ofs)
+        h = hashlib.sha256()
+        h.update(rawdata)
+        assert h.digest() == ck  # XXX remove hashing and ck
         return rawdata.decode("utf-8")
 
     def parse(self, text, pre_expand=False, expand_all=False):

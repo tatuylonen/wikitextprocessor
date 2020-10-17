@@ -11,7 +11,7 @@ class WikiProcTests(unittest.TestCase):
     def scribunto(self, expected_ret, body):
         """This runs a very basic test of scribunto code."""
         ctx = phase1_to_ctx([
-            ["Scribunto", "testmod", r"""
+            ["Scribunto", "Module:testmod", r"""
 local export = {}
 function export.testfn(frame)
 """ + body + """
@@ -1151,112 +1151,112 @@ return export
 
     def test_template1(self):
         ctx = phase1_to_ctx([
-            ["Template", "testmod", "test content"]])
+            ["wikitext", "Template:testmod", "test content"]])
         ctx.start_page("Tt")
         ret = ctx.expand("a{{testmod}}b")
         self.assertEqual(ret, "atest contentb")
 
     def test_template2(self):
         ctx = phase1_to_ctx([
-            ["Template", "testmod", " test content "]])
+            ["wikitext", "Template:testmod", " test content "]])
         ctx.start_page("Tt")
         ret = ctx.expand("a{{testmod}}b")
         self.assertEqual(ret, "a test content b")
 
     def test_template3(self):
         ctx = phase1_to_ctx([
-            ["Template", "testmod", "* test content\n"]])
+            ["wikitext", "Template:testmod", "* test content\n"]])
         ctx.start_page("Tt")
         ret = ctx.expand("a{{testmod}}b")
         self.assertEqual(ret, "a\n* test content\nb")
 
     def test_template4(self):
         ctx = phase1_to_ctx([
-            ["Template", "testmod", "test {{{1}}} content"]])
+            ["wikitext", "Template:testmod", "test {{{1}}} content"]])
         ctx.start_page("Tt")
         ret = ctx.expand("{{testmod}}")
         self.assertEqual(ret, "test {{{1}}} content")
 
     def test_template5(self):
         ctx = phase1_to_ctx([
-            ["Template", "testmod", "test {{{1}}} content"]])
+            ["wikitext", "Template:testmod", "test {{{1}}} content"]])
         ctx.start_page("Tt")
         ret = ctx.expand("{{testmod|foo}}")
         self.assertEqual(ret, "test foo content")
 
     def test_template6(self):
         ctx = phase1_to_ctx([
-            ["Template", "testmod", "test {{{1}}} content"]])
+            ["wikitext", "Template:testmod", "test {{{1}}} content"]])
         ctx.start_page("Tt")
         ret = ctx.expand("{{testmod|}}")
         self.assertEqual(ret, "test  content")
 
     def test_template7(self):
         ctx = phase1_to_ctx([
-            ["Template", "testmod", "test {{{1|}}} content"]])
+            ["wikitext", "Template:testmod", "test {{{1|}}} content"]])
         ctx.start_page("Tt")
         ret = ctx.expand("{{testmod}}")
         self.assertEqual(ret, "test  content")
 
     def test_template8(self):
         ctx = phase1_to_ctx([
-            ["Template", "testmod", "test {{{1|def}}} content"]])
+            ["wikitext", "Template:testmod", "test {{{1|def}}} content"]])
         ctx.start_page("Tt")
         ret = ctx.expand("{{testmod}}")
         self.assertEqual(ret, "test def content")
 
     def test_template9(self):
         ctx = phase1_to_ctx([
-            ["Template", "testmod", "test {{{1|def}}} content"]])
+            ["wikitext", "Template:testmod", "test {{{1|def}}} content"]])
         ctx.start_page("Tt")
         ret = ctx.expand("{{testmod|foo}}")
         self.assertEqual(ret, "test foo content")
 
     def test_template10(self):
         ctx = phase1_to_ctx([
-            ["Template", "testmod", "test {{{{{{1}}}}}} content"]])
+            ["wikitext", "Template:testmod", "test {{{{{{1}}}}}} content"]])
         ctx.start_page("Tt")
         ret = ctx.expand("{{testmod|2|foo|bar}}")
         self.assertEqual(ret, "test foo content")
 
     def test_template11(self):
         ctx = phase1_to_ctx([
-            ["Template", "testmod", "test {{{{{{1}}}}}} content"]])
+            ["wikitext", "Template:testmod", "test {{{{{{1}}}}}} content"]])
         ctx.start_page("Tt")
         ret = ctx.expand("{{testmod|3|foo|bar}}")
         self.assertEqual(ret, "test bar content")
 
     def test_template12(self):
         ctx = phase1_to_ctx([
-            ["Template", "testmod", "test {{{foo|{{{1}}}}}} content"]])
+            ["wikitext", "Template:testmod", "test {{{foo|{{{1}}}}}} content"]])
         ctx.start_page("Tt")
         ret = ctx.expand("{{testmod}}")
         self.assertEqual(ret, "test {{{1}}} content")
 
     def test_template13(self):
         ctx = phase1_to_ctx([
-            ["Template", "testmod", "test {{{foo|{{{1}}}}}} content"]])
+            ["wikitext", "Template:testmod", "test {{{foo|{{{1}}}}}} content"]])
         ctx.start_page("Tt")
         ret = ctx.expand("{{testmod|foo=zap}}")
         self.assertEqual(ret, "test zap content")
 
     def test_template14(self):
         ctx = phase1_to_ctx([
-            ["Template", "testmod", "test {{{foo|{{{1}}}}}} content"]])
+            ["wikitext", "Template:testmod", "test {{{foo|{{{1}}}}}} content"]])
         ctx.start_page("Tt")
         ret = ctx.expand("{{testmod|Zap}}")
         self.assertEqual(ret, "test Zap content")
 
     def test_template15(self):
         ctx = phase1_to_ctx([
-            ["Template", "testmod", "test {{{foo|{{{1}}}}}} content"]])
+            ["wikitext", "Template:testmod", "test {{{foo|{{{1}}}}}} content"]])
         ctx.start_page("Tt")
         ret = ctx.expand("{{testmod|bar=kak|Zap}}")
         self.assertEqual(ret, "test Zap content")
 
     def test_template16(self):
         ctx = phase1_to_ctx([
-            ["Template", "testmod",
+            ["wikitext", "Template:testmod",
              "{{#if:{{{1}}}|{{#sub:{{{1}}}|0|1}}"
              "{{testmod|{{#sub:{{{1}}}|1}}}}"
              "{{testmod|{{#sub:{{{1}}}|1}}}}"
@@ -1268,8 +1268,8 @@ return export
 
     def test_template17(self):
         ctx = phase1_to_ctx([
-            ["Template", "testmod", "a{{testmod2|{{{1}}}}}b"],
-            ["Template", "testmod2", "x{{{1}}}y"],
+            ["wikitext", "Template:testmod", "a{{testmod2|{{{1}}}}}b"],
+            ["wikitext", "Template:testmod2", "x{{{1}}}y"],
         ])
         ctx.start_page("Tt")
         ret = ctx.expand("{{testmod|zz}}")
@@ -1277,8 +1277,8 @@ return export
 
     def test_template18(self):
         ctx = phase1_to_ctx([
-            ["Template", "testmod", "a{{testmod2|{{{1}}}}}b"],
-            ["Template", "testmod2", "{{#if:{{{1}}}|x|y}}"],
+            ["wikitext", "Template:testmod", "a{{testmod2|{{{1}}}}}b"],
+            ["wikitext", "Template:testmod2", "{{#if:{{{1}}}|x|y}}"],
         ])
         ctx.start_page("Tt")
         ret = ctx.expand("{{testmod|zz}}")
@@ -1286,8 +1286,8 @@ return export
 
     def test_template19(self):
         ctx = phase1_to_ctx([
-            ["Template", "testmod", "a{{testmod2|{{{1}}}}}b"],
-            ["Template", "testmod2", "{{#if:{{{1}}}|x|y}}"],
+            ["wikitext", "Template:testmod", "a{{testmod2|{{{1}}}}}b"],
+            ["wikitext", "Template:testmod2", "{{#if:{{{1}}}|x|y}}"],
         ])
         ctx.start_page("Tt")
         ret = ctx.expand("{{testmod|}}")
@@ -1295,8 +1295,8 @@ return export
 
     def test_template20(self):
         ctx = phase1_to_ctx([
-            ["Template", "testmod", "a{{testmod2|{{{1}}}}}b"],
-            ["Template", "testmod2", "{{#if:{{{1}}}|x|y}}"],
+            ["wikitext", "Template:testmod", "a{{testmod2|{{{1}}}}}b"],
+            ["wikitext", "Template:testmod2", "{{#if:{{{1}}}|x|y}}"],
         ])
         ctx.start_page("Tt")
         ret = ctx.expand("{{testmod}}")
@@ -1304,9 +1304,9 @@ return export
 
     def test_template21(self):
         ctx = phase1_to_ctx([
-            ["Template", "testmod", "a{{testmod2|{{{1}}}}}b"],
-            ["Template", "testmod2", "c{{testmod3|{{{1}}}}}d"],
-            ["Template", "testmod3", "f{{{1}}}g"],
+            ["wikitext", "Template:testmod", "a{{testmod2|{{{1}}}}}b"],
+            ["wikitext", "Template:testmod2", "c{{testmod3|{{{1}}}}}d"],
+            ["wikitext", "Template:testmod3", "f{{{1}}}g"],
         ])
         ctx.start_page("Tt")
         ret = ctx.expand("{{testmod}}")
@@ -1314,9 +1314,9 @@ return export
 
     def test_template22(self):
         ctx = phase1_to_ctx([
-            ["Template", "testmod", "a{{testmod2|{{{1}}}}}b"],
-            ["Template", "testmod2", "c{{testmod3|{{{1}}}}}d"],
-            ["Template", "testmod3", "f{{{1}}}g"],
+            ["wikitext", "Template:testmod", "a{{testmod2|{{{1}}}}}b"],
+            ["wikitext", "Template:testmod2", "c{{testmod3|{{{1}}}}}d"],
+            ["wikitext", "Template:testmod3", "f{{{1}}}g"],
         ])
         ctx.start_page("Tt")
         ret = ctx.expand("{{testmod|}}")
@@ -1324,9 +1324,9 @@ return export
 
     def test_template23(self):
         ctx = phase1_to_ctx([
-            ["Template", "testmod", "a{{testmod2|{{{1}}}}}b"],
-            ["Template", "testmod2", "c{{testmod3|{{{1}}}}}d"],
-            ["Template", "testmod3", "f{{{1}}}g"],
+            ["wikitext", "Template:testmod", "a{{testmod2|{{{1}}}}}b"],
+            ["wikitext", "Template:testmod2", "c{{testmod3|{{{1}}}}}d"],
+            ["wikitext", "Template:testmod3", "f{{{1}}}g"],
         ])
         ctx.start_page("Tt")
         ret = ctx.expand("{{testmod|zz}}")
@@ -1334,7 +1334,7 @@ return export
 
     def test_template24(self):
         ctx = phase1_to_ctx([
-            ["Template", "testmod", "a{{{1}}}b"],
+            ["wikitext", "Template:testmod", "a{{{1}}}b"],
         ])
         ctx.start_page("Tt")
         ret = ctx.expand("{{testmod|{{!}}}}")
@@ -1342,7 +1342,7 @@ return export
 
     def test_template25(self):
         ctx = phase1_to_ctx([
-            ["Template", "testmod", "a{{{1}}}b"],
+            ["wikitext", "Template:testmod", "a{{{1}}}b"],
         ])
         # This example is from
         # https://www.mediawiki.org/wiki/Extension:Scribunto/Lua_reference_manual#frame:getTitle,
@@ -1353,7 +1353,7 @@ return export
 
     def test_template26(self):
         ctx = phase1_to_ctx([
-            ["Template", "foo", 'a{{{1}}}b'],
+            ["wikitext", "Template:foo", 'a{{{1}}}b'],
         ])
         # This tests that the "=" is not interpretated as indicating argument
         # name on the left.
@@ -1363,14 +1363,14 @@ return export
 
     # def test_templateXXX(self):
     #     ctx = phase1_to_ctx([
-    #         ["#redirect", "Template:rel3", "Template:col3"],
-    #         ["Template", "col3", "{{check|lang={{{lang|}}}|"
+    #         ["redirect", "Template:rel3", "Template:col3"],
+    #         ["wikitext", "Template:col3", "{{check|lang={{{lang|}}}|"
     #          "{{#invoke:columns|display|sort=1|collapse=1|columns=3}}}}"],
-    #         ["Template", "check",
+    #         ["wikitext", "Template:check",
     #          "{{deprecated code|active={{#if:{{{lang|}}}|yes|no}}|"
     #          "text=deprecated use of {{para|lang}} parameter|"
     #          "tooltip=deprecated 'lang'|{{{1}}}}}"],
-    #         ["Template", "deprecated code",
+    #         ["wikitext", "Template:deprecated code",
     #          """{{#ifeq:{{{active|}}}|no|{{{1}}}|"""
     #          """<div class="deprecated" title="{{#if:{{{tooltip|}}}|"""
     #          """{{{tooltip}}}|This is a deprecated template usage.}}">''"""
@@ -1378,14 +1378,14 @@ return export
     #          """{{#if:{{{text|}}}|{{{text}}}|deprecated template usage}}]])''"""
     #          """{{{1}}}</div>"""
     #          """{{categorize|und|Pages using deprecated templates}}}}"""],
-    #         ["Template", "para",
+    #         ["wikitext", "Template:para",
     #          """<code>&#124;{{#if:{{{}}}|{{#if:{{{1|}}}|{{{1}}}=}}{{{2|}}}|="""
     #          """{{{1|}}}}}</code>{{#if:{{{3|}}}|&nbsp;({{#if:{{{req|}}}|"""
     #          """'''''required''''',&nbsp;}}"""
     #          """{{#if:{{{opt|}}}|''optional'',&nbsp;}}{{{3}}})|"""
     #          """{{#if:{{{req|}}}|&nbsp;('''''required''''')}}"""
     #          """{{#if:{{{opt|}}}|&nbsp;(''optional'')}}}}"""],
-    #         ["Template", "categorize",
+    #         ["wikitext", "Template:categorize",
     #          """{{#invoke:utilities|template_categorize}}"""],
     #     ])
     #     ret = ctx.expand("Tt", "{{rel3|es|animálculo|animalidad}}")
@@ -1393,8 +1393,8 @@ return export
 
     def test_redirect1(self):
         ctx = phase1_to_ctx([
-            ["#redirect", "Template:oldtemp", "Template:testtemp"],
-            ["Template", "testtemp", "a{{{1}}}b"],
+            ["redirect", "Template:oldtemp", "Template:testtemp"],
+            ["wikitext", "Template:testtemp", "a{{{1}}}b"],
         ])
         ctx.start_page("Tt")
         ret = ctx.expand("{{oldtemp|foo}}")
@@ -1402,7 +1402,7 @@ return export
 
     def test_invoke1(self):
         ctx = phase1_to_ctx([
-            ["Scribunto", "testmod", """
+            ["Scribunto", "Module:testmod", """
 local export = {}
 function export.testfn(frame)
   return "in test"
@@ -1418,7 +1418,7 @@ return export
 
     def test_invoke3(self):
         ctx = phase1_to_ctx([
-            ["Scribunto", "testmod", """
+            ["Scribunto", "Module:testmod", """
 local export = {}
 function export.testfn(frame)
             return tostring(#frame.args)
@@ -1431,7 +1431,7 @@ return export
 
     def test_invoke4(self):
         ctx = phase1_to_ctx([
-            ["Scribunto", "testmod", """
+            ["Scribunto", "Module:testmod", """
 local export = {}
 function export.testfn(frame)
   return frame.args[1]
@@ -1444,7 +1444,7 @@ return export
 
     def test_invoke5(self):
         ctx = phase1_to_ctx([
-            ["Scribunto", "testmod", """
+            ["Scribunto", "Module:testmod", """
 local export = {}
 function export.testfn(frame)
   return frame.args.foo
@@ -1457,7 +1457,7 @@ return export
 
     def test_invoke6(self):
         ctx = phase1_to_ctx([
-            ["Scribunto", "testmod", """
+            ["Scribunto", "Module:testmod", """
 local export = {}
 function export.testfn(frame)
   return frame.args["foo"]
@@ -1470,9 +1470,9 @@ return export
 
     def test_invoke7(self):
         ctx = phase1_to_ctx([
-            ["Template", "testtempl",
+            ["wikitext", "Template:testtempl",
              "{{#invoke:testmod|testfn|foo={{{1}}}|{{{2}}}}}"],
-            ["Scribunto", "testmod", """
+            ["Scribunto", "Module:testmod", """
 local export = {}
 function export.testfn(frame)
   return frame.args["foo"]
@@ -1485,9 +1485,9 @@ return export
 
     def test_invoke8(self):
         ctx = phase1_to_ctx([
-            ["Template", "testtempl",
+            ["wikitext", "Template:testtempl",
              "{{#invoke:testmod|testfn|foo={{{1}}}|{{{2}}}}}"],
-            ["Scribunto", "testmod", """
+            ["Scribunto", "Module:testmod", """
 local export = {}
 function export.testfn(frame)
   return frame.args["foo"]
@@ -1500,9 +1500,9 @@ return export
 
     def test_invoke9(self):
         ctx = phase1_to_ctx([
-            ["Template", "testtempl",
+            ["wikitext", "Template:testtempl",
              "{{#invoke:testmod|testfn|foo={{{1}}}|{{{2}}}}}"],
-            ["Scribunto", "testmod", """
+            ["Scribunto", "Module:testmod", """
 local export = {}
 function export.testfn(frame)
   return frame.args.foo
@@ -1515,9 +1515,9 @@ return export
 
     def test_invoke10(self):
         ctx = phase1_to_ctx([
-            ["Template", "testtempl",
+            ["wikitext", "Template:testtempl",
              "{{#invoke:testmod|testfn|foo={{{1}}}|{{{2}}}}}"],
-            ["Scribunto", "testmod", """
+            ["Scribunto", "Module:testmod", """
 local export = {}
 function export.testfn(frame)
   return frame.args[1]
@@ -1530,9 +1530,9 @@ return export
 
     def test_invoke11(self):
         ctx = phase1_to_ctx([
-            ["Template", "testtempl",
+            ["wikitext", "Template:testtempl",
              "{{#invoke:testmod|testfn}}"],
-            ["Scribunto", "testmod", """
+            ["Scribunto", "Module:testmod", """
 local export = {}
 function export.testfn(frame)
   return tostring(frame.args.foo)
@@ -1547,10 +1547,10 @@ return export
         # Testing that intervening template call does not mess up arguments
         # (this was once a bug)
         ctx = phase1_to_ctx([
-            ["Template", "testtempl",
+            ["wikitext", "Template:testtempl",
              "{{templ2|{{#invoke:testmod|testfn}}}}"],
-            ["Template", "templ2", "{{{1}}}"],
-            ["Scribunto", "testmod", """
+            ["wikitext", "Template:templ2", "{{{1}}}"],
+            ["Scribunto", "Module:testmod", """
 local export = {}
 function export.testfn(frame)
   return tostring(frame:getParent().args[1])
@@ -1565,10 +1565,10 @@ return export
         # Testing that intervening template call does not mess up arguments
         # (this was once a bug)
         ctx = phase1_to_ctx([
-            ["Template", "testtempl",
+            ["wikitext", "Template:testtempl",
              "{{templ2|{{#invoke:testmod|testfn}}}}"],
-            ["Template", "templ2", "{{{1}}}"],
-            ["Scribunto", "testmod", """
+            ["wikitext", "Template:templ2", "{{{1}}}"],
+            ["Scribunto", "Module:testmod", """
 local export = {}
 function export.testfn(frame)
   return tostring(frame:getParent().args[1])
@@ -1582,9 +1582,9 @@ return export
     def test_invoke14(self):
         # Testing that argument names are handled correctly if = inside HTML tag
         ctx = phase1_to_ctx([
-            ["Template", "testtempl",
+            ["wikitext", "Template:testtempl",
              """{{#invoke:testmod|testfn|<span class="foo">bar</span>}}"""],
-            ["Scribunto", "testmod", """
+            ["Scribunto", "Module:testmod", """
 local export = {}
 function export.testfn(frame)
   return tostring(frame.args[1])
@@ -1598,8 +1598,8 @@ return export
     def test_invoke15(self):
         # Testing safesubst:
         ctx = phase1_to_ctx([
-            ["Template", "testtempl", "{{safesubst:#invoke:testmod|testfn}}"],
-            ["Scribunto", "testmod", """
+            ["wikitext", "Template:testtempl", "{{safesubst:#invoke:testmod|testfn}}"],
+            ["Scribunto", "Module:testmod", """
 local export = {}
 function export.testfn(frame)
   return "correct"
@@ -1613,8 +1613,8 @@ return export
     def test_invoke16(self):
         # Testing safesubst:, with space before
         ctx = phase1_to_ctx([
-            ["Template", "testtempl", "{{ safesubst:#invoke:testmod|testfn}}"],
-            ["Scribunto", "testmod", """
+            ["wikitext", "Template:testtempl", "{{ safesubst:#invoke:testmod|testfn}}"],
+            ["Scribunto", "Module:testmod", """
 local export = {}
 function export.testfn(frame)
   return "correct"
@@ -1628,9 +1628,9 @@ return export
     def test_invoke17(self):
         # Testing safesubst: coming from template
         ctx = phase1_to_ctx([
-            ["Template", "testtempl", "{{ {{templ2}}#invoke:testmod|testfn}}"],
-            ["Template", "templ2", "safesubst:"],
-            ["Scribunto", "testmod", """
+            ["wikitext", "Template:testtempl", "{{ {{templ2}}#invoke:testmod|testfn}}"],
+            ["wikitext", "Template:templ2", "safesubst:"],
+            ["Scribunto", "Module:testmod", """
 local export = {}
 function export.testfn(frame)
   return "correct"
@@ -1644,8 +1644,8 @@ return export
     def test_invoke18(self):
         # Tests whitespaces within #invoke
         ctx = phase1_to_ctx([
-            ["Template", "testtempl", "{{#invoke:\ntestmod\n|\ntestfn\n}}"],
-            ["Scribunto", "testmod", """
+            ["wikitext", "Template:testtempl", "{{#invoke:\ntestmod\n|\ntestfn\n}}"],
+            ["Scribunto", "Module:testmod", """
 local export = {}
 function export.testfn(frame)
   return "correct"
@@ -1659,8 +1659,8 @@ return export
     def test_invoke19(self):
         # Tests fetching a frame argument that does not exist
         ctx = phase1_to_ctx([
-            ["Template", "testtempl", "{{#invoke:testmod|testfn}}"],
-            ["Scribunto", "testmod", """
+            ["wikitext", "Template:testtempl", "{{#invoke:testmod|testfn}}"],
+            ["Scribunto", "Module:testmod", """
 local export = {}
 function export.testfn(frame)
   return tostring(frame.args.nonex) .. tostring(frame:getParent().args.nonex2)
@@ -1673,9 +1673,9 @@ return export
 
     def test_frame_parent1(self):
         ctx = phase1_to_ctx([
-            ["Template", "testtempl",
+            ["wikitext", "Template:testtempl",
              "{{#invoke:testmod|testfn}}"],
-            ["Scribunto", "testmod", """
+            ["Scribunto", "Module:testmod", """
 local export = {}
 function export.testfn(frame)
   return tostring(frame:getParent().args[1])
@@ -1688,9 +1688,9 @@ return export
 
     def test_frame_parent2(self):
         ctx = phase1_to_ctx([
-            ["Template", "testtempl",
+            ["wikitext", "Template:testtempl",
              "{{#invoke:testmod|testfn}}"],
-            ["Scribunto", "testmod", """
+            ["Scribunto", "Module:testmod", """
 local export = {}
 function export.testfn(frame)
   return frame:getParent().args[1]
@@ -1703,9 +1703,9 @@ return export
 
     def test_frame_parent3(self):
         ctx = phase1_to_ctx([
-            ["Template", "testtempl",
+            ["wikitext", "Template:testtempl",
              "{{#invoke:testmod|testfn}}"],
-            ["Scribunto", "testmod", """
+            ["Scribunto", "Module:testmod", """
 local export = {}
 function export.testfn(frame)
   return frame:getParent().args[2]
@@ -1718,9 +1718,9 @@ return export
 
     def test_frame_parent4(self):
         ctx = phase1_to_ctx([
-            ["Template", "testtempl",
+            ["wikitext", "Template:testtempl",
              "{{#invoke:testmod|testfn}}"],
-            ["Scribunto", "testmod", """
+            ["Scribunto", "Module:testmod", """
 local export = {}
 function export.testfn(frame)
   return tostring(frame:getParent().args[3])
@@ -1733,9 +1733,9 @@ return export
 
     def test_frame_parent5(self):
         ctx = phase1_to_ctx([
-            ["Template", "testtempl",
+            ["wikitext", "Template:testtempl",
              "{{#invoke:testmod|testfn}}"],
-            ["Scribunto", "testmod", """
+            ["Scribunto", "Module:testmod", """
 local export = {}
 function export.testfn(frame)
   return frame:getParent().args.foo
@@ -1748,9 +1748,9 @@ return export
 
     def test_frame_parent6(self):
         ctx = phase1_to_ctx([
-            ["Template", "testtempl", "{{#invoke:testmod|testfn}}"],
-            ["Template", "testtempl2", "foo{{{1|}}}"],
-            ["Scribunto", "testmod", """
+            ["wikitext", "Template:testtempl", "{{#invoke:testmod|testfn}}"],
+            ["wikitext", "Template:testtempl2", "foo{{{1|}}}"],
+            ["Scribunto", "Module:testmod", """
 local export = {}
 function export.testfn(frame)
   local parent = frame:getParent()
@@ -1764,10 +1764,10 @@ return export
 
     def test_frame_parent7(self):
         ctx = phase1_to_ctx([
-            ["Template", "testtempl",
+            ["wikitext", "Template:testtempl",
              "{{#invoke:testmod|testfn}}"],
-            ["Template", "testtempl2", "foo{{{1|}}}"],
-            ["Scribunto", "testmod", """
+            ["wikitext", "Template:testtempl2", "foo{{{1|}}}"],
+            ["Scribunto", "Module:testmod", """
 local export = {}
 function export.testfn(frame)
   return frame:getTitle()
@@ -1780,10 +1780,10 @@ return export
 
     def test_frame_parent8(self):
         ctx = phase1_to_ctx([
-            ["Template", "testtempl",
+            ["wikitext", "Template:testtempl",
              "{{#invoke:testmod|testfn}}"],
-            ["Template", "testtempl2", "foo{{{1|}}}"],
-            ["Scribunto", "testmod", """
+            ["wikitext", "Template:testtempl2", "foo{{{1|}}}"],
+            ["Scribunto", "Module:testmod", """
 local export = {}
 function export.testfn(frame)
   return frame:getParent():getTitle()
@@ -1797,9 +1797,9 @@ return export
     def test_frame_parent9(self):
         # parent of parent should be nil
         ctx = phase1_to_ctx([
-            ["Template", "testtempl", "{{#invoke:testmod|testfn}}"],
-            ["Template", "testtempl2", "{{testtempl}}"],
-            ["Scribunto", "testmod", """
+            ["wikitext", "Template:testtempl", "{{#invoke:testmod|testfn}}"],
+            ["wikitext", "Template:testtempl2", "{{testtempl}}"],
+            ["Scribunto", "Module:testmod", """
 local export = {}
 function export.testfn(frame)
   return frame:getParent():getParent()
@@ -1828,7 +1828,7 @@ return export
 
     def test_frame_getArgument1(self):
         ctx = phase1_to_ctx([
-            ["Scribunto", "testmod", """
+            ["Scribunto", "Module:testmod", """
 local export = {}
 function export.testfn(frame)
   return frame:getArgument(1).expand()
@@ -1841,7 +1841,7 @@ return export
 
     def test_frame_getArgument2(self):
         ctx = phase1_to_ctx([
-            ["Scribunto", "testmod", """
+            ["Scribunto", "Module:testmod", """
 local export = {}
 function export.testfn(frame)
   return frame:getArgument(2).expand()
@@ -1854,7 +1854,7 @@ return export
 
     def test_frame_getArgument3(self):
         ctx = phase1_to_ctx([
-            ["Scribunto", "testmod", """
+            ["Scribunto", "Module:testmod", """
 local export = {}
 function export.testfn(frame)
   return frame:getArgument(3)
@@ -1867,7 +1867,7 @@ return export
 
     def test_frame_getArgument4(self):
         ctx = phase1_to_ctx([
-            ["Scribunto", "testmod", """
+            ["Scribunto", "Module:testmod", """
 local export = {}
 function export.testfn(frame)
   return frame:getArgument("foo").expand()
@@ -1880,7 +1880,7 @@ return export
 
     def test_frame_getArgument5(self):
         ctx = phase1_to_ctx([
-            ["Scribunto", "testmod", """
+            ["Scribunto", "Module:testmod", """
 local export = {}
 function export.testfn(frame)
   return frame:getArgument{name = "foo"}.expand()
@@ -1893,8 +1893,8 @@ return export
 
     def test_frame_getArgument6(self):
         ctx = phase1_to_ctx([
-            ["Template", "templ", "{{#invoke:testmod|testfn|a|b}}"],
-            ["Scribunto", "testmod", """
+            ["wikitext", "Template:templ", "{{#invoke:testmod|testfn|a|b}}"],
+            ["Scribunto", "Module:testmod", """
 local export = {}
 function export.testfn(frame)
   return frame:getParent():getArgument(2).expand()
@@ -1907,8 +1907,8 @@ return export
 
     def test_frame_preprocess1(self):
         ctx = phase1_to_ctx([
-            ["Template", "testtemplate", "foo{{{1}}}"],
-            ["Scribunto", "testmod", """
+            ["wikitext", "Template:testtemplate", "foo{{{1}}}"],
+            ["Scribunto", "Module:testmod", """
 local export = {}
 function export.testfn(frame)
   return frame:preprocess("a{{testtemplate|a}}b")
@@ -1921,8 +1921,8 @@ return export
 
     def test_frame_preprocess2(self):
         ctx = phase1_to_ctx([
-            ["Template", "testtemplate", "foo{{{1}}}"],
-            ["Scribunto", "testmod", """
+            ["wikitext", "Template:testtemplate", "foo{{{1}}}"],
+            ["Scribunto", "Module:testmod", """
 local export = {}
 function export.testfn(frame)
   return frame:preprocess{text = "a{{testtemplate|a}}b"}
@@ -1935,7 +1935,7 @@ return export
 
     def test_frame_argumentPairs1(self):
         ctx = phase1_to_ctx([
-            ["Scribunto", "testmod", """
+            ["Scribunto", "Module:testmod", """
 local export = {}
 function export.testfn(frame)
   local ret = ""
@@ -1952,7 +1952,7 @@ return export
 
     def test_frame_argumentPairs2(self):
         ctx = phase1_to_ctx([
-            ["Scribunto", "testmod", """
+            ["Scribunto", "Module:testmod", """
 local export = {}
 function export.testfn(frame)
   local ret = ""
@@ -1969,8 +1969,8 @@ return export
 
     def test_frame_argumentPairs3(self):
         ctx = phase1_to_ctx([
-            ["Template", "templ", "{{#invoke:testmod|testfn|a|b}}"],
-            ["Scribunto", "testmod", """
+            ["wikitext", "Template:templ", "{{#invoke:testmod|testfn|a|b}}"],
+            ["Scribunto", "Module:testmod", """
 local export = {}
 function export.testfn(frame)
   local ret = ""
@@ -1987,8 +1987,8 @@ return export
 
     def test_frame_expandTemplate1(self):
         ctx = phase1_to_ctx([
-            ["Template", "templ", "a{{{1}}}b{{{2}}}c{{{k}}}d"],
-            ["Scribunto", "testmod", """
+            ["wikitext", "Template:templ", "a{{{1}}}b{{{2}}}c{{{k}}}d"],
+            ["Scribunto", "Module:testmod", """
 local export = {}
 function export.testfn(frame)
   return frame:expandTemplate{title="templ", args={"foo", "bar", k=4}}
@@ -2001,8 +2001,8 @@ return export
 
     def test_frame_expandTemplate2(self):
         ctx = phase1_to_ctx([
-            ["Template", "templ", "a{{{1}}}b"],
-            ["Scribunto", "testmod", """
+            ["wikitext", "Template:templ", "a{{{1}}}b"],
+            ["Scribunto", "Module:testmod", """
 local export = {}
 function export.testfn(frame)
   return frame:expandTemplate{title="templ", args={"|"}}
@@ -2015,8 +2015,8 @@ return export
 
     def test_frame_expandTemplate3(self):
         ctx = phase1_to_ctx([
-            ["Template", "templ", "a{{{1}}}b"],
-            ["Scribunto", "testmod", """
+            ["wikitext", "Template:templ", "a{{{1}}}b"],
+            ["Scribunto", "Module:testmod", """
 local export = {}
 function export.testfn(frame)
   return frame:expandTemplate{title="templ", args={"{{!}}"}}
@@ -2262,7 +2262,7 @@ return export
 
     def test_mw_uri12(self):
         ctx = phase1_to_ctx([
-            ["Scribunto", "testmod", r"""
+            ["Scribunto", "Module:testmod", r"""
 local export = {}
 function export.testfn(frame)
    local q = mw.uri.parseQueryString("a=1&b=a+b&c")
@@ -2288,8 +2288,8 @@ return export
 
     def test_mw_title1(self):
         ctx = phase1_to_ctx([
-            ["Template", "templ", "{{#invoke:testmod|testfn}}"],
-            ["Scribunto", "testmod", r"""
+            ["wikitext", "Template:templ", "{{#invoke:testmod|testfn}}"],
+            ["Scribunto", "Module:testmod", r"""
 local export = {}
 function export.testfn(frame)
    return mw.title.getCurrentTitle().fullText
@@ -2470,8 +2470,8 @@ return export
     def test_mw_title36(self):
         # test for redirect that exists
         ctx = phase1_to_ctx([
-            ["#redirect", "Main:Foo", "Main:Bar"],
-            ["Scribunto", "testmod", """
+            ["redirect", "Main:Foo", "Main:Bar"],
+            ["Scribunto", "Module:testmod", """
             local export = {}
             function export.testfn(frame)
             local t = mw.title.makeTitle("Main", "Foo", "Frag")
@@ -2555,8 +2555,8 @@ return export
     def test_mw_title51(self):
         # test for redirect target
         ctx = phase1_to_ctx([
-            ["#redirect", "Main:Foo", "Main:Bar"],
-            ["Scribunto", "testmod", """
+            ["redirect", "Main:Foo", "Main:Bar"],
+            ["Scribunto", "Module:testmod", """
             local export = {}
             function export.testfn(frame)
                local t = mw.title.makeTitle("Main", "Foo", "Frag")
@@ -2597,7 +2597,7 @@ return export
         # test for redirect target
         ctx = phase1_to_ctx([
             ["Main", "Tt", "RAWCONTENT"],
-            ["Scribunto", "testmod", """
+            ["Scribunto", "Module:testmod", """
             local export = {}
             function export.testfn(frame)
                local t = mw.title.getCurrentTitle().text
@@ -2620,7 +2620,7 @@ return export
         # This tests that change in title when moving to next page is
         # properly reflected to modules.
         ctx = phase1_to_ctx([
-            ["Scribunto", "testmod", """
+            ["Scribunto", "Module:testmod", """
             local title = mw.title.getCurrentTitle().text
             local export = {}
             function export.testfn(frame)
@@ -2649,7 +2649,7 @@ return export
 
     def test_mw_clone99(self):
         ctx = phase1_to_ctx([
-            ["Scribunto", "testmod", """
+            ["Scribunto", "Module:testmod", """
             local export = {}
             function export.testfn(frame)
                local c = mw.clone(frame.args)

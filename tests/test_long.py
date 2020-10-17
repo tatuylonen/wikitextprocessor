@@ -8,65 +8,28 @@ class LongTests(unittest.TestCase):
         # Just parse through the data and make sure that we find some words
         # This takes about 0.5 minutes.
 
-        langs = collections.defaultdict(int)
-        words = collections.defaultdict(int)
-        poses = collections.defaultdict(int)
-        num_transl = 0
-        num_pron = 0
-        num_conj = 0
+        titles = collections.defaultdict(int)
+        redirects = collections.defaultdict(int)
         num_redirects = 0
 
-        def word_cb(data):
-            nonlocal num_transl
-            nonlocal num_pron
-            nonlocal num_conj
+        def page_cb(model, title, text):
             nonlocal num_redirects
-            if "redirect" in data:
-                assert isinstance(data["redirect"], str)
-                word = data["title"]
-                words[word] += 1
+            print("page_cb:", model, title)
+            assert model in ("wikitext", "redirect", "Scribunto")
+            if model == "redirect":
+                titles[title] += 1
+                redirects[text] += 1
                 num_redirects += 1
                 return
-            word = data["word"]
-            assert word
-            words[word] += 1
-            lang = data["lang"]
-            pos = data["pos"]
-            assert word and lang and pos
-            langs[lang] += 1
-            poses[pos] += 1
-            if data.get("conjugation"):
-                num_conj += 1
-            if data.get("translations"):
-                num_transl += 1
-            sounds = data.get("pronunciations", ())
-            if sounds and any("ipa" in x for x in sounds):
-                num_pron += 1
+            titles[title] += 1
+            return "A"
 
         path = "tests/test-pages-articles.xml.bz2"
         print("Parsing test data")
-        config = WiktionaryConfig(capture_languages=["English", "Finnish",
-                                                     "Spanish", "German",
-                                                     "Chinese", "Japanese",
-                                                     "Italian", "Portuguese",
-                                                     "Translingual"],
-                                  capture_translations=True,
-                                  capture_pronunciation=True,
-                                  capture_linkages=True,
-                                  capture_compounds=True,
-                                  capture_redirects=True)
-        ctx = parse_wiktionary(path, config, word_cb, None)
+        ctx = Wtp()
+        ret = ctx.process(path, page_cb)
         print("Test data parsing complete")
         assert num_redirects > 0
-        assert len(words) > 100
-        assert all(x < 50 for x in words.values())
-        assert langs["English"] > 0
-        assert langs["Finnish"] > 0
-        assert langs["Translingual"] > 0
-        assert len(langs.keys()) == 9
-        assert len(poses.keys()) <= len(wiktextract.PARTS_OF_SPEECH)
-        assert sum(poses.values()) == sum(langs.values())
-        assert sum(words.values()) == sum(poses.values()) + num_redirects
-        assert num_conj > 0
-        assert num_transl > 0
-        assert num_pron > 0
+        assert len(titles) > 100
+        assert all(x == 1 for x in titles.values())
+        assert len(redirects) > 1

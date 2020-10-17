@@ -31,7 +31,7 @@ def lua_loader(ctx, modname):
     modname = modname.strip()
     if modname.startswith("Module:"):
         modname = modname[7:]
-    modname1 = re.sub(" ", "_", modname)
+    modname1 = ctx._canonicalize_template_name(modname)
     if modname1 in ctx.modules:
         return ctx.modules[modname1]
     path = modname
