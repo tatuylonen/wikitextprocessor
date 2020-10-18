@@ -305,7 +305,6 @@ class Wtp(object):
         name = self._canonicalize_template_name(title)
         body = self._template_to_body(title, text)
         assert isinstance(body, str)
-        print("Defining template {!r}".format(name))
         self.templates[name] = body
 
     def _analyze_template(self, name, body):
