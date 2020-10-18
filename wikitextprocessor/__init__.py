@@ -1,5 +1,4 @@
-from .context import Wtp, phase1_to_ctx
-#from .dumpparser import parse_dump
+from .core import Wtp, phase1_to_ctx
 
 __all__ = (
     "Wtp",
