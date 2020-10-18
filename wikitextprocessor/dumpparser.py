@@ -258,36 +258,43 @@ def process_dump(ctx, path, page_handler):
         print("First pass - extracting templates, macros, and pages")
     process_input(path, phase1_page_handler)
 
+    # Analyze which templates should be expanded before parsing
     if not ctx.quiet:
         print("Analyzing which templates should be expanded before parsing")
+    ctx.analyze_templates()
 
-    # # Single-threaded version
-    # lst = []
-    # for model, title in ctx.page_seq:
-    #     success, ret = phase2_page_handler((model, title))
-    #     if not success:
-    #         print(ret)
-    #         continue
-    #     if ret is not None:
-    #         lst.append(ret)
-
-    # For Phase 2, process pages in parallel
+    # Phase 2 - process the pages using the user-supplied callback
     if not ctx.quiet:
         print("Second pass - processing pages")
-    pool = multiprocessing.Pool()
-    lst = []
-    for success, ret in pool.imap_unordered(phase2_page_handler, ctx.page_seq):
-        if not success:
-            print(ret)
-            continue
-        if ret is not None:
-            lst.append(ret)
-            if not ctx.quiet and len(lst) % 1000 == 0:
-                print("  ... {}/{} pages ({:.1%}) processed"
-                      .format(len(lst), len(ctx.page_seq),
-                              len(lst) / len(ctx.page_seq)))
-    pool.close()
-    pool.join()
+    if ctx.num_threads == 1:
+        # Single-threaded version (without subprocessing)
+        lst = []
+        for model, title in ctx.page_seq:
+            success, ret = phase2_page_handler((model, title))
+            if not success:
+                print(ret)
+                continue
+            if ret is not None:
+                lst.append(ret)
+    else:
+        if ctx.num_threads is None:
+            pool = multiprocessing.Pool()
+        else:
+            pool = multiprocessing.Pool(ctx.num_threads)
+        lst = []
+        for success, ret in pool.imap_unordered(phase2_page_handler,
+                                                ctx.page_seq):
+            if not success:
+                print(ret)
+                continue
+            if ret is not None:
+                lst.append(ret)
+                if not ctx.quiet and len(lst) % 1000 == 0:
+                    print("  ... {}/{} pages ({:.1%}) processed"
+                          .format(len(lst), len(ctx.page_seq),
+                                  len(lst) / len(ctx.page_seq)))
+        pool.close()
+        pool.join()
 
     return lst
 

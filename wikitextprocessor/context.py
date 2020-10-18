@@ -38,6 +38,7 @@ class Wtp(object):
         "lua_path",	 # Path to Lua modules
         "modules",	 # Lua code for defined Lua modules
         "need_pre_expand",  # Set of template names to be expanded before parse
+        "num_threads",   # Number of parallel threads to use
         "page_contents",  # Full content for selected pages (e.g., Thesaurus)
         "page_seq",	 # All content pages (title, model, ofs, len) in order
         "quiet",	 # If True, don't print any messages during processing
@@ -57,7 +58,7 @@ class Wtp(object):
         "stack",	 # Parser stack
         "suppress_special",  # XXX never set to True???
     )
-    def __init__(self, quiet=False):
+    def __init__(self, quiet=False, num_threads=None):
         self.buf_ofs = 0
         self.buf_size = 4 * 1024 * 1024
         self.buf = bytearray(self.buf_size)
@@ -71,6 +72,7 @@ class Wtp(object):
         self.rev_ht = {}
         self.expand_stack = []
         self.modules = {}
+        self.num_threads = num_threads
         self.templates = {}
         # Some predefined templates
         self.templates["!"] = "&vert;"
@@ -105,6 +107,8 @@ class Wtp(object):
         uppercase and replacing underscores by spaces and sequences of
         whitespace by a single whitespace."""
         assert isinstance(name, str)
+        if name[:9] == "Template:":
+            name = name[9:]
         name = re.sub(r"_", " ", name)
         name = re.sub(r"\s+", " ", name)
         name = re.sub(r"\(", "%28", name)
@@ -112,10 +116,8 @@ class Wtp(object):
         name = re.sub(r"&", "%26", name)
         name = re.sub(r"\+", "%2B", name)
         name = name.strip()
-        if name[:9].lower() == "template:":
-            name = name[9:]
-        if name:
-            name = name[0].upper() + name[1:]
+        #if name:
+        #    name = name[0].upper() + name[1:]
         return name
 
 
@@ -175,6 +177,9 @@ class Wtp(object):
             nowiki = m.group(0).find(MAGIC_NOWIKI_CHAR) >= 0
             orig = m.group(1)
             return self._save_value("L", (orig,), nowiki)
+
+        # As a preprocessing step, remove comments from the text
+        text = re.sub(r"(?s)<!\s*--.*?--\s*>", "", text)
 
         # Main loop of encoding.  We encode repeatedly, always the innermost
         # template, argument, or parser function call first.  We also encode
@@ -244,6 +249,8 @@ class Wtp(object):
         return text
 
     def collect_page(self, model, title, text, save_pages=True):
+        # XXX consider changing the name of this function.  It could be
+        # more descriptive.  add_page()?
         """Collects information about the page.  For templates and modules,
         this keeps the content in memory.  For other pages, this saves the
         content in a temporary file so that it can be accessed later.  There
@@ -298,10 +305,10 @@ class Wtp(object):
             return
 
         # It is a template
-        title = title[9:]  # Remove Template:
         name = self._canonicalize_template_name(title)
         body = self._template_to_body(title, text)
         assert isinstance(body, str)
+        print("Defining template {!r}".format(name))
         self.templates[name] = body
 
     def _analyze_template(self, name, body):
@@ -447,11 +454,9 @@ class Wtp(object):
             if not k.startswith("Template:"):
                 # print("Unhandled redirect src", k)
                 continue
-            k = k[9:]
             if not v.startswith("Template:"):
                 # print("Unhandled redirect dst", v)
                 continue
-            v = v[9:]
             k = self._canonicalize_template_name(k)
             v = self._canonicalize_template_name(v)
             if v not in self.templates:
@@ -702,9 +707,8 @@ class Wtp(object):
                         continue
 
                     # Otherwise it must be a template expansion
-                    name = self._canonicalize_template_name(tname)
-                    if name.startswith("Template:"):
-                        name = name[9:]
+                    name = tname
+                    name = self._canonicalize_template_name(name)
 
                     # Check for undefined templates
                     if name not in self.templates:

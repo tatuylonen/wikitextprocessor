@@ -16,14 +16,14 @@ from .languages import ALL_LANGUAGES
 # List of search paths for Lua libraries.
 builtin_lua_search_paths = [
     # [path, ignore_modules]
-    ["lua", ["string", "debug"]],
-    ["lua/mediawiki-extensions-Scribunto/includes/engines/LuaCommon/lualib",
+    [".", ["string", "debug"]],
+    ["mediawiki-extensions-Scribunto/includes/engines/LuaCommon/lualib",
      []],
 ]
 
 # Determine which directory our data files are in
 lua_dir = pkg_resources.resource_filename("wikitextprocessor", "lua/")
-print("lua_dir", lua_dir)
+#print("lua_dir", lua_dir)
 
 # Set of known language codes.
 # XXX remove this?
@@ -173,7 +173,7 @@ def fetch_language_names(ctx, include):
 def initialize_lua(ctx):
     assert ctx.lua is None
     # Load Lua sandbox code.
-    lua_sandbox = open("lua/sandbox.lua").read()
+    lua_sandbox = open(lua_dir + "/sandbox.lua").read()
 
     def filter_attribute_access(obj, attr_name, is_setting):
         if isinstance(attr_name, unicode):
