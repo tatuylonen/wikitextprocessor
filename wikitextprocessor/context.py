@@ -10,7 +10,7 @@ import hashlib  # XXX temporary
 import tempfile
 import collections
 import html.entities
-from .wikiparserfns import (PARSER_FUNCTIONS, call_parser_function, tag_fn)
+from .parserfns import (PARSER_FUNCTIONS, call_parser_function, tag_fn)
 from .wikihtml import ALLOWED_HTML_TAGS
 from .luaexec import call_lua_sandbox
 from .parser import parse_encoded, preprocess_text, NodeKind
@@ -85,21 +85,17 @@ class Wtp(object):
         self.buf_ofs = 0
 
     def error(self, msg, trace=None):
-        if self.title:
-            msg = self.title + ": " + msg
         if trace:
             msg += "\n" + trace
         self.errors.append(msg)
-        print("ERROR:", msg)
+        print("{}: ERROR: {}".format(self.title, msg))
         sys.stdout.flush()
 
     def warning(self, msg, trace=None):
-        if self.title:
-            msg = self.title + ": " + msg
         if trace:
             msg += "\n" + trace
         self.warnings.append(msg)
-        print(msg)
+        print("{}: {}".format(self.title, msg))
         sys.stdout.flush()
 
     def _canonicalize_template_name(self, name):

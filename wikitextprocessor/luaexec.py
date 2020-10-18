@@ -10,7 +10,7 @@ import traceback
 import pkg_resources
 import lupa
 from lupa import LuaRuntime
-from .wikiparserfns import PARSER_FUNCTIONS, call_parser_function, tag_fn
+from .parserfns import PARSER_FUNCTIONS, call_parser_function, tag_fn
 from .languages import ALL_LANGUAGES
 
 # List of search paths for Lua libraries.

@@ -5,7 +5,7 @@
 import re
 import enum
 import html
-from .wikiparserfns import PARSER_FUNCTIONS
+from .parserfns import PARSER_FUNCTIONS
 from .wikihtml import ALLOWED_HTML_TAGS
 from .common import MAGIC_NOWIKI_CHAR, MAGIC_FIRST, MAGIC_LAST
 
@@ -1012,7 +1012,7 @@ def tag_fn(ctx, token):
 
     # Try to parse it as a start tag
     m = re.match(r"""<\s*([-a-zA-Z0-9]+)\s*((\b[-a-z0-9]+(=("[^"]*"|"""
-                 r"""'[^']*'|[^ \t\n"'`=<>]*))?\s*)*)(/?)\s*>""", token)
+                 r"""'[^']*'|[^ \t\n"'`=<>/]*))?\s*)*)(/?)\s*>""", token)
     if m:
         # This is a start tag
         name = m.group(1)
