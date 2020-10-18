@@ -522,7 +522,8 @@ return export
         ctx = phase1_to_ctx([])
         ctx.start_page("Tt")
         ret = ctx.expand("{{#expr}}")
-        self.assertEqual(ret, "Expression error near <end>")
+        self.assertEqual(ret, "")
+        self.assertEqual(len(ctx.warnings), 1)
 
     def test_expr2(self):
         ctx = phase1_to_ctx([])

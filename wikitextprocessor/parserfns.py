@@ -591,9 +591,9 @@ def expr_fn(ctx, fn_name, args, expander, stack):
     def expr_error(tok):
         if tok is None:
             tok = "<end>"
-        print("{}: #expr error near {} in {!r} at {}"
-              .format(ctx, tok, full_expr, stack))
-        return "Expression error near {}".format(tok)
+        ctx.warning("{}: #expr error near {} in {!r} at {}"
+                    .format(ctx, tok, full_expr, stack))
+        return ""
 
     def get_token():
         nonlocal tokidx
