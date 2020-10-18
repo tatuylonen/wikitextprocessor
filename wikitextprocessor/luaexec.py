@@ -65,7 +65,7 @@ def lua_loader(ctx, modname):
             with open(p, "r") as f:
                 data = f.read()
             return data
-    ctx.error("Lua module not found: NOT FOUND: {} at {}"
+    ctx.error("Lua module not found: {} at {}"
               .format(modname, ctx.expand_stack))
     return None
 
@@ -425,8 +425,8 @@ def call_lua_sandbox(ctx, invoke_args, expander, stack, parent):
         else:
             ok, text = ret[0], ret[1]
     except UnicodeDecodeError:
-        ctx.error("ERROR: {}: invalid unicode returned by {} at {}"
-                  .format(ctx.title, invoke_args, stack))
+        ctx.error("invalid unicode returned by {} at {}"
+                  .format(invoke_args, stack))
         ok, text = True, ""
     finally:
         ctx.expand_stack = old_stack
