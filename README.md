@@ -48,13 +48,12 @@ extracting rich machine-readable dictionaries from Wiktionary.
 
 ### Installing
 
-The best way to install this package is from [pypi](https://pypi.org)
-(XXX not yet available):
+The best way to install this package is from [pypi](https://pypi.org):
 ```
 pip3 install wikitextprocessor
 ```
 
-Alternatively, you may install the master branch from Wiktionary:
+Alternatively, you may install the master branch from github:
 ```
 git clone https://github.com/tatuylonen/wikitextprocessor
 cd wikitextprocessor
