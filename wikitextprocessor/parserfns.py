@@ -21,7 +21,7 @@ def capitalizeFirstOnly(s):
     return s
 
 
-def if_fn(title, fn_name, args, expander, stack):
+def if_fn(ctx, fn_name, args, expander, stack):
     """Implements #if parser function."""
     arg0 = args[0] if args else ""
     arg1 = args[1] if len(args) >= 2 else ""
@@ -32,7 +32,7 @@ def if_fn(title, fn_name, args, expander, stack):
     return expander(arg2).strip()
 
 
-def ifeq_fn(title, fn_name, args, expander, stack):
+def ifeq_fn(ctx, fn_name, args, expander, stack):
     """Implements #ifeq parser function."""
     arg0 = args[0] if args else ""
     arg1 = args[1] if len(args) >= 2 else ""
@@ -42,12 +42,12 @@ def ifeq_fn(title, fn_name, args, expander, stack):
         return expander(arg2).strip()
     return expander(arg3).strip()
 
-def ifexpr_fn(title, fn_name, args, expander, stack):
+def ifexpr_fn(ctx, fn_name, args, expander, stack):
     """Implements #ifexpr parser function."""
     arg0 = args[0] if args else "0"
     arg1 = args[1] if len(args) >= 2 else ""
     arg2 = args[2] if len(args) >= 3 else ""
-    cond = expr_fn(title, fn_name, [arg0], expander, stack)
+    cond = expr_fn(ctx, fn_name, [arg0], expander, stack)
     try:
         ret = int(cond)
     except ValueError:
@@ -56,7 +56,7 @@ def ifexpr_fn(title, fn_name, args, expander, stack):
         return expander(arg1)
     return expander(arg2)
 
-def ifexist_fn(title, fn_name, args, expander, stack):
+def ifexist_fn(ctx, fn_name, args, expander, stack):
     """Implements #ifexist parser function."""
     arg0 = args[0] if args else ""
     arg1 = args[1] if len(args) >= 2 else ""
@@ -69,7 +69,7 @@ def ifexist_fn(title, fn_name, args, expander, stack):
         return expander(arg1).strip()
     return expander(arg2).strip()
 
-def switch_fn(title, fn_name, args, expander, stack):
+def switch_fn(ctx, fn_name, args, expander, stack):
     """Implements #switch parser function."""
     val = expander(args[0]).strip() if args else ""
     match_next = False
@@ -96,12 +96,12 @@ def switch_fn(title, fn_name, args, expander, stack):
     return last or ""
 
 
-def tag_fn(title, fn_name, args, expander, stack):
+def tag_fn(ctx, fn_name, args, expander, stack):
     """Implements #tag parser function."""
     tag = expander(args[0]).lower() if args else ""
     if tag not in ALLOWED_HTML_TAGS:
         print("{}: #tag creating non-allowed tag <{}> - omitted at {}"
-              "".format(title, tag, stack))
+              "".format(ctx, tag, stack))
         return "{{" + fn_name + ":" + "|".join(args) + "}}"
     content = expander(args[1]) if len(args) >= 2 else ""
     attrs = []
@@ -111,7 +111,7 @@ def tag_fn(title, fn_name, args, expander, stack):
             m = re.match(r"""(?s)^([^=<>'"]+)=(.*)$""", x)
             if not m:
                 print("{}: invalid attribute format {!r} missing name at {}"
-                      "".format(title, x, stack))
+                      "".format(ctx, x, stack))
                 continue
             name, value = m.groups()
             if not value.startswith('"') and not value.startswith("'"):
@@ -127,9 +127,9 @@ def tag_fn(title, fn_name, args, expander, stack):
     return "<{}{}>{}</{}>".format(tag, attrs, content, tag)
 
 
-def fullpagename_fn(title, fn_name, args, expander, stack):
+def fullpagename_fn(ctx, fn_name, args, expander, stack):
     """Implements the FULLPAGENAME magic word/parser function."""
-    t = expander(args[0]) if args else title
+    t = expander(args[0]) if args else ctx.title
     t = re.sub(r"\s+", " ", t)
     t = t.strip()
     ofs = t.find(":")
@@ -144,9 +144,9 @@ def fullpagename_fn(title, fn_name, args, expander, stack):
     return t
 
 
-def pagename_fn(title, fn_name, args, expander, stack):
+def pagename_fn(ctx, fn_name, args, expander, stack):
     """Implements the PAGENAME magic word/parser function."""
-    t = expander(args[0]) if args else title
+    t = expander(args[0]) if args else ctx.title
     t = re.sub(r"\s+", " ", t)
     t = t.strip()
     ofs = t.find(":")
@@ -157,27 +157,27 @@ def pagename_fn(title, fn_name, args, expander, stack):
     return t
 
 
-def subpagename_fn(title, fn_name, args, expander, stack):
+def subpagename_fn(ctx, fn_name, args, expander, stack):
     """Implements the SUBPAGENAME magic word/parser function."""
-    t = expander(args[0]) if args else title
+    t = expander(args[0]) if args else ctx.title
     t = re.sub(r"\s+", " ", t)
     t = t.strip()
     ofs = t.rfind("/")
     if ofs >= 0:
         return t[ofs + 1:]
     else:
-        return pagename_fn(title, fn_name, [t], lambda x: x, stack)
+        return pagename_fn(ctx, fn_name, [t], lambda x: x, stack)
 
-def namespacenumber_fn(title, fn_name, args, expander, stack):
+def namespacenumber_fn(ctx, fn_name, args, expander, stack):
     """Implements the NAMESPACENUMBER magic word/parser function."""
     # XXX currently hard-coded to return the name space number for the Main
     # namespace
     return 0
 
 
-def namespace_fn(title, fn_name, args, expander, stack):
+def namespace_fn(ctx, fn_name, args, expander, stack):
     """Implements the NAMESPACE magic word/parser function."""
-    t = expander(args[0]) if args else title
+    t = expander(args[0]) if args else ctx.title
     t = re.sub(r"\s+", " ", t)
     t = t.strip()
     ofs = t.find(":")
@@ -188,32 +188,32 @@ def namespace_fn(title, fn_name, args, expander, stack):
         return ns
     return ""
 
-def currentyear_fn(title, fn_name, args, expander, stack):
+def currentyear_fn(ctx, fn_name, args, expander, stack):
     """Implements the CURRENTYEAR magic word."""
     return str(datetime.datetime.utcnow().year)
 
-def currentmonth_fn(title, fn_name, args, expander, stack):
+def currentmonth_fn(ctx, fn_name, args, expander, stack):
     """Implements the CURRENTMONTH magic word."""
     return "{:02d}".format(datetime.datetime.utcnow().month)
 
-def currentmonth1_fn(title, fn_name, args, expander, stack):
+def currentmonth1_fn(ctx, fn_name, args, expander, stack):
     """Implements the CURRENTMONTH1 magic word."""
     return "{:d}".format(datetime.datetime.utcnow().month)
 
-def currentday_fn(title, fn_name, args, expander, stack):
+def currentday_fn(ctx, fn_name, args, expander, stack):
     """Implements the CURRENTDAY magic word."""
     return "{:d}".format(datetime.datetime.utcnow().day)
 
-def currentday2_fn(title, fn_name, args, expander, stack):
+def currentday2_fn(ctx, fn_name, args, expander, stack):
     """Implements the CURRENTDAY2 magic word."""
     return "{:02d}".format(datetime.datetime.utcnow().day)
 
-def currentdow_fn(title, fn_name, args, expander, stack):
+def currentdow_fn(ctx, fn_name, args, expander, stack):
     """Implements the CURRENTDOW magic word."""
     return "{:d}".format(datetime.datetime.utcnow().weekday())
 
 
-def displaytitle_fn(title, fn_name, args, expander, stack):
+def displaytitle_fn(ctx, fn_name, args, expander, stack):
     """Implements the DISPLAYTITLE magic word/parser function."""
     t = expander(args[0]) if args else ""
     # XXX this should at least remove html tags h1 h2 h3 h4 h5 h6 div blockquote
@@ -221,18 +221,18 @@ def displaytitle_fn(title, fn_name, args, expander, stack):
     # Looks as if this should also set the display title for the page in ctx???
     return t
 
-def defaultsort_fn(title, fn_nae, args, expander, stack):
+def defaultsort_fn(ctx, fn_nae, args, expander, stack):
     """Implements the DEFAULTSORT magic word/parser function."""
     # XXX apparently this should set the title by which this page is
     # sorted in category listings
     return ""
 
-def lc_fn(title, fn_name, args, expander, stack):
+def lc_fn(ctx, fn_name, args, expander, stack):
     """Implements the lc parser function (lowercase)."""
     return expander(args[0]).strip().lower() if args else ""
 
 
-def lcfirst_fn(title, fn_name, args, expander, stack):
+def lcfirst_fn(ctx, fn_name, args, expander, stack):
     """Implements the lcfirst parser function (lowercase first character)."""
     t = expander(args[0]).strip() if args else ""
     if not t:
@@ -240,19 +240,19 @@ def lcfirst_fn(title, fn_name, args, expander, stack):
     return t[0].lower() + t[1:]
 
 
-def uc_fn(title, fn_name, args, expander, stack):
+def uc_fn(ctx, fn_name, args, expander, stack):
     """Implements the uc parser function (uppercase)."""
     t = expander(args[0]).strip() if args else ""
     return t.upper()
 
 
-def ucfirst_fn(title, fn_name, args, expander, stack):
+def ucfirst_fn(ctx, fn_name, args, expander, stack):
     """Implements the ucfirst parser function (capitalize first character)."""
     t = expander(args[0]).strip() if args else ""
     return capitalizeFirstOnly(t)
 
 
-def dateformat_fn(title, fn_name, args, expander, stack):
+def dateformat_fn(ctx, fn_name, args, expander, stack):
     """Implements the #dateformat (= #formatdate) parser function."""
     arg0 = expander(args[0]) if args else ""
     if not re.search(r"\d\d\d", arg0):
@@ -260,7 +260,7 @@ def dateformat_fn(title, fn_name, args, expander, stack):
     dt = dateparser.parse(arg0)
     if not dt:
         print("{}: invalid date format in {}: {!r}"
-              "".format(title, fn_name, arg0))
+              "".format(ctx, fn_name, arg0))
         dt = datetime.datetime.utcnow()
     fmt = expander(args[1]) if len(args) > 1 else "ISO 8601"
     # This is supposed to format according to user preferences by default.
@@ -291,7 +291,7 @@ def dateformat_fn(title, fn_name, args, expander, stack):
     return dt.isoformat()
 
 
-def fullurl_fn(title, fn_name, args, expander, stack):
+def fullurl_fn(ctx, fn_name, args, expander, stack):
     """Implements the fullurl parser function."""
     arg0 = expander(args[0]).strip() if args else ""
     # XXX handle interwiki prefixes in arg0
@@ -308,7 +308,7 @@ def fullurl_fn(title, fn_name, args, expander, stack):
     return url
 
 
-def urlencode_fn(title, fn_name, args, expander, stack):
+def urlencode_fn(ctx, fn_name, args, expander, stack):
     """Implements the urlencode parser function."""
     arg0 = expander(args[0]) if args else ""
     fmt = expander(args[1]) if len(args) > 1 else "QUERY"
@@ -322,7 +322,7 @@ def urlencode_fn(title, fn_name, args, expander, stack):
     return urllib.parse.quote(url, safe="/:")
 
 
-def anchorencode_fn(title, fn_name, args, expander, stack):
+def anchorencode_fn(ctx, fn_name, args, expander, stack):
     """Implements the urlencode parser function."""
     anchor = expander(args[0]).strip() if args else ""
     anchor = re.sub(r"\s+", "_", anchor)
@@ -447,7 +447,7 @@ add_ns(namespaces, module_ns)
 add_ns(namespaces, module_talk_ns)
 
 
-def ns_fn(title, fn_name, args, expander, stack):
+def ns_fn(ctx, fn_name, args, expander, stack):
     """Implements the ns parser function."""
     t = expander(args[0]).strip().upper() if args else ""
     if t and t.isdigit():
@@ -473,7 +473,7 @@ def ns_fn(title, fn_name, args, expander, stack):
     return ns.name
 
 
-def titleparts_fn(title, fn_name, args, expander, stack):
+def titleparts_fn(ctx, fn_name, args, expander, stack):
     """Implements the #titleparts parser function."""
     t = expander(args[0]).strip() if args else ""
     arg1 = expander(args[1]).strip() if len(args) >= 2 else ""
@@ -579,7 +579,7 @@ binary_or_fns = {
     "or": lambda x, y: 1 if x or y else 0,
 }
 
-def expr_fn(title, fn_name, args, expander, stack):
+def expr_fn(ctx, fn_name, args, expander, stack):
     """Implements the #titleparts parser function."""
     full_expr = expander(args[0]).strip().lower() if args else ""
     full_expr = full_expr or ""
@@ -592,7 +592,7 @@ def expr_fn(title, fn_name, args, expander, stack):
         if tok is None:
             tok = "<end>"
         print("{}: #expr error near {} in {!r} at {}"
-              .format(title, tok, full_expr, stack))
+              .format(ctx, tok, full_expr, stack))
         return "Expression error near {}".format(tok)
 
     def get_token():
@@ -635,7 +635,7 @@ def expr_fn(title, fn_name, args, expander, stack):
         if tok == "pi":
             return math.pi
         if tok == "nil":
-            #print("{}: nil in expr {!r} at {}".format(title, full_expr, stack))
+            #print("{}: nil in expr {!r} at {}".format(ctx, full_expr, stack))
             return 0
         return expr_error(tok)
 
@@ -719,13 +719,13 @@ def expr_fn(title, fn_name, args, expander, stack):
     return str(ret)
 
 
-def padleft_fn(title, fn_name, args, expander, stack):
+def padleft_fn(ctx, fn_name, args, expander, stack):
     """Implements the padleft parser function."""
     v = expander(args[0]) if args else ""
     cnt = expander(args[1]).strip() if len(args) >= 2 else "0"
     pad = expander(args[2]) if len(args) >= 3 and args[2] else "0"
     if not cnt.isdigit():
-        print("{}: pad length is not integer: {!r}".format(title, cnt))
+        print("{}: pad length is not integer: {!r}".format(ctx, cnt))
         cnt = 0
     else:
         cnt = int(cnt)
@@ -736,14 +736,14 @@ def padleft_fn(title, fn_name, args, expander, stack):
     return v
 
 
-def padright_fn(title, fn_name, args, expander, stack):
+def padright_fn(ctx, fn_name, args, expander, stack):
     """Implements the padright parser function."""
     v = expander(args[0]) if args else ""
     cnt = expander(args[1]).strip() if len(args) >= 2 else "0"
     arg2 = expander(args[2]) if len(args) >= 3 and args[2] else "0"
     pad = arg2 if len(args) >= 3 and arg2 else "0"
     if not cnt.isdigit():
-        print("{}: pad length is not integer: {!r}".format(title, cnt))
+        print("{}: pad length is not integer: {!r}".format(ctx, cnt))
         cnt = 0
     else:
         cnt = int(cnt)
@@ -754,10 +754,10 @@ def padright_fn(title, fn_name, args, expander, stack):
     return v
 
 
-def plural_fn(title, fn_name, args, expander, stack):
+def plural_fn(ctx, fn_name, args, expander, stack):
     """Implements the #plural parser function."""
     expr = expander(args[0]).strip() if args else "0"
-    v = expr_fn(title, fn_name, [expr], lambda x: x, stack)
+    v = expr_fn(ctx, fn_name, [expr], lambda x: x, stack)
     # XXX for some language codes, this is more complex.  See {{plural:...}} in
     # https://www.mediawiki.org/wiki/Help:Magic_words
     if v == 1:
@@ -765,13 +765,13 @@ def plural_fn(title, fn_name, args, expander, stack):
     return expander(args[2]).strip() if len(args) >= 3 else ""
 
 
-def len_fn(title, fn_name, args, expander, stack):
+def len_fn(ctx, fn_name, args, expander, stack):
     """Implements the #len parser function."""
     v = expander(args[0]).strip() if args else ""
     return str(len(v))
 
 
-def pos_fn(title, fn_name, args, expander, stack):
+def pos_fn(ctx, fn_name, args, expander, stack):
     """Implements the #pos parser function."""
     arg0 = expander(args[0]).strip() if args else ""
     arg1 = expander(args[1]) or " " if len(args) >= 2 else " "
@@ -785,7 +785,7 @@ def pos_fn(title, fn_name, args, expander, stack):
     return ""
 
 
-def rpos_fn(title, fn_name, args, expander, stack):
+def rpos_fn(ctx, fn_name, args, expander, stack):
     """Implements the #rpos parser function."""
     arg0 = expander(args[0]).strip() if args else ""
     arg1 = expander(args[1]) or " " if len(args) >= 2 else " "
@@ -799,7 +799,7 @@ def rpos_fn(title, fn_name, args, expander, stack):
     return "-1"
 
 
-def sub_fn(title, fn_name, args, expander, stack):
+def sub_fn(ctx, fn_name, args, expander, stack):
     """Implements the #sub parser function."""
     arg0 = expander(args[0]).strip() if args else ""
     start = expander(args[1]).strip() if len(args) >= 2 else ""
@@ -822,14 +822,14 @@ def sub_fn(title, fn_name, args, expander, stack):
     return arg0[start : start + length]
 
 
-def pad_fn(title, fn_name, args, expander, stack):
+def pad_fn(ctx, fn_name, args, expander, stack):
     """Implements the pad parser function."""
     v = expander(args[0]).strip() if args else ""
     cnt = expander(args[1]).strip() if len(args) >= 2 else ""
     pad = expander(args[2]) if len(args) >= 3 and args[2] else "0"
     direction = expander(args[3]) if len(args) >= 4 else ""
     if not cnt.isdigit():
-        print("{}: pad length is not integer: {!r}".format(title, cnt))
+        print("{}: pad length is not integer: {!r}".format(ctx, cnt))
         cnt = 0
     else:
         cnt = int(cnt)
@@ -846,7 +846,7 @@ def pad_fn(title, fn_name, args, expander, stack):
     return v
 
 
-def replace_fn(title, fn_name, args, expander, stack):
+def replace_fn(ctx, fn_name, args, expander, stack):
     """Implements the #replace parser function."""
     arg0 = expander(args[0]).strip() if args else ""
     arg1 = expander(args[1]) or " " if len(args) >= 2 else " "
@@ -854,7 +854,7 @@ def replace_fn(title, fn_name, args, expander, stack):
     return arg0.replace(arg1, arg2)
 
 
-def explode_fn(title, fn_name, args, expander, stack):
+def explode_fn(ctx, fn_name, args, expander, stack):
     """Implements the #explode parser function."""
     arg0 = expander(args[0]).strip() if args else ""
     delim = expander(args[1]) or " " if len(args) >= 2 else " "
@@ -879,15 +879,15 @@ def explode_fn(title, fn_name, args, expander, stack):
     return parts[position]
 
 
-def urldecode_fn(title, fn_name, args, expander, stack):
+def urldecode_fn(ctx, fn_name, args, expander, stack):
     """Implements the #urldecode parser function."""
     arg0 = expander(args[0]).strip() if args else ""
     ret = urllib.parse.unquote_plus(arg0)
     return ret
 
 
-def unimplemented_fn(title, fn_name, args, expander, stack):
-    print("{}: unimplemented parserfn {} at {}".format(title, fn_name, stack))
+def unimplemented_fn(ctx, fn_name, args, expander, stack):
+    print("{}: unimplemented parserfn {} at {}".format(ctx, fn_name, stack))
     return "{{" + fn_name + ":" + "|".join(map(str, args)) + "}}"
 
 
@@ -1035,12 +1035,11 @@ PARSER_FUNCTIONS = {
 }
 
 
-def call_parser_function(fn_name, args, expander, pagetitle, stack):
+def call_parser_function(ctx, fn_name, args, expander, stack):
     """Calls the given parser function with the given arguments."""
     assert isinstance(fn_name, str)
     assert isinstance(args, (list, tuple, dict))
     assert callable(expander)
-    assert isinstance(pagetitle, str)
     assert isinstance(stack, list)
     fn = PARSER_FUNCTIONS[fn_name]
     have_keyed_args = False
@@ -1060,6 +1059,6 @@ def call_parser_function(fn_name, args, expander, pagetitle, stack):
         dict_args = dict(zip(range(1, len(args) + 1), args))
     if have_keyed_args:
         print("{}: {}: ERROR: named arguments not supported: {} at {}"
-              .format(pagetitle, fn_name, args, stack))
+              .format(ctx.title, fn_name, args, stack))
         return ""
-    return fn(pagetitle, fn_name, args, expander, stack)
+    return fn(ctx, fn_name, args, expander, stack)

@@ -624,8 +624,8 @@ class Wtp(object):
                         return "{{#invoke:" + "|".join(args) + "}}"
                     ret = invoke_fn(args, expander, stack, parent)
                 else:
-                    ret = call_parser_function(fn_name, args, expander,
-                                               self.title, stack)
+                    ret = call_parser_function(self, fn_name, args, expander,
+                                               stack)
                 stack.pop()  # fn_name
                 # XXX if lua code calls frame:preprocess(), then we should
                 # apparently encode and expand the return value, similarly to

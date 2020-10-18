@@ -331,8 +331,8 @@ def call_lua_sandbox(ctx, invoke_args, expander, stack, parent):
                 ctx.error("frame:callParserFunction(): undefined function "
                           "{!r} at {}".format(name, stack))
                 return ""
-            return call_parser_function(name, new_args, lambda x: x,
-                                        ctx.title, stack)
+            return call_parser_function(ctx, name, new_args, lambda x: x,
+                                        stack)
 
         def expand_all_templates(encoded):
             # Expand all templates here, even if otherwise only
