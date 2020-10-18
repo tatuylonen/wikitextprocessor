@@ -7,10 +7,11 @@ import os
 import re
 import html
 import traceback
+import pkg_resources
 import lupa
 from lupa import LuaRuntime
 from .wikiparserfns import PARSER_FUNCTIONS, call_parser_function, tag_fn
-
+from .languages import ALL_LANGUAGES
 
 # List of search paths for Lua libraries.
 builtin_lua_search_paths = [
@@ -20,6 +21,19 @@ builtin_lua_search_paths = [
      []],
 ]
 
+# Determine which directory our data files are in
+lua_dir = pkg_resources.resource_filename("wikitextprocessor", "lua/")
+print("lua_dir", lua_dir)
+
+# Set of known language codes.
+# XXX remove this?
+#KNOWN_LANGUAGE_TAGS = set(x["code"] for x in ALL_LANGUAGES
+#                          if x.get("code") and x.get("name"))
+
+# Mapping from language code code to language name.
+LANGUAGE_CODE_TO_NAME = { x["code"]: x["name"]
+                          for x in ALL_LANGUAGES
+                          if x.get("code") and x.get("name") }
 
 def lua_loader(ctx, modname):
     """This function is called from the Lua sandbox to load a Lua module.
@@ -46,13 +60,13 @@ def lua_loader(ctx, modname):
     for prefix, exceptions in builtin_lua_search_paths:
         if modname in exceptions:
             continue
-        p = prefix + "/" + path
+        p = lua_dir + "/" + prefix + "/" + path
         if os.path.isfile(p):
             with open(p, "r") as f:
                 data = f.read()
             return data
     ctx.error("Lua module not found: NOT FOUND: {} at {}"
-              .format(modname, ctx.stack))
+              .format(modname, ctx.expand_stack))
     return None
 
 
@@ -400,8 +414,8 @@ def call_lua_sandbox(ctx, invoke_args, expander, stack, parent):
 
     # Call the Lua function in the given module
     stack.append("Lua:{}:{}()".format(modname, modfn))
-    old_stack = ctx.stack
-    ctx.stack = stack
+    old_stack = ctx.expand_stack
+    ctx.expand_stack = stack
     try:
         ret = lua.eval("lua_invoke")(modname, modfn, frame, ctx.title)
         if not isinstance(ret, (list, tuple)):
@@ -415,7 +429,7 @@ def call_lua_sandbox(ctx, invoke_args, expander, stack, parent):
                   .format(ctx.title, invoke_args, stack))
         ok, text = True, ""
     finally:
-        ctx.stack = old_stack
+        ctx.expand_stack = old_stack
     stack.pop()
     if ok:
         if text is None:

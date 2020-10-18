@@ -12,7 +12,6 @@ import collections
 import html.entities
 from .wikiparserfns import (PARSER_FUNCTIONS, call_parser_function, tag_fn)
 from .wikihtml import ALLOWED_HTML_TAGS
-from .languages import ALL_LANGUAGES
 from .luaexec import call_lua_sandbox
 from .parser import parse_encoded, preprocess_text, NodeKind
 from .common import MAGIC_FIRST, MAGIC_LAST, MAX_MAGICS, MAGIC_NOWIKI_CHAR
@@ -21,15 +20,6 @@ from .dumpparser import process_dump
 # Set of HTML tags that need an explicit end tag.
 PAIRED_HTML_TAGS = set(k for k, v in ALLOWED_HTML_TAGS.items()
                        if not v.get("no-end-tag"))
-
-# Set of known language codes.
-KNOWN_LANGUAGE_TAGS = set(x["code"] for x in ALL_LANGUAGES
-                          if x.get("code") and x.get("name"))
-
-# Mapping from language code code to language name.
-LANGUAGE_CODE_TO_NAME = { x["code"]: x["name"]
-                          for x in ALL_LANGUAGES
-                          if x.get("code") and x.get("name") }
 
 class Wtp(object):
     """Context used for processing wikitext and for expanding templates,
@@ -50,9 +40,10 @@ class Wtp(object):
         "need_pre_expand",  # Set of template names to be expanded before parse
         "page_contents",  # Full content for selected pages (e.g., Thesaurus)
         "page_seq",	 # All content pages (title, model, ofs, len) in order
+        "quiet",	 # If True, don't print any messages during processing
         "redirects",	 # Redirects in the wikimedia project
         "rev_ht",	 # Mapping from text to magic cookie
-        "stack",	 # Saved stack before calling Lua function
+        "expand_stack",	 # Saved stack before calling Lua function
         "template_name", # name of template currently being expanded
         "templates",     # dict temlate name -> definition
         "title",         # current page title
@@ -66,7 +57,7 @@ class Wtp(object):
         "stack",	 # Parser stack
         "suppress_special",  # XXX never set to True???
     )
-    def __init__(self):
+    def __init__(self, quiet=False):
         self.buf_ofs = 0
         self.buf_size = 4 * 1024 * 1024
         self.buf = bytearray(self.buf_size)
@@ -76,8 +67,9 @@ class Wtp(object):
         self.lua = None
         self.page_contents = {}
         self.page_seq = []
+        self.quiet = quiet
         self.rev_ht = {}
-        self.stack = []
+        self.expand_stack = []
         self.modules = {}
         self.templates = {}
         # Some predefined templates
@@ -267,7 +259,6 @@ class Wtp(object):
         assert isinstance(title, str)
         assert isinstance(text, str)
         assert save_pages in (True, False)
-        print("collect_page", model, title)
         if save_pages:
             rawtext = text.encode("utf-8")
             if self.buf_ofs + len(rawtext) > self.buf_size:
@@ -286,6 +277,9 @@ class Wtp(object):
             self.page_contents[title] = (title, model, ofs, len(rawtext),
                                          h.digest())
             self.page_seq.append((model, title))
+            if not self.quiet and len(self.page_seq) % 10000 == 0:
+                print("  ... {} raw pages collected"
+                      .format(len(self.page_seq)))
 
         if model == "redirect":
             self.redirects[title] = text

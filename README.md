@@ -111,7 +111,7 @@ XXX
 ```
 class Wtp(object):
 
-    __init__(self)
+    __init__(self, quiet=False)
 
     process(path, page_handler)
       - parses dump file, calls page_handler(model, title, text) for each page

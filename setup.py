@@ -8,17 +8,18 @@ with open("README.md", "r") as f:
     long_description = f.read()
 
 setup(name="wikitextprocessor",
-      version="0.0.1",
+      version="0.0.2",
       description="Parser and expander for Wikipedia, Wiktionary etc. dump files, with Lua execution support",
       long_description=long_description,
       long_description_content_type="text/markdown",
       author="Tatu Ylonen",
       author_email="ylo@clausal.com",
       url="https://ylonen.org",
-      license="MIT",
+      license="MIT (some files have other legacy licences)",
       download_url="https://github.com/tatuylonen/wikitextprocessor",
       scripts=[],
       packages=["wikitextprocessor"],
+      package_data={"wikitextprocessor": ["lua"]},
       install_requires=[],
       classifiers=[
           "Development Status :: 3 - Alpha",
