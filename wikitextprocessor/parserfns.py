@@ -124,8 +124,8 @@ def tag_fn(ctx, fn_name, args, expander, stack):
     """Implements #tag parser function."""
     tag = expander(args[0]).lower() if args else ""
     if tag not in ALLOWED_HTML_TAGS:
-        print("{}: #tag creating non-allowed tag <{}> - omitted at {}"
-              "".format(ctx, tag, stack))
+        ctx.warning("#tag creating non-allowed tag <{}> - omitted at {}"
+                    .format(tag, stack))
         return "{{" + fn_name + ":" + "|".join(args) + "}}"
     content = expander(args[1]) if len(args) >= 2 else ""
     attrs = []
@@ -134,8 +134,8 @@ def tag_fn(ctx, fn_name, args, expander, stack):
             x = expander(x)
             m = re.match(r"""(?s)^([^=<>'"]+)=(.*)$""", x)
             if not m:
-                print("{}: invalid attribute format {!r} missing name at {}"
-                      "".format(ctx, x, stack))
+                ctx.warning("invalid attribute format {!r} missing name at {}"
+                            .format(x, stack))
                 continue
             name, value = m.groups()
             if not value.startswith('"') and not value.startswith("'"):
@@ -295,8 +295,8 @@ def dateformat_fn(ctx, fn_name, args, expander, stack):
         arg0 += " 3333"
     dt = dateparser.parse(arg0)
     if not dt:
-        print("{}: invalid date format in {}: {!r}"
-              "".format(ctx, fn_name, arg0))
+        ctx.error("invalid date format in {}: {!r}"
+                  .format(fn_name, arg0))
         dt = datetime.datetime.utcnow()
     fmt = expander(args[1]) if len(args) > 1 else "ISO 8601"
     # This is supposed to format according to user preferences by default.
@@ -491,7 +491,7 @@ def ns_fn(ctx, fn_name, args, expander, stack):
         ns = namespaces.get(t)
     else:
         for ns in namespaces.values():
-            print("checking", ns.name)
+            # print("checking", ns.name)
             if ns.name and t == ns.name.upper():
                 break
             if ns.canonicalName and t == ns.canonicalName.upper():
@@ -627,8 +627,8 @@ def expr_fn(ctx, fn_name, args, expander, stack):
     def expr_error(tok):
         if tok is None:
             tok = "<end>"
-        ctx.warning("{}: #expr error near {} in {!r} at {}"
-                    .format(ctx, tok, full_expr, stack))
+        ctx.warning("#expr error near {} in {!r} at {}"
+                    .format(tok, full_expr, stack))
         return ""
 
     def get_token():
@@ -671,7 +671,7 @@ def expr_fn(ctx, fn_name, args, expander, stack):
         if tok == "pi":
             return math.pi
         if tok == "nil":
-            #print("{}: nil in expr {!r} at {}".format(ctx, full_expr, stack))
+            #ctx.warning("nil in expr {!r} at {}".format(full_expr, stack))
             return 0
         return expr_error(tok)
 
@@ -761,7 +761,7 @@ def padleft_fn(ctx, fn_name, args, expander, stack):
     cnt = expander(args[1]).strip() if len(args) >= 2 else "0"
     pad = expander(args[2]) if len(args) >= 3 and args[2] else "0"
     if not cnt.isdigit():
-        print("{}: pad length is not integer: {!r}".format(ctx, cnt))
+        ctx.warning("pad length is not integer: {!r}".format(cnt))
         cnt = 0
     else:
         cnt = int(cnt)
@@ -779,7 +779,7 @@ def padright_fn(ctx, fn_name, args, expander, stack):
     arg2 = expander(args[2]) if len(args) >= 3 and args[2] else "0"
     pad = arg2 if len(args) >= 3 and arg2 else "0"
     if not cnt.isdigit():
-        print("{}: pad length is not integer: {!r}".format(ctx, cnt))
+        ctx.warning("pad length is not integer: {!r}".format(cnt))
         cnt = 0
     else:
         cnt = int(cnt)
@@ -865,7 +865,7 @@ def pad_fn(ctx, fn_name, args, expander, stack):
     pad = expander(args[2]) if len(args) >= 3 and args[2] else "0"
     direction = expander(args[3]) if len(args) >= 4 else ""
     if not cnt.isdigit():
-        print("{}: pad length is not integer: {!r}".format(ctx, cnt))
+        ctx.warning("pad length is not integer: {!r}".format(cnt))
         cnt = 0
     else:
         cnt = int(cnt)
@@ -907,7 +907,6 @@ def explode_fn(ctx, fn_name, args, expander, stack):
     parts = arg0.split(delim)
     if limit > 0 and len(parts) > limit:
         parts = parts[:limit - 1] + [delim.join(parts[limit - 1:])]
-    print("parts", parts)
     if position < 0:
         position = len(parts) + position
     if position < 0 or position >= len(parts):
@@ -923,7 +922,7 @@ def urldecode_fn(ctx, fn_name, args, expander, stack):
 
 
 def unimplemented_fn(ctx, fn_name, args, expander, stack):
-    print("{}: unimplemented parserfn {} at {}".format(ctx, fn_name, stack))
+    ctx.error("unimplemented parserfn {} at {}".format(fn_name, stack))
     return "{{" + fn_name + ":" + "|".join(map(str, args)) + "}}"
 
 
@@ -1101,7 +1100,8 @@ def call_parser_function(ctx, fn_name, args, expander, stack):
     else:
         dict_args = dict(zip(range(1, len(args) + 1), args))
     if have_keyed_args:
-        print("{}: {}: ERROR: named arguments not supported: {} at {}"
-              .format(ctx.title, fn_name, args, stack))
+        ctx.error("parser function {} does not (yet) support named "
+                  "arguments: {} at {}"
+                  .format(fn_name, args, stack))
         return ""
     return fn(ctx, fn_name, args, expander, stack)
