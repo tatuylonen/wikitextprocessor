@@ -248,9 +248,7 @@ class Wtp(object):
                self.error("unbalanced {}".format(m.group(0)))
         return text
 
-    def collect_page(self, model, title, text, save_pages=True):
-        # XXX consider changing the name of this function.  It could be
-        # more descriptive.  add_page()?
+    def add_page(self, model, title, text):
         """Collects information about the page.  For templates and modules,
         this keeps the content in memory.  For other pages, this saves the
         content in a temporary file so that it can be accessed later.  There
@@ -265,28 +263,27 @@ class Wtp(object):
         assert isinstance(model, str)
         assert isinstance(title, str)
         assert isinstance(text, str)
-        assert save_pages in (True, False)
-        if save_pages:
-            rawtext = text.encode("utf-8")
-            if self.buf_ofs + len(rawtext) > self.buf_size:
-                bufview = memoryview(self.buf)[0: self.buf_ofs]
-                self.tmp_file.write(bufview)
-                self.buf_ofs = 0
-            ofs = self.tmp_ofs
-            self.tmp_ofs += len(rawtext)
-            if len(rawtext) >= self.buf_ofs:
-                self.tmp_file.write(rawtext)
-            else:
-                self.buf[self.buf_ofs: self.buf_ofs + len(rawtext)] = rawtext
-            # XXX should we canonicalize title in page_contents
-            h = hashlib.sha256()  # XXX
-            h.update(rawtext)
-            self.page_contents[title] = (title, model, ofs, len(rawtext),
-                                         h.digest())
-            self.page_seq.append((model, title))
-            if not self.quiet and len(self.page_seq) % 10000 == 0:
-                print("  ... {} raw pages collected"
-                      .format(len(self.page_seq)))
+        # Save the page in our temporary file and metadata in memory
+        rawtext = text.encode("utf-8")
+        if self.buf_ofs + len(rawtext) > self.buf_size:
+            bufview = memoryview(self.buf)[0: self.buf_ofs]
+            self.tmp_file.write(bufview)
+            self.buf_ofs = 0
+        ofs = self.tmp_ofs
+        self.tmp_ofs += len(rawtext)
+        if len(rawtext) >= self.buf_ofs:
+            self.tmp_file.write(rawtext)
+        else:
+            self.buf[self.buf_ofs: self.buf_ofs + len(rawtext)] = rawtext
+        # XXX should we canonicalize title in page_contents
+        h = hashlib.sha256()  # XXX
+        h.update(rawtext)
+        self.page_contents[title] = (title, model, ofs, len(rawtext),
+                                     h.digest())
+        self.page_seq.append((model, title))
+        if not self.quiet and len(self.page_seq) % 10000 == 0:
+            print("  ... {} raw pages collected"
+                  .format(len(self.page_seq)))
 
         if model == "redirect":
             self.redirects[title] = text
@@ -922,6 +919,6 @@ def phase1_to_ctx(pages):
     Title is the title of the page and text the content of the page."""
     ctx = Wtp()
     for tag, title, text in pages:
-        ctx.collect_page(tag, title, text)
+        ctx.add_page(tag, title, text)
     ctx.analyze_templates()
     return ctx

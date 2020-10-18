@@ -250,7 +250,7 @@ def process_dump(ctx, path, page_handler):
     def phase1_page_handler(model, title, text):
         """Handler for pages in Phase 1, for extracting special pages and saving
         data about all pages."""
-        ctx.collect_page(model, title, text)
+        ctx.add_page(model, title, text)
 
     # Run Phase 1 in a single thread; this mostly just extracts pages into
     # a temporary file.

@@ -149,4 +149,21 @@ class Wtp(object):
       - no need to call this when processing pages via process(), but this
         must be called if processing pages obtained otherwise
 
+    add_page(model, title, text)
+      - Adds a new page for interpretation (it could define template, lua
+        macros, or could be a normal wikitext page).  Pages are saved in a
+        temporary file for use during expansion.
+      - This is exposed primarily for testing or for processing single pages
+        without reading the whole dump file.
+      - This is automatically called by process(), so there is normally no
+        need to call this explicitly.
+
+    analyze_templates()
+      - Analyzes which templates should be expanded before parsing a page
+        (e.g., because they may produce syntactic elements, such as table
+        starts or table rows).
+      - This is automatically called by process(), so there is normally no
+        need to call this explicitly.  However, if templates are added by
+        calling add_page() manually, then this should be called after adding
+        the last template.
 ```
