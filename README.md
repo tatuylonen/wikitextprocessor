@@ -115,8 +115,10 @@ class Wtp(object):
     __init__(self)
 
     process(path, page_handler)
-      - parses dump file, calls page_handler(title, text) for each page
+      - parses dump file, calls page_handler(model, title, text) for each page
         (in parallel using multiprocessing) and returns list of results
+      - model is "wikitext" for normal pages and templates, "Scribunto"
+        for Lua macros; other values are also possible
 
     parse(text, pre_expand=False, expand_all=False)
       - parses the text as Wikitext, returning a parse tree.  If pre_expand
