@@ -157,6 +157,18 @@ def pagename_fn(ctx, fn_name, args, expander, stack):
     return t
 
 
+def basepagename_fn(ctx, fn_name, args, expander, stack):
+    """Implements the BASEPAGENAME magic word/parser function."""
+    t = expander(args[0]) if args else ctx.title
+    t = re.sub(r"\s+", " ", t)
+    t = t.strip()
+    ofs = t.rfind("/")
+    if ofs >= 0:
+        return t[:ofs]
+    else:
+        return pagename_fn(ctx, fn_name, [t], lambda x: x, stack)
+
+
 def subpagename_fn(ctx, fn_name, args, expander, stack):
     """Implements the SUBPAGENAME magic word/parser function."""
     t = expander(args[0]) if args else ctx.title
@@ -898,7 +910,7 @@ def unimplemented_fn(ctx, fn_name, args, expander, stack):
 PARSER_FUNCTIONS = {
     "FULLPAGENAME": fullpagename_fn,
     "PAGENAME": pagename_fn,
-    "BASEPAGENAME": unimplemented_fn,
+    "BASEPAGENAME": basepagename_fn,
     "ROOTPAGENAME": unimplemented_fn,
     "SUBPAGENAME": subpagename_fn,
     "ARTICLEPAGENAME": unimplemented_fn,

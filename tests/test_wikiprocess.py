@@ -269,6 +269,18 @@ return export
         ret = ctx.expand("{{PAGENAME:Template:Mark/doc}}")
         self.assertEqual(ret, "Mark/doc")
 
+    def test_basepagename1(self):
+        ctx = phase1_to_ctx([])
+        ctx.start_page("Help:Tt/doc/subdoc")
+        ret = ctx.expand("{{BASEPAGENAME}}")
+        self.assertEqual(ret, "Help:Tt/doc")
+
+    def test_basepagename2(self):
+        ctx = phase1_to_ctx([])
+        ctx.start_page("Test title")
+        ret = ctx.expand("{{BASEPAGENAME}}")
+        self.assertEqual(ret, "Test title")
+
     def test_subpagename1(self):
         ctx = phase1_to_ctx([])
         ctx.start_page("Help:Tt/doc/subdoc")
