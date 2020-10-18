@@ -404,6 +404,16 @@ dasfasddasfdas
         self.assertEqual(tree.children, ["a<unknown>foo</unknown>b"])
         self.assertEqual(len(ctx.warnings), 2)
 
+    def test_html_section1(self):
+        tree, ctx = parse_with_ctx("test", "a<section begin=foo />b")
+        self.assertEqual(tree.children, ["ab"])
+        self.assertEqual(len(ctx.warnings), 0)
+
+    def test_html_section2(self):
+        tree, ctx = parse_with_ctx("test", "a</section>b")
+        self.assertEqual(tree.children, ["ab"])
+        self.assertEqual(len(ctx.errors), 1)
+
     def test_italic(self):
         tree = parse("test", "a ''italic test'' b")
         self.assertEqual(len(tree.children), 3)

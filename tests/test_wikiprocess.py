@@ -2769,6 +2769,9 @@ return export
 # XXX add warning about unbalanced parentheses; should try to handle
 # them heuristically as a last resort
 
+# XXX should check that templates inside <nowiki> ... </nowiki> do not get
+# expanded
+
 # XXX #tag is used to create <nowiki>, allow and implement
 
 # XXX Why do I sometimes get {{{...}}} remaining in final text?

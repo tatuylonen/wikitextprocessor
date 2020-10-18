@@ -6,7 +6,6 @@
 import os
 import re
 import sys
-import hashlib  # XXX temporary
 import tempfile
 import collections
 import html.entities
@@ -272,10 +271,7 @@ class Wtp(object):
         else:
             self.buf[self.buf_ofs: self.buf_ofs + len(rawtext)] = rawtext
         # XXX should we canonicalize title in page_contents
-        h = hashlib.sha256()  # XXX
-        h.update(rawtext)
-        self.page_contents[title] = (title, model, ofs, len(rawtext),
-                                     h.digest())
+        self.page_contents[title] = (title, model, ofs, len(rawtext))
         self.page_seq.append((model, title))
         if not self.quiet and len(self.page_seq) % 10000 == 0:
             print("  ... {} raw pages collected"
@@ -867,14 +863,11 @@ class Wtp(object):
         if title not in self.page_contents:
             return None
         # The page seems to exist
-        title, model, ofs, page_size, ck = self.page_contents[title]
+        title, model, ofs, page_size = self.page_contents[title]
         # Use os.pread() so that we won't change the file offset; otherwise we
         # might cause a race condition with parallel scanning of the temporary
         # file.
         rawdata = os.pread(self.tmp_file.fileno(), page_size, ofs)
-        h = hashlib.sha256()
-        h.update(rawdata)
-        assert h.digest() == ck  # XXX remove hashing and ck
         return rawdata.decode("utf-8")
 
     def parse(self, text, pre_expand=False, expand_all=False):

@@ -1024,6 +1024,10 @@ def tag_fn(ctx, token):
         if ctx.pre_parse and name not in PRE_PARSE_TAGS:
             return text_fn(ctx, token)
 
+        # If the tag is <section ...>, ignore it
+        if name == "section":
+            return
+
         # Check for unmatched <nowiki> start tag.  <nowiki> should be handled
         # in preprocessing, but an unmatched start tag may be missed.
         if name == "nowiki":
@@ -1090,6 +1094,11 @@ def tag_fn(ctx, token):
     # If preparsing, only handle template control tags like <noinclude>
     if ctx.pre_parse and name not in PRE_PARSE_TAGS:
         return text_fn(ctx, token)
+
+    # We should never see </section>
+    if name == "section":
+        ctx.error("unexpected </section>")
+        return
 
     if name == "pre":
         # Handle </pre> end tag
