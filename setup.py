@@ -8,7 +8,7 @@ with open("README.md", "r") as f:
     long_description = f.read()
 
 setup(name="wikitextprocessor",
-      version="0.0.2",
+      version="0.0.3",
       description="Parser and expander for Wikipedia, Wiktionary etc. dump files, with Lua execution support",
       long_description=long_description,
       long_description_content_type="text/markdown",

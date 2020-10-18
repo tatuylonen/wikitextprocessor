@@ -3,6 +3,7 @@
 # Copyright (c) 2018-2020 Tatu Ylonen.  See file LICENSE and https://ylonen.org
 
 import re
+import sys
 import bz2
 import json
 import html
@@ -256,16 +257,19 @@ def process_dump(ctx, path, page_handler):
     # a temporary file.
     if not ctx.quiet:
         print("First pass - extracting templates, macros, and pages")
+        sys.stdout.flush()
     process_input(path, phase1_page_handler)
 
     # Analyze which templates should be expanded before parsing
     if not ctx.quiet:
         print("Analyzing which templates should be expanded before parsing")
+        sys.stdout.flush()
     ctx.analyze_templates()
 
     # Phase 2 - process the pages using the user-supplied callback
     if not ctx.quiet:
         print("Second pass - processing pages")
+        sys.stdout.flush()
     if ctx.num_threads == 1:
         # Single-threaded version (without subprocessing)
         lst = []
@@ -293,6 +297,7 @@ def process_dump(ctx, path, page_handler):
                     print("  ... {}/{} pages ({:.1%}) processed"
                           .format(len(lst), len(ctx.page_seq),
                                   len(lst) / len(ctx.page_seq)))
+                    sys.stdout.flush()
         pool.close()
         pool.join()
 

@@ -201,6 +201,34 @@ return export
 
     # XXX test that both sides of switch are evaluated
 
+    def test_lst1(self):
+        ctx = phase1_to_ctx([
+            ["wikitext", "testpage", """
+<section begin=foo />
+=== Test section ===
+A
+<section end=foo />
+
+=== Other section ===
+B
+
+<SECTION BEGIN=foo />
+MORE
+<section end=foo />
+
+<section begin=bar />
+NOT
+<section end=bar />
+"""]])
+        ctx.start_page("Tt")
+        ret = ctx.expand("{{#lst:testpage|foo}}")
+        self.assertEqual(ret, """
+=== Test section ===
+A
+
+MORE
+""")
+
     def test_tag1(self):
         ctx = phase1_to_ctx([])
         ctx.start_page("Tt")

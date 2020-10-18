@@ -96,6 +96,30 @@ def switch_fn(ctx, fn_name, args, expander, stack):
     return last or ""
 
 
+def lst_fn(ctx, fn_name, args, expander, stack):
+    """Implements the #lst (alias #section etc) parser function."""
+    pagetitle = expander(args[0]).strip() if args else ""
+    chapter = expander(args[1]).strip() if len(args) >= 2 else ""
+    text = ctx.read_by_title(pagetitle)
+    if text is None:
+        ctx.warning("{} trying to transclude chapter {!r} from non-existent "
+                    "page {!r} at {}"
+                    .format(fn_name, chapter, pagetitle, stack))
+        return ""
+
+    parts = []
+    for m in re.finditer(r"(?si)<\s*section\s+begin={}\s*/\s*>(.*?)"
+                         r"<\s*section\s+end={}\s*/\s*>"
+                         .format(re.escape(chapter),
+                                 re.escape(chapter)),
+                         text):
+        parts.append(m.group(1))
+    if not parts:
+        ctx.warning("{} could not find chapter {!r} on page {!r} at {}"
+                    .format(fn_name, chapter, pagetitle, stack))
+    return "".join(parts)
+
+
 def tag_fn(ctx, fn_name, args, expander, stack):
     """Implements #tag parser function."""
     tag = expander(args[0]).lower() if args else ""
@@ -1024,14 +1048,11 @@ PARSER_FUNCTIONS = {
     "#coordinates": unimplemented_fn,
     "#invoke": unimplemented_fn,
     "#language": unimplemented_fn,
-    "#lst": unimplemented_fn,
+    "#lst": lst_fn,
     "#lsth": unimplemented_fn,
     "#lstx": unimplemented_fn,
     "#property": unimplemented_fn,
     "#related": unimplemented_fn,
-    "#section": unimplemented_fn,
-    "#section-h": unimplemented_fn,
-    "#section-x": unimplemented_fn,
     "#statements": unimplemented_fn,
     "#target": unimplemented_fn,
     # From Help:Extension:ParserFunctions
@@ -1044,6 +1065,16 @@ PARSER_FUNCTIONS = {
     "#explode": explode_fn,
     "#urldecode": urldecode_fn,
     "#urlencode": urlencode_fn,
+    # Additional language names for certain functions
+    # See https://www.mediawiki.org/wiki/Extension:Labeled_Section_Transclusion
+    "#section": lst_fn,    # English
+    "#Abschnitt": lst_fn,  # German
+    "#trecho": lst_fn,     # Portuguese
+    "#קטע": lst_fn,        # Hebrew
+    "#section-h": unimplemented_fn,
+    "#Abschnitt-x": unimplemented_fn,
+    "#trecho-x": unimplemented_fn,
+    "#section-x": unimplemented_fn,
 }
 
 

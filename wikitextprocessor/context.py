@@ -280,6 +280,7 @@ class Wtp(object):
         if not self.quiet and len(self.page_seq) % 10000 == 0:
             print("  ... {} raw pages collected"
                   .format(len(self.page_seq)))
+            sys.stdout.flush()
 
         if model == "redirect":
             self.redirects[title] = text
