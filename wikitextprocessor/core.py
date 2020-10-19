@@ -84,14 +84,28 @@ class Wtp(object):
         self.buf_ofs = 0
 
     def error(self, msg, trace=None, path=None):
+        """Prints an error message to stdout.  The error is also saved in
+        self.errors."""
+        assert isinstance(msg, str)
+        assert isinstance(trace, (str, type(None)))
+        assert isinstance(path, (list, tuple, type(None)))
         self.errors.append({"msg": msg, "trace": trace, "path": path})
+        if path:
+            msg += " at {}".format(path)
         if trace:
             msg += "\n" + trace
         print("{}: ERROR: {}".format(self.title, msg))
         sys.stdout.flush()
 
     def warning(self, msg, trace=None, path=None):
+        """Prints a warning message to stdout.  The error is also saved in
+        self.warnings."""
+        assert isinstance(msg, str)
+        assert isinstance(trace, (str, type(None)))
+        assert isinstance(path, (list, tuple, type(None)))
         self.warnings.append({"msg": msg, "trace": trace, "path": path})
+        if path:
+            msg += " at {}".format(path)
         if trace:
             msg += "\n" + trace
         print("{}: {}".format(self.title, msg))
