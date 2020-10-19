@@ -259,9 +259,9 @@ def _parser_push(ctx, kind):
     assert isinstance(kind, NodeKind)
     _parser_merge_str_children(ctx)
     node = WikiNode(kind, ctx.linenum)
-    prev = ctx.stack[-1]
+    prev = ctx.parser_stack[-1]
     prev.children.append(node)
-    ctx.stack.append(node)
+    ctx.parser_stack.append(node)
     ctx.suppress_special = False
     return node
 
@@ -270,7 +270,7 @@ def _parser_merge_str_children(ctx):
     as a separate step, because this gives linear worst-case time, vs.
     quadratic worst case (albeit with lower constant factor) if we just
     added to the previously accumulated string in text_fn() instead."""
-    node = ctx.stack[-1]
+    node = ctx.parser_stack[-1]
     lst = node.children
     lstlen = len(lst)
     for i in range(lstlen - 1, -1, -1):
@@ -302,7 +302,7 @@ def _parser_pop(ctx, warn_unclosed):
     the nodes when their parsing completes."""
     assert warn_unclosed in (True, False)
     _parser_merge_str_children(ctx)
-    node = ctx.stack[-1]
+    node = ctx.parser_stack[-1]
 
     # Warn about unclosed syntaxes.
     if warn_unclosed and node.kind in MUST_CLOSE_KINDS:
@@ -321,9 +321,9 @@ def _parser_pop(ctx, warn_unclosed):
     # generate spurious empty BOLD and ITALIC nodes when closing them
     # out-of-order (which happens always with '''''bolditalic''''').
     if node.kind in (NodeKind.BOLD, NodeKind.ITALIC) and not node.children:
-        ctx.stack.pop()
-        assert ctx.stack[-1].children[-1].kind == node.kind
-        ctx.stack[-1].children.pop()
+        ctx.parser_stack.pop()
+        assert ctx.parser_stack[-1].children[-1].kind == node.kind
+        ctx.parser_stack[-1].children.pop()
         return
 
     # If the node has arguments, move remamining children to be the last
@@ -354,12 +354,12 @@ def _parser_pop(ctx, warn_unclosed):
 
     # Remove the topmost node from the stack.  It should be on its parent's
     # chilren list.
-    ctx.stack.pop()
+    ctx.parser_stack.pop()
 
 def _parser_have(ctx, kind):
     """Returns True if any node on the stack is of the given kind."""
     assert isinstance(kind, NodeKind)
-    for node in ctx.stack:
+    for node in ctx.parser_stack:
         if node.kind == kind:
             return True
     return False
@@ -367,7 +367,7 @@ def _parser_have(ctx, kind):
 
 def text_fn(ctx, token):
     """Inserts the token as raw text into the parse tree."""
-    node = ctx.stack[-1]
+    node = ctx.parser_stack[-1]
 
     # Whitespaces inside an external link divide its first argument from its
     # second argument.  All remaining words go into the second argument.
@@ -380,7 +380,7 @@ def text_fn(ctx, token):
     # Some nodes are automatically popped on newline/text
     if ctx.beginning_of_line:
         while True:
-            node = ctx.stack[-1]
+            node = ctx.parser_stack[-1]
             if node.kind == NodeKind.LIST_ITEM:
                 if token.startswith(" ") or token[0].startswith("\t"):
                     node.children.append(token)
@@ -432,7 +432,7 @@ def hline_fn(ctx, token):
     # table element.  We also won't pop HTML nodes as they might appear
     # in template definitions.
     while True:
-        node = ctx.stack[-1]
+        node = ctx.parser_stack[-1]
         if node.kind in (NodeKind.ROOT, NodeKind.LEVEL2,
                          NodeKind.TABLE, NodeKind.TABLE_CAPTION,
                          NodeKind.TABLE_ROW, NodeKind.TABLE_HEADER_CELL,
@@ -457,8 +457,8 @@ def subtitle_start_fn(ctx, token):
     # is of a higher level - but only if there are remaining subtitles.
     # Subtitles sometimes occur inside <noinclude> and similar tags, and we
     # don't want to force closing those.
-    while any(x.kind in kind_to_level for x in ctx.stack):
-        node = ctx.stack[-1]
+    while any(x.kind in kind_to_level for x in ctx.parser_stack):
+        node = ctx.parser_stack[-1]
         if kind_to_level.get(node.kind, 99) < level:
             break
         if node.kind == NodeKind.HTML:
@@ -480,13 +480,13 @@ def subtitle_end_fn(ctx, token):
 
     # Keep popping formats until we get to the subtitle node
     while True:
-        node = ctx.stack[-1]
+        node = ctx.parser_stack[-1]
         if node.kind in kind_to_level:
             break
         _parser_pop(ctx, True)
 
     # Move children of the subtitle node to be its first argument.
-    node = ctx.stack[-1]
+    node = ctx.parser_stack[-1]
     if node.kind != kind:
         ctx.error("subtitle start and end markers level mismatch")
     _parser_merge_str_children(ctx)
@@ -508,7 +508,7 @@ def italic_fn(ctx, token):
     # to allow closing them in either order.
     push_bold = False
     while True:
-        node = ctx.stack[-1]
+        node = ctx.parser_stack[-1]
         if node.kind == NodeKind.ITALIC:
             _parser_pop(ctx, False)
             break
@@ -533,7 +533,7 @@ def bold_fn(ctx, token):
     # to allow closing them in either order.
     push_italic = False
     while True:
-        node = ctx.stack[-1]
+        node = ctx.parser_stack[-1]
         if node.kind == NodeKind.BOLD:
             _parser_pop(ctx, False)
             break
@@ -568,7 +568,7 @@ def elink_end_fn(ctx, token):
     if not _parser_have(ctx, NodeKind.URL):
         return text_fn(ctx, token)
     while True:
-        node = ctx.stack[-1]
+        node = ctx.parser_stack[-1]
         if node.kind == NodeKind.URL:
             _parser_pop(ctx, False)
             break
@@ -581,7 +581,7 @@ def url_fn(ctx, token):
     if ctx.pre_parse:
         return text_fn(ctx, token)
 
-    node = ctx.stack[-1]
+    node = ctx.parser_stack[-1]
     if node.kind == NodeKind.URL:
         return text_fn(ctx, token)
     node = _parser_push(ctx, NodeKind.URL)
@@ -611,7 +611,7 @@ def magic_fn(ctx, token):
             process_text(ctx, arg)
 
         while True:
-            node = ctx.stack[-1]
+            node = ctx.parser_stack[-1]
             if node.kind == NodeKind.ROOT:
                 break
             if node.kind in (NodeKind.TEMPLATE, NodeKind.PARSER_FN):
@@ -635,7 +635,7 @@ def magic_fn(ctx, token):
             process_text(ctx, arg)
 
         while True:
-            node = ctx.stack[-1]
+            node = ctx.parser_stack[-1]
             if node.kind == NodeKind.ROOT:
                 break
             if node.kind == NodeKind.TEMPLATE_ARG:
@@ -656,7 +656,7 @@ def magic_fn(ctx, token):
         process_text(ctx, args[0])
 
         while True:
-            node = ctx.stack[-1]
+            node = ctx.parser_stack[-1]
             if node.kind == NodeKind.ROOT:
                 break
             if node.kind == NodeKind.LINK:
@@ -672,7 +672,7 @@ def colon_fn(ctx, token):
     """Handler for a special colon ":" within a template call.  This indicates
     that it is actually a parser function call.  This is called from list_fn()
     when it detects that it is inside a template node."""
-    node = ctx.stack[-1]
+    node = ctx.parser_stack[-1]
 
     # Unless we are in the first argument of a template, treat a colon that is
     # not at the beginning of a
@@ -706,7 +706,7 @@ def table_start_fn(ctx, token):
 
 def table_check_attrs(ctx):
     """Checks if the table has attributes, and if so, parses them."""
-    node = ctx.stack[-1]
+    node = ctx.parser_stack[-1]
     if node.kind != NodeKind.TABLE:
         return
     _parser_merge_str_children(ctx)
@@ -718,7 +718,7 @@ def table_check_attrs(ctx):
 
 def table_row_check_attrs(ctx):
     """Checks if the table row has attributes, and if so, parses them."""
-    node = ctx.stack[-1]
+    node = ctx.parser_stack[-1]
     if node.kind != NodeKind.TABLE_ROW:
         return
     _parser_merge_str_children(ctx)
@@ -737,7 +737,7 @@ def table_caption_fn(ctx, token):
     if not _parser_have(ctx, NodeKind.TABLE):
         return text_fn(ctx, token)
     while True:
-        node = ctx.stack[-1]
+        node = ctx.parser_stack[-1]
         if node.kind == NodeKind.TABLE:
             break
         _parser_pop(ctx, True)
@@ -754,7 +754,7 @@ def table_hdr_cell_fn(ctx, token):
     if not _parser_have(ctx, NodeKind.TABLE):
         return text_fn(ctx, token)
     while True:
-        node = ctx.stack[-1]
+        node = ctx.parser_stack[-1]
         if node.kind == NodeKind.TABLE_ROW:
             _parser_push(ctx, NodeKind.TABLE_HEADER_CELL)
             return
@@ -784,7 +784,7 @@ def table_row_fn(ctx, token):
     if not _parser_have(ctx, NodeKind.TABLE):
         return text_fn(ctx, token)
     while True:
-        node = ctx.stack[-1]
+        node = ctx.parser_stack[-1]
         if node.kind == NodeKind.TABLE:
             break
         _parser_pop(ctx, True)
@@ -806,7 +806,7 @@ def table_cell_fn(ctx, token):
         # This might separate attributes for captions, header cells, and
         # data cells
         _parser_merge_str_children(ctx)
-        node = ctx.stack[-1]
+        node = ctx.parser_stack[-1]
         if (not node.attrs and len(node.children) == 1 and
             isinstance(node.children[0], str)):
             if node.kind in (NodeKind.TABLE_CAPTION,
@@ -818,7 +818,7 @@ def table_cell_fn(ctx, token):
         return text_fn(ctx, token)
 
     while True:
-        node = ctx.stack[-1]
+        node = ctx.parser_stack[-1]
         if node.kind == NodeKind.TABLE_ROW:
             break
         if node.kind == NodeKind.TABLE:
@@ -835,7 +835,7 @@ def vbar_fn(ctx, token):
     the vertical bar depends on context; it can separate arguments to
     templates, template argument references, links, etc, and it can
     also separate table row cells."""
-    node = ctx.stack[-1]
+    node = ctx.parser_stack[-1]
     if node.kind in HAVE_ARGS_KINDS:
         _parser_merge_str_children(ctx)
         node.args.append(node.children)
@@ -849,7 +849,7 @@ def double_vbar_fn(ctx, token):
     """Handle function for double vertical bar ||.  This is used as a column
     separator in tables.  If it occurs in other contexts, it should be
     interpreted as two vertical bars."""
-    node = ctx.stack[-1]
+    node = ctx.parser_stack[-1]
     if node.kind in HAVE_ARGS_KINDS:
         vbar_fn(ctx, "|")
         vbar_fn(ctx, "|")
@@ -866,7 +866,7 @@ def table_end_fn(ctx, token):
     if not _parser_have(ctx, NodeKind.TABLE):
         return text_fn(ctx, token)
     while True:
-        node = ctx.stack[-1]
+        node = ctx.parser_stack[-1]
         if node.kind == NodeKind.TABLE:
             _parser_pop(ctx, False)
             break
@@ -880,7 +880,7 @@ def list_fn(ctx, token):
     if ctx.pre_parse:
         return text_fn(ctx, token)
 
-    node = ctx.stack[-1]
+    node = ctx.parser_stack[-1]
 
     # A colon inside a template means it is a parser function call.  We use
     # colon_fn() to handle that kind of colon.
@@ -897,7 +897,7 @@ def list_fn(ctx, token):
     # in the middle of a line.  Some of these cases were handled above; some
     # are handled here.
     if not ctx.beginning_of_line:
-        node = ctx.stack[-1]
+        node = ctx.parser_stack[-1]
         if (token == ":" and node.kind == NodeKind.LIST_ITEM and
             node.args.endswith(";") and "head" not in node.attrs):
             # Got definition for a head in a definition list on the same line
@@ -912,7 +912,7 @@ def list_fn(ctx, token):
 
     # Pop any lower-level list items
     while True:
-        node = ctx.stack[-1]
+        node = ctx.parser_stack[-1]
 
         # Check for a definition in a definition list
         if (node.kind == NodeKind.LIST_ITEM and node.args.endswith(";") and
@@ -974,7 +974,7 @@ def list_fn(ctx, token):
         _parser_pop(ctx, True)
 
     # If not already in a list, create a new list.
-    node = ctx.stack[-1]
+    node = ctx.parser_stack[-1]
     if node.kind != NodeKind.LIST:
         node = _parser_push(ctx, NodeKind.LIST)
         node.args = token
@@ -1063,7 +1063,7 @@ def tag_fn(ctx, token):
         # parent for this node
         permitted_parents = HTML_PERMITTED_PARENTS.get(name, set())
         while True:
-            node = ctx.stack[-1]
+            node = ctx.parser_stack[-1]
             if node.kind != NodeKind.HTML:
                 break
             if node.args in permitted_parents:
@@ -1102,7 +1102,7 @@ def tag_fn(ctx, token):
 
     if name == "pre":
         # Handle </pre> end tag
-        node = ctx.stack[-1]
+        node = ctx.parser_stack[-1]
         if node.kind != NodeKind.PRE:
             ctx.error("unexpected </pre>")
             return text_fn(ctx, token)
@@ -1117,8 +1117,8 @@ def tag_fn(ctx, token):
         return text_fn(ctx, token)
 
     # See if we can find the opening tag from the stack
-    for i in range(0, len(ctx.stack)):
-        node = ctx.stack[i]
+    for i in range(0, len(ctx.parser_stack)):
+        node = ctx.parser_stack[i]
         if node.kind == NodeKind.HTML and node.args == name:
             break
     else:
@@ -1134,7 +1134,7 @@ def tag_fn(ctx, token):
 
     # Close nodes until we close the corresponding start tag
     while True:
-        node = ctx.stack[-1]
+        node = ctx.parser_stack[-1]
         if node.kind == NodeKind.HTML and node.args == name:
             # Found the corresponding start tag.  Close this node and
             # then stop.
@@ -1276,7 +1276,7 @@ def process_text(ctx, text):
     called recursively (which we do to process tokens inside templates and
     certain other structures)."""
     for is_token, token in token_iter(ctx, text):
-        node = ctx.stack[-1]
+        node = ctx.parser_stack[-1]
         if not is_token:
             # Process it as normal text.
             text_fn(ctx, token)
@@ -1324,7 +1324,7 @@ def parse_encoded(ctx, text):
     ctx.beginning_of_line = True
     ctx.linenum = 1
     ctx.pre_parse = False
-    ctx.stack = [node]
+    ctx.parser_stack = [node]
     ctx.suppress_special = False
 
 
@@ -1336,14 +1336,14 @@ def parse_encoded(ctx, text):
     # the root node left.  This is used to finalize processing any nodes
     # on the stack.
     while True:
-        node = ctx.stack[-1]
+        node = ctx.parser_stack[-1]
         if node.kind == NodeKind.ROOT:
             break
         _parser_pop(ctx, True)
-    assert len(ctx.stack) == 1
+    assert len(ctx.parser_stack) == 1
     # If the last children are strings, merge them to one string.
     _parser_merge_str_children(ctx)
-    return ctx.stack[0]
+    return ctx.parser_stack[0]
 
 def print_tree(tree, indent=0):
     """Prints the parse tree for debugging purposes.  This does not expand

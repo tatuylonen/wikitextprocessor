@@ -54,7 +54,7 @@ class Wtp(object):
         "beginning_of_line", # Parser at beginning of line
         "linenum",	 # Current line number
         "pre_parse",	 # XXX is pre-parsing still needed?
-        "stack",	 # Parser stack
+        "parser_stack",	 # Parser stack
         "suppress_special",  # XXX never set to True???
     )
     def __init__(self, quiet=False, num_threads=None):
@@ -83,17 +83,17 @@ class Wtp(object):
         self.tmp_ofs = 0
         self.buf_ofs = 0
 
-    def error(self, msg, trace=None):
+    def error(self, msg, trace=None, path=None):
+        self.errors.append({"msg": msg, "trace": trace, "path": path})
         if trace:
             msg += "\n" + trace
-        self.errors.append(msg)
         print("{}: ERROR: {}".format(self.title, msg))
         sys.stdout.flush()
 
-    def warning(self, msg, trace=None):
+    def warning(self, msg, trace=None, path=None):
+        self.warnings.append({"msg": msg, "trace": trace, "path": path})
         if trace:
             msg += "\n" + trace
-        self.warnings.append(msg)
         print("{}: {}".format(self.title, msg))
         sys.stdout.flush()
 
