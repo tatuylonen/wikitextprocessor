@@ -20,6 +20,7 @@ return export
 """]])
         ctx.start_page("Tt")
         ret = ctx.expand("{{#invoke:testmod|testfn}}")
+        self.assertEqual(len(ctx.expand_stack), 1)
         self.assertEqual(ret, expected_ret)
 
     def test_basic(self):

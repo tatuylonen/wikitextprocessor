@@ -65,8 +65,8 @@ def lua_loader(ctx, modname):
             with open(p, "r") as f:
                 data = f.read()
             return data
-    ctx.error("Lua module not found: {} at {}"
-              .format(modname, ctx.expand_stack))
+    ctx.error("Lua module not found: {}"
+              .format(modname))
     return None
 
 
@@ -195,23 +195,20 @@ def initialize_lua(ctx):
     ctx.lua = lua
 
 
-def call_lua_sandbox(ctx, invoke_args, expander, stack, parent):
+def call_lua_sandbox(ctx, invoke_args, expander, parent):
     """Calls a function in a Lua module in the Lua sandbox.  This creates
     the sandbox instance if it does not already exist and stores it in
     ctx.lua.  ``invoke_args`` is the arguments to the call;
-    ``expander`` should be a function to expand an argument.  Stack
-    indicates how we ended up in this call; it is for debugging and
-    error messages only.  This will restore stack to as it was before
-    returning.  ``parent`` should be None or (parent_title,
-    parent_args) for the parent page."""
+    ``expander`` should be a function to expand an argument.
+    ``parent`` should be None or (parent_title, parent_args) for the
+    parent page."""
     assert isinstance(invoke_args, (list, tuple))
     assert callable(expander)
-    assert isinstance(stack, list)
     assert parent is None or isinstance(parent, (list, tuple))
 
     if len(invoke_args) < 2:
-        ctx.error("#invoke {}: too few arguments at {}"
-                  "".format(invoke_args, stack))
+        ctx.error("#invoke {}: too few arguments"
+                  .format(invoke_args))
         return ("{{" + invoke_args[0] + ":" +
                 "|".join(invoke_args[1:]) + "}}")
 
@@ -262,8 +259,7 @@ def call_lua_sandbox(ctx, invoke_args, expander, stack, parent):
 
         def extensionTag(frame, *args):
             if len(args) < 1:
-                ctx.error("extensionTag: missing arguments at {}"
-                          .format(stack))
+                ctx.error("extensionTag: missing arguments")
                 return ""
             dt = args[0]
             if not isinstance(dt, (str, int, float, type(None))):
@@ -294,19 +290,17 @@ def call_lua_sandbox(ctx, invoke_args, expander, stack, parent):
             else:
                 attrs = [attrs]
 
-            stack.append("extensionTag()")
+            ctx.expand_stack.append("extensionTag()")
             ret = tag_fn(title, "#tag", [name, content] + attrs,
-                         lambda x: x,  # Already expanded
-                         stack)
-            stack.pop()
+                         lambda x: x)  # Already expanded
+            ctx.expand_stack.pop()
             # Expand any templates from the result
             ret = preprocess(frame, ret)
             return ret
 
         def callParserFunction(frame, *args):
             if len(args) < 1:
-                ctx.error("callParserFunction: missing name at {}"
-                          .format(stack))
+                ctx.error("callParserFunction: missing name")
                 return ""
             name = args[0]
             if not isinstance(name, str):
@@ -328,23 +322,22 @@ def call_lua_sandbox(ctx, invoke_args, expander, stack, parent):
                         new_args.append(str(v))
             name = ctx._canonicalize_parserfn_name(name)
             if name not in PARSER_FUNCTIONS:
-                ctx.error("frame:callParserFunction(): undefined function "
-                          "{!r} at {}".format(name, stack))
+                ctx.error("frame:callParserFunction(): undefined function {!r}"
+                          .format(name))
                 return ""
-            return call_parser_function(ctx, name, new_args, lambda x: x,
-                                        stack)
+            return call_parser_function(ctx, name, new_args, lambda x: x)
 
         def expand_all_templates(encoded):
             # Expand all templates here, even if otherwise only
             # expanding some of them.  We stay quiet about undefined
             # templates here, because Wiktionary Module:ugly hacks
             # generates them all the time.
-            ret = ctx.expand(encoded, stack, parent, quiet=True)
+            ret = ctx.expand(encoded, parent, quiet=True)
             return ret
 
         def preprocess(frame, *args):
             if len(args) < 1:
-                ctx.error("preprocess: missing argument at {}".format(stack))
+                ctx.error("preprocess: missing argument")
                 return ""
             v = args[0]
             if not isinstance(v, str):
@@ -352,20 +345,18 @@ def call_lua_sandbox(ctx, invoke_args, expander, stack, parent):
             # Expand all templates, in case the Lua code actually
             # inspects the output.
             v = ctx._encode(v)
-            stack.append("frame:preprocess()")
+            ctx.expand_stack.append("frame:preprocess()")
             ret = expand_all_templates(v)
-            stack.pop()
+            ctx.expand_stack.pop()
             return ret
 
         def expandTemplate(frame, *args):
             if len(args) < 1:
-                ctx.error("expandTemplate: missing arguments at {}"
-                          "".format(stack))
+                ctx.error("expandTemplate: missing arguments")
                 return ""
             dt = args[0]
             if isinstance(dt, (int, float, str, type(None))):
-                ctx.error("expandTemplate: arguments should be named at {}"
-                          "".format(stack))
+                ctx.error("expandTemplate: arguments should be named")
                 return ""
             title = dt["title"] or ""
             args = dt["args"] or {}
@@ -373,9 +364,9 @@ def call_lua_sandbox(ctx, invoke_args, expander, stack, parent):
             for k, v in sorted(args.items(), key=lambda x: str(x[0])):
                 new_args.append("{}={}".format(k, v))
             encoded = ctx._save_value("T", new_args, False)
-            stack.append("frame:expandTemplate()")
+            ctx.expand_stack.append("frame:expandTemplate()")
             ret = expand_all_templates(encoded)
-            stack.pop()
+            ctx.expand_stack.pop()
             return ret
 
         # Create frame object as dictionary with default value None
@@ -413,9 +404,8 @@ def call_lua_sandbox(ctx, invoke_args, expander, stack, parent):
     frame = make_frame(pframe, modname, invoke_args[2:])
 
     # Call the Lua function in the given module
-    stack.append("Lua:{}:{}()".format(modname, modfn))
-    old_stack = ctx.expand_stack
-    ctx.expand_stack = stack
+    stack_len = len(ctx.expand_stack)
+    ctx.expand_stack.append("Lua:{}:{}()".format(modname, modfn))
     try:
         ret = lua.eval("lua_invoke")(modname, modfn, frame, ctx.title)
         if not isinstance(ret, (list, tuple)):
@@ -429,8 +419,8 @@ def call_lua_sandbox(ctx, invoke_args, expander, stack, parent):
                   .format(invoke_args, stack))
         ok, text = True, ""
     finally:
-        ctx.expand_stack = old_stack
-    stack.pop()
+        while len(ctx.expand_stack) > stack_len:
+            ctx.expand_stack.pop()
     if ok:
         if text is None:
             text = "nil"
@@ -458,7 +448,7 @@ def call_lua_sandbox(ctx, invoke_args, expander, stack, parent):
             #    break
             parts.append(line)
         trace = "\n".join(parts)
-        ctx.error("LUA error in #invoke {} at {}"
-                  .format(invoke_args, stack),
+        ctx.error("LUA error in #invoke {}"
+                  .format(invoke_args),
                   trace=trace)
     return ""

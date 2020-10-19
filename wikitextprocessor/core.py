@@ -83,29 +83,29 @@ class Wtp(object):
         self.tmp_ofs = 0
         self.buf_ofs = 0
 
-    def error(self, msg, trace=None, path=None):
+    def error(self, msg, trace=None):
         """Prints an error message to stdout.  The error is also saved in
         self.errors."""
         assert isinstance(msg, str)
         assert isinstance(trace, (str, type(None)))
-        assert isinstance(path, (list, tuple, type(None)))
-        self.errors.append({"msg": msg, "trace": trace, "path": path})
-        if path:
-            msg += " at {}".format(path)
+        self.errors.append({"msg": msg, "trace": trace,
+                            "path": tuple(self.expand_stack)})
+        if self.expand_stack:
+            msg += " at {}".format(self.expand_stack)
         if trace:
             msg += "\n" + trace
         print("{}: ERROR: {}".format(self.title, msg))
         sys.stdout.flush()
 
-    def warning(self, msg, trace=None, path=None):
+    def warning(self, msg, trace=None):
         """Prints a warning message to stdout.  The error is also saved in
         self.warnings."""
         assert isinstance(msg, str)
         assert isinstance(trace, (str, type(None)))
-        assert isinstance(path, (list, tuple, type(None)))
-        self.warnings.append({"msg": msg, "trace": trace, "path": path})
-        if path:
-            msg += " at {}".format(path)
+        self.warnings.append({"msg": msg, "trace": trace,
+                              "path": tuple(self.expand_stack)})
+        if self.expand_stack:
+            msg += " at {}".format(self.expand_stack)
         if trace:
             msg += "\n" + trace
         print("{}: {}".format(self.title, msg))
@@ -486,8 +486,9 @@ class Wtp(object):
         self.warnings = []
         self.cookies = []
         self.rev_ht = {}
+        self.expand_stack = [title]
 
-    def expand(self, text, stack=None, parent=None, pre_only=False,
+    def expand(self, text, parent=None, pre_only=False,
                template_fn=None, templates_to_expand=None,
                expand_parserfns=True, expand_invoke=True, quiet=False):
         """Expands templates and parser functions (and optionally Lua macros)
@@ -501,7 +502,6 @@ class Wtp(object):
         arguments).  This returns the text with the given templates
         expanded."""
         assert isinstance(text, str)
-        assert stack is None or isinstance(stack, list)
         assert parent is None or (isinstance(parent, (list, tuple)) and
                                   len(parent) == 2)
         assert pre_only in (True, False)
@@ -522,20 +522,15 @@ class Wtp(object):
         if templates_to_expand is None:
             templates_to_expand = self.templates
 
-        # Default stack to a newly created list
-        if stack is None:
-            stack = []
-
         def unexpanded_template(args):
             """Formats an unexpanded template (whose arguments may have been
             partially or fully expanded)."""
             return "{{" + "|".join(args) + "}}"
 
-        def invoke_fn(invoke_args, expander, stack, parent):
+        def invoke_fn(invoke_args, expander, parent):
             """This is called to expand a #invoke parser function."""
             assert isinstance(invoke_args, (list, tuple))
             assert callable(expander)
-            assert isinstance(stack, list)
             assert isinstance(parent, (tuple, type(None)))
             # print("invoke_fn", invoke_args)
             # sys.stdout.flush()
@@ -543,15 +538,13 @@ class Wtp(object):
             # Use the Lua sandbox to execute a Lua macro.  This will initialize
             # the Lua environment and store it in self.lua if it does not
             # already exist (it needs to be re-created for each new page).
-            # This will restore stack() to as it were.
-            ret = call_lua_sandbox(self, invoke_args, expander, stack, parent)
+            ret = call_lua_sandbox(self, invoke_args, expander, parent)
             return ret
 
-        def expand(coded, stack, parent, templates_to_expand):
+        def expand(coded, parent, templates_to_expand):
             """This function does most of the work for expanding encoded
             templates, arguments, and parser functions."""
             assert isinstance(coded, str)
-            assert isinstance(stack, list)
             assert isinstance(parent, (tuple, type(None)))
             assert isinstance(templates_to_expand, (set, dict))
 
@@ -587,12 +580,12 @@ class Wtp(object):
                         # Template argument reference
                         if len(args) > 2:
                             self.error("too many args ({}) in argument "
-                                       "reference {!r} at {}"
-                                       .format(len(args), args, stack))
-                        stack.append("ARG-NAME")
+                                       "reference {!r}"
+                                       .format(len(args), args))
+                        self.expand_stack.append("ARG-NAME")
                         k = expand(expand_args(args[0], argmap),
-                                   stack, parent, self.templates).strip()
-                        stack.pop()
+                                   parent, self.templates).strip()
+                        self.expand_stack.pop()
                         if k.isdigit():
                             k = int(k)
                         v = argmap.get(k, None)
@@ -600,9 +593,9 @@ class Wtp(object):
                             parts.append(v)
                             continue
                         if len(args) >= 2:
-                            stack.append("ARG-DEFVAL")
+                            self.expand_stack.append("ARG-DEFVAL")
                             ret = expand_args(args[1], argmap)
-                            stack.pop()
+                            self.expand_stack.pop()
                             parts.append(ret)
                             continue
                         # The argument is not defined (or name is empty)
@@ -627,17 +620,15 @@ class Wtp(object):
                         return "{{" + fn_name + "}}"
                     return "{{" + fn_name + ":" + "|".join(args) + "}}"
                 # Call parser function
-                stack.append(fn_name)
-                expander = lambda arg: expand(arg, stack, parent,
-                                              self.templates)
+                self.expand_stack.append(fn_name)
+                expander = lambda arg: expand(arg, parent, self.templates)
                 if fn_name == "#invoke":
                     if not expand_invoke:
                         return "{{#invoke:" + "|".join(args) + "}}"
-                    ret = invoke_fn(args, expander, stack, parent)
+                    ret = invoke_fn(args, expander, parent)
                 else:
-                    ret = call_parser_function(self, fn_name, args, expander,
-                                               stack)
-                stack.pop()  # fn_name
+                    ret = call_parser_function(self, fn_name, args, expander)
+                self.expand_stack.pop()  # fn_name
                 # XXX if lua code calls frame:preprocess(), then we should
                 # apparently encode and expand the return value, similarly to
                 # template bodies (without argument expansion)
@@ -666,16 +657,15 @@ class Wtp(object):
                         continue
                     # Template transclusion or parser function call
                     # Limit recursion depth
-                    if len(stack) >= 100:
-                        self.error("too deep expansion of templates via {}"
-                                   .format(stack))
+                    if len(self.expand_stack) >= 100:
+                        self.error("too deep expansion of templates")
                         parts.append(unexpanded_template(args))
                         continue
 
                     # Expand template/parserfn name
-                    stack.append("TEMPLATE_NAME")
-                    tname = expand(args[0], stack, parent, templates_to_expand)
-                    stack.pop()
+                    self.expand_stack.append("TEMPLATE_NAME")
+                    tname = expand(args[0], parent, templates_to_expand)
+                    self.expand_stack.pop()
 
                     # Strip safesubst: and subst: prefixes
                     tname = tname.strip()
@@ -716,8 +706,8 @@ class Wtp(object):
                     # Check for undefined templates
                     if name not in self.templates:
                         if not quiet:
-                            self.warning("undefined template {!r} at {}"
-                                         .format(tname, stack))
+                            self.warning("undefined template {!r}"
+                                         .format(tname))
                         parts.append(unexpanded_template(args))
                         continue
 
@@ -729,7 +719,7 @@ class Wtp(object):
                         continue
 
                     # Construct and expand template arguments
-                    stack.append(name)
+                    self.expand_stack.append(name)
                     ht = {}
                     num = 1
                     for i in range(1, len(args)):
@@ -751,9 +741,9 @@ class Wtp(object):
                                 if num <= k:
                                     num = k + 1
                             else:
-                                stack.append("ARGNAME")
-                                k = expand(k, stack, parent, self.templates)
-                                stack.pop()
+                                self.expand_stack.append("ARGNAME")
+                                k = expand(k, parent, self.templates)
+                                self.expand_stack.pop()
                         else:
                             k = num
                             num += 1
@@ -761,9 +751,9 @@ class Wtp(object):
                         # they are defined.  This makes a difference for
                         # calls to #invoke within a template argument (the
                         # parent frame would be different).
-                        stack.append("ARGVAL-{}".format(k))
-                        arg = expand(arg, stack, parent, self.templates)
-                        stack.pop()
+                        self.expand_stack.append("ARGVAL-{}".format(k))
+                        arg = expand(arg, parent, self.templates)
+                        self.expand_stack.pop()
                         ht[k] = arg
 
                     # Expand the body, either using ``template_fn`` or using
@@ -805,11 +795,11 @@ class Wtp(object):
                         # XXX no real need to expand here, it will expanded on
                         # next iteration anyway (assuming parent unchanged)
                         # Otherwise expand the body
-                        t = expand(encoded_body, stack, new_parent,
+                        t = expand(encoded_body, new_parent,
                                    templates_to_expand)
 
                     assert isinstance(t, str)
-                    stack.pop()  # template name
+                    self.expand_stack.pop()  # template name
                     parts.append(t)
                 elif kind == "A":
                     if nowiki:
@@ -827,10 +817,9 @@ class Wtp(object):
                     else:
                         # Link to another page
                         content = args[0]
-                        stack.append("[[link]]")
-                        content = expand(content, stack, parent,
-                                         templates_to_expand)
-                        stack.pop()
+                        self.expand_stack.append("[[link]]")
+                        content = expand(content, parent, templates_to_expand)
+                        self.expand_stack.pop()
                         parts.append("[[" + content + "]]")
                 else:
                     self.error("expand: unsupported cookie kind {!r} in {}"
@@ -846,10 +835,10 @@ class Wtp(object):
         # Recursively expand the selected templates.  This is an outside-in
         # operation.
         try:
-            stack.append(self.title)
-            expanded = expand(encoded, stack, parent, templates_to_expand)
+            self.expand_stack.append(self.title)
+            expanded = expand(encoded, parent, templates_to_expand)
         finally:
-            stack.pop()
+            self.expand_stack.pop()
 
         return expanded
 
