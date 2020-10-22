@@ -1317,6 +1317,22 @@ MORE
         ret = ctx.expand("{{localurl|Reconstruction:another title}}")
         self.assertEqual(ret, "/wiki/Reconstruction:another_title")
 
+    def test_currentmonthname1(self):
+        ctx = phase1_to_ctx([])
+        ctx.start_page("test page")
+        ret = ctx.expand("{{CURRENTMONTHNAME}}")
+        self.assertIn(ret, ["January", "February", "March", "April", "May",
+                            "June", "July", "August", "September", "October",
+                            "November", "December"])
+
+    def test_currentmonthabbrev1(self):
+        ctx = phase1_to_ctx([])
+        ctx.start_page("test page")
+        ret = ctx.expand("{{CURRENTMONTHABBREV}}")
+        self.assertIn(ret, ["Jan", "Feb", "Mar", "Apr", "May",
+                            "Jun", "Jul", "Aug", "Sep", "Oct",
+                            "Nov", "Dec"])
+
     def test_template1(self):
         ctx = phase1_to_ctx([
             ["wikitext", "Template:testmod", "test content"]])
@@ -2242,6 +2258,24 @@ return export
         table.sort(s)
         return f:getTitle() .. "|" .. table.concat(s, "|")""")
 
+    def test_mw_text_listToText1(self):
+        self.scribunto("", """return mw.text.listToText({})""")
+
+    def test_mw_text_listToText2(self):
+        self.scribunto("abba", """return mw.text.listToText({"abba"})""")
+
+    def test_mw_text_listToText3(self):
+        self.scribunto("abba and jara",
+                       """return mw.text.listToText({"abba", "jara"})""")
+
+    def test_mw_text_listToText4(self):
+        self.scribunto("abba, jara and zara", """
+        return mw.text.listToText({"abba", "jara", "zara"})""")
+
+    def test_mw_text_listToText5(self):
+        self.scribunto("abba; jara or zara", """
+        return mw.text.listToText({"abba", "jara", "zara"}, ";", "or")""")
+
     def test_mw_text_nowiki1(self):
         self.scribunto("&num;&lsqb;foo&rsqb;&lbrace;&lbrace;a&vert;"
                        "b&rbrace;&rbrace;", """
@@ -2883,25 +2917,12 @@ return export
 # XXX test expand() with templates_to_expand as a given set
 # XXX test expand() with templates_to_expand=None (meaning all templates)
 
-# XXX title:getContent() must be implemented at least for Thesaurus pages
-# (we can easily capture Thesaurus pages in phase1)
-#  - should now be implemented, but test
-
 # XXX Implement:
 #   #time
-#   TALKSPACE
-#   BASEPAGENAME   (make sure also recognized {{BASEPAGENAME:}}
 #   fullurle
-#   PAGENAMEE
-#   CURRENTMONTHNAME
 
 # XXX add warning about unbalanced parentheses; should try to handle
 # them heuristically as a last resort
-
-# XXX should check that templates inside <nowiki> ... </nowiki> do not get
-# expanded
-
-# XXX #tag is used to create <nowiki>, allow and implement
 
 # XXX Why do I sometimes get {{{...}}} remaining in final text?
 

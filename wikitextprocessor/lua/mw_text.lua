@@ -12,7 +12,7 @@ local mw_text = {
    -- jsonDecode
    -- jsonEncode
    -- killMarkers
-   -- listToText
+   -- listToText  (see below)
    -- nowiki  (see below)
    split = scribunto_mwtext.split,
    gsplit = scribunto_mwtext.gsplit,
@@ -22,6 +22,27 @@ local mw_text = {
    -- unstripNoWiki
    -- unstrip
 }
+
+function mw_text.listToText(list, separator, conjunction)
+   -- XXX default separators should be language-dependent
+   if separator == nil then separator = "," end
+   if conjunction == nil then conjunction = "and" end
+   if #list == 0 then return "" end
+   if #list == 1 then return list[1] end
+   if #list == 2 then return list[1] .. " " .. conjunction .. " " .. list[2] end
+   local lst = {}
+   for i = 1, #list - 2 do
+      table.insert(lst, list[i])
+      table.insert(lst, separator)
+      table.insert(lst, " ")
+   end
+   table.insert(lst, list[#list - 1])
+   table.insert(lst, " ")
+   table.insert(lst, conjunction)
+   table.insert(lst, " ")
+   table.insert(lst, list[#list])
+   return table.concat(lst, "")
+end
 
 function mw_text.nowiki(s)
    s = s:gsub("&", "&amp;")

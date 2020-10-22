@@ -297,6 +297,22 @@ def currentmonth1_fn(ctx, fn_name, args, expander):
     return "{:d}".format(datetime.datetime.utcnow().month)
 
 
+def currentmonthname_fn(ctx, fn_name, args, expander):
+    """Implements the CURRENTMONTHNAME magic word."""
+    # XXX support for other languages?
+    month = datetime.datetime.utcnow().month
+    return ("", "January", "February", "March", "April", "May", "June",
+            "July", "August", "September", "November", "December")[month]
+
+
+def currentmonthabbrev_fn(ctx, fn_name, args, expander):
+    """Implements the CURRENTMONTHABBREV magic word."""
+    # XXX support for other languages?
+    month = datetime.datetime.utcnow().month
+    return ("", "Jan", "Feb", "Mar", "Apr", "May", "Jun",
+            "Jul", "Aug", "Sep", "Nov", "Dec")[month]
+
+
 def currentday_fn(ctx, fn_name, args, expander):
     """Implements the CURRENTDAY magic word."""
     return "{:d}".format(datetime.datetime.utcnow().day)
@@ -1047,8 +1063,8 @@ PARSER_FUNCTIONS = {
     "CURRENTYEAR": currentyear_fn,
     "CURRENTMONTH": currentmonth_fn,
     "CURRENTMONTH1": currentmonth1_fn,
-    "CURRENTMONTHNAME": unimplemented_fn,
-    "CURRENTMONTHABBREV": unimplemented_fn,
+    "CURRENTMONTHNAME": currentmonthname_fn,
+    "CURRENTMONTHABBREV": currentmonthabbrev_fn,
     "CURRENTDAY": currentday_fn,
     "CURRENTDAY2": currentday2_fn,
     "CUEEWNTDOW": currentdow_fn,
