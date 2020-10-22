@@ -896,6 +896,112 @@ def plural_fn(ctx, fn_name, args, expander):
     return expander(args[2]).strip() if len(args) >= 3 else ""
 
 
+def month_num_days(ctx, t):
+    mdays = [31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31]
+    v = mdays[t.month - 1]
+    if t.month == 2:
+        if t.year % 4 == 0 and (t.year % 100 != 0 or t.year % 400 == 0):
+            v = 29
+    return v
+
+
+time_fmt_map = {
+    "Y": "%Y",
+    "y": "%y",
+    "L": lambda ctx, t: 1 if (t.year % 4 == 0 and
+                              (t.year % 100 != 0 or
+                               t.year % 400 == 0)) else 0,
+    "o": "%G",
+    "n": lambda ctx, t: t.month,
+    "m": "%m",
+    "M": "%b",
+    "F": "%B",
+    "xg": "%B",  # Should be in genitive
+    "j": lambda ctx, t: t.day,
+    "d": "%d",
+    "z": lambda ctx, t:
+        (t - datetime.datetime(year=t.year, month=1, day=1,
+                               tzinfo=t.tzinfo)).days,
+    "W": "%V",
+    "N": "%u",
+    "w": "%w",
+    "D": "%a",
+    "l": "%A",
+    "a": "%p",  # Should be lowercase
+    "A": "%p",  # Should be uppercase
+    "g": lambda ctx, t: t.hour % 12,
+    "h": "%I",
+    "G": lambda ctx, t: t.hour,
+    "H": "%H",
+    "i": "%M",
+    "s": "%S",
+    "U": lambda ctx, t: int(t.timestamp()),
+    "e": "%Z",
+    "I": lambda ctx, t: "1" if t.dst() and t.dst().seconds != 0 else "0",
+    "0": lambda ctx, t: t.strftime("%z")[:5],
+    "P": lambda ctx, t: t.strftime("%z")[:3] + ":" + t.strftime("%z")[3:5],
+    "T": "%Z",
+    "Z": lambda ctx, t: 0 if t.utcoffset() == None else t.utcoffset().seconds,
+    "t": month_num_days,
+    "c": lambda ctx, t: t.isoformat(),
+    "r": lambda ctx, t: t.strftime("%a, %d %b %Y %H:%M:%S {}").format(
+        t.strftime("%z")[:5]),
+    # XXX non-gregorian calendar values
+}
+
+
+def time_fn(ctx, fn_name, args, expander):
+    """Implements the #time parser function."""
+    fmt = expander(args[0]).strip() if args else ""
+    dt = expander(args[1]).strip() if len(args) >= 2 else ""
+    lang = expander(args[2]).strip() if len(args) >= 3 else "en"
+    loc = expander(args[3]).strip() if len(args) >= 4 else ""
+
+    dt = re.sub(r"\+", " in ", dt)
+    if not dt:
+        dt = "now"
+
+    settings = { "RETURN_AS_TIMEZONE_AWARE": True}
+    if loc in ("", "0"):
+        dt += " UTC"
+
+    if dt.startswith("@"):
+        try:
+            t = datetime.datetime.fromtimestamp(float(dt[1:]))
+        except ValueError:
+            ctx.warning("bad time syntax in {}: {!r}"
+                        .format(fn_name, dt))
+            t = datetime.datetime.utcnow()
+    else:
+        t = dateparser.parse(dt, settings=settings)
+        if t is None:
+            ctx.warning("unrecognized time syntax in {}: {!r}"
+                        .format(fn_name, dt))
+            t = datetime.datetime.utcnow()
+
+    # XXX looks like we should not adjust the time
+    #if t.utcoffset():
+    #    t -= t.utcoffset()
+
+    def fmt_repl(m):
+        f = m.group(0)
+        if len(f) > 1 and f.startswith('"') and f.endswith('"'):
+            return f[1:-1]
+        if f in time_fmt_map:
+            v = time_fmt_map[f]
+            if isinstance(v, str):
+                return v
+            assert callable(v)
+            v = v(ctx, t)
+            if not isinstance(v, str):
+                v = str(v)
+            return v
+        return f
+
+    fmt = re.sub(r'(x[mijkot]?)?[^"]|"[^"]*"', fmt_repl, fmt)
+    return t.strftime(fmt)
+
+
 def len_fn(ctx, fn_name, args, expander):
     """Implements the #len parser function."""
     v = expander(args[0]).strip() if args else ""
@@ -1116,7 +1222,7 @@ PARSER_FUNCTIONS = {
     "padleft": padleft_fn,
     "padright": padright_fn,
     "plural": plural_fn,
-    "#time": unimplemented_fn,
+    "#time": time_fn,
     "#timel": unimplemented_fn,
     "gender": unimplemented_fn,
     "#tag": tag_fn,

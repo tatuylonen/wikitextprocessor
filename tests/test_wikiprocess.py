@@ -4,6 +4,8 @@
 
 import html
 import math
+import time
+import datetime
 import unittest
 from wikitextprocessor import Wtp, phase1_to_ctx
 from wikitextprocessor.common import preprocess_text, MAGIC_NOWIKI_CHAR
@@ -23,6 +25,12 @@ return export
         ctx.start_page("Tt")
         ret = ctx.expand("{{#invoke:testmod|testfn}}")
         self.assertEqual(len(ctx.expand_stack), 1)
+        self.assertEqual(ret, expected_ret)
+
+    def parserfn(self, text, expected_ret):
+        ctx = phase1_to_ctx([])
+        ctx.start_page("Tt")
+        ret = ctx.expand(text)
         self.assertEqual(ret, expected_ret)
 
     def test_preprocess1(self):
@@ -78,10 +86,7 @@ return export
         self.assertEqual(ret, "Some {{unknown template|arg1||arg3}}")
 
     def test_if1(self):
-        ctx = phase1_to_ctx([])
-        ctx.start_page("Tt")
-        ret = ctx.expand("{{#if:|T|F}}")
-        self.assertEqual(ret, "F")
+        self.parserfn("{{#if:|T|F}}", "F")
 
     def test_if2(self):
         ctx = phase1_to_ctx([])
@@ -1082,7 +1087,179 @@ MORE
         ret = ctx.expand("{{padright:|1|xyz}}")
         self.assertEqual(ret, "x")
 
+    def test_time1(self):
+        ctx = phase1_to_ctx([])
+        ctx.start_page("Tt")
+        t1 = time.time()
+        ret = ctx.expand("{{#time:U}}")
+        t2 = time.time()
+        self.assertLessEqual(int(t1), float(ret))
+        self.assertLessEqual(float(ret), t2)
+
+    def test_time2(self):
+        self.parserfn("{{#time:Y|January 3, 1999}}", "1999")
+
+    def test_time3(self):
+        self.parserfn("{{#time:y|January 3, 1999}}", "99")
+
+    def test_time4(self):
+        self.parserfn("{{#time:L|January 3, 1999}}", "0")
+
+    def test_time5(self):
+        self.parserfn("{{#time:L|January 3, 2004}}", "1")
+
+    def test_time6(self):
+        self.parserfn("{{#time:L|January 3, 2100}}", "0")
+
+    def test_time7(self):
+        self.parserfn("{{#time:L|January 3, 2400}}", "1")
+
+    def test_time8(self):
+        self.parserfn("{{#time:o|January 1, 2000}}", "1999")
+
+    def test_time9(self):
+        self.parserfn("{{#time:o|January 10, 2000}}", "2000")
+
+    def test_time10(self):
+        self.parserfn("{{#time:o|January 1, 2007}}", "2007")
+
+    def test_time11(self):
+        self.parserfn("{{#time:n|February 7, 2007}}", "2")
+
+    def test_time12(self):
+        self.parserfn("{{#time:m|February 7, 2007}}", "02")
+
+    def test_time13(self):
+        self.parserfn("{{#time:j|February 7, 2007}}", "7")
+
+    def test_time14(self):
+        self.parserfn("{{#time:d|February 7, 2007}}", "07")
+
+    def test_time15(self):
+        self.parserfn("{{#time:M|February 7, 2007|en}}", "Feb")
+
+    def test_time16(self):
+        self.parserfn("{{#time:F|February 7, 2007|en}}", "February")
+
+    def test_time17(self):
+        # XXX month should really be in genitive
+        # Also test tokenization of format string
+        self.parserfn("""{{#time:Yxgd "(foo)"|February 7, 2007|en}}""",
+                      "2007February07 (foo)")
+
+    def test_time18(self):
+        self.parserfn("{{#time:z|Janary 6, 2007}}", "5")
+
+    def test_time18(self):
+        self.parserfn("{{#time:z|February 2, 2007}}", "32")
+
+    def test_time19(self):
+        self.parserfn("{{#time:W|January 2, 2007}}", "01")
+
+    def test_time20(self):
+        self.parserfn("{{#time:W|February 2, 2007}}", "05")
+
+    def test_time21(self):
+        self.parserfn("{{#time:N|February 4, 2007}}", "7")
+
+    def test_time22(self):
+        self.parserfn("{{#time:w|February 4, 2007}}", "0")
+
+    def test_time23(self):
+        self.parserfn("{{#time:D|February 4, 2007|en}}", "Sun")
+
+    def test_time24(self):
+        self.parserfn("{{#time:l|February 4, 2007|en}}", "Sunday")
+
+    def test_time25(self):
+        self.parserfn("{{#time:A|February 4, 2007 10:00|en}}", "AM")
+
+    def test_time26(self):
+        self.parserfn("{{#time:A|February 4, 2007 21:00|en}}", "PM")
+
+    def test_time27(self):
+        self.parserfn("{{#time:g|February 4, 2007 21:00|en}}", "9")
+
+    def test_time28(self):
+        self.parserfn("{{#time:h|February 4, 2007 21:00|en}}", "09")
+
+    def test_time29(self):
+        self.parserfn("{{#time:G|February 4, 2007 09:00|en}}", "9")
+
+    def test_time30(self):
+        self.parserfn("{{#time:H|February 4, 2007 21:00|en}}", "21")
+
+    def test_time31(self):
+        self.parserfn("{{#time:H|February 4, 2007 09:00|en}}", "09")
+
+    def test_time32(self):
+        self.parserfn("{{#time:i|February 4, 2007 21:11:22|en}}", "11")
+
+    def test_time33(self):
+        self.parserfn("{{#time:s|February 4, 2007 21:11:22|en}}", "22")
+
+    def test_time34(self):
+        self.parserfn("{{#time:e|February 4, 2007 10:00}}", "UTC")
+
+    #def test_time34(self):
+    #    # This requires Python 3.7 ?
+    #    # XXX also different timezone name formats, so the test does not work
+    #    tzname = datetime.datetime.now().astimezone().tzname()
+    #    self.parserfn("{{#time:e|February 4, 2007 10:00||1}}", tzname)
+    # XXX should also test T
+
+    def test_time35(self):
+        self.parserfn("{{#time:H|February 4, 2007 10:00||1}}", "10")
+
+    def test_time36(self):
+        ctx = phase1_to_ctx([])
+        ctx.start_page("Tt")
+        ret = ctx.expand("{{#time:I}}")
+        self.assertIn(ret, ["0", "1"])
+
+    def test_time37(self):
+        ctx = phase1_to_ctx([])
+        ctx.start_page("Tt")
+        ret = ctx.expand("{{#time:0}}")
+        self.assertEqual(len(ret), 5)
+
+    def test_time38(self):
+        ctx = phase1_to_ctx([])
+        ctx.start_page("Tt")
+        ret = ctx.expand("{{#time:P}}")
+        self.assertEqual(len(ret), 6)
+
+    def test_time39(self):
+        ctx = phase1_to_ctx([])
+        ctx.start_page("Tt")
+        ret = ctx.expand("{{#time:Z}}")
+        self.assertLessEqual(0, int(ret))
+        self.assertLess(int(ret), 24 * 3600)
+
+    def test_time40(self):
+        self.parserfn("{{#time:t|February 4, 2007 10:00}}", "28")
+
+    def test_time41(self):
+        self.parserfn("{{#time:t|February 4, 2004 10:00}}", "29")
+
+    def test_time42(self):
+        self.parserfn("{{#time:t|July 4, 2004 10:00}}", "31")
+
+    def test_time43(self):
+        self.parserfn("{{#time:c|July 4, 2004 10:11:22}}",
+                      "2004-07-04T10:11:22+00:00")
+
+    def test_time44(self):
+        self.parserfn("{{#time:r|22 oct 2020 19:00:59}}",
+                      "Thu, 22 Oct 2020 19:00:59 +0000")
+
     def test_len1(self):
+        ctx = phase1_to_ctx([])
+        ctx.start_page("Tt")
+        ret = ctx.expand("{{#len: xyz }}")
+        self.assertEqual(ret, "3")
+
+    def test_len2(self):
         ctx = phase1_to_ctx([])
         ctx.start_page("Tt")
         ret = ctx.expand("{{#len: xyz }}")
