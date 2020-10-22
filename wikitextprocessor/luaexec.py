@@ -415,8 +415,8 @@ def call_lua_sandbox(ctx, invoke_args, expander, parent):
         else:
             ok, text = ret[0], ret[1]
     except UnicodeDecodeError:
-        ctx.error("invalid unicode returned by {} at {}"
-                  .format(invoke_args, stack))
+        ctx.error("invalid unicode returned by {}"
+                  .format(invoke_args))
         ok, text = True, ""
     finally:
         while len(ctx.expand_stack) > stack_len:

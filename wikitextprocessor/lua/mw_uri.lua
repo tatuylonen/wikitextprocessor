@@ -204,9 +204,17 @@ end
 
 function Uri:extend(query)
    if query == nil then return end
-   for k, v in pairs(query) do
-      if type(v) ~= "function" then
+   if type(query) == "string" then
+      print("Uri:extend string query", query)
+      for k, v in string.gmatch(query, "([^=&]+)(=([^&]*))?&?") do
+         if v == nil then v = "" end
          self.query[k] = v
+      end
+   else
+      for k, v in pairs(query) do
+         if type(v) ~= "function" then
+            self.query[k] = v
+         end
       end
    end
    self:update()

@@ -9,7 +9,7 @@ import datetime
 import urllib.parse
 import dateparser
 from .wikihtml import ALLOWED_HTML_TAGS
-
+from .common import preprocess_text
 
 # Name of the WikiMedia for which we are generating content
 PROJECT_NAME = "Wiktionary"
@@ -123,7 +123,7 @@ def lst_fn(ctx, fn_name, args, expander):
 def tag_fn(ctx, fn_name, args, expander):
     """Implements #tag parser function."""
     tag = expander(args[0]).lower() if args else ""
-    if tag not in ALLOWED_HTML_TAGS:
+    if tag not in ALLOWED_HTML_TAGS and tag != "nowiki":
         ctx.warning("#tag creating non-allowed tag <{}> - omitted"
                     .format(tag))
         return "{{" + fn_name + ":" + "|".join(args) + "}}"
@@ -146,9 +146,14 @@ def tag_fn(ctx, fn_name, args, expander):
     else:
         attrs = ""
     if not content:
-        return "<{}{} />".format(tag, attrs)
-    content = html.escape(content, quote=False)
-    return "<{}{}>{}</{}>".format(tag, attrs, content, tag)
+        ret = "<{}{} />".format(tag, attrs)
+    else:
+        content = html.escape(content, quote=False)
+        ret = "<{}{}>{}</{}>".format(tag, attrs, content, tag)
+    if tag == "nowiki":
+        print("tag_fn preprocessing {!r}".format(ret))
+        ret = preprocess_text(ret)
+    return ret
 
 
 def fullpagename_fn(ctx, fn_name, args, expander):
@@ -166,6 +171,24 @@ def fullpagename_fn(ctx, fn_name, args, expander):
     else:
         t = capitalizeFirstOnly(t)
     return t
+
+
+def fullpagenamee_fn(ctx, fn_name, args, expander):
+    """Implements the FULLPAGENAMEE magic word/parser function."""
+    t = fullpagename_fn(ctx, fn_name, args, expander)
+    return wikiurlencode(t)
+
+
+def pagenamee_fn(ctx, fn_name, args, expander):
+    """Implements the PAGENAMEE magic word/parser function."""
+    t = pagename_fn(ctx, fn_name, args, expander)
+    return wikiurlencode(t)
+
+
+def rootpagenamee_fn(ctx, fn_name, args, expander):
+    """Implements the ROOTPAGENAMEE magic word/parser function."""
+    t = rootpagename_fn(ctx, fn_name, args, expander)
+    return wikiurlencode(t)
 
 
 def pagename_fn(ctx, fn_name, args, expander):
@@ -188,9 +211,19 @@ def basepagename_fn(ctx, fn_name, args, expander):
     t = t.strip()
     ofs = t.rfind("/")
     if ofs >= 0:
-        return t[:ofs]
-    else:
-        return pagename_fn(ctx, fn_name, [t], lambda x: x)
+        t = t[:ofs]
+    return pagename_fn(ctx, fn_name, [t], lambda x: x)
+
+
+def rootpagename_fn(ctx, fn_name, args, expander):
+    """Implements the ROOTPAGENAME magic word/parser function."""
+    t = expander(args[0]) if args else ctx.title
+    t = re.sub(r"\s+", " ", t)
+    t = t.strip()
+    ofs = t.find("/")
+    if ofs >= 0:
+        t = t[:ofs]
+    return pagename_fn(ctx, fn_name, [t], lambda x: x)
 
 
 def subpagename_fn(ctx, fn_name, args, expander):
@@ -224,25 +257,55 @@ def namespace_fn(ctx, fn_name, args, expander):
         return ns
     return ""
 
+
+def subjectspace_fn(ctx, fn_name, args, expander):
+    """Implements the SUBJECTSPACE magic word/parser function.  This
+    implementation is very minimal."""
+    t = expander(args[0]) if args else ctx.title
+    for prefix in ("Talk", "Media", "User", "Project",
+                   "Image", "MediaWiki", "Template", "Help", "Category",
+                   "Appendix", "Thesaurus", "Reconstruction", "Module"):
+        if t.startswith(prefix + ":"):
+            return prefix
+    return ""
+
+
+def talkspace_fn(ctx, fn_name, args, expander):
+    """Implements the TALKSPACE magic word/parser function.  This
+    implementation is very minimal."""
+    t = expander(args[0]) if args else ctx.title
+    for prefix in ("Talk", "Media", "User", "Project",
+                   "Image", "MediaWiki", "Template", "Help", "Category",
+                   "Appendix", "Thesaurus", "Reconstruction", "Module"):
+        if t.startswith(prefix + ":"):
+            return prefix + "_talk"
+    return "Talk"
+
+
 def currentyear_fn(ctx, fn_name, args, expander):
     """Implements the CURRENTYEAR magic word."""
     return str(datetime.datetime.utcnow().year)
+
 
 def currentmonth_fn(ctx, fn_name, args, expander):
     """Implements the CURRENTMONTH magic word."""
     return "{:02d}".format(datetime.datetime.utcnow().month)
 
+
 def currentmonth1_fn(ctx, fn_name, args, expander):
     """Implements the CURRENTMONTH1 magic word."""
     return "{:d}".format(datetime.datetime.utcnow().month)
+
 
 def currentday_fn(ctx, fn_name, args, expander):
     """Implements the CURRENTDAY magic word."""
     return "{:d}".format(datetime.datetime.utcnow().day)
 
+
 def currentday2_fn(ctx, fn_name, args, expander):
     """Implements the CURRENTDAY2 magic word."""
     return "{:02d}".format(datetime.datetime.utcnow().day)
+
 
 def currentdow_fn(ctx, fn_name, args, expander):
     """Implements the CURRENTDOW magic word."""
@@ -327,6 +390,19 @@ def dateformat_fn(ctx, fn_name, args, expander):
     return dt.isoformat()
 
 
+def localurl_fn(ctx, fn_name, args, expander):
+    """Implements the localurl parser function."""
+    arg0 = expander(args[0]).strip() if args else ctx.title
+    arg1 = expander(args[1]).strip() if len(args) >= 2 else ""
+    # XXX handle interwiki prefixes in arg0
+    if arg1:
+        url = "/w/index.php?title={}&{}".format(
+            urllib.parse.quote_plus(arg0), arg1)
+    else:
+        url = "/wiki/{}".format(wikiurlencode(arg0))
+    return url
+
+
 def fullurl_fn(ctx, fn_name, args, expander):
     """Implements the fullurl parser function."""
     arg0 = expander(args[0]).strip() if args else ""
@@ -354,6 +430,11 @@ def urlencode_fn(ctx, fn_name, args, expander):
     elif fmt == "QUERY":
         return urllib.parse.quote_plus(url)
     # All else in WIKI encoding
+    return wikiurlencode(url)
+
+
+def wikiurlencode(url):
+    assert isinstance(url, str)
     url = re.sub(r"\s+", "_", url)
     return urllib.parse.quote(url, safe="/:")
 
@@ -934,7 +1015,7 @@ PARSER_FUNCTIONS = {
     "FULLPAGENAME": fullpagename_fn,
     "PAGENAME": pagename_fn,
     "BASEPAGENAME": basepagename_fn,
-    "ROOTPAGENAME": unimplemented_fn,
+    "ROOTPAGENAME": rootpagename_fn,
     "SUBPAGENAME": subpagename_fn,
     "ARTICLEPAGENAME": unimplemented_fn,
     "SUBJECTPAGENAME": unimplemented_fn,
@@ -942,12 +1023,12 @@ PARSER_FUNCTIONS = {
     "NAMESPACENUMBER": namespacenumber_fn,
     "NAMESPACE": namespace_fn,
     "ARTICLESPACE": unimplemented_fn,
-    "SUBJECTSPACE": unimplemented_fn,
-    "TALKSPACE": unimplemented_fn,
-    "FULLPAGENAMEE": unimplemented_fn,
-    "PAGENAMEE": unimplemented_fn,
+    "SUBJECTSPACE": subjectspace_fn,
+    "TALKSPACE": talkspace_fn,
+    "FULLPAGENAMEE": fullpagenamee_fn,
+    "PAGENAMEE": pagenamee_fn,
     "BASEPAGENAMEE": unimplemented_fn,
-    "ROOTPAGENAMEE": unimplemented_fn,
+    "ROOTPAGENAMEE": rootpagenamee_fn,
     "SUBPAGENAMEE": unimplemented_fn,
     "ARTICLEPAGENAMEE": unimplemented_fn,
     "SUBJECTPAGENAMEE": unimplemented_fn,
@@ -1025,7 +1106,7 @@ PARSER_FUNCTIONS = {
     "#timel": unimplemented_fn,
     "gender": unimplemented_fn,
     "#tag": tag_fn,
-    "localurl": unimplemented_fn,
+    "localurl": localurl_fn,
     "fullurl": fullurl_fn,
     "canonicalurl": unimplemented_fn,
     "filepath": unimplemented_fn,

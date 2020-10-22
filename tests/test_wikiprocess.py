@@ -2,9 +2,11 @@
 #
 # Copyright (c) 2020 Tatu Ylonen.  See file LICENSE and https://ylonen.org
 
+import html
 import math
 import unittest
 from wikitextprocessor import Wtp, phase1_to_ctx
+from wikitextprocessor.common import preprocess_text, MAGIC_NOWIKI_CHAR
 
 class WikiProcTests(unittest.TestCase):
 
@@ -22,6 +24,28 @@ return export
         ret = ctx.expand("{{#invoke:testmod|testfn}}")
         self.assertEqual(len(ctx.expand_stack), 1)
         self.assertEqual(ret, expected_ret)
+
+    def test_preprocess1(self):
+        ret = preprocess_text("a<!-- foo\n -- bar\n- bar\n--- bar\n -- -->b")
+        self.assertEqual(ret, "ab")
+
+    def test_preprocess2(self):
+        ret = preprocess_text("a<nowiki />b")
+        self.assertEqual(ret, "a" + MAGIC_NOWIKI_CHAR + "b")
+
+    def test_preprocess3(self):
+        ret = preprocess_text("<nowiki />")
+        self.assertEqual(ret, MAGIC_NOWIKI_CHAR)
+
+    def test_preprocess4(self):
+        ret = preprocess_text("a<nowiki>&amp;</nowiki>b")
+        self.assertEqual(ret, "a&amp;amp&semi;b")
+
+    def test_preprocess5(self):
+        s = "a;&=<>*#:!|[]{}\"'b"
+        ret = preprocess_text("<nowiki>" + s + "</nowiki>")
+        self.assertNotEqual(ret, s)
+        self.assertEqual(html.unescape(ret), s)
 
     def test_basic(self):
         ctx = phase1_to_ctx([])
@@ -262,6 +286,24 @@ MORE
         ret = ctx.expand("{{#tag:div|foo bar<dangerous>z}}")
         self.assertEqual(ret, "<div>foo bar&lt;dangerous&gt;z</div>")
 
+    def test_tag6(self):
+        ctx = phase1_to_ctx([])
+        ctx.start_page("Tt")
+        ret = ctx.expand("{{#tag:nowiki|foo bar}}")
+        self.assertEqual(ret, "foo bar")
+
+    def test_tag7(self):
+        ctx = phase1_to_ctx([])
+        ctx.start_page("Tt")
+        ret = ctx.expand("{{#tag:nowiki|&amp;}}")
+        self.assertEqual(ret, "&amp;amp;")
+
+    def test_tag8(self):
+        ctx = phase1_to_ctx([])
+        ctx.start_page("Tt")
+        ret = ctx.expand("{{{#tag:nowiki}}{!}}")
+        self.assertEqual(ret, "{{!}}")
+
     def test_fullpagename1(self):
         ctx = phase1_to_ctx([])
         ctx.start_page("Tt")
@@ -298,11 +340,47 @@ MORE
         ret = ctx.expand("{{PAGENAME:Template:Mark/doc}}")
         self.assertEqual(ret, "Mark/doc")
 
+    def test_pagenamee1(self):
+        ctx = phase1_to_ctx([])
+        ctx.start_page("Test page")
+        ret = ctx.expand("{{PAGENAMEE}}")
+        self.assertEqual(ret, "Test_page")
+
+    def test_pagenamee2(self):
+        ctx = phase1_to_ctx([])
+        ctx.start_page("Help:test page/doc")
+        ret = ctx.expand("{{PAGENAMEE}}")
+        self.assertEqual(ret, "Test_page/doc")
+
+    def test_rootpagenamee1(self):
+        ctx = phase1_to_ctx([])
+        ctx.start_page("Test page")
+        ret = ctx.expand("{{ROOTPAGENAMEE}}")
+        self.assertEqual(ret, "Test_page")
+
+    def test_rootpagenamee2(self):
+        ctx = phase1_to_ctx([])
+        ctx.start_page("Help:test page/doc/bar/foo")
+        ret = ctx.expand("{{ROOTPAGENAMEE}}")
+        self.assertEqual(ret, "Test_page")
+
+    def test_fullpagenamee1(self):
+        ctx = phase1_to_ctx([])
+        ctx.start_page("Test page")
+        ret = ctx.expand("{{FULLPAGENAMEE}}")
+        self.assertEqual(ret, "Test_page")
+
+    def test_fullpagenamee2(self):
+        ctx = phase1_to_ctx([])
+        ctx.start_page("Help:test page/doc")
+        ret = ctx.expand("{{FULLPAGENAMEE}}")
+        self.assertEqual(ret, "Help:Test_page/doc")
+
     def test_basepagename1(self):
         ctx = phase1_to_ctx([])
         ctx.start_page("Help:Tt/doc/subdoc")
         ret = ctx.expand("{{BASEPAGENAME}}")
-        self.assertEqual(ret, "Help:Tt/doc")
+        self.assertEqual(ret, "Tt/doc")
 
     def test_basepagename2(self):
         ctx = phase1_to_ctx([])
@@ -1191,6 +1269,54 @@ MORE
         ret = ctx.expand("{{#urldecode:x%3Ay%2Fz+k%C3%A4}}")
         self.assertEqual(ret, "x:y/z kä")
 
+    def test_subjectspace1(self):
+        ctx = phase1_to_ctx([])
+        ctx.start_page("Tt")
+        ret = ctx.expand("{{SUBJECTSPACE}}")
+        self.assertEqual(ret, "")
+
+    def test_subjectspace2(self):
+        ctx = phase1_to_ctx([])
+        ctx.start_page("Reconstruction:Tt")
+        ret = ctx.expand("{{SUBJECTSPACE}}")
+        self.assertEqual(ret, "Reconstruction")
+
+    def test_subjectspace3(self):
+        ctx = phase1_to_ctx([])
+        ctx.start_page("Tt")
+        ret = ctx.expand("{{SUBJECTSPACE:Reconstruction:foo}}")
+        self.assertEqual(ret, "Reconstruction")
+
+    def test_talkspace1(self):
+        ctx = phase1_to_ctx([])
+        ctx.start_page("Tt")
+        ret = ctx.expand("{{TALKSPACE}}")
+        self.assertEqual(ret, "Talk")
+
+    def test_talkspace2(self):
+        ctx = phase1_to_ctx([])
+        ctx.start_page("Reconstruction:Tt")
+        ret = ctx.expand("{{TALKSPACE}}")
+        self.assertEqual(ret, "Reconstruction_talk")
+
+    def test_subjectspace3(self):
+        ctx = phase1_to_ctx([])
+        ctx.start_page("Tt")
+        ret = ctx.expand("{{TALKSPACE:Reconstruction:foo}}")
+        self.assertEqual(ret, "Reconstruction_talk")
+
+    def test_localurl1(self):
+        ctx = phase1_to_ctx([])
+        ctx.start_page("test page")
+        ret = ctx.expand("{{localurl}}")
+        self.assertEqual(ret, "/wiki/test_page")
+
+    def test_localurl2(self):
+        ctx = phase1_to_ctx([])
+        ctx.start_page("test page")
+        ret = ctx.expand("{{localurl|Reconstruction:another title}}")
+        self.assertEqual(ret, "/wiki/Reconstruction:another_title")
+
     def test_template1(self):
         ctx = phase1_to_ctx([
             ["wikitext", "Template:testmod", "test content"]])
@@ -1403,35 +1529,37 @@ MORE
         ret = ctx.expand('{{foo|<span class="foo">bar</span>}}')
         self.assertEqual(ret, 'a<span class="foo">bar</span>b')
 
-    # def test_templateXXX(self):
-    #     ctx = phase1_to_ctx([
-    #         ["redirect", "Template:rel3", "Template:col3"],
-    #         ["wikitext", "Template:col3", "{{check|lang={{{lang|}}}|"
-    #          "{{#invoke:columns|display|sort=1|collapse=1|columns=3}}}}"],
-    #         ["wikitext", "Template:check",
-    #          "{{deprecated code|active={{#if:{{{lang|}}}|yes|no}}|"
-    #          "text=deprecated use of {{para|lang}} parameter|"
-    #          "tooltip=deprecated 'lang'|{{{1}}}}}"],
-    #         ["wikitext", "Template:deprecated code",
-    #          """{{#ifeq:{{{active|}}}|no|{{{1}}}|"""
-    #          """<div class="deprecated" title="{{#if:{{{tooltip|}}}|"""
-    #          """{{{tooltip}}}|This is a deprecated template usage.}}">''"""
-    #          """([[:Category:Successfully deprecated templates|"""
-    #          """{{#if:{{{text|}}}|{{{text}}}|deprecated template usage}}]])''"""
-    #          """{{{1}}}</div>"""
-    #          """{{categorize|und|Pages using deprecated templates}}}}"""],
-    #         ["wikitext", "Template:para",
-    #          """<code>&#124;{{#if:{{{}}}|{{#if:{{{1|}}}|{{{1}}}=}}{{{2|}}}|="""
-    #          """{{{1|}}}}}</code>{{#if:{{{3|}}}|&nbsp;({{#if:{{{req|}}}|"""
-    #          """'''''required''''',&nbsp;}}"""
-    #          """{{#if:{{{opt|}}}|''optional'',&nbsp;}}{{{3}}})|"""
-    #          """{{#if:{{{req|}}}|&nbsp;('''''required''''')}}"""
-    #          """{{#if:{{{opt|}}}|&nbsp;(''optional'')}}}}"""],
-    #         ["wikitext", "Template:categorize",
-    #          """{{#invoke:utilities|template_categorize}}"""],
-    #     ])
-    #     ret = ctx.expand("Tt", "{{rel3|es|animálculo|animalidad}}")
-    #     self.assertEqual(ret, "XXX")
+    def test_unbalanced1(self):
+        ctx = phase1_to_ctx([])
+        ctx.start_page("Tt")
+        ret = ctx.expand("{{#switch:p|p=q|r={{tc}}|s=t}}")
+        self.assertEqual(ret, "q")
+
+    def test_unbalanced2(self):
+        ctx = phase1_to_ctx([])
+        ctx.start_page("Tt")
+        ret = ctx.expand("{{#switch:p|p=q|r={{tc}}|s=t}}")
+        self.assertEqual(ret, "q")
+
+    def test_unbalanced3(self):
+        ctx = phase1_to_ctx([
+            ["wikitext", "Template:tc", "X"]])
+        ctx.start_page("Tt")
+        ret = ctx.expand("{{#switch:r|p=q|r={{tc}}|s=t}}")
+        self.assertEqual(ret, "X")
+
+    def test_unbalanced4(self):
+        ctx = phase1_to_ctx([])
+        ctx.start_page("Tt")
+        ret = ctx.expand("{{#switch:p|p=q|r=tc}}|s=t}}")
+        self.assertEqual(ret, "q|s=t}}")
+
+    def test_unbalanced5(self):
+        ctx = phase1_to_ctx([
+            ["wikitext", "Template:tc", "X"]])
+        ctx.start_page("Tt")
+        ret = ctx.expand("{{#switch:p|p=q|r={{tc|s=t}}")
+        self.assertEqual(ret, "{{#switch:p|p=q|r=X")
 
     def test_redirect1(self):
         ctx = phase1_to_ctx([

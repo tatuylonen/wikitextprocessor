@@ -12,8 +12,9 @@ import html.entities
 from .parserfns import (PARSER_FUNCTIONS, call_parser_function, tag_fn)
 from .wikihtml import ALLOWED_HTML_TAGS
 from .luaexec import call_lua_sandbox
-from .parser import parse_encoded, preprocess_text, NodeKind
-from .common import MAGIC_FIRST, MAGIC_LAST, MAX_MAGICS, MAGIC_NOWIKI_CHAR
+from .parser import parse_encoded, NodeKind
+from .common import (MAGIC_FIRST, MAGIC_LAST, MAX_MAGICS, MAGIC_NOWIKI_CHAR,
+                     preprocess_text)
 from .dumpparser import process_dump
 
 # Set of HTML tags that need an explicit end tag.

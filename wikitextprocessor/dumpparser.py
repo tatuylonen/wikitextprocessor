@@ -183,8 +183,8 @@ def process_input(path, page_cb):
     # process to maximize concurrency).  This requires the ``buffer`` program.
     subp = None
     if path.endswith(".bz2"):
-        # XXX eliminate separate buffer program?
-        cmd = "bzcat {} | buffer -m 16M".format(path)
+        # cmd = "bzcat {} | buffer -m 16M".format(path)
+        cmd = "bzcat {}".format(path)
         subp = subprocess.Popen(["/bin/sh", "-c", cmd], stdout=subprocess.PIPE,
                                 bufsize=256*1024)
         wikt_f = subp.stdout

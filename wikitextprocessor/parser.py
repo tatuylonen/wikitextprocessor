@@ -265,6 +265,13 @@ def _parser_push(ctx, kind):
     ctx.suppress_special = False
     return node
 
+
+def _parser_finalize_str(s):
+    s = re.sub(MAGIC_NOWIKI_CHAR, "", s)
+    s = html.unescape(s)
+    return s
+
+
 def _parser_merge_str_children(ctx):
     """Merges multiple consecutive str children into one.  We merge them
     as a separate step, because this gives linear worst-case time, vs.
@@ -279,7 +286,7 @@ def _parser_merge_str_children(ctx):
     else:
         # All children are strings
         s = "".join(lst)
-        s = re.sub(MAGIC_NOWIKI_CHAR, "", s)
+        s = _parser_finalize_str(s)
         node.children = []
         if s:
             node.children.append(s)
@@ -289,7 +296,7 @@ def _parser_merge_str_children(ctx):
         return
     node.children = lst[:-cnt]
     s = "".join(lst[-cnt:])
-    s = re.sub(MAGIC_NOWIKI_CHAR, "", s)
+    s = _parser_finalize_str(s)
     if s:
         node.children.append(s)
 
@@ -1240,35 +1247,6 @@ def token_iter(ctx, text):
             yield True, token
     if pos != len(text):
         yield False, text[pos:]
-
-
-def nowiki_sub_fn(m):
-    """This function escapes the contents of a <nowiki> ... </nowiki> pair."""
-    text = m.group(1)
-    text = re.sub(r";", "&semi;", text)
-    text = html.escape(text, quote=True)
-    text = re.sub(r"=", "&equals;", text)
-    text = re.sub(r"\*", "&ast;", text)
-    text = re.sub(r"#", "&num;", text)
-    text = re.sub(r":", "&colon;", text)
-    text = re.sub(r"!", "&excl;", text)
-    text = re.sub(r"\|", "&vert;", text)
-    text = re.sub(r"\[", "&lsqb;", text)
-    text = re.sub(r"\]", "&rsqb;", text)
-    text = re.sub(r"\{", "&lbrace;", text)
-    text = re.sub(r"\}", "&rbrace;", text)
-    text = re.sub(r"\s+", " ", text)
-    return text
-
-
-def preprocess_text(text):
-    # XXX this will be eliminated, needs to be handled differently
-    assert isinstance(text, str)
-    text = re.sub(r"(?si)<\s*nowiki\s*>(.*?)<\s*/\s*nowiki\s*>", nowiki_sub_fn,
-                  text)
-    text = re.sub(r"(?si)<\s*nowiki\s*/\s*>", MAGIC_NOWIKI_CHAR, text)
-    text = re.sub(r"(?s)<!\s*--.*?--\s*>", "", text)
-    return text
 
 
 def process_text(ctx, text):
