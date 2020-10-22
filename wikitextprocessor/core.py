@@ -7,8 +7,10 @@ import os
 import re
 import sys
 import tempfile
+import traceback
 import collections
 import html.entities
+import multiprocessing
 from .parserfns import (PARSER_FUNCTIONS, call_parser_function, tag_fn)
 from .wikihtml import ALLOWED_HTML_TAGS
 from .luaexec import call_lua_sandbox
@@ -20,6 +22,33 @@ from .dumpparser import process_dump
 # Set of HTML tags that need an explicit end tag.
 PAIRED_HTML_TAGS = set(k for k, v in ALLOWED_HTML_TAGS.items()
                        if not v.get("no-end-tag"))
+
+# Warning: this function is not re-entrant.  We store ctx and page_handler
+# in global variables during dump processing, because they may not be
+# pickleable.
+_global_ctx = None
+_global_page_handler = None
+
+def phase2_page_handler(dt):
+    """Helper function for calling the Phase2 page handler (see
+    reprocess()).  This is a global function in order to make this
+    pickleable.  The implication is that process() and reprocess() are not
+    re-entrant (i.e., cannot be called safely from multiple threads or
+    recursively)"""
+    ctx = _global_ctx
+    model, title = dt
+    ctx.start_page(title)
+    data = ctx.read_by_title(title)
+    try:
+        assert isinstance(data, str)
+        ret = _global_page_handler(model, title, data)
+        return True, ret
+    except Exception as e:
+        lst = traceback.format_exception(etype=type(e), value=e,
+                                         tb=e.__traceback__)
+
+        return False, "=== EXCEPTION:\n" + "".join(lst)
+
 
 class Wtp(object):
     """Context used for processing wikitext and for expanding templates,
@@ -866,10 +895,58 @@ class Wtp(object):
         cannot save data in ``ctx`` or global variables.  It can only
         return its results.  This function will return a list
         containing all the results returned by page_handler (in
-        arbirary order), except None values will be ignored."""
+        arbirary order), except None values will be ignored.  This function
+        is not re-entrant."""
         assert isinstance(path, str)
         assert callable(page_handler)
         return process_dump(self, path, page_handler)
+
+    def reprocess(self, page_handler):
+        """Reprocess all pages captured by self.process() or explicit calls
+        to self.add_page().  This calls page_handler(model, title, text)
+        for each page, and returns of list of their return values (ignoring
+        None values).  This may call page_handler in parallel, and thus
+        page_handler should not attempt to save anything between calls and
+        should not modify global data.  This function is not re-entrant."""
+        global _global_ctx
+        global _global_page_handler
+        _global_ctx = self
+        _global_page_handler = page_handler
+
+        if self.num_threads == 1:
+            # Single-threaded version (without subprocessing).  This is
+            # primarily intended for debugging.
+            lst = []
+            for model, title in self.page_seq:
+                success, ret = phase2_page_handler((model, title))
+                if not success:
+                    print(ret)
+                    continue
+                if ret is not None:
+                    lst.append(ret)
+        else:
+            # Process pages using multiple parallel processes (the normal
+            # case)
+            if self.num_threads is None:
+                pool = multiprocessing.Pool()
+            else:
+                pool = multiprocessing.Pool(self.num_threads)
+            lst = []
+            for success, ret in pool.imap_unordered(phase2_page_handler,
+                                                    self.page_seq):
+                if not success:
+                    print(ret)
+                    continue
+                if ret is not None:
+                    lst.append(ret)
+                    if not self.quiet and len(lst) % 1000 == 0:
+                        print("  ... {}/{} pages ({:.1%}) processed"
+                              .format(len(lst), len(self.page_seq),
+                                      len(lst) / len(self.page_seq)))
+                        sys.stdout.flush()
+            pool.close()
+            pool.join()
+        return lst
 
     def read_by_title(self, title):
         assert isinstance(title, str)

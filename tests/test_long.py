@@ -1,3 +1,4 @@
+import sys
 import unittest
 import collections
 from wikitextprocessor import Wtp
@@ -5,7 +6,6 @@ from wikitextprocessor import Wtp
 def page_cb(model, title, text):
     # Note: this may be called in a separate thread and thus cannot
     # update external variables
-    print("page_cb:", model, title)
     assert model in ("wikitext", "redirect", "Scribunto") # in this data
     if model == "redirect":
         return title, text
@@ -34,6 +34,9 @@ class LongTests(unittest.TestCase):
 
     def test_long_singlethread(self):
         self.runonce(1)
+
+    def test_long_twothread(self):
+        self.runonce(2)
 
     def test_long_multiprocessing(self):
         self.runonce(None)

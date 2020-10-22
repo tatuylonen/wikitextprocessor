@@ -9,7 +9,6 @@ import json
 import html
 import traceback
 import subprocess
-import multiprocessing
 
 # These XML tags are ignored when parsing.
 ignore_xml_tags = set(["sha1", "comment", "username", "timestamp",
@@ -163,7 +162,7 @@ def make_iter(f):
                     else:
                         handle_start(tag, args)
         except Exception as e:
-            print("GOT EXC", str(e))
+            print("GOT EXCEPTION", str(e))
             traceback.print_exc()
             raise
 
@@ -203,27 +202,6 @@ def process_input(path, page_cb):
     return lst
 
 
-_global_ctx = None
-_global_page_handler = None
-
-def phase2_page_handler(dt):
-    """Helper function for calling the Phase2 page handler.  This is a global
-    function in order to make this pickleable."""
-    ctx = _global_ctx
-    model, title = dt
-    ctx.start_page(title)
-    data = ctx.read_by_title(title)
-    try:
-        assert isinstance(data, str)
-        ret = _global_page_handler(model, title, data)
-        return True, ret
-    except Exception as e:
-        lst = traceback.format_exception(etype=type(e), value=e,
-                                         tb=e.__traceback__)
-
-        return False, "=== EXCEPTION:\n" + "".join(lst)
-
-
 def process_dump(ctx, path, page_handler):
     """Parses a WikiMedia dump file ``path`` (which should point
     to a "<project>-<date>-pages-articles.xml.bz2" file.  This
@@ -236,17 +214,10 @@ def process_dump(ctx, path, page_handler):
     in parallel using the multiprocessing package, and thus it cannot
     save data in ``ctx`` or global variables.  It can only return its results.
     This function will return a list containing all the results returned by
-    page_handler (in arbirary order)."""
+    page_handler (in arbirary order).  This function is not re-entrant
+    for multi-threaded applications."""
     assert isinstance(path, str)
     assert callable(page_handler)
-
-    # Warning: this function is not re-entrant.  We store ctx and page_handler
-    # in global variables during dump processing, because they may not be
-    # pickleable.
-    global _global_ctx
-    global _global_page_handler
-    _global_ctx = ctx
-    _global_page_handler = page_handler
 
     def phase1_page_handler(model, title, text):
         """Handler for pages in Phase 1, for extracting special pages and saving
@@ -270,37 +241,9 @@ def process_dump(ctx, path, page_handler):
     if not ctx.quiet:
         print("Second pass - processing pages")
         sys.stdout.flush()
-    if ctx.num_threads == 1:
-        # Single-threaded version (without subprocessing)
-        lst = []
-        for model, title in ctx.page_seq:
-            success, ret = phase2_page_handler((model, title))
-            if not success:
-                print(ret)
-                continue
-            if ret is not None:
-                lst.append(ret)
-    else:
-        if ctx.num_threads is None:
-            pool = multiprocessing.Pool()
-        else:
-            pool = multiprocessing.Pool(ctx.num_threads)
-        lst = []
-        for success, ret in pool.imap_unordered(phase2_page_handler,
-                                                ctx.page_seq):
-            if not success:
-                print(ret)
-                continue
-            if ret is not None:
-                lst.append(ret)
-                if not ctx.quiet and len(lst) % 1000 == 0:
-                    print("  ... {}/{} pages ({:.1%}) processed"
-                          .format(len(lst), len(ctx.page_seq),
-                                  len(lst) / len(ctx.page_seq)))
-                    sys.stdout.flush()
-        pool.close()
-        pool.join()
 
+    # Reprocess all pages that we captured in Phase 1.
+    lst = ctx.reprocess(page_handler)
     return lst
 
 # XXX parse <namespaces> and use that in both Python and Lua code
