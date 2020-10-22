@@ -222,6 +222,12 @@ class Wtp(object):
             if text == prev:
                 break
             prev = text
+        # Replace any remaining braces etc by corresponding character entities
+        #text = re.sub(r"\{([&|])", r"&lbrace;\1", text)
+        #text = re.sub(r"\{([&|])", r"&lbrace;\1", text)
+        #text = re.sub(r"[^|]\}", r"\1&rbrace;", text)
+        #text = re.sub(r"[^|]\}", r"\1&rbrace;", text)
+        #text = re.sub(r"\|", "&vert;", text)
         return text
 
     def _template_to_body(self, title, text):
@@ -840,6 +846,9 @@ class Wtp(object):
             expanded = expand(encoded, parent, templates_to_expand)
         finally:
             self.expand_stack.pop()
+
+        # Remove the special <nowiki /> character
+        expanded = re.sub(MAGIC_NOWIKI_CHAR, "", expanded)
 
         return expanded
 

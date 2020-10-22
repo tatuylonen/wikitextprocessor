@@ -148,10 +148,8 @@ def tag_fn(ctx, fn_name, args, expander):
     if not content:
         ret = "<{}{} />".format(tag, attrs)
     else:
-        content = html.escape(content, quote=False)
         ret = "<{}{}>{}</{}>".format(tag, attrs, content, tag)
     if tag == "nowiki":
-        print("tag_fn preprocessing {!r}".format(ret))
         ret = preprocess_text(ret)
     return ret
 

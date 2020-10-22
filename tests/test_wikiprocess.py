@@ -284,7 +284,7 @@ MORE
         ctx = phase1_to_ctx([])
         ctx.start_page("Tt")
         ret = ctx.expand("{{#tag:div|foo bar<dangerous>z}}")
-        self.assertEqual(ret, "<div>foo bar&lt;dangerous&gt;z</div>")
+        self.assertEqual(ret, "<div>foo bar<dangerous>z</div>")
 
     def test_tag6(self):
         ctx = phase1_to_ctx([])
@@ -296,7 +296,7 @@ MORE
         ctx = phase1_to_ctx([])
         ctx.start_page("Tt")
         ret = ctx.expand("{{#tag:nowiki|&amp;}}")
-        self.assertEqual(ret, "&amp;amp;")
+        self.assertEqual(ret, "&amp;amp&semi;")
 
     def test_tag8(self):
         ctx = phase1_to_ctx([])

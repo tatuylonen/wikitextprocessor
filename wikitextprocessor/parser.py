@@ -267,8 +267,8 @@ def _parser_push(ctx, kind):
 
 
 def _parser_finalize_str(s):
-    s = re.sub(MAGIC_NOWIKI_CHAR, "", s)
     s = html.unescape(s)
+    s = re.sub(MAGIC_NOWIKI_CHAR, "", s)
     return s
 
 

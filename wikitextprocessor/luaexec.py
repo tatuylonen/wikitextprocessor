@@ -435,9 +435,12 @@ def call_lua_sandbox(ctx, invoke_args, expander, parent):
         text = "\n".join(parts)
     elif not isinstance(text, str):
         text = str(text)
+    msg = re.sub(r".*?:\d+: ", "", text.split("\n")[0])
     if text.find("'debug.error'") >= 0:
-        msg = re.sub(r".*?:\d+: ", "", text.split("\n")[0])
         if not msg.startswith("This template is deprecated."):
+            ctx.warning(msg)
+    elif text.find("in function 'error'") >= 0:
+        if not msg.startswith('The parameter "'):
             ctx.warning(msg)
     else:
         parts = []
