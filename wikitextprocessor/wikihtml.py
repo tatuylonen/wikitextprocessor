@@ -82,6 +82,9 @@ ALLOWED_HTML_TAGS = {
         "parents": ["dl", "div"],
         "close-next": ["dd", "dt"],
         "content": ["flow"]},
+    "dynamicpagelist": {
+        "parents": ["flow"],
+        "content": ["phrasing"]},
     "em": {
         "parents": ["phrasing"],
         "content": ["phrasing"]},
