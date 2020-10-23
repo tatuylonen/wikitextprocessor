@@ -86,6 +86,31 @@ return export
         ret = ctx.expand("Some {{unknown template|arg1||arg3}}")
         self.assertEqual(ret, "Some {{unknown template|arg1||arg3}}")
 
+    def test_basic6(self):
+        ctx = phase1_to_ctx([])
+        ctx.start_page("Tt")
+        ret = ctx.expand("Some [[link text]] x")
+        self.assertEqual(ret, "Some [[link text]] x")
+
+    def test_basic7(self):
+        ctx = phase1_to_ctx([])
+        ctx.start_page("Tt")
+        ret = ctx.expand("Some [[link|text]] x")
+        self.assertEqual(ret, "Some [[link|text]] x")
+
+    def test_basic8(self):
+        ctx = phase1_to_ctx([])
+        ctx.start_page("Tt")
+        ret = ctx.expand("Some [[link|t[ext]]] x")
+        self.assertEqual(ret, "Some [[link|t[ext]]] x")
+
+    def test_basic9(self):
+        ctx = phase1_to_ctx([
+            ["wikitext", "Template:templ", "FOO {{{1|}}}"]])
+        ctx.start_page("Tt")
+        ret = ctx.expand("Some {{templ|[[link|t[ext]]]}} x")
+        self.assertEqual(ret, "Some FOO [[link|t[ext]]] x")
+
     def test_if1(self):
         self.parserfn("{{#if:|T|F}}", "F")
 
