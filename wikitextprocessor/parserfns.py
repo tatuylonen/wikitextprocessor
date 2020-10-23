@@ -64,10 +64,7 @@ def ifexist_fn(ctx, fn_name, args, expander):
     arg0 = args[0] if args else ""
     arg1 = args[1] if len(args) >= 2 else ""
     arg2 = args[2] if len(args) >= 3 else ""
-    # XXX how will we check if the page exists?  Should probably pass a context
-    # to all parser function implementations and use the context to evaluate
-    # this.  XXX collect the info in phase1
-    exists = False  # XXX needs to be implemented
+    exists = ctx.page_exists(expander(arg0).strip())
     if exists:
         return expander(arg1).strip()
     return expander(arg2).strip()
@@ -1297,6 +1294,9 @@ def call_parser_function(ctx, fn_name, args, expander):
     assert isinstance(fn_name, str)
     assert isinstance(args, (list, tuple, dict))
     assert callable(expander)
+    if fn_name not in PARSER_FUNCTIONS:
+        ctx.error("unrecognized parser function {!r}".format(fn_name))
+        return ""
     fn = PARSER_FUNCTIONS[fn_name]
     have_keyed_args = False
     if isinstance(args, dict):

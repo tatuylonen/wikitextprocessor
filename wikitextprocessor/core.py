@@ -948,8 +948,18 @@ class Wtp(object):
             pool.join()
         return lst
 
-    def read_by_title(self, title):
+    def page_exists(self, title):
+        """Returns True if the given page exists, and False if it does not
+        exist."""
         assert isinstance(title, str)
+        # XXX should we canonicalize title?
+        return title in self.page_contents
+
+    def read_by_title(self, title):
+        """Reads the contents of the page.  Returns None if the page does
+        not exist."""
+        assert isinstance(title, str)
+        # XXX should we canonicalize title?
         if title not in self.page_contents:
             return None
         # The page seems to exist

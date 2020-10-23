@@ -89,78 +89,47 @@ return export
         self.parserfn("{{#if:|T|F}}", "F")
 
     def test_if2(self):
-        ctx = phase1_to_ctx([])
-        ctx.start_page("Tt")
-        ret = ctx.expand("{{#if:x|T|F}}")
-        self.assertEqual(ret, "T")
+        self.parserfn("{{#if:x|T|F}}", "T")
 
     def test_if3(self):
-        ctx = phase1_to_ctx([])
-        ctx.start_page("Tt")
-        ret = ctx.expand("a{{#if:|T}}b")
-        self.assertEqual(ret, "ab")
+        self.parserfn("a{{#if:|T}}b", "ab")
 
     def test_if4(self):
-        ctx = phase1_to_ctx([])
-        ctx.start_page("Tt")
-        ret = ctx.expand("a{{#if:x|T}}b")
-        self.assertEqual(ret, "aTb")
+        self.parserfn("a{{#if:x|T}}b", "aTb")
 
     def test_ifeq1(self):
-        ctx = phase1_to_ctx([])
-        ctx.start_page("Tt")
-        ret = ctx.expand("{{#ifeq:a|b|T|F}}")
-        self.assertEqual(ret, "F")
+        self.parserfn("{{#ifeq:a|b|T|F}}", "F")
 
     def test_ifeq2(self):
-        ctx = phase1_to_ctx([])
-        ctx.start_page("Tt")
-        ret = ctx.expand("{{#ifeq:a|a|T|F}}")
-        self.assertEqual(ret, "T")
+        self.parserfn("{{#ifeq:a|a|T|F}}", "T")
 
     def test_ifeq3(self):
-        ctx = phase1_to_ctx([])
-        ctx.start_page("Tt")
-        ret = ctx.expand("{{#ifeq: a |a|T|F}}")
-        self.assertEqual(ret, "T")
+        self.parserfn("{{#ifeq: a |a|T|F}}", "T")
 
     def test_ifeq4(self):
-        ctx = phase1_to_ctx([])
-        ctx.start_page("Tt")
-        ret = ctx.expand("{{#ifeq: ||T|F}}")
-        self.assertEqual(ret, "T")
+        self.parserfn("{{#ifeq: ||T|F}}", "T")
 
     def test_ifeq5(self):
-        ctx = phase1_to_ctx([])
-        ctx.start_page("Tt")
-        ret = ctx.expand("a{{#ifeq:a||T}}b")
-        self.assertEqual(ret, "ab")
+        self.parserfn("a{{#ifeq:a||T}}b", "ab")
 
     def test_ifexpr1(self):
-        ctx = phase1_to_ctx([])
-        ctx.start_page("Tt")
-        ret = ctx.expand("a{{#ifexpr:1+3>2|T|F}}b")
-        self.assertEqual(ret, "aTb")
+        self.parserfn("a{{#ifexpr:1+3>2|T|F}}b", "aTb")
 
     def test_ifexpr2(self):
-        ctx = phase1_to_ctx([])
-        ctx.start_page("Tt")
-        ret = ctx.expand("a{{#ifexpr:1-4>sin(pi/2)|T|F}}b")
-        self.assertEqual(ret, "aFb")
+        self.parserfn("a{{#ifexpr:1-4>sin(pi/2)|T|F}}b", "aFb")
 
-    def test_ifexists1(self):
-        ctx = phase1_to_ctx([])
-        ctx.start_page("Tt")
-        ret = ctx.expand("{{#ifexist:Nonexxxx|T|F}}")
-        self.assertEqual(ret, "F")
+    def test_ifexist1(self):
+        self.parserfn("{{#ifexist:Nonexxxx|T|F}}", "F")
 
-    def test_ifexists2(self):
-        ctx = phase1_to_ctx([])
-        ctx.start_page("Tt")
-        ret = ctx.expand("{{#ifexist:Nonexxxx|T}}")
-        self.assertEqual(ret, "")
+    def test_ifexist2(self):
+        self.parserfn("{{#ifexist:Nonexxxx|T}}", "")
 
-    # XXX test #ifexists with a page that exists
+    def test_ifexist3(self):
+        ctx = phase1_to_ctx([
+            ["wikitext", "Test title", "FOO"]])
+        ctx.start_page("Tt")
+        ret = ctx.expand("{{#ifexist:Test title|T|F}}")
+        self.assertEqual(ret, "T")
 
     def test_switch1(self):
         ctx = phase1_to_ctx([])
