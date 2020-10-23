@@ -336,6 +336,18 @@ def currentdow_fn(ctx, fn_name, args, expander):
     return "{:d}".format(datetime.datetime.utcnow().weekday())
 
 
+def revisionid_fn(ctx, fn_name, args, expander):
+    """Implements the REVISIONID magic word."""
+    # We just return a dash, similar to "miser mode" in MediaWiki."""
+    return "-"
+
+
+def revisionuser_fn(ctx, fn_name, args, expander):
+    """Implements the REVISIONUSER magic word."""
+    # We always return AnonymousUser
+    return "AnonymousUser"
+
+
 def displaytitle_fn(ctx, fn_name, args, expander):
     """Implements the DISPLAYTITLE magic word/parser function."""
     t = expander(args[0]) if args else ""
@@ -373,6 +385,34 @@ def ucfirst_fn(ctx, fn_name, args, expander):
     """Implements the ucfirst parser function (capitalize first character)."""
     t = expander(args[0]).strip() if args else ""
     return capitalizeFirstOnly(t)
+
+
+def formatnum_fn(ctx, fn_name, args, expander):
+    """Implements the formatnum parser function."""
+    arg0 = expander(args[0]).strip() if args else ""
+    arg1 = expander(args[1]).strip() if len(args) >= 2 else ""
+    if arg1 == "R":
+        # Reverse formatting
+        ctx.error("reverse formatting not yet implemented in {}"
+                  .format(fn_name))
+        return "0"
+    if arg1 == "NOSEP":
+        sep = ""
+    else:
+        sep = ","
+    comma = "."  # Really should depend on locale
+    # XXX implement support for non-english locales for digits
+    orig = arg0.split(".")
+    first = orig[0]
+    parts = []
+    first = "".join(reversed(first))
+    for i in range(0, len(first), 3):
+        parts.append("".join(reversed(first[i: i + 3])))
+    parts = [sep.join(reversed(parts))]
+    if len(orig) > 1:
+        parts.append(comma)
+        parts.append(".".join(orig[1:]))
+    return "".join(parts)
 
 
 def dateformat_fn(ctx, fn_name, args, expander):
@@ -1200,12 +1240,13 @@ PARSER_FUNCTIONS = {
     "LOCALHOUR": unimplemented_fn,
     "LOCALWEEK": unimplemented_fn,
     "LOCALTIMESTAMP": unimplemented_fn,
+    "REVISIONID": revisionid_fn,
     "REVISIONDAY": unimplemented_fn,
     "REVISIONDAY2": unimplemented_fn,
     "REVISIONMONTH": unimplemented_fn,
     "REVISIONYEAR": unimplemented_fn,
     "REVISIONTIMESTAMP": unimplemented_fn,
-    "REVISIONUSER": unimplemented_fn,
+    "REVISIONUSER": revisionuser_fn,
     "NUMBEROFPAGES": unimplemented_fn,
     "NUMBEROFARTICLES": unimplemented_fn,
     "NUMBEROFFILES": unimplemented_fn,
@@ -1227,7 +1268,7 @@ PARSER_FUNCTIONS = {
     "lcfirst": lcfirst_fn,
     "uc": uc_fn,
     "ucfirst": ucfirst_fn,
-    "formatnum": unimplemented_fn,
+    "formatnum": formatnum_fn,
     "#dateformat": dateformat_fn,
     "#formatdate": dateformat_fn,
     "padleft": padleft_fn,

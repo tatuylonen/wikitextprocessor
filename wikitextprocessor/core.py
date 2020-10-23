@@ -236,7 +236,7 @@ class Wtp(object):
                 prev2 = text
                 text = re.sub(r"(?s)\{" + MAGIC_NOWIKI_CHAR +
                               r"?\{" + MAGIC_NOWIKI_CHAR +
-                              r"?\{(([^{}]|\}[^}]|\}\}[^}])*?)\}" +
+                              r"?\{(([^{}]|\}[^{}]|\}\}[^{}])*?)\}" +
                               MAGIC_NOWIKI_CHAR + r"?\}" +
                               MAGIC_NOWIKI_CHAR + r"?\}",
                               repl_arg, text)
@@ -244,7 +244,7 @@ class Wtp(object):
                     break
             # Encode templates
             text = re.sub(r"(?s)\{" + MAGIC_NOWIKI_CHAR +
-                          r"?\{(([^{}]|\}[^}])+?)\}" +
+                          r"?\{(([^{}]|\}[^{}])+?)\}" +
                           MAGIC_NOWIKI_CHAR + r"?\}",
                           repl_templ, text)
             # We keep looping until there is no change during the iteration
@@ -615,9 +615,9 @@ class Wtp(object):
                     if kind == "A":
                         # Template argument reference
                         if len(args) > 2:
-                            self.error("too many args ({}) in argument "
-                                       "reference {!r}"
-                                       .format(len(args), args))
+                            self.warning("too many args ({}) in argument "
+                                         "reference {!r}"
+                                         .format(len(args), args))
                         self.expand_stack.append("ARG-NAME")
                         k = expand(expand_args(args[0], argmap),
                                    parent, self.templates).strip()
@@ -630,7 +630,12 @@ class Wtp(object):
                             continue
                         if len(args) >= 2:
                             self.expand_stack.append("ARG-DEFVAL")
-                            ret = expand_args(args[1], argmap)
+                            # We also try to fetch from args[-1] as that seems
+                            # to be used in various places in Wiktionary
+                            # (not sure what its semantics are, I'm suspecting
+                            # it's just a common typo to have something like
+                            # {{{page||...}}}
+                            ret = expand_args(args[1] or args[-1], argmap)
                             self.expand_stack.pop()
                             parts.append(ret)
                             continue

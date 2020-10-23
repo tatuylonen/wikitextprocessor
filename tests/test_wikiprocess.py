@@ -363,6 +363,14 @@ MORE
         ret = ctx.expand("{{NAMESPACE:Template:Kk}}")
         self.assertEqual(ret, "Template")
 
+    def test_revisionid1(self):
+        # We emulate miser mode here, always returning a dash.
+        self.parserfn("{{REVISIONID}}", "-")
+
+    def test_revisionuser1(self):
+        # We just always return a dummy user
+        self.parserfn("{{REVISIONUSER}}", "AnonymousUser")
+
     def test_uc(self):
         self.parserfn("{{uc:foo}}", "FOO")
 
@@ -374,6 +382,33 @@ MORE
 
     def test_ucfirst(self):
         self.parserfn("{{ucfirst:foo}}", "Foo")
+
+    def test_formatnum1(self):
+        self.parserfn("{{formatnum:987654321.654321}}", "987,654,321.654321")
+
+    def test_formatnum2(self):
+        self.parserfn("{{formatnum:9.6}}", "9.6")
+
+    def test_formatnum3(self):
+        self.parserfn("{{formatnum:123}}", "123")
+
+    def test_formatnum4(self):
+        self.parserfn("{{formatnum:1234}}", "1,234")
+
+    def test_formatnum5(self):
+        self.parserfn("{{formatnum:1234.778}}", "1,234.778")
+
+    def test_formatnum5(self):
+        self.parserfn("{{formatnum:12345}}", "12,345")
+
+    def test_formatnum6(self):
+        self.parserfn("{{formatnum:123456}}", "123,456")
+
+    def test_formatnum7(self):
+        self.parserfn("{{formatnum:1234.778|NOSEP}}", "1234.778")
+
+    def test_formatnum8(self):
+        self.parserfn("{{formatnum:00001}}", "00,001")
 
     def test_dateformat1(self):
         self.parserfn("{{#dateformat:25 dec 2009|ymd}}", "2009 Dec 25")
