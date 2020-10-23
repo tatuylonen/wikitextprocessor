@@ -671,34 +671,19 @@ MORE
         self.parserfn("{{padleft:|1|xyz}}", "x")
 
     def test_padright1(self):
-        ctx = phase1_to_ctx([])
-        ctx.start_page("Tt")
-        ret = ctx.expand("{{padright:xyz|5}}")
-        self.assertEqual(ret, "xyz00")
+        self.parserfn("{{padright:xyz|5}}", "xyz00")
 
     def test_padright2(self):
-        ctx = phase1_to_ctx([])
-        ctx.start_page("Tt")
-        ret = ctx.expand("{{padright:xyz|5|_}}")
-        self.assertEqual(ret, "xyz__")
+        self.parserfn("{{padright:xyz|5|_}}", "xyz__")
 
     def test_padright3(self):
-        ctx = phase1_to_ctx([])
-        ctx.start_page("Tt")
-        ret = ctx.expand("{{padright:xyz|5|abc}}")
-        self.assertEqual(ret, "xyzab")
+        self.parserfn("{{padright:xyz|5|abc}}", "xyzab")
 
     def test_padright4(self):
-        ctx = phase1_to_ctx([])
-        ctx.start_page("Tt")
-        ret = ctx.expand("{{padright:xyz|2}}")
-        self.assertEqual(ret, "xyz")
+        self.parserfn("{{padright:xyz|2}}", "xyz")
 
     def test_padright5(self):
-        ctx = phase1_to_ctx([])
-        ctx.start_page("Tt")
-        ret = ctx.expand("{{padright:|1|xyz}}")
-        self.assertEqual(ret, "x")
+        self.parserfn("{{padright:|1|xyz}}", "x")
 
     def test_time1(self):
         ctx = phase1_to_ctx([])
@@ -867,197 +852,99 @@ MORE
                       "Thu, 22 Oct 2020 19:00:59 +0000")
 
     def test_len1(self):
-        ctx = phase1_to_ctx([])
-        ctx.start_page("Tt")
-        ret = ctx.expand("{{#len: xyz }}")
-        self.assertEqual(ret, "3")
+        self.parserfn("{{#len: xyz }}", "3")
 
     def test_len2(self):
-        ctx = phase1_to_ctx([])
-        ctx.start_page("Tt")
-        ret = ctx.expand("{{#len: xyz }}")
-        self.assertEqual(ret, "3")
-
-    # XXX we currently don't implement <nowiki> ... </nowiki> handling
-    # in #len, #pos etc according to spec.  See:
-    # https://www.mediawiki.org/wiki/Extension:StringFunctions
+        self.parserfn("{{#len: xyz }}", "3")
 
     def test_pos1(self):
-        ctx = phase1_to_ctx([])
-        ctx.start_page("Tt")
-        ret = ctx.expand("{{#pos: xyzayz |yz}}")
-        self.assertEqual(ret, "1")
+        self.parserfn("{{#pos: xyzayz |yz}}", "1")
 
     def test_pos2(self):
-        ctx = phase1_to_ctx([])
-        ctx.start_page("Tt")
-        ret = ctx.expand("{{#pos: xyzayz |zz}}")
-        self.assertEqual(ret, "")
+        self.parserfn("{{#pos: xyzayz |zz}}", "")
 
     def test_pos3(self):
-        ctx = phase1_to_ctx([])
-        ctx.start_page("Tt")
-        ret = ctx.expand("{{#pos: xyz ayz }}")
-        self.assertEqual(ret, "3")
+        self.parserfn("{{#pos: xyz ayz }}", "3")
 
     def test_rpos1(self):
-        ctx = phase1_to_ctx([])
-        ctx.start_page("Tt")
-        ret = ctx.expand("{{#rpos: xyzayz |yz}}")
-        self.assertEqual(ret, "4")
+        self.parserfn("{{#rpos: xyzayz |yz}}", "4")
 
     def test_rpos2(self):
-        ctx = phase1_to_ctx([])
-        ctx.start_page("Tt")
-        ret = ctx.expand("{{#rpos: xyzayz |zz}}")
-        self.assertEqual(ret, "-1")
+        self.parserfn("{{#rpos: xyzayz |zz}}", "-1")
 
     def test_rpos3(self):
-        ctx = phase1_to_ctx([])
-        ctx.start_page("Tt")
-        ret = ctx.expand("{{#rpos: xy za yz }}")
-        self.assertEqual(ret, "5")
+        self.parserfn("{{#rpos: xy za yz }}", "5")
 
     def test_sub1(self):
-        ctx = phase1_to_ctx([])
-        ctx.start_page("Tt")
-        ret = ctx.expand("{{#sub: xyzayz |3}}")
-        self.assertEqual(ret, "ayz")
+        self.parserfn("{{#sub: xyzayz |3}}", "ayz")
 
     def test_sub2(self):
-        ctx = phase1_to_ctx([])
-        ctx.start_page("Tt")
-        ret = ctx.expand("{{#sub:Icecream|3}}")
-        self.assertEqual(ret, "cream")
+        self.parserfn("{{#sub:Icecream|3}}", "cream")
 
     def test_sub3(self):
-        ctx = phase1_to_ctx([])
-        ctx.start_page("Tt")
-        ret = ctx.expand("{{#sub:Icecream|0|3}}")
-        self.assertEqual(ret, "Ice")
+        self.parserfn("{{#sub:Icecream|0|3}}", "Ice")
 
     def test_sub4(self):
-        ctx = phase1_to_ctx([])
-        ctx.start_page("Tt")
-        ret = ctx.expand("{{#sub:Icecream|-3}}")
-        self.assertEqual(ret, "eam")
+        self.parserfn("{{#sub:Icecream|-3}}", "eam")
 
     def test_sub5(self):
-        ctx = phase1_to_ctx([])
-        ctx.start_page("Tt")
-        ret = ctx.expand("{{#sub:Icecream|3|3}}")
-        self.assertEqual(ret, "cre")
+        self.parserfn("{{#sub:Icecream|3|3}}", "cre")
 
     def test_sub6(self):
-        ctx = phase1_to_ctx([])
-        ctx.start_page("Tt")
-        ret = ctx.expand("{{#sub:Icecream|3|-3}}")
-        self.assertEqual(ret, "cr")
+        self.parserfn("{{#sub:Icecream|3|-3}}", "cr")
 
     def test_sub7(self):
-        ctx = phase1_to_ctx([])
-        ctx.start_page("Tt")
-        ret = ctx.expand("{{#sub:Icecream|-3|2}}")
-        self.assertEqual(ret, "ea")
+        self.parserfn("{{#sub:Icecream|-3|2}}", "ea")
 
     def test_sub8(self):
-        ctx = phase1_to_ctx([])
-        ctx.start_page("Tt")
-        ret = ctx.expand("{{#sub:Icecream|3|0}}")
-        self.assertEqual(ret, "cream")
+        self.parserfn("{{#sub:Icecream|3|0}}", "cream")
 
     def test_sub9(self):
-        ctx = phase1_to_ctx([])
-        ctx.start_page("Tt")
-        ret = ctx.expand("{{#sub:Icecream|3|-6}}")
-        self.assertEqual(ret, "")
+        self.parserfn("{{#sub:Icecream|3|-6}}", "")
 
     def test_pad1(self):
-        ctx = phase1_to_ctx([])
-        ctx.start_page("Tt")
-        ret = ctx.expand("{{#pad:Ice|10|xX}}")
-        self.assertEqual(ret, "xXxXxXxIce")
+        self.parserfn("{{#pad:Ice|10|xX}}", "xXxXxXxIce")
 
     def test_pad2(self):
-        ctx = phase1_to_ctx([])
-        ctx.start_page("Tt")
-        ret = ctx.expand("{{#pad:Ice|5|x|left}}")
-        self.assertEqual(ret, "xxIce")
+        self.parserfn("{{#pad:Ice|5|x|left}}", "xxIce")
 
     def test_pad3(self):
-        ctx = phase1_to_ctx([])
-        ctx.start_page("Tt")
-        ret = ctx.expand("{{#pad:Ice|5|x|right}}")
-        self.assertEqual(ret, "Icexx")
+        self.parserfn("{{#pad:Ice|5|x|right}}", "Icexx")
 
     def test_pad4(self):
-        ctx = phase1_to_ctx([])
-        ctx.start_page("Tt")
-        ret = ctx.expand("{{#pad:Ice|5|x|center}}")
-        self.assertEqual(ret, "xIcex")
+        self.parserfn("{{#pad:Ice|5|x|center}}", "xIcex")
 
     def test_pad5(self):
-        ctx = phase1_to_ctx([])
-        ctx.start_page("Tt")
-        ret = ctx.expand("{{#pad:Ice|5|x}}")
-        self.assertEqual(ret, "xxIce")
+        self.parserfn("{{#pad:Ice|5|x}}", "xxIce")
 
     def test_replace1(self):
-        ctx = phase1_to_ctx([])
-        ctx.start_page("Tt")
-        ret = ctx.expand("{{#replace:Icecream|e|E}}")
-        self.assertEqual(ret, "IcEcrEam")
+        self.parserfn("{{#replace:Icecream|e|E}}", "IcEcrEam")
 
     def test_replace2(self):
-        ctx = phase1_to_ctx([])
-        ctx.start_page("Tt")
-        ret = ctx.expand("{{#replace:Icecream|e|}}")
-        self.assertEqual(ret, "Iccram")
+        self.parserfn("{{#replace:Icecream|e|}}", "Iccram")
 
     def test_replace3(self):
-        ctx = phase1_to_ctx([])
-        ctx.start_page("Tt")
-        ret = ctx.expand("{{#replace:Icecream|ea|EAEA}}")
-        self.assertEqual(ret, "IcecrEAEAm")
+        self.parserfn("{{#replace:Icecream|ea|EAEA}}", "IcecrEAEAm")
 
     def test_explode1(self):
-        ctx = phase1_to_ctx([])
-        ctx.start_page("Tt")
-        ret = ctx.expand("{{#explode:And if you tolerate this| |2}}")
-        self.assertEqual(ret, "you")
+        self.parserfn("{{#explode:And if you tolerate this| |2}}", "you")
 
     def test_explode2(self):
-        ctx = phase1_to_ctx([])
-        ctx.start_page("Tt")
-        ret = ctx.expand("{{#explode:String/Functions/Code|/|-1}}")
-        self.assertEqual(ret, "Code")
+        self.parserfn("{{#explode:String/Functions/Code|/|-1}}", "Code")
 
     def test_explode3(self):
-        ctx = phase1_to_ctx([])
-        ctx.start_page("Tt")
-        ret = ctx.expand("{{#explode:Split%By%Percentage%Signs|%|2}}",
-                              None)
-        self.assertEqual(ret, "Percentage")
+        self.parserfn("{{#explode:Split%By%Percentage%Signs|%|2}}",
+                      "Percentage")
 
     def test_explode4(self):
-        ctx = phase1_to_ctx([])
-        ctx.start_page("Tt")
-        ret = ctx.expand("{{#explode:And if you tolerate this thing| "
-                              "|2|3}}",
-                              None)
-        self.assertEqual(ret, "you tolerate this thing")
+        self.parserfn("{{#explode:And if you tolerate this thing| |2|3}}",
+                      "you tolerate this thing")
 
     def test_f_urlencode1(self):
-        ctx = phase1_to_ctx([])
-        ctx.start_page("Tt")
-        ret = ctx.expand("{{#urlencode:x:y/z kä}}")
-        self.assertEqual(ret, "x%3Ay%2Fz+k%C3%A4")
+        self.parserfn("{{#urlencode:x:y/z kä}}", "x%3Ay%2Fz+k%C3%A4")
 
     def test_f_urldecode1(self):
-        ctx = phase1_to_ctx([])
-        ctx.start_page("Tt")
-        ret = ctx.expand("{{#urldecode:x%3Ay%2Fz+k%C3%A4}}")
-        self.assertEqual(ret, "x:y/z kä")
+        self.parserfn("{{#urldecode:x%3Ay%2Fz+k%C3%A4}}", "x:y/z kä")
 
     def test_subjectspace1(self):
         ctx = phase1_to_ctx([])
@@ -2713,10 +2600,6 @@ return export
 # XXX test expand() with templates_to_expand as a given set
 # XXX test expand() with templates_to_expand=None (meaning all templates)
 
-# XXX Implement:
-#   #time
-#   fullurle
-
 # XXX add warning about unbalanced parentheses; should try to handle
 # them heuristically as a last resort
 
@@ -2730,13 +2613,6 @@ return export
 # XXX it seems sometimes expressions are generated that have an empty value
 # (that should probably be interpreted as zero), e.g., "<176"
 
-# XXX pass ctx to parserfns and get title from there, default space,
-# mediawiki language from there
-
-# XXX there seems to be some issue in parameter processing:
-# see pages/Words/fí/fíkinn.txt (gives warning about parameter fíkn), I think
-# I may be checking for "=" in parameter at wrong time relative to expansions
-
 # XXX implement mw.title.makeTitle with interwiki; t.interwiki field
 # XXX implement mw.title.exists by calling python get_page_info (cf isRedirect)
 # XXX mw.title subpage functions should only consider those parent pages
@@ -2746,6 +2622,3 @@ return export
 # XXX test frame:newTemplateParserValue
 # XXX test frame:newChild
 # XXX test case variations of template names and parser function names
-
-# XXX re-enable preventing "_" in mw_title.makeTitle (now disabled so we can
-# test using saved file names as titles)
