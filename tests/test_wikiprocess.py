@@ -32,6 +32,7 @@ return export
         ctx.start_page("Tt")
         ret = ctx.expand(text)
         self.assertEqual(ret, expected_ret)
+        return ctx
 
     def test_preprocess1(self):
         ret = preprocess_text("a<!-- foo\n -- bar\n- bar\n--- bar\n -- -->b")
@@ -132,71 +133,39 @@ return export
         self.assertEqual(ret, "T")
 
     def test_switch1(self):
-        ctx = phase1_to_ctx([])
-        ctx.start_page("Tt")
-        ret = ctx.expand("{{#switch:a|a=one|b=two|three}}")
-        self.assertEqual(ret, "one")
+        self.parserfn("{{#switch:a|a=one|b=two|three}}", "one")
 
     def test_switch2(self):
-        ctx = phase1_to_ctx([])
-        ctx.start_page("Tt")
-        ret = ctx.expand("{{#switch:b|a=one|b=two|three}}")
-        self.assertEqual(ret, "two")
+        self.parserfn("{{#switch:b|a=one|b=two|three}}", "two")
 
     def test_switch3(self):
-        ctx = phase1_to_ctx([])
-        ctx.start_page("Tt")
-        ret = ctx.expand("{{#switch:c|a=one|b=two|three}}")
-        self.assertEqual(ret, "three")
+        self.parserfn("{{#switch:c|a=one|b=two|three}}", "three")
 
     def test_switch4(self):
-        ctx = phase1_to_ctx([])
-        ctx.start_page("Tt")
-        ret = ctx.expand("{{#switch:|a=one|b=two|three}}")
-        self.assertEqual(ret, "three")
+        self.parserfn("{{#switch:|a=one|b=two|three}}", "three")
 
     def test_switch5(self):
-        ctx = phase1_to_ctx([])
-        ctx.start_page("Tt")
-        ret = ctx.expand("{{#switch:|a=one|#default=three|b=two}}")
-        self.assertEqual(ret, "three")
+        self.parserfn("{{#switch:|a=one|#default=three|b=two}}", "three")
 
     def test_switch6(self):
-        ctx = phase1_to_ctx([])
-        ctx.start_page("Tt")
-        ret = ctx.expand("{{#switch:b|a=one|#default=three|b=two}}")
-        self.assertEqual(ret, "two")
+        self.parserfn("{{#switch:b|a=one|#default=three|b=two}}", "two")
 
     def test_switch7(self):
-        ctx = phase1_to_ctx([])
-        ctx.start_page("Tt")
-        ret = ctx.expand("{{#switch:c|a=one|c|d=four|b=two}}")
-        self.assertEqual(ret, "four")
+        self.parserfn("{{#switch:c|a=one|c|d=four|b=two}}", "four")
 
     def test_switch8(self):
-        ctx = phase1_to_ctx([])
-        ctx.start_page("Tt")
-        ret = ctx.expand("{{#switch:d|a=one|c|d=four|b=two}}")
-        self.assertEqual(ret, "four")
+        self.parserfn("{{#switch:d|a=one|c|d=four|b=two}}", "four")
 
     def test_switch9(self):
-        ctx = phase1_to_ctx([])
-        ctx.start_page("Tt")
-        ret = ctx.expand("{{#switch:b|a=one|c|d=four|b=two}}")
-        self.assertEqual(ret, "two")
+        self.parserfn("{{#switch:b|a=one|c|d=four|b=two}}", "two")
 
     def test_switch10(self):
-        ctx = phase1_to_ctx([])
-        ctx.start_page("Tt")
-        ret = ctx.expand("{{#switch:e|a=one|c|d=four|b=two}}")
-        self.assertEqual(ret, "")
+        self.parserfn("{{#switch:e|a=one|c|d=four|b=two}}", "")
 
     def test_switch11(self):
-        ctx = phase1_to_ctx([])
-        ctx.start_page("Tt")
-        ret = ctx.expand("{{#switch: d |\na\n=\none\n|\nc\n|"
-                         "\nd\n=\nfour\n|\nb\n=\ntwo\n}}")
-        self.assertEqual(ret, "four")
+        self.parserfn("{{#switch: d |\na\n=\none\n|\nc\n|"
+                      "\nd\n=\nfour\n|\nb\n=\ntwo\n}}",
+                      "four")
 
     # XXX test that both sides of switch are evaluated
 
@@ -229,54 +198,32 @@ MORE
 """)
 
     def test_tag1(self):
-        ctx = phase1_to_ctx([])
-        ctx.start_page("Tt")
-        ret = ctx.expand("{{#tag:br}}")
-        self.assertEqual(ret, "<br />")
+        self.parserfn("{{#tag:br}}", "<br />")
 
     def test_tag2(self):
-        ctx = phase1_to_ctx([])
-        ctx.start_page("Tt")
-        ret = ctx.expand("{{#tag:div|foo bar}}")
-        self.assertEqual(ret, "<div>foo bar</div>")
+        self.parserfn("{{#tag:div|foo bar}}", "<div>foo bar</div>")
 
     def test_tag3(self):
-        ctx = phase1_to_ctx([])
-        ctx.start_page("Tt")
-        ret = ctx.expand("""{{#tag:div|foo bar|class=foo|id=me}}""")
-        self.assertEqual(ret, """<div class="foo" id="me">foo bar</div>""")
+        self.parserfn("""{{#tag:div|foo bar|class=foo|id=me}}""",
+                      """<div class="foo" id="me">foo bar</div>""")
 
     def test_tag4(self):
-        ctx = phase1_to_ctx([])
-        ctx.start_page("Tt")
-        ret = ctx.expand("""{{#tag:div|foo bar|class=foo|text=m"e'a}}""")
-        self.assertEqual(ret,
-                         """<div class="foo" text="m&quot;e&#x27;a">"""
-                         """foo bar</div>""")
+        self.parserfn("""{{#tag:div|foo bar|class=foo|text=m"e'a}}""",
+                      """<div class="foo" text="m&quot;e&#x27;a">"""
+                      """foo bar</div>""")
 
     def test_tag5(self):
-        ctx = phase1_to_ctx([])
-        ctx.start_page("Tt")
-        ret = ctx.expand("{{#tag:div|foo bar<dangerous>z}}")
-        self.assertEqual(ret, "<div>foo bar<dangerous>z</div>")
+        self.parserfn("{{#tag:div|foo bar<dangerous>z}}",
+                      "<div>foo bar<dangerous>z</div>")
 
     def test_tag6(self):
-        ctx = phase1_to_ctx([])
-        ctx.start_page("Tt")
-        ret = ctx.expand("{{#tag:nowiki|foo bar}}")
-        self.assertEqual(ret, "foo bar")
+        self.parserfn("{{#tag:nowiki|foo bar}}", "foo bar")
 
     def test_tag7(self):
-        ctx = phase1_to_ctx([])
-        ctx.start_page("Tt")
-        ret = ctx.expand("{{#tag:nowiki|&amp;}}")
-        self.assertEqual(ret, "&amp;amp&semi;")
+        self.parserfn("{{#tag:nowiki|&amp;}}", "&amp;amp&semi;")
 
     def test_tag8(self):
-        ctx = phase1_to_ctx([])
-        ctx.start_page("Tt")
-        ret = ctx.expand("{{{#tag:nowiki}}{!}}")
-        self.assertEqual(ret, "{{!}}")
+        self.parserfn("{{{#tag:nowiki}}{!}}", "{{!}}")
 
     def test_fullpagename1(self):
         ctx = phase1_to_ctx([])
@@ -417,614 +364,311 @@ MORE
         self.assertEqual(ret, "Template")
 
     def test_uc(self):
-        ctx = phase1_to_ctx([])
-        ctx.start_page("Tt")
-        ret = ctx.expand("{{uc:foo}}")
-        self.assertEqual(ret, "FOO")
+        self.parserfn("{{uc:foo}}", "FOO")
 
     def test_lc(self):
-        ctx = phase1_to_ctx([])
-        ctx.start_page("Tt")
-        ret = ctx.expand("{{lc:FOO}}")
-        self.assertEqual(ret, "foo")
+        self.parserfn("{{lc:FOO}}", "foo")
 
     def test_lcfirst(self):
-        ctx = phase1_to_ctx([])
-        ctx.start_page("Tt")
-        ret = ctx.expand("{{lcfirst:FOO}}")
-        self.assertEqual(ret, "fOO")
+        self.parserfn("{{lcfirst:FOO}}", "fOO")
 
     def test_ucfirst(self):
-        ctx = phase1_to_ctx([])
-        ctx.start_page("Tt")
-        ret = ctx.expand("{{ucfirst:foo}}")
-        self.assertEqual(ret, "Foo")
+        self.parserfn("{{ucfirst:foo}}", "Foo")
 
     def test_dateformat1(self):
-        ctx = phase1_to_ctx([])
-        ctx.start_page("Tt")
-        ret = ctx.expand("{{#dateformat:25 dec 2009|ymd}}")
-        self.assertEqual(ret, "2009 Dec 25")
+        self.parserfn("{{#dateformat:25 dec 2009|ymd}}", "2009 Dec 25")
 
     def test_dateformat2(self):
-        ctx = phase1_to_ctx([])
-        ctx.start_page("Tt")
-        ret = ctx.expand("{{#dateformat:25 dec 2009|mdy}}")
-        self.assertEqual(ret, "Dec 25, 2009")
+        self.parserfn("{{#dateformat:25 dec 2009|mdy}}", "Dec 25, 2009")
 
     def test_dateformat3(self):
-        ctx = phase1_to_ctx([])
-        ctx.start_page("Tt")
-        ret = ctx.expand("{{#dateformat:25 dec 2009|ISO 8601}}")
-        self.assertEqual(ret, "2009-12-25")
+        self.parserfn("{{#dateformat:25 dec 2009|ISO 8601}}", "2009-12-25")
 
     def test_dateformat4(self):
-        ctx = phase1_to_ctx([])
-        ctx.start_page("Tt")
-        ret = ctx.expand("{{#dateformat:25 dec 2009}}")
-        self.assertEqual(ret, "2009-12-25")
+        self.parserfn("{{#dateformat:25 dec 2009}}", "2009-12-25")
 
     def test_dateformat5(self):
-        ctx = phase1_to_ctx([])
-        ctx.start_page("Tt")
-        ret = ctx.expand("{{#dateformat:25 dec 2009|dmy}}")
-        self.assertEqual(ret, "25 Dec 2009")
+        self.parserfn("{{#dateformat:25 dec 2009|dmy}}", "25 Dec 2009")
 
     def test_dateformat6(self):
-        ctx = phase1_to_ctx([])
-        ctx.start_page("Tt")
-        ret = ctx.expand("{{#dateformat:2011-11-09|dmy}}")
-        self.assertEqual(ret, "09 Nov 2011")
+        self.parserfn("{{#dateformat:2011-11-09|dmy}}", "09 Nov 2011")
 
     def test_dateformat7(self):
-        ctx = phase1_to_ctx([])
-        ctx.start_page("Tt")
-        ret = ctx.expand("{{#dateformat:2011 Nov 9|dmy}}")
-        self.assertEqual(ret, "09 Nov 2011")
+        self.parserfn("{{#dateformat:2011 Nov 9|dmy}}", "09 Nov 2011")
 
     def test_dateformat8(self):
-        ctx = phase1_to_ctx([])
-        ctx.start_page("Tt")
-        ret = ctx.expand("{{#dateformat:2011 NovEmber 9|dmy}}")
-        self.assertEqual(ret, "09 Nov 2011")
+        self.parserfn("{{#dateformat:2011 NovEmber 9|dmy}}", "09 Nov 2011")
 
     def test_dateformat9(self):
-        ctx = phase1_to_ctx([])
-        ctx.start_page("Tt")
-        ret = ctx.expand("{{#dateformat:25 December|mdy}}")
-        self.assertEqual(ret, "Dec 25")
+        self.parserfn("{{#dateformat:25 December|mdy}}", "Dec 25")
 
     def test_dateformat10(self):
-        ctx = phase1_to_ctx([])
-        ctx.start_page("Tt")
-        ret = ctx.expand("{{#dateformat:25 December|dmy}}")
-        self.assertEqual(ret, "25 Dec")
+        self.parserfn("{{#dateformat:25 December|dmy}}", "25 Dec")
 
     def test_fullurl1(self):
-        ctx = phase1_to_ctx([])
-        ctx.start_page("Tt")
-        ret = ctx.expand("{{fullurl:Test page|action=edit}}")
-        self.assertEqual(ret, "//dummy.host/index.php?"
-                         "title=Test+page&action=edit")
+        self.parserfn("{{fullurl:Test page|action=edit}}",
+                      "//dummy.host/index.php?title=Test+page&action=edit")
 
     # XXX implement and test interwiki prefixes for fullurl
 
     def test_urlencode1(self):
-        ctx = phase1_to_ctx([])
-        ctx.start_page("Tt")
-        ret = ctx.expand("{{urlencode:x:y/z k}}")
-        self.assertEqual(ret, "x%3Ay%2Fz+k")
+        self.parserfn("{{urlencode:x:y/z k}}", "x%3Ay%2Fz+k")
 
     def test_urlencode2(self):
-        ctx = phase1_to_ctx([])
-        ctx.start_page("Tt")
-        ret = ctx.expand("{{urlencode:x:y/z kä|QUERY}}")
-        self.assertEqual(ret, "x%3Ay%2Fz+k%C3%A4")
+        self.parserfn("{{urlencode:x:y/z kä|QUERY}}", "x%3Ay%2Fz+k%C3%A4")
 
     def test_urlencode3(self):
-        ctx = phase1_to_ctx([])
-        ctx.start_page("Tt")
-        ret = ctx.expand("{{urlencode:x:y/z kä|WIKI}}")
-        self.assertEqual(ret, "x:y/z_k%C3%A4")
+        self.parserfn("{{urlencode:x:y/z kä|WIKI}}", "x:y/z_k%C3%A4")
 
     def test_urlencode4(self):
-        ctx = phase1_to_ctx([])
-        ctx.start_page("Tt")
-        ret = ctx.expand("{{urlencode:x:y/z kä|PATH}}")
-        self.assertEqual(ret, "x%3Ay%2Fz%20k%C3%A4")
+        self.parserfn("{{urlencode:x:y/z kä|PATH}}", "x%3Ay%2Fz%20k%C3%A4")
 
     def test_achorencode1(self):
-        ctx = phase1_to_ctx([])
-        ctx.start_page("Tt")
-        ret = ctx.expand("{{anchorencode:x:y/z kä}}")
-        self.assertEqual(ret, "x:y/z_kä")
+        self.parserfn("{{anchorencode:x:y/z kä}}", "x:y/z_kä")
 
     def test_ns1(self):
-        ctx = phase1_to_ctx([])
-        ctx.start_page("Tt")
-        ret = ctx.expand("{{ns:6}}")
-        self.assertEqual(ret, "File")
+        self.parserfn("{{ns:6}}", "File")
 
     def test_ns2(self):
-        ctx = phase1_to_ctx([])
-        ctx.start_page("Tt")
-        ret = ctx.expand("{{ns:File}}")
-        self.assertEqual(ret, "File")
+        self.parserfn("{{ns:File}}", "File")
 
     def test_ns3(self):
-        ctx = phase1_to_ctx([])
-        ctx.start_page("Tt")
-        ret = ctx.expand("{{ns:Image}}")
-        self.assertEqual(ret, "File")
+        self.parserfn("{{ns:Image}}", "File")
 
     def test_ns4(self):
-        ctx = phase1_to_ctx([])
-        ctx.start_page("Tt")
-        ret = ctx.expand("{{ns:Nonexistentns}}")
-        self.assertEqual(ret, "")
+        self.parserfn("{{ns:Nonexistentns}}", "")
 
     def test_titleparts1(self):
-        ctx = phase1_to_ctx([])
-        ctx.start_page("Tt")
-        ret = ctx.expand("{{#titleparts:foo}}")
-        self.assertEqual(ret, "foo")
+        self.parserfn("{{#titleparts:foo}}", "foo")
 
     def test_titleparts2(self):
-        ctx = phase1_to_ctx([])
-        ctx.start_page("Tt")
-        ret = ctx.expand("{{#titleparts:foo/bar/baz}}")
-        self.assertEqual(ret, "foo/bar/baz")
+        self.parserfn("{{#titleparts:foo/bar/baz}}", "foo/bar/baz")
 
     def test_titleparts3(self):
-        ctx = phase1_to_ctx([])
-        ctx.start_page("Tt")
-        ret = ctx.expand("{{#titleparts:Help:foo/bar/baz}}")
-        self.assertEqual(ret, "Help:foo/bar/baz")
+        self.parserfn("{{#titleparts:Help:foo/bar/baz}}", "Help:foo/bar/baz")
 
     def test_titleparts4(self):
-        ctx = phase1_to_ctx([])
-        ctx.start_page("Tt")
-        ret = ctx.expand("{{#titleparts:foo|1|-1}}")
-        self.assertEqual(ret, "foo")
+        self.parserfn("{{#titleparts:foo|1|-1}}", "foo")
 
     def test_titleparts5(self):
-        ctx = phase1_to_ctx([])
-        ctx.start_page("Tt")
-        ret = ctx.expand("{{#titleparts:foo/bar/baz|1|-2}}")
-        self.assertEqual(ret, "bar")
+        self.parserfn("{{#titleparts:foo/bar/baz|1|-2}}", "bar")
 
     def test_titleparts6(self):
-        ctx = phase1_to_ctx([])
-        ctx.start_page("Tt")
-        ret = ctx.expand("{{#titleparts:Help:foo/bar/baz|2|1}}")
-        self.assertEqual(ret, "foo/bar")
+        self.parserfn("{{#titleparts:Help:foo/bar/baz|2|1}}", "foo/bar")
 
     def test_titleparts7(self):
-        ctx = phase1_to_ctx([])
-        ctx.start_page("Tt")
-        ret = ctx.expand("{{#titleparts:Help:foo/bar/baz||-2}}")
-        self.assertEqual(ret, "bar/baz")
+        self.parserfn("{{#titleparts:Help:foo/bar/baz||-2}}", "bar/baz")
 
     def test_titleparts8(self):
-        ctx = phase1_to_ctx([])
-        ctx.start_page("Tt")
-        ret = ctx.expand("{{#titleparts:Help:foo/bar/baz|2}}")
-        self.assertEqual(ret, "Help:foo")
+        self.parserfn("{{#titleparts:Help:foo/bar/baz|2}}", "Help:foo")
 
     def test_expr1(self):
-        ctx = phase1_to_ctx([])
-        ctx.start_page("Tt")
-        ret = ctx.expand("{{#expr}}")
-        self.assertEqual(ret, "")
+        ctx = self.parserfn("{{#expr}}", "")
         self.assertEqual(len(ctx.warnings), 1)
 
     def test_expr2(self):
-        ctx = phase1_to_ctx([])
-        ctx.start_page("Tt")
-        ret = ctx.expand("{{#expr|1 + 2.34}}")
-        self.assertEqual(ret, "3.34")
+        self.parserfn("{{#expr|1 + 2.34}}", "3.34")
 
     def test_expr3(self):
-        ctx = phase1_to_ctx([])
-        ctx.start_page("Tt")
-        ret = ctx.expand("{{#expr|1 + 2.34}}")
-        self.assertEqual(ret, "3.34")
+        self.parserfn("{{#expr|1 + 2.34}}", "3.34")
 
     def test_expr4(self):
-        ctx = phase1_to_ctx([])
-        ctx.start_page("Tt")
-        ret = ctx.expand("{{#expr|-12}}")
-        self.assertEqual(ret, "-12")
+        self.parserfn("{{#expr|-12}}", "-12")
 
     def test_expr5(self):
-        ctx = phase1_to_ctx([])
-        ctx.start_page("Tt")
-        ret = ctx.expand("{{#expr|-trunc12}}")
-        self.assertEqual(ret, "-12")
+        self.parserfn("{{#expr|-trunc12}}", "-12")
 
     def test_expr6(self):
-        ctx = phase1_to_ctx([])
-        ctx.start_page("Tt")
-        ret = ctx.expand("{{#expr|-trunc(-2^63)}}")
-        self.assertEqual(ret, "9223372036854775808")
+        self.parserfn("{{#expr|-trunc(-2^63)}}", "9223372036854775808")
 
     def test_expr7(self):
-        ctx = phase1_to_ctx([])
-        ctx.start_page("Tt")
-        ret = ctx.expand("{{#expr|-trunc(-2^63)}}")
-        self.assertEqual(ret, "9223372036854775808")
+        self.parserfn("{{#expr|-trunc(-2^63)}}", "9223372036854775808")
 
     def test_expr8(self):
-        ctx = phase1_to_ctx([])
-        ctx.start_page("Tt")
-        ret = ctx.expand("{{#expr|2e3}}")
-        self.assertEqual(ret, "2000")
+        self.parserfn("{{#expr|2e3}}", "2000")
 
     def test_expr9(self):
-        ctx = phase1_to_ctx([])
-        ctx.start_page("Tt")
-        ret = ctx.expand("{{#expr|-2.3e-4}}")
-        self.assertEqual(ret, "-0.00022999999999999998")
+        self.parserfn("{{#expr|-2.3e-4}}", "-0.00022999999999999998")
 
     def test_expr10(self):
-        ctx = phase1_to_ctx([])
-        ctx.start_page("Tt")
-        ret = ctx.expand("{{#expr|(trunc2)e(trunc-3)}}")
-        self.assertEqual(ret, "0.002")
+        self.parserfn("{{#expr|(trunc2)e(trunc-3)}}", "0.002")
 
     def test_expr11(self):
-        ctx = phase1_to_ctx([])
-        ctx.start_page("Tt")
-        ret = ctx.expand("{{#expr|(trunc2)e(trunc0)}}")
-        self.assertEqual(ret, "2")
+        self.parserfn("{{#expr|(trunc2)e(trunc0)}}", "2")
 
     def test_expr12(self):
-        ctx = phase1_to_ctx([])
-        ctx.start_page("Tt")
-        ret = ctx.expand("{{#expr|(trunc2)e(trunc18)}}")
-        self.assertEqual(ret, "2000000000000000000")
+        self.parserfn("{{#expr|(trunc2)e(trunc18)}}", "2000000000000000000")
 
     def test_expr13(self):
-        ctx = phase1_to_ctx([])
-        ctx.start_page("Tt")
-        ret = ctx.expand("{{#expr|6e(5-2)e-2}}")
-        self.assertEqual(ret, "60")
+        self.parserfn("{{#expr|6e(5-2)e-2}}", "60")
 
     def test_expr14(self):
-        ctx = phase1_to_ctx([])
-        ctx.start_page("Tt")
-        ret = ctx.expand("{{#expr|1e.5}}")
-        self.assertEqual(ret, "3.1622776601683795")
+        self.parserfn("{{#expr|1e.5}}", "3.1622776601683795")
 
     def test_expr15(self):
-        ctx = phase1_to_ctx([])
-        ctx.start_page("Tt")
-        ret = ctx.expand("{{#expr|exp43}}")
-        self.assertEqual(ret, "4727839468229346304")
+        self.parserfn("{{#expr|exp43}}", "4727839468229346304")
 
     def test_expr16(self):
-        ctx = phase1_to_ctx([])
-        ctx.start_page("Tt")
-        ret = ctx.expand("{{#expr|exp trunc0}}")
-        self.assertEqual(ret, "1")
+        self.parserfn("{{#expr|exp trunc0}}", "1")
 
     def test_expr17(self):
-        ctx = phase1_to_ctx([])
-        ctx.start_page("Tt")
-        ret = ctx.expand("{{#expr|ln2}}")
-        self.assertEqual(ret, "0.6931471805599453")
+        self.parserfn("{{#expr|ln2}}", "0.6931471805599453")
 
     def test_expr18(self):
-        ctx = phase1_to_ctx([])
-        ctx.start_page("Tt")
-        ret = ctx.expand("{{#expr|ln trunc1}}")
-        self.assertEqual(ret, "0")
+        self.parserfn("{{#expr|ln trunc1}}", "0")
 
     def test_expr19(self):
-        ctx = phase1_to_ctx([])
-        ctx.start_page("Tt")
-        ret = ctx.expand("{{#expr|ln.5e-323}}")
-        self.assertEqual(ret, "-744.4400719213812")
+        self.parserfn("{{#expr|ln.5e-323}}", "-744.4400719213812")
 
     def test_expr20(self):
-        ctx = phase1_to_ctx([])
-        ctx.start_page("Tt")
-        ret = ctx.expand("{{#expr|abs-2}}")
-        self.assertEqual(ret, "2")
+        self.parserfn("{{#expr|abs-2}}", "2")
 
     def test_expr21(self):
-        ctx = phase1_to_ctx([])
-        ctx.start_page("Tt")
-        ret = ctx.expand("{{#expr|sqrt 4}}")
-        self.assertEqual(ret, "2")
+        self.parserfn("{{#expr|sqrt 4}}", "2")
 
     def test_expr22(self):
-        ctx = phase1_to_ctx([])
-        ctx.start_page("Tt")
-        ret = ctx.expand("{{#expr|trunc1.2}}")
-        self.assertEqual(ret, "1")
+        self.parserfn("{{#expr|trunc1.2}}", "1")
 
     def test_expr23(self):
-        ctx = phase1_to_ctx([])
-        ctx.start_page("Tt")
-        ret = ctx.expand("{{#expr|trunc-1.2}}")
-        self.assertEqual(ret, "-1")
+        self.parserfn("{{#expr|trunc-1.2}}", "-1")
 
     def test_expr24(self):
-        ctx = phase1_to_ctx([])
-        ctx.start_page("Tt")
-        ret = ctx.expand("{{#expr|floor1.2}}")
-        self.assertEqual(ret, "1")
+        self.parserfn("{{#expr|floor1.2}}", "1")
 
     def test_expr25(self):
-        ctx = phase1_to_ctx([])
-        ctx.start_page("Tt")
-        ret = ctx.expand("{{#expr|floor-1.2}}")
-        self.assertEqual(ret, "-2")
+        self.parserfn("{{#expr|floor-1.2}}", "-2")
 
     def test_expr26(self):
-        ctx = phase1_to_ctx([])
-        ctx.start_page("Tt")
-        ret = ctx.expand("{{#expr|ceil1.2}}")
-        self.assertEqual(ret, "2")
+        self.parserfn("{{#expr|ceil1.2}}", "2")
 
     def test_expr27(self):
-        ctx = phase1_to_ctx([])
-        ctx.start_page("Tt")
-        ret = ctx.expand("{{#expr|ceil-1.2}}")
-        self.assertEqual(ret, "-1")
+        self.parserfn("{{#expr|ceil-1.2}}", "-1")
 
     def test_expr28(self):
-        ctx = phase1_to_ctx([])
-        ctx.start_page("Tt")
-        ret = ctx.expand("{{#expr|sin(30*pi/180)}}")
-        self.assertEqual(ret, "0.49999999999999994")
+        self.parserfn("{{#expr|sin(30*pi/180)}}", "0.49999999999999994")
 
     def test_expr29(self):
-        ctx = phase1_to_ctx([])
-        ctx.start_page("Tt")
-        ret = ctx.expand("{{#expr|cos.1}}")
-        self.assertEqual(ret, "0.9950041652780258")
+        self.parserfn("{{#expr|cos.1}}", "0.9950041652780258")
 
     def test_expr30(self):
-        ctx = phase1_to_ctx([])
-        ctx.start_page("Tt")
-        ret = ctx.expand("{{#expr|tan.1}}")
-        self.assertEqual(ret, "0.10033467208545055")
+        self.parserfn("{{#expr|tan.1}}", "0.10033467208545055")
 
     def test_expr31(self):
-        ctx = phase1_to_ctx([])
-        ctx.start_page("Tt")
-        ret = ctx.expand("{{#expr|asin.1}}")
-        self.assertEqual(ret, "0.1001674211615598")
+        self.parserfn("{{#expr|asin.1}}", "0.1001674211615598")
 
     def test_expr32(self):
-        ctx = phase1_to_ctx([])
-        ctx.start_page("Tt")
-        ret = ctx.expand("{{#expr|acos.1}}")
-        self.assertEqual(ret, "1.4706289056333368")
+        self.parserfn("{{#expr|acos.1}}", "1.4706289056333368")
 
     def test_expr33(self):
-        ctx = phase1_to_ctx([])
-        ctx.start_page("Tt")
-        ret = ctx.expand("{{#expr|atan.1}}")
-        self.assertEqual(ret, "0.09966865249116204")
+        self.parserfn("{{#expr|atan.1}}", "0.09966865249116204")
 
     def test_expr34(self):
-        ctx = phase1_to_ctx([])
-        ctx.start_page("Tt")
-        ret = ctx.expand("{{#expr|not0}}")
-        self.assertEqual(ret, "1")
+        self.parserfn("{{#expr|not0}}", "1")
 
     def test_expr35(self):
-        ctx = phase1_to_ctx([])
-        ctx.start_page("Tt")
-        ret = ctx.expand("{{#expr|not1}}")
-        self.assertEqual(ret, "0")
+        self.parserfn("{{#expr|not1}}", "0")
 
     def test_expr36(self):
-        ctx = phase1_to_ctx([])
-        ctx.start_page("Tt")
-        ret = ctx.expand("{{#expr|not trunc2.1}}")
-        self.assertEqual(ret, "0")
+        self.parserfn("{{#expr|not trunc2.1}}", "0")
 
     def test_expr37(self):
-        ctx = phase1_to_ctx([])
-        ctx.start_page("Tt")
-        ret = ctx.expand("{{#expr|2^3}}")
-        self.assertEqual(ret, "8")
+        self.parserfn("{{#expr|2^3}}", "8")
 
     def test_expr38(self):
-        ctx = phase1_to_ctx([])
-        ctx.start_page("Tt")
-        ret = ctx.expand("{{#expr|2^-3}}")
-        self.assertEqual(ret, "0.125")
+        self.parserfn("{{#expr|2^-3}}", "0.125")
 
     def test_expr39(self):
-        ctx = phase1_to_ctx([])
-        ctx.start_page("Tt")
-        ret = ctx.expand("{{#expr|2*3}}")
-        self.assertEqual(ret, "6")
+        self.parserfn("{{#expr|2*3}}", "6")
 
     def test_expr40(self):
-        ctx = phase1_to_ctx([])
-        ctx.start_page("Tt")
-        ret = ctx.expand("{{#expr|(trunc2)*3}}")
-        self.assertEqual(ret, "6")
+        self.parserfn("{{#expr|(trunc2)*3}}", "6")
 
     def test_expr41(self):
-        ctx = phase1_to_ctx([])
-        ctx.start_page("Tt")
-        ret = ctx.expand("{{#expr|1 + 2 * 3}}")
-        self.assertEqual(ret, "7")
+        self.parserfn("{{#expr|1 + 2 * 3}}", "7")
 
     def test_expr42(self):
-        ctx = phase1_to_ctx([])
-        ctx.start_page("Tt")
-        ret = ctx.expand("{{#expr|4/2}}")
-        self.assertEqual(ret, "2")
+        self.parserfn("{{#expr|4/2}}", "2")
 
     def test_expr43(self):
-        ctx = phase1_to_ctx([])
-        ctx.start_page("Tt")
-        ret = ctx.expand("{{#expr|5 div 2}}")
-        self.assertEqual(ret, "2.5")
+        self.parserfn("{{#expr|5 div 2}}", "2.5")
 
     def test_expr44(self):
-        ctx = phase1_to_ctx([])
-        ctx.start_page("Tt")
-        ret = ctx.expand("{{#expr|5 mod 2}}")
-        self.assertEqual(ret, "1")
+        self.parserfn("{{#expr|5 mod 2}}", "1")
 
     def test_expr45(self):
-        ctx = phase1_to_ctx([])
-        ctx.start_page("Tt")
-        ret = ctx.expand("{{#expr|5+2}}")
-        self.assertEqual(ret, "7")
+        self.parserfn("{{#expr|5+2}}", "7")
 
     def test_expr46(self):
-        ctx = phase1_to_ctx([])
-        ctx.start_page("Tt")
-        ret = ctx.expand("{{#expr|5.1--2.7}}")
-        self.assertEqual(ret, "7.8")
+        self.parserfn("{{#expr|5.1--2.7}}", "7.8")
 
     def test_expr47(self):
-        ctx = phase1_to_ctx([])
-        ctx.start_page("Tt")
-        ret = ctx.expand("{{#expr|9.876round2}}")
-        self.assertEqual(ret, "9.88")
+        self.parserfn("{{#expr|9.876round2}}", "9.88")
 
     def test_expr48(self):
-        ctx = phase1_to_ctx([])
-        ctx.start_page("Tt")
-        ret = ctx.expand("{{#expr|trunc1234round trunc-2}}")
-        self.assertEqual(ret, "1200")
+        self.parserfn("{{#expr|trunc1234round trunc-2}}", "1200")
 
     def test_expr49(self):
-        ctx = phase1_to_ctx([])
-        ctx.start_page("Tt")
-        ret = ctx.expand("{{#expr|3.0=3}}")
-        self.assertEqual(ret, "1")
+        self.parserfn("{{#expr|3.0=3}}", "1")
 
     def test_expr50(self):
-        ctx = phase1_to_ctx([])
-        ctx.start_page("Tt")
-        ret = ctx.expand("{{#expr|3.1=3.0}}")
-        self.assertEqual(ret, "0")
+        self.parserfn("{{#expr|3.1=3.0}}", "0")
 
     def test_expr51(self):
-        ctx = phase1_to_ctx([])
-        ctx.start_page("Tt")
-        ret = ctx.expand("{{#expr|3.0<>3.0}}")
-        self.assertEqual(ret, "0")
+        self.parserfn("{{#expr|3.0<>3.0}}", "0")
 
     def test_expr52(self):
-        ctx = phase1_to_ctx([])
-        ctx.start_page("Tt")
-        ret = ctx.expand("{{#expr|3.1!=3.0}}")
-        self.assertEqual(ret, "1")
+        self.parserfn("{{#expr|3.1!=3.0}}", "1")
 
     def test_expr53(self):
-        ctx = phase1_to_ctx([])
-        ctx.start_page("Tt")
-        ret = ctx.expand("{{#expr|3.0<3.1}}")
-        self.assertEqual(ret, "1")
+        self.parserfn("{{#expr|3.0<3.1}}", "1")
 
     def test_expr54(self):
-        ctx = phase1_to_ctx([])
-        ctx.start_page("Tt")
-        ret = ctx.expand("{{#expr|3.0<3.0}}")
-        self.assertEqual(ret, "0")
+        self.parserfn("{{#expr|3.0<3.0}}", "0")
 
     def test_expr55(self):
-        ctx = phase1_to_ctx([])
-        ctx.start_page("Tt")
-        ret = ctx.expand("{{#expr|3.1>3.0}}")
-        self.assertEqual(ret, "1")
+        self.parserfn("{{#expr|3.1>3.0}}", "1")
 
     def test_expr56(self):
-        ctx = phase1_to_ctx([])
-        ctx.start_page("Tt")
-        ret = ctx.expand("{{#expr|3.1>3.1}}")
-        self.assertEqual(ret, "0")
+        self.parserfn("{{#expr|3.1>3.1}}", "0")
 
     def test_expr57(self):
-        ctx = phase1_to_ctx([])
-        ctx.start_page("Tt")
-        ret = ctx.expand("{{#expr|3.1>=3.0}}")
-        self.assertEqual(ret, "1")
+        self.parserfn("{{#expr|3.1>=3.0}}", "1")
 
     def test_expr58(self):
-        ctx = phase1_to_ctx([])
-        ctx.start_page("Tt")
-        ret = ctx.expand("{{#expr|3.1>=3.1}}")
-        self.assertEqual(ret, "1")
+        self.parserfn("{{#expr|3.1>=3.1}}", "1")
 
     def test_expr59(self):
-        ctx = phase1_to_ctx([])
-        ctx.start_page("Tt")
-        ret = ctx.expand("{{#expr|3.0<=3.1}}")
-        self.assertEqual(ret, "1")
+        self.parserfn("{{#expr|3.0<=3.1}}", "1")
 
     def test_expr60(self):
-        ctx = phase1_to_ctx([])
-        ctx.start_page("Tt")
-        ret = ctx.expand("{{#expr|3.0<=3.0}}")
-        self.assertEqual(ret, "1")
+        self.parserfn("{{#expr|3.0<=3.0}}", "1")
 
     def test_expr61(self):
-        ctx = phase1_to_ctx([])
-        ctx.start_page("Tt")
-        ret = ctx.expand("{{#expr|3.1<=3.0}}")
-        self.assertEqual(ret, "0")
+        self.parserfn("{{#expr|3.1<=3.0}}", "0")
 
     def test_expr62(self):
-        ctx = phase1_to_ctx([])
-        ctx.start_page("Tt")
-        ret = ctx.expand("{{#expr|e}}")
-        self.assertEqual(ret, str(math.e))
+        self.parserfn("{{#expr|e}}", str(math.e))
 
     def test_expr63(self):
-        ctx = phase1_to_ctx([])
-        ctx.start_page("Tt")
-        ret = ctx.expand("{{#expr|pi}}")
-        self.assertEqual(ret, str(math.pi))
+        self.parserfn("{{#expr|pi}}", str(math.pi))
 
     def test_expr64(self):
-        ctx = phase1_to_ctx([])
-        ctx.start_page("Tt")
-        ret = ctx.expand("{{#expr|+trunc1.1}}")
-        self.assertEqual(ret, "1")
+        self.parserfn("{{#expr|+trunc1.1}}", "1")
 
     def test_padleft1(self):
-        ctx = phase1_to_ctx([])
-        ctx.start_page("Tt")
-        ret = ctx.expand("{{padleft:xyz|5}}")
-        self.assertEqual(ret, "00xyz")
+        self.parserfn("{{padleft:xyz|5}}", "00xyz")
 
     def test_padleft2(self):
-        ctx = phase1_to_ctx([])
-        ctx.start_page("Tt")
-        ret = ctx.expand("{{padleft:xyz|5|_}}")
-        self.assertEqual(ret, "__xyz")
+        self.parserfn("{{padleft:xyz|5|_}}", "__xyz")
 
     def test_padleft3(self):
-        ctx = phase1_to_ctx([])
-        ctx.start_page("Tt")
-        ret = ctx.expand("{{padleft:xyz|5|abc}}")
-        self.assertEqual(ret, "abxyz")
+        self.parserfn("{{padleft:xyz|5|abc}}", "abxyz")
 
     def test_padleft4(self):
-        ctx = phase1_to_ctx([])
-        ctx.start_page("Tt")
-        ret = ctx.expand("{{padleft:xyz|2}}")
-        self.assertEqual(ret, "xyz")
+        self.parserfn("{{padleft:xyz|2}}", "xyz")
 
     def test_padleft5(self):
-        ctx = phase1_to_ctx([])
-        ctx.start_page("Tt")
-        ret = ctx.expand("{{padleft:|1|xyz}}")
-        self.assertEqual(ret, "x")
+        self.parserfn("{{padleft:|1|xyz}}", "x")
 
     def test_padright1(self):
         ctx = phase1_to_ctx([])
