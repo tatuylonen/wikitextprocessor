@@ -4,7 +4,6 @@
 
 import re
 import enum
-import html
 from .parserfns import PARSER_FUNCTIONS
 from .wikihtml import ALLOWED_HTML_TAGS
 from .common import MAGIC_NOWIKI_CHAR, MAGIC_FIRST, MAGIC_LAST
@@ -266,12 +265,6 @@ def _parser_push(ctx, kind):
     return node
 
 
-def _parser_finalize_str(s):
-    s = html.unescape(s)
-    s = re.sub(MAGIC_NOWIKI_CHAR, "", s)
-    return s
-
-
 def _parser_merge_str_children(ctx):
     """Merges multiple consecutive str children into one.  We merge them
     as a separate step, because this gives linear worst-case time, vs.
@@ -286,7 +279,7 @@ def _parser_merge_str_children(ctx):
     else:
         # All children are strings
         s = "".join(lst)
-        s = _parser_finalize_str(s)
+        s = ctx._finalize_expand(s, True)
         node.children = []
         if s:
             node.children.append(s)
@@ -296,7 +289,7 @@ def _parser_merge_str_children(ctx):
         return
     node.children = lst[:-cnt]
     s = "".join(lst[-cnt:])
-    s = _parser_finalize_str(s)
+    s = ctx._finalize_expand(s, True)
     if s:
         node.children.append(s)
 

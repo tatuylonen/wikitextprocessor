@@ -6,6 +6,7 @@
 import os
 import re
 import sys
+import html
 import tempfile
 import traceback
 import collections
@@ -205,7 +206,7 @@ class Wtp(object):
             return self._save_value("A", args, nowiki)
 
         def repl_templ(m):
-            """Replacement function for templates {{...}} and parser
+            """Replacement function for templates {{name|...}} and parser
             functions."""
             nowiki = m.group(0).find(MAGIC_NOWIKI_CHAR) >= 0
             args = m.group(1).split("|")
@@ -236,12 +237,26 @@ class Wtp(object):
                 prev2 = text
                 text = re.sub(r"(?s)\{" + MAGIC_NOWIKI_CHAR +
                               r"?\{" + MAGIC_NOWIKI_CHAR +
-                              r"?\{(([^{}]|\}[^{}]|\}\}[^{}])*?)\}" +
+                              r"?\{([^{}]*?)\}" +
                               MAGIC_NOWIKI_CHAR + r"?\}" +
                               MAGIC_NOWIKI_CHAR + r"?\}",
                               repl_arg, text)
                 if text == prev2:
                     break
+            # Handle template arguments that were INCORRECTLY closed by
+            # a double brace instead of a triple brace.  There seem to be
+            # annoyingly common.
+            # while True:
+            #     prev2 = text
+            #     # Note: intentionally only two closing braces here!
+            #     text = re.sub(r"(?s)\{" + MAGIC_NOWIKI_CHAR +
+            #                   r"?\{" + MAGIC_NOWIKI_CHAR +
+            #                   r"?\{([^{}]*?)\}" +
+            #                   MAGIC_NOWIKI_CHAR + r"?\}",
+            #                   repl_arg, text)
+            #     # XXX should report error/warning, need separate repl function
+            #     if text == prev2:
+            #         break
             # Encode templates
             text = re.sub(r"(?s)\{" + MAGIC_NOWIKI_CHAR +
                           r"?\{(([^{}]|\}[^{}])+?)\}" +
@@ -881,10 +896,54 @@ class Wtp(object):
         finally:
             self.expand_stack.pop()
 
-        # Remove the special <nowiki /> character
-        expanded = re.sub(MAGIC_NOWIKI_CHAR, "", expanded)
-
+        # Expand any remaining magic cookies and remove nowiki char
+        expanded = self._finalize_expand(expanded, False)
         return expanded
+
+    def _finalize_expand(self, text, unescape):
+        """Expands any remaining magic characters (to their original values)
+        and removes nowiki characters."""
+
+        def magic_repl(m):
+            idx = ord(m.group(0)) - MAGIC_FIRST
+            kind, args, nowiki = self.cookies[idx]
+            if kind == "T":
+                if nowiki:
+                    return ("&lbrace;&lbrace;" +
+                            "&vert;".join(args) +
+                            "&rbrace;&rbrace;")
+                return unexpanded_template(args)
+            if kind == "A":
+                if nowiki:
+                    return ("&lbrace;&lbrace;&lbrace;" +
+                            "&vert;".join(args) +
+                            "&rbrace;&rbrace;&rbrace;")
+                return "{{{" + "|".join(args) + "}}}"
+            if kind == "L":
+                if nowiki:
+                    return "&lsqb;&lsqb;" + args[0] + "&rsqb;&rsqb;"
+                return "[[" + args[0] + "]]"
+            self.error("magic_repl: unsupported cookie kind {!r}"
+                       .format(kind))
+            return ""
+
+        # Keep expanding magic cookies until they have all been expanded.
+        # We might get them from, e.g., unexpanded_template()
+        while True:
+            prev = text
+            text = re.sub(r"[{:c}-{:c}]".format(MAGIC_FIRST, MAGIC_LAST),
+                          magic_repl, text)
+            if prev == text:
+                break
+
+        # Unescape HTML entities if so requested (we don't do this at the end
+        # of normal expansion, but we do it at the end of parsing)
+        if unescape:
+            text = html.unescape(text)
+
+        # Remove the special <nowiki /> character
+        text = re.sub(MAGIC_NOWIKI_CHAR, "", text)
+        return text
 
     def process(self, path, page_handler):
         """Parses a WikiMedia dump file ``path`` (which should point to a
