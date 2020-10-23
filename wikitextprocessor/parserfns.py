@@ -775,7 +775,7 @@ def expr_fn(ctx, fn_name, args, expander):
             tok = "<end>"
         ctx.warning("#expr error near {} in {!r}"
                     .format(tok, full_expr))
-        return ""
+        return "Expression error near {}".format(tok)
 
     def get_token():
         nonlocal tokidx

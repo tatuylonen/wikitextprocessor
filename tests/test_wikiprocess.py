@@ -506,7 +506,7 @@ MORE
         self.parserfn("{{#titleparts:Help:foo/bar/baz|2}}", "Help:foo")
 
     def test_expr1(self):
-        ctx = self.parserfn("{{#expr}}", "")
+        ctx = self.parserfn("{{#expr}}", "Expression error near <end>")
         self.assertEqual(len(ctx.warnings), 1)
 
     def test_expr2(self):
