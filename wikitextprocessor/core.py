@@ -664,12 +664,7 @@ class Wtp(object):
                             continue
                         if len(args) >= 2:
                             self.expand_stack.append("ARG-DEFVAL")
-                            # We also try to fetch from args[-1] as that seems
-                            # to be used in various places in Wiktionary
-                            # (not sure what its semantics are, I'm suspecting
-                            # it's just a common typo to have something like
-                            # {{{page||...}}}
-                            ret = expand_args(args[1] or args[-1], argmap)
+                            ret = expand_args(args[1], argmap)
                             self.expand_stack.pop()
                             parts.append(ret)
                             continue
