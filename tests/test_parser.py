@@ -1331,6 +1331,18 @@ def foo(x):
         self.assertEqual(cb.kind, NodeKind.TABLE_CELL)
         self.assertEqual(cb.children, [" $1.90\n"])
 
+    def test_table_bang1(self):
+        # Testing that the single exclamation mark in the middle of a table
+        # cell is handled correctly as text.
+        text = """
+{| class="translations" role="presentation" style="width:100%;" data-gloss="country in Southern Africa"
+|-
+* Nama: {{t|naq|!Aǂkhib|m}}
+|}"""
+        tree, ctx = parse_with_ctx("test", text)
+        self.assertEqual(len(ctx.errors), 0)
+        self.assertEqual(len(ctx.warnings), 0)
+
     def test_error1(self):
         tree, ctx = parse_with_ctx("test", "'''")
         self.assertEqual(len(ctx.errors), 1)

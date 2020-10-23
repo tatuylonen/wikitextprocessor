@@ -756,6 +756,9 @@ def table_hdr_cell_fn(ctx, token):
     if ctx.pre_parse:
         return text_fn(ctx, token)
 
+    if token == "!" and not ctx.beginning_of_line:
+        return text_fn(ctx, token)
+
     table_row_check_attrs(ctx)
     table_check_attrs(ctx)
     if not _parser_have(ctx, NodeKind.TABLE):
@@ -1304,8 +1307,6 @@ def parse_encoded(ctx, text):
     ctx.pre_parse = False
     ctx.parser_stack = [node]
     ctx.suppress_special = False
-
-
 
     # Process all tokens from the input.
     process_text(ctx, text)
