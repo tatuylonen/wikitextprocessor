@@ -540,6 +540,29 @@ class Wtp(object):
         self.rev_ht = {}
         self.expand_stack = [title]
 
+    def _unexpanded_template(self, args, nowiki):
+        """Formats an unexpanded template (whose arguments may have been
+            partially or fully expanded)."""
+        if nowiki:
+            return ("&lbrace;&lbrace;" +
+                    "&vert;".join(args) +
+                    "&rbrace;&rbrace;")
+        return "{{" + "|".join(args) + "}}"
+
+    def _unexpanded_arg(self, args, nowiki):
+        """Formats an unexpanded template argument reference."""
+        if nowiki:
+            return ("&lbrace;&lbrace;&lbrace;" +
+                    "&vert;".join(args) +
+                    "&rbrace;&rbrace;&rbrace;")
+        return "{{{" + "|".join(args) + "}}}"
+
+    def _unexpanded_link(self, args, nowiki):
+        """Formats an unexpanded link."""
+        if nowiki:
+            return "&lsqb;&lsqb;" + "&vert;".join(args) + "&rsqb;&rsqb;"
+        return "[[" + "|".join(args) + "]]"
+
     def expand(self, text, parent=None, pre_only=False,
                template_fn=None, templates_to_expand=None,
                expand_parserfns=True, expand_invoke=True, quiet=False):
@@ -573,11 +596,6 @@ class Wtp(object):
         # If templates_to_expand is None, then expand all known templates
         if templates_to_expand is None:
             templates_to_expand = self.templates
-
-        def unexpanded_template(args):
-            """Formats an unexpanded template (whose arguments may have been
-            partially or fully expanded)."""
-            return "{{" + "|".join(args) + "}}"
 
         def invoke_fn(invoke_args, expander, parent):
             """This is called to expand a #invoke parser function."""
@@ -656,14 +674,14 @@ class Wtp(object):
                             parts.append(ret)
                             continue
                         # The argument is not defined (or name is empty)
-                        arg = "{{{" + str(k) + "}}}"
+                        arg = self._unexpanded_arg([str(k)], nowiki)
                         parts.append(arg)
                         continue
                     if kind == "L":
                         # Link to another page
                         content = args[0]
                         content = expand_args(content, argmap)
-                        parts.append("[[" + content + "]]")
+                        parts.append(self._unexpanded_link([content], nowiki))
                         continue
                     self.error("expand_arg: unsupported cookie kind {!r} in {}"
                                .format(kind, m.group(0)))
@@ -708,15 +726,13 @@ class Wtp(object):
                 assert isinstance(args, tuple)
                 if kind == "T":
                     if nowiki:
-                        parts.append("&lbrace;&lbrace;" +
-                                     "&vert;".join(args) +
-                                     "&rbrace;&rbrace;")
+                        parts.append(self._unexpanded_template(args, nowiki))
                         continue
                     # Template transclusion or parser function call
                     # Limit recursion depth
                     if len(self.expand_stack) >= 100:
                         self.error("too deep expansion of templates")
-                        parts.append(unexpanded_template(args))
+                        parts.append(self._unexpanded_template(args, nowiki))
                         continue
 
                     # Expand template/parserfn name
@@ -765,14 +781,14 @@ class Wtp(object):
                         if not quiet:
                             self.warning("undefined template {!r}"
                                          .format(tname))
-                        parts.append(unexpanded_template(args))
+                        parts.append(self._unexpanded_template(args, nowiki))
                         continue
 
                     # If this template is not one of those we want to expand,
                     # return it unexpanded (but with arguments possibly
                     # expanded)
                     if name not in templates_to_expand:
-                        parts.append(unexpanded_template(args))
+                        parts.append(self._unexpanded_template(args, nowiki))
                         continue
 
                     # Construct and expand template arguments
@@ -859,25 +875,18 @@ class Wtp(object):
                     self.expand_stack.pop()  # template name
                     parts.append(t)
                 elif kind == "A":
-                    if nowiki:
-                        parts.append("&lbrace;&lbrace;&lbrace;" +
-                                     "&vert;".join(args) +
-                                     "&rbrace;&rbrace;&rbrace;")
-                    else:
-                        # The argument is outside transcluded template body
-                        arg = "{{{" + "|".join(args) + "}}}"
-                        parts.append(arg)
+                    parts.append(self._unexpanded_arg(args, nowiki))
                 elif kind == "L":
                     assert len(args) == 1
                     if nowiki:
-                        parts.append("&lsqb;&lsqb;" + args[0] + "&rsqb;&rsqb;")
+                        parts.append(self._unexpanded_link(args, nowiki))
                     else:
                         # Link to another page
                         content = args[0]
                         self.expand_stack.append("[[link]]")
                         content = expand(content, parent, templates_to_expand)
                         self.expand_stack.pop()
-                        parts.append("[[" + content + "]]")
+                        parts.append(self._unexpanded_link([content], nowiki))
                 else:
                     self.error("expand: unsupported cookie kind {!r} in {}"
                                .format(kind, m.group(0)))
@@ -909,21 +918,11 @@ class Wtp(object):
             idx = ord(m.group(0)) - MAGIC_FIRST
             kind, args, nowiki = self.cookies[idx]
             if kind == "T":
-                if nowiki:
-                    return ("&lbrace;&lbrace;" +
-                            "&vert;".join(args) +
-                            "&rbrace;&rbrace;")
-                return unexpanded_template(args)
+                return self._unexpanded_template(args, nowiki)
             if kind == "A":
-                if nowiki:
-                    return ("&lbrace;&lbrace;&lbrace;" +
-                            "&vert;".join(args) +
-                            "&rbrace;&rbrace;&rbrace;")
-                return "{{{" + "|".join(args) + "}}}"
+                return self._unexpanded_arg(args, nowiki)
             if kind == "L":
-                if nowiki:
-                    return "&lsqb;&lsqb;" + args[0] + "&rsqb;&rsqb;"
-                return "[[" + args[0] + "]]"
+                return self._unexpanded_link(args, nowiki)
             self.error("magic_repl: unsupported cookie kind {!r}"
                        .format(kind))
             return ""
