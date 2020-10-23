@@ -14,6 +14,9 @@ from .common import preprocess_text
 # Name of the WikiMedia for which we are generating content
 PROJECT_NAME = "Wiktionary"
 
+# The host to which generated URLs will point
+SERVER_NAME = "dummy.host"
+
 
 def capitalizeFirstOnly(s):
     if s:
@@ -280,6 +283,16 @@ def talkspace_fn(ctx, fn_name, args, expander):
     return "Talk"
 
 
+def server_fn(ctx, fn_name, args, expander):
+    """Implements the SERVER magic word."""
+    return "//{}".format(SERVER_NAME)
+
+
+def servername_fn(ctx, fn_name, args, expander):
+    """Implements the SERVERNAME magic word."""
+    return SERVER_NAME
+
+
 def currentyear_fn(ctx, fn_name, args, expander):
     """Implements the CURRENTYEAR magic word."""
     return str(datetime.datetime.utcnow().year)
@@ -421,7 +434,8 @@ def fullurl_fn(ctx, fn_name, args, expander):
     """Implements the fullurl parser function."""
     arg0 = expander(args[0]).strip() if args else ""
     # XXX handle interwiki prefixes in arg0
-    url = "//dummy.host/index.php?title=" + urllib.parse.quote_plus(arg0)
+    url = "//{}/index.php?title={}".format(
+        SERVER_NAME, urllib.parse.quote_plus(arg0))
     if len(args) > 1:
         for arg in args[1:]:
             arg = expander(arg).strip()
@@ -1160,8 +1174,8 @@ PARSER_FUNCTIONS = {
     "TALKSPACEE": unimplemented_fn,
     "SHORTDESC": unimplemented_fn,
     "SITENAME": unimplemented_fn,
-    "SERVER": unimplemented_fn,
-    "SERVERNAME": unimplemented_fn,
+    "SERVER": server_fn,
+    "SERVERNAME": servername_fn,
     "SCRIPTPATH": unimplemented_fn,
     "CURRENTVERSION": unimplemented_fn,
     "CURRENTYEAR": currentyear_fn,

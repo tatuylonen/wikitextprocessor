@@ -1502,6 +1502,12 @@ MORE
                             "June", "July", "August", "September", "October",
                             "November", "December"])
 
+    def test_server1(self):
+        self.parserfn("{{SERVER}}", "//dummy.host")
+
+    def test_servername1(self):
+        self.parserfn("{{SERVERNAME}}", "dummy.host")
+
     def test_currentmonthabbrev1(self):
         ctx = phase1_to_ctx([])
         ctx.start_page("test page")
