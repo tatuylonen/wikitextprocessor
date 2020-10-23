@@ -269,29 +269,27 @@ def _parser_merge_str_children(ctx):
     """Merges multiple consecutive str children into one.  We merge them
     as a separate step, because this gives linear worst-case time, vs.
     quadratic worst case (albeit with lower constant factor) if we just
-    added to the previously accumulated string in text_fn() instead."""
+    added to the previously accumulated string in text_fn() instead.
+    Importantly, this also finalizes string children so that any magic
+    characters are expanded and nowiki characters removed."""
     node = ctx.parser_stack[-1]
-    lst = node.children
-    lstlen = len(lst)
-    for i in range(lstlen - 1, -1, -1):
-        if not isinstance(lst[i], str):
-            break
-    else:
-        # All children are strings
-        s = "".join(lst)
-        s = ctx._finalize_expand(s, True)
-        node.children = []
+    new_children = []
+    strings = []
+    for x in node.children:
+        if isinstance(x, str):
+            strings.append(x)
+        else:
+            if strings:
+                s = ctx._finalize_expand("".join(strings), True)
+                if s:
+                    new_children.append(s)
+                strings = []
+            new_children.append(x)
+    if strings:
+        s = ctx._finalize_expand("".join(strings), True)
         if s:
-            node.children.append(s)
-        return
-    cnt = lstlen - i - 1
-    if cnt == 0:
-        return
-    node.children = lst[:-cnt]
-    s = "".join(lst[-cnt:])
-    s = ctx._finalize_expand(s, True)
-    if s:
-        node.children.append(s)
+            new_children.append(s)
+    node.children = new_children
 
 def _parser_pop(ctx, warn_unclosed):
     """Pops a node from the stack.  If the node has arguments, this moves
@@ -1067,6 +1065,11 @@ def tag_fn(ctx, token):
         permitted_parents = HTML_PERMITTED_PARENTS.get(name, set())
         while True:
             node = ctx.parser_stack[-1]
+            if node.kind == NodeKind.URL and not node.children:
+                ctx.parser_stack.pop()
+                ctx.parser_stack[-1].children.pop()
+                text_fn(ctx, "[")
+                continue
             if node.kind != NodeKind.HTML:
                 break
             if node.args in permitted_parents:
@@ -1138,6 +1141,11 @@ def tag_fn(ctx, token):
     # Close nodes until we close the corresponding start tag
     while True:
         node = ctx.parser_stack[-1]
+        if node.kind == NodeKind.URL and not node.children:
+            ctx.parser_stack.pop()
+            ctx.parser_stack[-1].children.pop()
+            text_fn(ctx, "[")
+            continue
         if node.kind == NodeKind.HTML and node.args == name:
             # Found the corresponding start tag.  Close this node and
             # then stop.

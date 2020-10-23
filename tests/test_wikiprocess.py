@@ -57,52 +57,30 @@ return export
         self.assertEqual(html.unescape(ret), s)
 
     def test_basic(self):
-        ctx = phase1_to_ctx([])
-        ctx.start_page("Tt")
-        ret = ctx.expand("Some text")
-        self.assertEqual(ret, "Some text")
+        self.parserfn("Some text", "Some text")
 
     def test_basic2(self):
-        ctx = phase1_to_ctx([])
-        ctx.start_page("Tt")
-        ret = ctx.expand("Some [[link]] x")
-        self.assertEqual(ret, "Some [[link]] x")
+        self.parserfn("Some [[link]] x", "Some [[link]] x")
 
     def test_basic3(self):
-        ctx = phase1_to_ctx([])
-        ctx.start_page("Tt")
-        ret = ctx.expand("Some {{{unknown_arg}}} x")
-        self.assertEqual(ret, "Some {{{unknown_arg}}} x")
+        self.parserfn("Some {{{unknown_arg}}} x", "Some {{{unknown_arg}}} x")
 
     def test_basic4(self):
-        ctx = phase1_to_ctx([])
-        ctx.start_page("Tt")
-        ret = ctx.expand("Some {{unknown template}} x")
-        self.assertEqual(ret, "Some {{unknown template}} x")
+        self.parserfn("Some {{unknown template}} x",
+                      "Some {{unknown template}} x")
 
     def test_basic5(self):
-        ctx = phase1_to_ctx([])
-        ctx.start_page("Tt")
-        ret = ctx.expand("Some {{unknown template|arg1||arg3}}")
-        self.assertEqual(ret, "Some {{unknown template|arg1||arg3}}")
+        self.parserfn("Some {{unknown template|arg1||arg3}}",
+                      "Some {{unknown template|arg1||arg3}}")
 
     def test_basic6(self):
-        ctx = phase1_to_ctx([])
-        ctx.start_page("Tt")
-        ret = ctx.expand("Some [[link text]] x")
-        self.assertEqual(ret, "Some [[link text]] x")
+        self.parserfn("Some [[link text]] x", "Some [[link text]] x")
 
     def test_basic7(self):
-        ctx = phase1_to_ctx([])
-        ctx.start_page("Tt")
-        ret = ctx.expand("Some [[link|text]] x")
-        self.assertEqual(ret, "Some [[link|text]] x")
+        self.parserfn("Some [[link|text]] x", "Some [[link|text]] x")
 
     def test_basic8(self):
-        ctx = phase1_to_ctx([])
-        ctx.start_page("Tt")
-        ret = ctx.expand("Some [[link|t[ext]]] x")
-        self.assertEqual(ret, "Some [[link|t[ext]]] x")
+        self.parserfn("Some [[link|t[ext]]] x", "Some [[link|t[ext]]] x")
 
     def test_basic9(self):
         ctx = phase1_to_ctx([
@@ -110,6 +88,11 @@ return export
         ctx.start_page("Tt")
         ret = ctx.expand("Some {{templ|[[link|t[ext]]]}} x")
         self.assertEqual(ret, "Some FOO [[link|t[ext]]] x")
+
+    def test_basic10(self):
+        ctx = self.parserfn("<span>[</span>", "<span>[</span>")
+        self.assertEqual(len(ctx.errors), 0)
+        self.assertEqual(len(ctx.warnings), 0)
 
     def test_if1(self):
         self.parserfn("{{#if:|T|F}}", "F")

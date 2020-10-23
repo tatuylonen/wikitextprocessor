@@ -393,6 +393,16 @@ dasfasddasfdas
         self.assertEqual(a.args, "tt")
         self.assertEqual(a.children, ["{{f|oo}}"])
 
+    def test_html13(self):
+        tree, ctx = parse_with_ctx("test", "<span>[</span>")
+        self.assertEqual(len(ctx.errors), 0)
+        self.assertEqual(len(tree.children), 1)
+        a = tree.children[0]
+        assert isinstance(a, WikiNode)
+        self.assertEqual(a.kind, NodeKind.HTML)
+        self.assertEqual(a.args, "span")
+        self.assertEqual(a.children, ["["])
+
     def test_html_unknown(self):
         tree, ctx = parse_with_ctx("test", "a<unknown>foo</unknown>b")
         self.assertEqual(tree.children, ["a<unknown>foo</unknown>b"])
