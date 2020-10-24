@@ -467,6 +467,24 @@ dasfasddasfdas
         self.assertEqual(b.kind, NodeKind.BOLD)
         self.assertEqual(b.children, ["bold italic test"])
 
+    def test_bolditalic4(self):
+        tree = parse("test", "'' '''bold italic test'''''")
+        self.assertEqual(len(tree.children), 1)
+        self.assertEqual(tree.children[0].kind, NodeKind.ITALIC)
+        a, b = tree.children[0].children
+        self.assertEqual(a, " ")
+        self.assertEqual(b.kind, NodeKind.BOLD)
+        self.assertEqual(b.children, ["bold italic test"])
+
+    def test_bolditalic5(self):
+        tree = parse("test", "''' ''bold italic test'''''")
+        self.assertEqual(len(tree.children), 1)
+        self.assertEqual(tree.children[0].kind, NodeKind.BOLD)
+        a, b = tree.children[0].children
+        self.assertEqual(a, " ")
+        self.assertEqual(b.kind, NodeKind.ITALIC)
+        self.assertEqual(b.children, ["bold italic test"])
+
     def test_hline(self):
         tree = parse("test", "foo\n*item\n----\nmore")
         self.assertEqual(len(tree.children), 4)
@@ -740,6 +758,16 @@ dasfasddasfdas
         self.assertEqual(a.children, [])
         self.assertEqual(b, "ful advise")
 
+    def test_link6(self):
+        tree, ctx = parse_with_ctx("test", "[[of [[musk]]]]")
+        self.assertEqual(len(ctx.errors), 0)
+        self.assertEqual(len(ctx.warnings), 0)
+        self.assertEqual(len(tree.children), 1)
+        a = tree.children[0]
+        self.assertEqual(a.kind, NodeKind.LINK)
+        b = a.args[0][-1]
+        self.assertEqual(b.kind, NodeKind.LINK)
+
     def test_link_trailing(self):
         tree = parse("test", "[[Help]]ing heal")
         self.assertEqual(len(tree.children), 2)
@@ -789,6 +817,18 @@ dasfasddasfdas
                                   ["here multiword"]])
         self.assertEqual(b.children, [])
         self.assertEqual(c, " link")
+
+    def test_url5(self):
+        tree, ctx = parse_with_ctx("test", "<ref>https://wiktionary.org</ref>")
+        self.assertEqual(len(ctx.errors), 0)
+        self.assertEqual(len(ctx.warnings), 0)
+        self.assertEqual(len(tree.children), 1)
+        a = tree.children[0]
+        self.assertEqual(a.kind, NodeKind.HTML)
+        self.assertEqual(len(a.children), 1)
+        b = a.children[0]
+        self.assertEqual(b.kind, NodeKind.URL)
+        self.assertEqual(b.args, [["https://wiktionary.org"]])
 
     def test_preformatted1(self):
         tree = parse("test", """

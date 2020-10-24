@@ -305,14 +305,18 @@ def _parser_pop(ctx, warn_unclosed):
     # Warn about unclosed syntaxes.
     if warn_unclosed and node.kind in MUST_CLOSE_KINDS:
         if node.kind == NodeKind.HTML:
-            ctx.error("HTML tag <{}> not properly closed, started on "
-                       "line {}".format(node.args, node.loc))
+            ctx.error("HTML tag <{}> not properly closed".format(node.args),
+                      trace="started on line {}, detected on line {}"
+                      .format(node.loc, ctx.linenum))
         elif node.kind == NodeKind.PARSER_FN:
-            ctx.error("parser function {!r} not properly closed, started on "
-                      "line {}".format(node.args[0], node.loc))
+            ctx.error("parser function {!r} not properly closed"
+                      .format(node.args[0]),
+                      trace="started on line {}, detected on line {}"
+                      .format(node.loc, ctx.linenum))
         else:
-            ctx.error("{} not properly closed, started on line {}"
-                       "".format(node.kind.name, node.loc))
+            ctx.error("{} not properly closed".format(node.kind.name),
+                      trace="started on line {}, detected on line {}"
+                      .format(node.loc, ctx.linenum))
 
     # When popping BOLD and ITALIC nodes, if the node has no children,
     # just remove the node from it's parent's children.  We may otherwise
