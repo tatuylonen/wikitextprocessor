@@ -61,6 +61,8 @@ class Wtp(object):
         "buf_ofs",	 # Offset into buf
         "buf_used",	 # Number of bytes in the buffer when reading
         "buf_size",      # Allocated size of buf, in bytes
+        "cache_file",	 # Prefix to cache files (instead of temporary file)
+        "cache_file_old",  # Using pre-existing cache file
         "cookies",	 # Mapping from magic cookie -> expansion data
         "errors",	 # List of error messages (cleared for each new page)
         "fullpage",	 # The unprocessed text of the current page (or None)
@@ -88,10 +90,12 @@ class Wtp(object):
         "parser_stack",	 # Parser stack
         "suppress_special",  # XXX never set to True???
     )
-    def __init__(self, quiet=False, num_threads=None):
+    def __init__(self, quiet=False, num_threads=None, cache_file=None):
         self.buf_ofs = 0
         self.buf_size = 4 * 1024 * 1024
         self.buf = bytearray(self.buf_size)
+        self.cache_file = cache_file
+        self.cache_file_old = False
         self.cookies = []
         self.errors = []
         self.warnings = []
@@ -101,7 +105,6 @@ class Wtp(object):
         self.quiet = quiet
         self.rev_ht = {}
         self.expand_stack = []
-        self.modules = {}
         self.num_threads = num_threads
         self.templates = {}
         # Some predefined templates
@@ -110,7 +113,17 @@ class Wtp(object):
         self.templates["%29%29"] = "&rbrace;&rbrace;"  # {{))}}
         self.need_pre_expand = set()
         self.redirects = {}
-        self.tmp_file = tempfile.TemporaryFile(mode="w+b", buffering=0) # XXXdir
+        if self.cache_file:
+            try:
+                # Load self.templates, self.page_contents, self.page_seq,
+                # self.redirects
+                # XXX
+                self.tmp_file = open(self.cache_file, "rb", buffering=0)
+                self.cache_file_old = True
+            except FileNotFoundException:
+                self.tmp_file = open(self.cache_file, "w+b", buffering=0)
+        else:
+            self.tmp_file = tempfile.TemporaryFile(mode="w+b", buffering=0)
         self.tmp_ofs = 0
         self.buf_ofs = 0
 
@@ -347,12 +360,6 @@ class Wtp(object):
 
         if model == "redirect":
             self.redirects[title] = text
-            return
-        if model == "Scribunto":
-            if title.startswith("Module:"):
-                title = title[7:]
-            modname1 = self._canonicalize_template_name(title)
-            self.modules[modname1] = text
             return
         if not title.startswith("Template:"):
             return
@@ -1018,6 +1025,7 @@ class Wtp(object):
     def read_by_title(self, title):
         """Reads the contents of the page.  Returns None if the page does
         not exist."""
+        print("read_by_title", title)
         assert isinstance(title, str)
         # XXX should we canonicalize title?
         if title not in self.page_contents:

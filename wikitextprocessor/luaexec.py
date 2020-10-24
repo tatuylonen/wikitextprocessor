@@ -41,13 +41,18 @@ def lua_loader(ctx, modname):
     pages or from a built-in module in the file system.  This returns None
     if the module could not be loaded."""
     assert isinstance(modname, str)
+    # XXX consider implementing some kind of cache here, e.g., LRU cache
+    # for the most recently used modules (modname -> text)
     # print("Loading", modname)
     modname = modname.strip()
     if modname.startswith("Module:"):
         modname = modname[7:]
-    modname1 = ctx._canonicalize_template_name(modname)
-    if modname1 in ctx.modules:
-        return ctx.modules[modname1]
+    # XXX check module name normalization
+    # XXX modname1 = ctx._canonicalize_template_name(modname)
+    modname1 = "Module:" + modname
+    body = ctx.read_by_title(modname1)
+    if body is not None:
+        return body
     path = modname
     path = re.sub(r":", "/", path)
     path = re.sub(r" ", "_", path)
