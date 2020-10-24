@@ -418,7 +418,7 @@ dasfasddasfdas
         self.assertEqual(tree.children, ["ab"])
         self.assertEqual(len(ctx.errors), 1)
 
-    def test_italic(self):
+    def test_italic1(self):
         tree = parse("test", "a ''italic test'' b")
         self.assertEqual(len(tree.children), 3)
         a, b, c = tree.children
@@ -427,7 +427,18 @@ dasfasddasfdas
         self.assertEqual(b.children, ["italic test"])
         self.assertEqual(c, " b")
 
-    def test_bold(self):
+    def test_italic2(self):
+        # Italic is frequently used in enPR in Wiktionary to italicize
+        # certain parts of the pronunciation, followed by a single quote.
+        tree = parse("test", "a''test'''b")
+        self.assertEqual(len(tree.children), 3)
+        a, b, c = tree.children
+        self.assertEqual(a, "a")
+        self.assertEqual(b.kind, NodeKind.ITALIC)
+        self.assertEqual(b.children, ["test"])
+        self.assertEqual(c, "'b")
+
+    def test_bold1(self):
         tree = parse("test", "a '''bold test''' b")
         self.assertEqual(len(tree.children), 3)
         a, b, c = tree.children
@@ -441,10 +452,10 @@ dasfasddasfdas
         self.assertEqual(len(tree.children), 3)
         a, b, c = tree.children
         self.assertEqual(a, "a ")
-        self.assertEqual(b.kind, NodeKind.BOLD)
+        self.assertEqual(b.kind, NodeKind.ITALIC)
         self.assertEqual(len(b.children), 1)
         ba = b.children[0]
-        self.assertEqual(ba.kind, NodeKind.ITALIC)
+        self.assertEqual(ba.kind, NodeKind.BOLD)
         self.assertEqual(ba.children, ["bold italic test"])
 
     def test_bolditalic2(self):

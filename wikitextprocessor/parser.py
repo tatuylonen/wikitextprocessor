@@ -526,6 +526,19 @@ def bold_fn(ctx, token):
     if ctx.pre_parse:
         return text_fn(ctx, token)
 
+    if (ctx.parser_stack[-1].kind == NodeKind.ITALIC and
+        not _parser_have(ctx, NodeKind.BOLD) and
+        (not ctx.parser_stack[-1].children or
+         not isinstance(ctx.parser_stack[-1].children[-1], str) or
+         not ctx.parser_stack[-1].children[-1][-1].isspace())):
+        # It is relatively common to use italic in enPR in Wiktionary,
+        # immediately followed by a single quote.  Treat this as such.
+        # In this use, ''' always seems to be surrounded by non-space
+        # characters.  What a kludge we have here.
+        _parser_pop(ctx, True)
+        text_fn(ctx, "'")
+        return
+
     if not _parser_have(ctx, NodeKind.BOLD):
         # Push new formatting node
         _parser_push(ctx, NodeKind.BOLD)
@@ -544,6 +557,43 @@ def bold_fn(ctx, token):
         _parser_pop(ctx, False)
     if push_italic:
         _parser_push(ctx, NodeKind.ITALIC)
+
+
+def bolditalic_fn(ctx, token):
+    """Processes a combined bold-italic token (''''')."""
+    if ctx.pre_parse:
+        return text_fn(ctx, token)
+
+    def pop_until():
+        if (_parser_have(ctx, NodeKind.BOLD) or
+            _parser_have(ctx, NodeKind.ITALIC)):
+            while True:
+                node = ctx.parser_stack[-1]
+                if node.kind == NodeKind.BOLD or node.kind == NodeKind.ITALIC:
+                    break
+                _parser_pop(ctx, True)
+
+    pop_until()
+    if ctx.parser_stack[-1].kind == NodeKind.ITALIC:
+        _parser_pop(ctx, True)
+        pop_until()
+        if ctx.parser_stack[-1].kind == NodeKind.BOLD:
+            _parser_pop(ctx, True)
+            return
+        _parser_push(ctx, NodeKind.BOLD)
+        return
+
+    if ctx.parser_stack[-1].kind == NodeKind.BOLD:
+        _parser_pop(ctx, True)
+        pop_until()
+        if ctx.parser_stack[-1].kind == NodeKind.ITALIC:
+            _parser_pop(ctx, True)
+            return
+        _parser_push(ctx, NodeKind.ITALIC)
+        return
+
+    _parser_push(ctx, NodeKind.ITALIC)
+    _parser_push(ctx, NodeKind.BOLD)
 
 
 def ilink_start_fn(ctx, token):
@@ -1176,6 +1226,7 @@ def magicword_fn(ctx, token):
 # Regular expression for matching a token in WikiMedia text.  This is used for
 # tokenizing the input.
 token_re = re.compile(r"(?m)^(={2,6})\s*(([^=]|=[^=])+?)\s*(={2,6})\s*$|"
+                      r"'''''|"
                       r"'''|"
                       r"''|"
                       r"[ \t]+\n*|"
@@ -1214,6 +1265,7 @@ list_prefix_re = re.compile(r"[*:;#]+")
 tokenops = {
     "'''": bold_fn,
     "''": italic_fn,
+    "'''''": bolditalic_fn,
     "[": elink_start_fn,
     "]": elink_end_fn,
     "{|": table_start_fn,
