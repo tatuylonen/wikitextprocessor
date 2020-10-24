@@ -726,8 +726,12 @@ class Wtp(object):
                     # Template transclusion or parser function call
                     # Limit recursion depth
                     if len(self.expand_stack) >= 100:
-                        self.error("too deep expansion of templates")
-                        parts.append(self._unexpanded_template(args, nowiki))
+                        self.error("too deep recursion during template "
+                                   "expansion")
+                        parts.append(
+                            '<strong class="error">too deep recursion '
+                            'while expanding template {}</strong>'
+                            .format(self._unexpanded_template(args, True)))
                         continue
 
                     # Expand template/parserfn name

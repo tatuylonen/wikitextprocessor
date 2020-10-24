@@ -1069,13 +1069,15 @@ def time_fn(ctx, fn_name, args, expander):
         except ValueError:
             ctx.warning("bad time syntax in {}: {!r}"
                         .format(fn_name, dt))
-            t = datetime.datetime.utcnow()
+            return ('<strong class="error">Bad time syntax: {}</strong>'
+                    .format(html.escape(dt)))
     else:
         t = dateparser.parse(dt, settings=settings)
         if t is None:
             ctx.warning("unrecognized time syntax in {}: {!r}"
                         .format(fn_name, dt))
-            t = datetime.datetime.utcnow()
+            return ('<strong class="error">Bad time syntax: {}</strong>'
+                    .format(html.escape(dt)))
 
     # XXX looks like we should not adjust the time
     #if t.utcoffset():

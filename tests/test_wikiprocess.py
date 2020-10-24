@@ -1347,6 +1347,15 @@ MORE
         ret = ctx.expand('{{foo|<span class="foo">bar</span>}}')
         self.assertEqual(ret, 'a<span class="foo">bar</span>b')
 
+    def test_template27(self):
+        # Test infinite recursion in template expansion
+        ctx = phase1_to_ctx([
+            ["wikitext", "Template:foo", "a{{foo}}b"],
+        ])
+        ctx.start_page("Tt")
+        ret = ctx.expand('{{foo}}')
+        assert ret.find('<strong class="error">too deep recursion') >= 0
+
     def test_unbalanced1(self):
         ctx = phase1_to_ctx([])
         ctx.start_page("Tt")
