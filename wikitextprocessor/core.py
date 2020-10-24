@@ -7,6 +7,7 @@ import os
 import re
 import sys
 import html
+import json
 import tempfile
 import traceback
 import collections
@@ -77,7 +78,6 @@ class Wtp(object):
         "redirects",	 # Redirects in the wikimedia project
         "rev_ht",	 # Mapping from text to magic cookie
         "expand_stack",	 # Saved stack before calling Lua function
-        "template_name", # name of template currently being expanded
         "templates",     # dict temlate name -> definition
         "title",         # current page title
         "tmp_file",	 # Temporary file used to store templates and pages
@@ -119,13 +119,14 @@ class Wtp(object):
                 # self.redirects
                 with open(self.cache_file + ".json", "r") as f:
                     dt = json.load(f)
-                version, dt = dt[0]
-                assert version == 1
-                self.page_contents, self.page_seq, self.redirects = dt
-                # XXX self.templates?  Eliminate?
+                version, dt = dt
+                assert version == 1  # Remove old incompatible cache files
                 self.tmp_file = open(self.cache_file, "rb", buffering=0)
+                self.page_contents, self.page_seq, self.redirects, \
+                    self.templates, self.need_pre_expand = dt
+                self.need_pre_expand = set(self.need_pre_expand)
                 self.cache_file_old = True
-            except FileNotFoundException:
+            except FileNotFoundError:
                 self.tmp_file = open(self.cache_file, "w+b", buffering=0)
         else:
             self.tmp_file = tempfile.TemporaryFile(mode="w+b", buffering=0)
@@ -537,6 +538,14 @@ class Wtp(object):
             self.templates[k] = self.templates[v]
             if v in self.need_pre_expand:
                 self.need_pre_expand.add(k)
+
+        # Save cache data
+        if self.cache_file is not None and not self.cache_file_old:
+            with open(self.cache_file + ".json", "w") as f:
+                json.dump((1, (self.page_contents, self.page_seq,
+                               self.redirects, self.templates,
+                               list(sorted(self.need_pre_expand)))),
+                          f)
 
     def start_page(self, title):
         """Starts a new page for expanding Wikitext.  This saves the title and

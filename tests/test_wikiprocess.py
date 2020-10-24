@@ -2,6 +2,7 @@
 #
 # Copyright (c) 2020 Tatu Ylonen.  See file LICENSE and https://ylonen.org
 
+import os
 import html
 import math
 import time
@@ -2735,6 +2736,30 @@ return export
         # properly detected
         self.scribunto("False", r"""
         return _G["os"].clock == nil""")
+
+    def test_cachefile1(self):
+        path = "/tmp/cachefiletest1"
+        try:
+            os.remove(path)
+            os.remove(path + ".json")
+        except FileNotFoundError:
+            pass
+        ctx = Wtp(cache_file=path)
+        ctx.add_page("wikitext", "Template:testmod", "test content")
+        ctx.analyze_templates()
+        ctx.start_page("Tt")
+        ret = ctx.expand("a{{testmod}}b")
+        self.assertEqual(ret, "atest contentb")
+        # Now create a new context with the same cachefile but do not add page
+        ctx = Wtp(cache_file=path)
+        ctx.start_page("Tt")
+        ret = ctx.expand("a{{testmod}}b")
+        self.assertEqual(ret, "atest contentb")
+        try:
+            os.remove(path)
+            os.remove(path + ".json")
+        except FileNotFoundError:
+            pass
 
 # XXX test expand() with expand_parserfns=False
 # XXX test expand() with expand_templates=False
