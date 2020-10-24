@@ -227,6 +227,11 @@ return export
 
     # XXX test that both sides of switch are evaluated
 
+    def test_categorytree1(self):
+        # Currently, the implementation is just a stub that returns the empty
+        # string.
+        self.parserfn("{{#categorytree:Foo|mode=all}}", "")
+
     def test_lst1(self):
         ctx = phase1_to_ctx([
             ["wikitext", "testpage", """

@@ -135,6 +135,15 @@ def switch_fn(ctx, fn_name, args, expander):
     return last or ""
 
 
+def categorytree_fn(ctx, fn_name, args, expander):
+    """Implements the #categorytree parser function.  This function accepts
+    keyed arguments."""
+    assert isinstance(args, dict)
+    # We don't currently really implement categorytree.  It is just recognized
+    # and silently ignored.
+    return ""
+
+
 def lst_fn(ctx, fn_name, args, expander):
     """Implements the #lst (alias #section etc) parser function."""
     pagetitle = expander(args[0]).strip() if args else ""
@@ -1345,7 +1354,7 @@ PARSER_FUNCTIONS = {
     "#ifexist": ifexist_fn,
     "#switch": switch_fn,
     "#babel": unimplemented_fn,
-    "#categorytree": unimplemented_fn,
+    "#categorytree": (categorytree_fn, True),  # This takes kwargs
     "#coordinates": unimplemented_fn,
     "#invoke": unimplemented_fn,
     "#language": unimplemented_fn,
@@ -1388,9 +1397,14 @@ def call_parser_function(ctx, fn_name, args, expander):
         ctx.error("unrecognized parser function {!r}".format(fn_name))
         return ""
     fn = PARSER_FUNCTIONS[fn_name]
+    accept_keyed_args = False
+    if isinstance(fn, tuple):
+        accept_keyed_args = fn[1]
+        fn = fn[0]
+    assert callable(fn)
     have_keyed_args = False
-    if isinstance(args, dict):
-        dict_args = args.copy()
+    if isinstance(args, dict) and not accept_keyed_args:
+        # Convert from dict to vector, no keyed args allowed
         new_args = []
         for i in range(1, 1000):
             v = args.get(i, None)
@@ -1401,9 +1415,22 @@ def call_parser_function(ctx, fn_name, args, expander):
             del args[i]
         have_keyed_args = len(args) > 0
         args = new_args
-    else:
-        dict_args = dict(zip(range(1, len(args) + 1), args))
-    if have_keyed_args:
+    elif accept_keyed_args:
+        # Convert from vector to keyed args
+        ht = {}
+        i = 1
+        for arg in args:
+            ofs = arg.find("=")
+            if ofs >= 0:
+                k = arg[:ofs]
+                if k.isdigit():
+                    k = int(k)
+                arg = arg[ofs + 1:]
+            else:
+                k = i
+            ht[k] = arg
+        args = ht
+    if have_keyed_args and not accept_keyed_args:
         ctx.error("parser function {} does not (yet) support named "
                   "arguments: {}"
                   .format(fn_name, args))
