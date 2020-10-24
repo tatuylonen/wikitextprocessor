@@ -100,19 +100,16 @@ class Wtp(object):
         self.errors = []
         self.warnings = []
         self.lua = None
-        self.page_contents = {}
-        self.page_seq = []
         self.quiet = quiet
         self.rev_ht = {}
         self.expand_stack = []
         self.num_threads = num_threads
-        self.templates = {}
         # Some predefined templates
-        self.templates["!"] = "&vert;"
-        self.templates["%28%28"] = "&lbrace;&lbrace;"  # {{((}}
-        self.templates["%29%29"] = "&rbrace;&rbrace;"  # {{))}}
-        self.need_pre_expand = set()
-        self.redirects = {}
+        self.need_pre_expand = None
+
+        # Open cache file if it exists; otherwise create new cache file or
+        # temporary file and reset saved pages.
+        self.tmp_file = None
         if self.cache_file:
             try:
                 # Load self.templates, self.page_contents, self.page_seq,
@@ -120,18 +117,48 @@ class Wtp(object):
                 with open(self.cache_file + ".json", "r") as f:
                     dt = json.load(f)
                 version, dt = dt
-                assert version == 1  # Remove old incompatible cache files
-                self.tmp_file = open(self.cache_file, "rb", buffering=0)
-                self.page_contents, self.page_seq, self.redirects, \
-                    self.templates, self.need_pre_expand = dt
-                self.need_pre_expand = set(self.need_pre_expand)
-                self.cache_file_old = True
+                if version == 1:
+                    # Cache file version is compatible
+                    self.tmp_file = open(self.cache_file, "rb", buffering=0)
+                    self.page_contents, self.page_seq, self.redirects, \
+                        self.templates, self.need_pre_expand = dt
+                    self.need_pre_expand = set(self.need_pre_expand)
+                    self.cache_file_old = True
             except FileNotFoundError:
-                self.tmp_file = open(self.cache_file, "w+b", buffering=0)
-        else:
-            self.tmp_file = tempfile.TemporaryFile(mode="w+b", buffering=0)
+                pass
+        if self.tmp_file is None:
+            self._reset_pages()
         self.tmp_ofs = 0
         self.buf_ofs = 0
+
+    def _reset_pages(self):
+        """Resets any stored pages and gets ready to receive more pages."""
+        self.tmp_file = None
+        self.page_contents = {}
+        self.page_seq = []
+        self.redirects = {}
+        self.templates = {}
+        self.need_pre_expand = None
+        self.cache_file_old = False
+        # Add predefined templates
+        self.templates["!"] = "&vert;"
+        self.templates["%28%28"] = "&lbrace;&lbrace;"  # {{((}}
+        self.templates["%29%29"] = "&rbrace;&rbrace;"  # {{))}}
+        # Create cache file or temporary file
+        if self.cache_file:
+            # Create new cache file
+            try:
+                os.remove(self.cache_file)
+            except FileNotFoundError:
+                pass
+            try:
+                os.remove(self.cache_file + ".json")
+            except FileNotFoundError:
+                pass
+            self.tmp_file = open(self.cache_file, "w+b", buffering=0)
+        else:
+            # Create temporary file
+            self.tmp_file = tempfile.TemporaryFile(mode="w+b", buffering=0)
 
     def error(self, msg, trace=None):
         """Prints an error message to stdout.  The error is also saved in
@@ -344,6 +371,13 @@ class Wtp(object):
         assert isinstance(model, str)
         assert isinstance(title, str)
         assert isinstance(text, str)
+
+        # If we have previously analyzed pages and this is called again,
+        # reset all previously saved pages (e.g., in case we are to update
+        # existing cache file).
+        if self.need_pre_expand is not None:
+            self._reset_pages()
+
         # Save the page in our temporary file and metadata in memory
         rawtext = text.encode("utf-8")
         if self.buf_ofs + len(rawtext) > self.buf_size:
@@ -490,6 +524,7 @@ class Wtp(object):
         essential to parsing Wikitext syntax, such as table start or end
         tags.  Such templates generally need to be expanded before
         parsing the page."""
+        self.need_pre_expand = set()
         included_map = collections.defaultdict(set)
         expand_q = []
         for name, body in self.templates.items():
@@ -613,6 +648,9 @@ class Wtp(object):
         # If requesting to only pre_expand, then force templates to be expanded
         # to be those we detected as requiring pre-expansion
         if pre_only:
+            if self.need_pre_expand is None:
+                raise RuntimeError("analyze_templates() must be run first to "
+                                   "determine which templates need pre-expand")
             templates_to_expand = self.need_pre_expand
 
         # If templates_to_expand is None, then expand all known templates
@@ -962,7 +1000,7 @@ class Wtp(object):
         text = re.sub(MAGIC_NOWIKI_CHAR, "", text)
         return text
 
-    def process(self, path, page_handler):
+    def process(self, path, page_handler, phase1_only=False):
         """Parses a WikiMedia dump file ``path`` (which should point to a
         "<project>-<date>-pages-articles.xml.bz2" file.  This calls
         ``page_handler(model, title, page)`` for each raw page.  This works
@@ -980,7 +1018,7 @@ class Wtp(object):
         is not re-entrant."""
         assert isinstance(path, str)
         assert callable(page_handler)
-        return process_dump(self, path, page_handler)
+        return process_dump(self, path, page_handler, phase1_only)
 
     def reprocess(self, page_handler):
         """Reprocess all pages captured by self.process() or explicit calls

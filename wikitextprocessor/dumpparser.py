@@ -202,7 +202,7 @@ def process_input(path, page_cb):
     return lst
 
 
-def process_dump(ctx, path, page_handler):
+def process_dump(ctx, path, page_handler, phase1_only):
     """Parses a WikiMedia dump file ``path`` (which should point
     to a "<project>-<date>-pages-articles.xml.bz2" file.  This
     calls ``page_handler(title, page)`` for each raw page.  This works in
@@ -218,6 +218,7 @@ def process_dump(ctx, path, page_handler):
     for multi-threaded applications."""
     assert isinstance(path, str)
     assert callable(page_handler)
+    assert phase1_only in (True, False)
 
     def phase1_page_handler(model, title, text):
         """Handler for pages in Phase 1, for extracting special pages and saving
@@ -236,6 +237,11 @@ def process_dump(ctx, path, page_handler):
         print("Analyzing which templates should be expanded before parsing")
         sys.stdout.flush()
     ctx.analyze_templates()
+
+    # If we were requested to only perform phase1 (e.g., for building a new
+    # cache file), return now.
+    if phase1_only:
+        return []
 
     # Phase 2 - process the pages using the user-supplied callback
     if not ctx.quiet:
