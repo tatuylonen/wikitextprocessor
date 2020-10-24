@@ -3,7 +3,7 @@
 
 test:
 	rm -rf .coverage
-	nose2 --output-buffer --with-coverage --coverage-report=html --coverage-config=testcov.conf --pretty-assert
+	nose2 --output-buffer --with-coverage --coverage-report=html --coverage-config=tests/testcov.conf --pretty-assert
 	rm -rf htmlcov
 	mv -f htmlcov.new htmlcov
 
