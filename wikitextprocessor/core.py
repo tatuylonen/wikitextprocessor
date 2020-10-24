@@ -895,11 +895,7 @@ class Wtp(object):
 
         # Recursively expand the selected templates.  This is an outside-in
         # operation.
-        try:
-            self.expand_stack.append(self.title)
-            expanded = expand(encoded, parent, templates_to_expand)
-        finally:
-            self.expand_stack.pop()
+        expanded = expand(encoded, parent, templates_to_expand)
 
         # Expand any remaining magic cookies and remove nowiki char
         expanded = self._finalize_expand(expanded, False)
