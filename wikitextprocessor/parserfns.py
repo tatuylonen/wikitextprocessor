@@ -17,6 +17,30 @@ PROJECT_NAME = "Wiktionary"
 # The host to which generated URLs will point
 SERVER_NAME = "dummy.host"
 
+namespace_prefixes = set([
+    "Appendix",
+    "Category",
+    "Citations",
+    "Concordance",
+    "File",
+    "Help",
+    "Image",
+    "Index",
+    "Media",
+    "MediaWiki",
+    "Module",
+    "Project",
+    "Reconstruction",
+    "Rhymes",
+    "Sign gloss",
+    "Summary",
+    "Talk",
+    "Template",
+    "Thesaurus",
+    "Thread",
+    "User",
+    "Wiktionary",
+])
 
 def capitalizeFirstOnly(s):
     if s:
@@ -235,6 +259,19 @@ def subpagename_fn(ctx, fn_name, args, expander):
     else:
         return pagename_fn(ctx, fn_name, [t], lambda x: x)
 
+
+def talkpagename_fn(ctx, fn_name, args, expander):
+    """Implements the TALKPAGENAME magic word."""
+    ofs = ctx.title.find(":")
+    if ofs < 0:
+        return "Talk:" + ctx.title
+    if ofs >= 0:
+        prefix = ctx.title[:ofs]
+        if prefix not in namespace_prefixes:
+            return "Talk:" + ctx.title
+        return prefix + "_talk:" + ctx.title[ofs + 1:]
+
+
 def namespacenumber_fn(ctx, fn_name, args, expander):
     """Implements the NAMESPACENUMBER magic word/parser function."""
     # XXX currently hard-coded to return the name space number for the Main
@@ -260,9 +297,7 @@ def subjectspace_fn(ctx, fn_name, args, expander):
     """Implements the SUBJECTSPACE magic word/parser function.  This
     implementation is very minimal."""
     t = expander(args[0]) if args else ctx.title
-    for prefix in ("Talk", "Media", "User", "Project",
-                   "Image", "MediaWiki", "Template", "Help", "Category",
-                   "Appendix", "Thesaurus", "Reconstruction", "Module"):
+    for prefix in namespace_prefixes:
         if t.startswith(prefix + ":"):
             return prefix
     return ""
@@ -272,9 +307,7 @@ def talkspace_fn(ctx, fn_name, args, expander):
     """Implements the TALKSPACE magic word/parser function.  This
     implementation is very minimal."""
     t = expander(args[0]) if args else ctx.title
-    for prefix in ("Talk", "Media", "User", "Project",
-                   "Image", "MediaWiki", "Template", "Help", "Category",
-                   "Appendix", "Thesaurus", "Reconstruction", "Module"):
+    for prefix in namespace_prefixes:
         if t.startswith(prefix + ":"):
             return prefix + "_talk"
     return "Talk"
@@ -1190,7 +1223,7 @@ PARSER_FUNCTIONS = {
     "SUBPAGENAME": subpagename_fn,
     "ARTICLEPAGENAME": unimplemented_fn,
     "SUBJECTPAGENAME": unimplemented_fn,
-    "TALKPAGENAME": unimplemented_fn,
+    "TALKPAGENAME": talkpagename_fn,
     "NAMESPACENUMBER": namespacenumber_fn,
     "NAMESPACE": namespace_fn,
     "ARTICLESPACE": unimplemented_fn,

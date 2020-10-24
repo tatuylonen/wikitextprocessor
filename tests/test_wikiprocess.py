@@ -353,6 +353,24 @@ MORE
         ret = ctx.expand("{{SUBPAGENAME:Help:TestPage}}")
         self.assertEqual(ret, "TestPage")
 
+    def test_talkpagename1(self):
+        ctx = phase1_to_ctx([])
+        ctx.start_page("Help:Tt")
+        ret = ctx.expand("{{TALKPAGENAME}}")
+        self.assertEqual(ret, "Help_talk:Tt")
+
+    def test_talkpagename2(self):
+        ctx = phase1_to_ctx([])
+        ctx.start_page("Tt")
+        ret = ctx.expand("{{TALKPAGENAME}}")
+        self.assertEqual(ret, "Talk:Tt")
+
+    def test_talkpagename3(self):
+        ctx = phase1_to_ctx([])
+        ctx.start_page("X:Tt")
+        ret = ctx.expand("{{TALKPAGENAME}}")
+        self.assertEqual(ret, "Talk:X:Tt")
+
     def test_namespace1(self):
         ctx = phase1_to_ctx([])
         ctx.start_page("Help:Tt/doc")
