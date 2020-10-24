@@ -121,6 +121,56 @@ return export
     def test_ifeq5(self):
         self.parserfn("a{{#ifeq:a||T}}b", "ab")
 
+    def test_iferror1(self):
+        self.parserfn("{{#iferror:|T|F}}", "F")
+
+    def test_iferror2(self):
+        self.parserfn("{{#iferror:foo<div>bar</div>bar|T|F}}", "F")
+
+    def test_iferror3(self):
+        self.parserfn("{{#iferror:Error|T|F}}", "F")
+
+    def test_iferror4(self):
+        self.parserfn('{{#iferror:class="error"|T|F}}', "F")
+
+    def test_iferror5(self):
+        self.parserfn('{{#iferror:<span class="error">foo</foo>|T|F}}', "T")
+
+    def test_iferror6(self):
+        self.parserfn('{{#iferror:aa<div\nclass="error"\n>foo</div>|T|F}}', "T")
+
+    def test_iferror7(self):
+        self.parserfn('{{#iferror:{{#expr:}}|T|F}}', "T")
+
+    def test_iferror8(self):
+        self.parserfn('{{#iferror:{{#expr:!!!}}|T|F}}', "T")
+
+    def test_iferror9(self):
+        self.parserfn("{{#iferror: {{#expr: 1 + 2 }} | error | correct }}",
+                      "correct")
+
+    def test_iferror10(self):
+        self.parserfn("{{#iferror: {{#expr: 1 + X }} | error | correct }}",
+                      "error")
+
+    def test_iferror11(self):
+        self.parserfn("{{#iferror: {{#expr: 1 + 2 }} | error }}", "3")
+
+    def test_iferror12(self):
+        self.parserfn("{{#iferror: {{#expr: 1 + X }} | error }}", "error")
+
+    def test_iferror13(self):
+        self.parserfn("{{#iferror: {{#expr: 1 + X }} }}", "")
+
+    def test_iferror14(self):
+        self.parserfn("{{#iferror: {{#expr: . }} | error | correct }}",
+                      "correct")
+
+    def test_iferror15(self):
+        self.parserfn('{{#iferror: <strong class="error">a</strong> '
+                      '| error | correct }}',
+                      "error")
+
     def test_ifexpr1(self):
         self.parserfn("a{{#ifexpr:1+3>2|T|F}}b", "aTb")
 
@@ -436,6 +486,9 @@ MORE
     def test_formatnum8(self):
         self.parserfn("{{formatnum:00001}}", "00,001")
 
+    def test_formatnum9(self):
+        self.parserfn("{{formatnum:1,000,001.07|R}}", "1000001.07")
+
     def test_dateformat1(self):
         self.parserfn("{{#dateformat:25 dec 2009|ymd}}", "2009 Dec 25")
 
@@ -524,7 +577,9 @@ MORE
         self.parserfn("{{#titleparts:Help:foo/bar/baz|2}}", "Help:foo")
 
     def test_expr1(self):
-        ctx = self.parserfn("{{#expr}}", "Expression error near <end>")
+        ctx = self.parserfn("{{#expr}}",
+                            '<strong class="error">Expression error near '
+                            '&lt;end&gt;</strong>')
         self.assertEqual(len(ctx.warnings), 1)
 
     def test_expr2(self):
@@ -715,6 +770,9 @@ MORE
 
     def test_expr64(self):
         self.parserfn("{{#expr|+trunc1.1}}", "1")
+
+    def test_expr65(self):
+        self.parserfn("{{#expr|.}}", "0")
 
     def test_padleft1(self):
         self.parserfn("{{padleft:xyz|5}}", "00xyz")

@@ -69,6 +69,21 @@ def ifeq_fn(ctx, fn_name, args, expander):
         return expander(arg2).strip()
     return expander(arg3).strip()
 
+
+def iferror_fn(ctx, fn_name, args, expander):
+    """Implements the #iferror parser function."""
+    arg0 = expander(args[0]) if args else ""
+    arg1 = args[1] if len(args) >= 2 else None
+    arg2 = args[2] if len(args) >= 3 else None
+    if re.search(r'<[^>]*?\sclass="error"', arg0):
+        if arg1 is None:
+            return ""
+        return expander(arg1).strip()
+    if arg2 is None:
+        return arg0
+    return expander(arg2).strip()
+
+
 def ifexpr_fn(ctx, fn_name, args, expander):
     """Implements #ifexpr parser function."""
     arg0 = args[0] if args else "0"
@@ -426,9 +441,8 @@ def formatnum_fn(ctx, fn_name, args, expander):
     arg1 = expander(args[1]).strip() if len(args) >= 2 else ""
     if arg1 == "R":
         # Reverse formatting
-        ctx.error("reverse formatting not yet implemented in {}"
-                  .format(fn_name))
-        return "0"
+        # XXX this is a very simplified implementation, should handle more cases
+        return re.sub(r",", "", arg0)
     if arg1 == "NOSEP":
         sep = ""
     else:
@@ -805,10 +819,11 @@ def expr_fn(ctx, fn_name, args, expander):
 
     def expr_error(tok):
         if tok is None:
-            tok = "<end>"
+            tok = "&lt;end&gt;"
         ctx.warning("#expr error near {} in {!r}"
                     .format(tok, full_expr))
-        return "Expression error near {}".format(tok)
+        return ('<strong class="error">Expression error near {}</strong>'
+                .format(tok))
 
     def get_token():
         nonlocal tokidx
@@ -849,8 +864,7 @@ def expr_fn(ctx, fn_name, args, expander):
             return math.e
         if tok == "pi":
             return math.pi
-        if tok == "nil":
-            #ctx.warning("nil in expr {!r}".format(full_expr))
+        if tok == ".":
             return 0
         return expr_error(tok)
 
@@ -1324,7 +1338,7 @@ PARSER_FUNCTIONS = {
     "#expr": expr_fn,
     "#if": if_fn,
     "#ifeq": ifeq_fn,
-    "#iferror": unimplemented_fn,
+    "#iferror": iferror_fn,
     "#ifexpr": ifexpr_fn,
     "#ifexist": ifexist_fn,
     "#switch": switch_fn,
