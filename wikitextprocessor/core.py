@@ -117,7 +117,12 @@ class Wtp(object):
             try:
                 # Load self.templates, self.page_contents, self.page_seq,
                 # self.redirects
-                # XXX
+                with open(self.cache_file + ".json", "r") as f:
+                    dt = json.load(f)
+                version, dt = dt[0]
+                assert version == 1
+                self.page_contents, self.page_seq, self.redirects = dt
+                # XXX self.templates?  Eliminate?
                 self.tmp_file = open(self.cache_file, "rb", buffering=0)
                 self.cache_file_old = True
             except FileNotFoundException:
@@ -1025,7 +1030,6 @@ class Wtp(object):
     def read_by_title(self, title):
         """Reads the contents of the page.  Returns None if the page does
         not exist."""
-        print("read_by_title", title)
         assert isinstance(title, str)
         # XXX should we canonicalize title?
         if title not in self.page_contents:
