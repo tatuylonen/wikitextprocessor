@@ -465,13 +465,13 @@ def formatnum_fn(ctx, fn_name, args, expander):
 def dateformat_fn(ctx, fn_name, args, expander):
     """Implements the #dateformat (= #formatdate) parser function."""
     arg0 = expander(args[0]) if args else ""
-    if not re.search(r"\d\d\d", arg0):
-        arg0 += " 3333"
-    dt = dateparser.parse(arg0)
+    arg0x = arg0
+    if not re.search(r"\d\d\d", arg0x):
+        arg0x += " 3333"
+    dt = dateparser.parse(arg0x)
     if not dt:
-        ctx.error("invalid date format in {}: {!r}"
-                  .format(fn_name, arg0))
-        dt = datetime.datetime.utcnow()
+        # It seems this should return invalid dates as-is
+        return arg0
     fmt = expander(args[1]) if len(args) > 1 else "ISO 8601"
     # This is supposed to format according to user preferences by default.
     if fmt in ("ISO 8601", "ISO8601") and dt.year == 0:

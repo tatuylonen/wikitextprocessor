@@ -519,6 +519,16 @@ MORE
     def test_dateformat10(self):
         self.parserfn("{{#dateformat:25 December|dmy}}", "25 Dec")
 
+    def test_formatdate1(self):
+        self.parserfn("{{#formatdate:25 December|dmy}}", "25 Dec")
+
+    def test_formatdate2(self):
+        self.parserfn("{{#formatdate: launched 2000 }}", "launched 2000")
+
+    def test_formatdate3(self):
+        self.parserfn("{{#formatdate: totally bogus date }}",
+                      "totally bogus date")
+
     def test_fullurl1(self):
         self.parserfn("{{fullurl:Test page|action=edit}}",
                       "//dummy.host/index.php?title=Test+page&action=edit")
