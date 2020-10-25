@@ -829,8 +829,8 @@ def expr_fn(ctx, fn_name, args, expander):
     def expr_error(tok):
         if tok is None:
             tok = "&lt;end&gt;"
-        ctx.warning("#expr error near {} in {!r}"
-                    .format(tok, full_expr))
+        #ctx.warning("#expr error near {} in {!r}"
+        #            .format(tok, full_expr))
         return ('<strong class="error">Expression error near {}</strong>'
                 .format(tok))
 
@@ -1420,6 +1420,7 @@ def call_parser_function(ctx, fn_name, args, expander):
         ht = {}
         i = 1
         for arg in args:
+            arg = str(arg)
             ofs = arg.find("=")
             if ofs >= 0:
                 k = arg[:ofs]

@@ -176,8 +176,9 @@ ALLOWED_HTML_TAGS = {
         "content": ["phrasing"]},
     "references": {
         "parents": ["flow"],
-        "no-end-tag": True,
-        "content": []},
+        # "no-end-tag": True,
+        # XXX e.g., "martyr" in Wiktionary uses this with end tag
+        "content": ["flow", "phrasing"]},
     "rp": {
         "parents": ["ruby"],
         "close-next": ["rt", "rtc", "rp", "rb"],

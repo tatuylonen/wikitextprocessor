@@ -7,7 +7,7 @@ import os
 import re
 import sys
 import html
-import json
+import pickle
 import tempfile
 import traceback
 import collections
@@ -114,8 +114,8 @@ class Wtp(object):
             try:
                 # Load self.templates, self.page_contents, self.page_seq,
                 # self.redirects
-                with open(self.cache_file + ".json", "r") as f:
-                    dt = json.load(f)
+                with open(self.cache_file + ".pickle", "rb") as f:
+                    dt = pickle.load(f)
                 version, dt = dt
                 if version == 1:
                     # Cache file version is compatible
@@ -124,7 +124,7 @@ class Wtp(object):
                         self.templates, self.need_pre_expand = dt
                     self.need_pre_expand = set(self.need_pre_expand)
                     self.cache_file_old = True
-            except FileNotFoundError:
+            except (FileNotFoundError, EOFError):
                 pass
         if self.tmp_file is None:
             self._reset_pages()
@@ -152,7 +152,7 @@ class Wtp(object):
             except FileNotFoundError:
                 pass
             try:
-                os.remove(self.cache_file + ".json")
+                os.remove(self.cache_file + ".pickle")
             except FileNotFoundError:
                 pass
             self.tmp_file = open(self.cache_file, "w+b", buffering=0)
@@ -576,11 +576,11 @@ class Wtp(object):
 
         # Save cache data
         if self.cache_file is not None and not self.cache_file_old:
-            with open(self.cache_file + ".json", "w") as f:
-                json.dump((1, (self.page_contents, self.page_seq,
-                               self.redirects, self.templates,
-                               list(sorted(self.need_pre_expand)))),
-                          f)
+            with open(self.cache_file + ".pickle", "wb") as f:
+                pickle.dump((1, (self.page_contents, self.page_seq,
+                                 self.redirects, self.templates,
+                                 list(sorted(self.need_pre_expand)))),
+                            f)
 
     def start_page(self, title):
         """Starts a new page for expanding Wikitext.  This saves the title and

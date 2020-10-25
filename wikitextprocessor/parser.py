@@ -575,19 +575,19 @@ def bolditalic_fn(ctx, token):
 
     pop_until()
     if ctx.parser_stack[-1].kind == NodeKind.ITALIC:
-        _parser_pop(ctx, True)
+        _parser_pop(ctx, False)
         pop_until()
         if ctx.parser_stack[-1].kind == NodeKind.BOLD:
-            _parser_pop(ctx, True)
+            _parser_pop(ctx, False)
             return
         _parser_push(ctx, NodeKind.BOLD)
         return
 
     if ctx.parser_stack[-1].kind == NodeKind.BOLD:
-        _parser_pop(ctx, True)
+        _parser_pop(ctx, False)
         pop_until()
         if ctx.parser_stack[-1].kind == NodeKind.ITALIC:
-            _parser_pop(ctx, True)
+            _parser_pop(ctx, False)
             return
         _parser_push(ctx, NodeKind.ITALIC)
         return
@@ -633,12 +633,21 @@ def url_fn(ctx, token):
     if ctx.pre_parse:
         return text_fn(ctx, token)
 
+    # If the URL ends in certain common punctuation characters, put the
+    # punctuation as text after it.
+    suffix = None
+    if token[-1] in ".!?,":
+        suffix = token[-1]
+        token = token[:-1]
+
     node = ctx.parser_stack[-1]
     if node.kind == NodeKind.URL:
         return text_fn(ctx, token)
     node = _parser_push(ctx, NodeKind.URL)
     text_fn(ctx, token)
     _parser_pop(ctx, False)
+    if suffix:
+        text_fn(suffix)
 
 
 def magic_fn(ctx, token):
@@ -1247,7 +1256,7 @@ token_re = re.compile(r"(?m)^(={2,6})\s*(([^=]|=[^=])+?)\s*(={2,6})\s*$|"
                       r"""<\s*[-a-zA-Z0-9]+\s*(\b[-a-z0-9]+(=("[^"]*"|"""
                         r"""'[^']*'|[^ \t\n"'`=<>]*))?\s*)*(/\s*)?>|"""
                       r"<\s*/\s*[-a-zA-Z0-9]+\s*>|"
-                      r"https?://[a-zA-Z0-9.]+(/[^] ]*[^].])?|"
+                      r"https?://[a-zA-Z0-9.]+(/[^][{}<>|\s]*)?|"
                       r"(" +
                       r"|".join(r"\b{}\b".format(x) for x in MAGIC_WORDS) +
                       r")|" +
