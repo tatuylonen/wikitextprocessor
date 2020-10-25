@@ -28,6 +28,8 @@ class NodeExpTests(unittest.TestCase):
 
     def backcvt(self, text, expected):
         root, ctx = parse_with_ctx("test", text)
+        self.assertEqual(ctx.errors, [])
+        self.assertEqual(ctx.warnings, [])
         t = ctx.node_to_wikitext(root)
         self.assertEqual(t, expected)
 
@@ -36,6 +38,12 @@ class NodeExpTests(unittest.TestCase):
 
     def test_basic2(self):
         self.backcvt("foo bar\nxyz\n", "foo bar\nxyz\n")
+
+    def test_basic3(self):
+        self.backcvt("&amp;amp;", "&amp;amp;")
+
+    def test_basic4(self):
+        self.backcvt("{{", "{{")
 
     def test_title1(self):
         self.backcvt("== T1 ==\nxyz\n", "\n== T1 ==\n\nxyz\n")
@@ -72,3 +80,88 @@ class NodeExpTests(unittest.TestCase):
     def test_pre1(self):
         self.backcvt("a<pre>foo\n  bar</pre>b",
                      "a<pre>foo\n  bar</pre>b")
+
+    def test_preformatted1(self):
+        self.backcvt(" a\n b", " a\n b")
+
+    def test_link1(self):
+        self.backcvt("[[foo bar]]", "[[foo bar]]")
+
+    def test_link2(self):
+        self.backcvt("[[foo|bar]]", "[[foo bar]]")
+
+    def test_link3(self):
+        self.backcvt("a [[foo]]s bar", "a [[foo]]s bar")
+
+    def test_template1(self):
+        self.backcvt("{{foo|a|b|c=4|{{{arg}}}}}", "{{foo|a|b|c=4|{{{arg}}}}}")
+
+    def test_template2(self):
+        self.backcvt("{{foo}}", "{{foo}}")
+
+    def test_template3(self):
+        self.backcvt("{{!}}", "{{!}}")
+
+    def test_templatearg1(self):
+        self.backcvt("{{{1}}}", "{{{1}}}")
+
+    def test_templatearg1(self):
+        self.backcvt("{{{{{templ}}}}}", "{{{{{templ}}}}}")
+
+    def test_templatearg2(self):
+        self.backcvt("{{{a|def}}}", "{{{a|def}}}")
+
+    def test_templatearg3(self):
+        self.backcvt("{{{a|}}}", "{{{a|}}}")
+
+    def test_parserfn1(self):
+        self.backcvt("{{#expr: 1 + 2}}", "{{#expr: 1 + 2}}")
+
+    def test_parserfn2(self):
+        self.backcvt("{{#expr:1+{{v}}}}", "{{#expr:1+{{v}}}}")
+
+    def test_parserfn3(self):
+        self.backcvt("{{ROOTPAGENAME}}", "{{ROOTPAGENAME:}}")
+
+    def test_url1(self):
+        self.backcvt("[https://wikipedia.org]", "[https://wikipedia.org]")
+
+    def test_url2(self):
+        self.backcvt("https://wikipedia.org/", "[https://wikipedia.org/]")
+
+    def test_url3(self):
+        self.backcvt("https://wikipedia.org/x/y?a=7%255",
+                     "[https://wikipedia.org/x/y?a=7%255]")
+
+    def test_table1(self):
+        self.backcvt("{| |}", "\n{| \n\n|}\n")
+
+    def test_table2(self):
+        self.backcvt('{| class="x"\n|}', '\n{| class="x"\n\n|}\n')
+
+    def test_tablecaption1(self):
+        self.backcvt("{|\n|+\ncapt\n|}", "\n{| \n\n|+ \n\ncapt\n\n|}\n")
+
+    def test_tablerowcell1(self):
+        self.backcvt("{|\n|- a=1\n| cell\n|}",
+                     '\n{| \n\n|- a="1"\n\n| \n cell\n\n|}\n')
+
+    def test_tablerowhdr1(self):
+        self.backcvt("{|\n|- a=1\n! cell\n|}",
+                     '\n{| \n\n|- a="1"\n\n! \n cell\n\n|}\n')
+
+    def test_magicword1(self):
+        self.backcvt("a\n__TOC__\nb", "a\n\n__TOC__\n\nb")
+
+    def test_html1(self):
+        self.backcvt("a<b>foo</b>b", "a<b>foo</b>b")
+
+    def test_html1(self):
+        self.backcvt('a<span class="bar">foo</span>b',
+                     'a<span class="bar">foo</span>b')
+
+    def test_italic1(self):
+        self.backcvt("''i''", "''i''")
+
+    def test_bold1(self):
+        self.backcvt("''b''", "''b''")

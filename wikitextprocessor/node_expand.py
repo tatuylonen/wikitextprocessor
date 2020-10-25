@@ -3,6 +3,7 @@
 # Copyright (c) 2020 Tatu Ylonen.  See file LICENSE and https://ylonen.org
 
 import html
+import urllib.parse
 from .parser import WikiNode, NodeKind
 
 
@@ -22,7 +23,7 @@ def to_attrs(node):
         if not v:
             parts.append(k)
             continue
-        v = html.escape(str(v))
+        v = urllib.parse.quote_plus(str(v))
         parts.append('{}="{}"'.format(k, v))
     return " ".join(parts)
 
@@ -81,10 +82,10 @@ def to_wikitext(node):
         parts.append("}}")
     elif kind == NodeKind.URL:
         parts.append("[")
-        parts.append(to_wikitext(node.children))
+        parts.append(to_wikitext(node.args))
         parts.append("]")
     elif kind == NodeKind.TABLE:
-        parts.append("\n{| {}\n".format(to_attrs(node)))
+        parts.append("\n{{| {}\n".format(to_attrs(node)))
         parts.append(to_wikitext(node.children))
         parts.append("\n|}\n")
     elif kind == NodeKind.TABLE_CAPTION:
@@ -118,6 +119,14 @@ def to_wikitext(node):
             parts.append(" />")
     elif kind == NodeKind.ROOT:
         parts.append(to_wikitext(node.children))
+    elif kind == NodeKind.BOLD:
+        parts.append("'''")
+        parts.append(to_wikitext(node.children))
+        parts.append("'''")
+    elif kind == NodeKind.ITALIC:
+        parts.append("''")
+        parts.append(to_wikitext(node.children))
+        parts.append("''")
     else:
         raise RuntimeError("unimplemented {}".format(kind))
     return "".join(parts)

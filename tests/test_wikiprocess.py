@@ -596,7 +596,6 @@ MORE
         ctx = self.parserfn("{{#expr}}",
                             '<strong class="error">Expression error near '
                             '&lt;end&gt;</strong>')
-        self.assertEqual(len(ctx.warnings), 1)
 
     def test_expr2(self):
         self.parserfn("{{#expr|1 + 2.34}}", "3.34")

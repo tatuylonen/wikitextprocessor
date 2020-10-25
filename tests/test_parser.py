@@ -926,8 +926,11 @@ def foo(x):
         self.assertEqual(p.children, ["  def foo(x): print(x) "])
 
     def test_pre1(self):
-        tree = parse("test", """
-<PRE>preformatted &amp; '''not bold''' text</pre> after""")
+        tree, ctx = parse_with_ctx(
+            "test",
+            """\n<PRE>preformatted &amp; '''not bold''' text</pre> after""")
+        self.assertEqual(ctx.errors, [])
+        self.assertEqual(ctx.warnings, [])
         self.assertEqual(len(tree.children), 3)
         a, b, c = tree.children
         self.assertEqual(a, "\n")
@@ -944,6 +947,18 @@ def foo(x):
         self.assertEqual(h.attrs.get("_close", False), False)
         self.assertEqual(h.attrs.get("_also_close", False), False)
         self.assertEqual(h.attrs.get("style", False), "color: red")
+
+    def test_pre3(self):
+        tree, ctx = parse_with_ctx(
+            "test", """<PRE style="color: red">line1\n  line2</pre>""")
+        self.assertEqual(len(tree.children), 1)
+        h = tree.children[0]
+        self.assertEqual(h.kind, NodeKind.PRE)
+        self.assertEqual(h.args, [])
+        self.assertEqual(h.attrs.get("_close", False), False)
+        self.assertEqual(h.attrs.get("_also_close", False), False)
+        self.assertEqual(h.attrs.get("style", False), "color: red")
+        self.assertEqual(h.children, ["line1\n  line2"])
 
     # XXX reconsider how pre should work.
     # def test_pre3(self):
@@ -1329,7 +1344,7 @@ def foo(x):
         self.assertEqual(bc.children, ["more\n"])
 
     def test_table_attrs1(self):
-        tree = parse("test", """{| class="table"
+        tree, ctx = parse_with_ctx("test", """{| class="table"
 |+ class="caption" |cap!!tion!||text
 !class="h1"|H1!!class="h2"|H2!!class="h3"|H3|x
 |- class="row1"
@@ -1337,6 +1352,8 @@ def foo(x):
 |- class="row2"
 |Bread||Pie||more!
 |}""")
+        self.assertEqual(ctx.errors, [])
+        self.assertEqual(ctx.warnings, [])
         self.assertEqual(len(tree.children), 1)
         t = tree.children[0]
         self.assertEqual(t.kind, NodeKind.TABLE)

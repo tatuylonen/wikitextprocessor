@@ -20,6 +20,7 @@ from .parser import parse_encoded, NodeKind
 from .common import (MAGIC_FIRST, MAGIC_LAST, MAX_MAGICS, MAGIC_NOWIKI_CHAR,
                      preprocess_text)
 from .dumpparser import process_dump
+from .node_expand import to_wikitext
 
 # Set of HTML tags that need an explicit end tag.
 PAIRED_HTML_TAGS = set(k for k, v in ALLOWED_HTML_TAGS.items()
@@ -1119,6 +1120,10 @@ class Wtp(object):
         encoded = self._encode(text)
         root = parse_encoded(self, encoded)  # In parser.py
         return root
+
+    def node_to_wikitext(self, node):
+        """Converts the given parse tree node back to Wikitext."""
+        return to_wikitext(node)
 
 def phase1_to_ctx(pages):
     """Creates a context and adds the given pages to it.  THIS IS MOSTLY
