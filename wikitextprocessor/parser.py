@@ -9,9 +9,6 @@ from .wikihtml import ALLOWED_HTML_TAGS
 from .common import MAGIC_NOWIKI_CHAR, MAGIC_FIRST, MAGIC_LAST
 
 
-# HTML tags that are also parsed in the preparse phase
-PRE_PARSE_TAGS = ["noinclude", "includeonly", "onlyinclude"]
-
 # Set of tags that can be parents of "flow" parents
 HTML_FLOW_PARENTS = set(k for k, v in ALLOWED_HTML_TAGS.items()
                         if "flow" in v.get("content", [])
@@ -174,11 +171,6 @@ class NodeKind(enum.Enum):
     # tags with HTML-like syntax also generate this tag (with the exception
     # of <pre> and <nowiki>, which are handled specially).
     HTML = enum.auto(),
-
-    # XXX <ref ...> and <references />
-    # XXX -{ ... }- syntax, see
-
-    # XXX __NOTOC__
 
 
 # Maps subtitle token to its kind
@@ -407,7 +399,7 @@ def text_fn(ctx, token):
 
         # Spaces at the beginning of a line indicate preformatted text
         if token.startswith(" ") or token.startswith("\t"):
-            if node.kind != NodeKind.PREFORMATTED:
+            if node.kind != NodeKind.PREFORMATTED and not ctx.pre_parse:
                 node = _parser_push(ctx, NodeKind.PREFORMATTED)
 
     # If the previous child was a link that doesn't yet have children,
@@ -927,6 +919,8 @@ def table_end_fn(ctx, token):
     if ctx.pre_parse:
         return text_fn(ctx, token)
 
+    table_row_check_attrs(ctx)
+    table_check_attrs(ctx)
     if not _parser_have(ctx, NodeKind.TABLE):
         return text_fn(ctx, token)
     while True:
@@ -1085,7 +1079,7 @@ def tag_fn(ctx, token):
         name = name.lower()
 
         # If preparsing, only handle template control tags like <noinclude>
-        if ctx.pre_parse and name not in PRE_PARSE_TAGS:
+        if ctx.pre_parse:
             return text_fn(ctx, token)
 
         # If the tag is <section ...>, ignore it
@@ -1108,6 +1102,8 @@ def tag_fn(ctx, token):
             parse_attrs(node, attrs)
             if also_end:
                 _parser_pop(ctx, False)
+            else:
+                ctx.pre_parse = True
             return
 
         # Give a warning on unsupported HTML tags.  WikiText limits the set of
@@ -1160,23 +1156,25 @@ def tag_fn(ctx, token):
     name = m.group(1)
     name = name.lower()
 
-    # If preparsing, only handle template control tags like <noinclude>
-    if ctx.pre_parse and name not in PRE_PARSE_TAGS:
-        return text_fn(ctx, token)
-
     # We should never see </section>
     if name == "section":
         ctx.error("unexpected </section>")
         return
 
+    # Check for </pre> end tag
     if name == "pre":
         # Handle </pre> end tag
+        ctx.pre_parse = False
         node = ctx.parser_stack[-1]
         if node.kind != NodeKind.PRE:
             ctx.error("unexpected </pre>")
             return text_fn(ctx, token)
         _parser_pop(ctx, False)
         return
+
+    # If preparsing, treat this as plain text
+    if ctx.pre_parse:
+        return text_fn(ctx, token)
 
     # Give a warning on unsupported HTML tags.  WikiText limits the set of
     # tags that are allowed.
