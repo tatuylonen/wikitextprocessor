@@ -20,7 +20,7 @@ from .parser import parse_encoded, NodeKind
 from .common import (MAGIC_FIRST, MAGIC_LAST, MAX_MAGICS, MAGIC_NOWIKI_CHAR,
                      preprocess_text)
 from .dumpparser import process_dump
-from .node_expand import to_wikitext
+from .node_expand import to_wikitext, to_html, to_text
 
 # Set of HTML tags that need an explicit end tag.
 PAIRED_HTML_TAGS = set(k for k, v in ALLOWED_HTML_TAGS.items()
@@ -622,7 +622,8 @@ class Wtp(object):
         return "[[" + "|".join(args) + "]]"
 
     def expand(self, text, parent=None, pre_only=False,
-               template_fn=None, templates_to_expand=None,
+               template_fn=None, post_template_fn=None,
+               templates_to_expand=None,
                expand_parserfns=True, expand_invoke=True, quiet=False):
         """Expands templates and parser functions (and optionally Lua macros)
         from ``text`` (which is from page with title ``title``).
@@ -639,9 +640,13 @@ class Wtp(object):
                                   len(parent) == 2)
         assert pre_only in (True, False)
         assert template_fn is None or callable(template_fn)
+        assert post_template_fn is None or callable(post_template_fn)
         assert isinstance(templates_to_expand, (set, dict, type(None)))
         assert self.title is not None  # start_page() must have been called
         assert quiet in (False, True)
+
+        # XXX implement post_template_fn(name, args_ht, expanded), to be
+        # called after a template has been expanded
 
         # Handle <nowiki> in a preprocessing step
         text = preprocess_text(text)
@@ -1124,6 +1129,16 @@ class Wtp(object):
     def node_to_wikitext(self, node):
         """Converts the given parse tree node back to Wikitext."""
         return to_wikitext(node)
+
+    def node_to_html(self, node, template_fn=None, post_template_fn=None):
+        """Converts the given parse tree node to HTML."""
+        return to_html(self, node, template_fn=template_fn,
+                       post_template_fn=post_template_fn)
+
+    def node_to_text(self, node, template_fn=None, post_template_fn=None):
+        """Converts the given parse tree node to plain text."""
+        return to_text(self, node, template_fn=template_fn,
+                       post_template_fn=post_template_fn)
 
 def phase1_to_ctx(pages):
     """Creates a context and adds the given pages to it.  THIS IS MOSTLY

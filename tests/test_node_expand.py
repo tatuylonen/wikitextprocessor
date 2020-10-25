@@ -33,6 +33,20 @@ class NodeExpTests(unittest.TestCase):
         t = ctx.node_to_wikitext(root)
         self.assertEqual(t, expected)
 
+    def tohtml(self, text, expected):
+        root, ctx = parse_with_ctx("test", text)
+        self.assertEqual(ctx.errors, [])
+        self.assertEqual(ctx.warnings, [])
+        t = ctx.node_to_html(root)
+        self.assertEqual(t, expected)
+
+    def totext(self, text, expected):
+        root, ctx = parse_with_ctx("test", text)
+        self.assertEqual(ctx.errors, [])
+        self.assertEqual(ctx.warnings, [])
+        t = ctx.node_to_text(root)
+        self.assertEqual(t, expected)
+
     def test_basic1(self):
         self.backcvt("", "")
 
@@ -165,3 +179,15 @@ class NodeExpTests(unittest.TestCase):
 
     def test_bold1(self):
         self.backcvt("''b''", "''b''")
+
+    def test_text1(self):
+        self.totext("", "")
+
+    def test_text2(self):
+        self.totext("\nfoo bar ", "foo bar")
+
+    def test_text3(self):
+        self.totext("<b>foo</b>", "foo")
+
+    def test_text4(self):
+        self.totext("<h1>foo</h1><p>bar</p>", "foo\n\nbar")

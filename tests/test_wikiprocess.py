@@ -2786,6 +2786,10 @@ return export
         except FileNotFoundError:
             pass
 
+# XXX Test template_fn in expand()
+
+# XXX implement and test post_template_fn in expand()
+
 # XXX test expand() with expand_parserfns=False
 # XXX test expand() with expand_templates=False
 # XXX test expand() with template_fn (return None and return string)

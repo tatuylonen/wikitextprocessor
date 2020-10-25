@@ -2,6 +2,7 @@
 #
 # Copyright (c) 2020 Tatu Ylonen.  See file LICENSE and https://ylonen.org
 
+import re
 import html
 import urllib.parse
 from .parser import WikiNode, NodeKind
@@ -130,3 +131,32 @@ def to_wikitext(node):
     else:
         raise RuntimeError("unimplemented {}".format(kind))
     return "".join(parts)
+
+
+def to_html(ctx, node, template_fn=None, post_template_fn=None):
+    """Converts the parse (sub-)tree at ``node`` to HTML, expanding all
+    templates in it."""
+    assert template_fn is None or callable(template_fn)
+    assert post_template_fn is None or callable(post_template_fn)
+    text = to_wikitext(node)
+    # XXX we need to expand wikitext formatting.  That would best be done
+    # in to_wikitext() or something similar.
+    expanded = ctx.expand(text, template_fn=template_fn,
+                          post_template_fn=post_template_fn)
+    return expanded
+
+
+def to_text(ctx, node, template_fn=None, post_template_fn=None):
+    """Converts the parse (sub-)tree at ``node`` to plain text, expanding
+    all templates in it and stripping HTML tags."""
+    assert template_fn is None or callable(template_fn)
+    assert post_template_fn is None or callable(post_template_fn)
+    s = to_html(ctx, node, template_fn=template_fn,
+                post_template_fn=post_template_fn)
+    s = re.sub(r"(?i)</?h[123456]\b[^>]*>", "\n\n", s)
+    s = re.sub(r"(?i)</?div[123456]\b[^>]*>", "\n\n", s)
+    s = re.sub(r"(?s)<br\s*/?>", "\n\n", s)
+    s = re.sub(r"(?s)<hr\s*/?>", "\n\n----\n\n", s)
+    s = re.sub(r"(?s)<[^>]+>", "", s)
+    s = re.sub(r"\n\n\n+", "\n\n", s)
+    return s.strip()
