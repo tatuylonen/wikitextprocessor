@@ -718,6 +718,19 @@ dasfasddasfdas
         self.assertEqual(b.kind, NodeKind.LIST_ITEM)
         self.assertEqual(b.children, ["list item B1\n"])
 
+    def test_list_cont3(self):
+        tree = parse("test", """# list item\n#: sub-item\n""")
+        self.assertEqual(len(tree.children), 1)
+        t = tree.children[0]
+        self.assertEqual(t.kind, NodeKind.LIST)
+        self.assertEqual(len(t.children), 1)
+        a = t.children[0]
+        self.assertEqual(a.kind, NodeKind.LIST_ITEM)
+        self.assertEqual(len(a.children), 2)
+        b, c = a.children
+        self.assertEqual(b, " list item\n")
+        self.assertEqual(c.kind, NodeKind.LIST)
+
     def test_listend1(self):
         tree = parse("test", "# item1\nFoo\n")
         self.assertEqual(len(tree.children), 2)

@@ -987,7 +987,8 @@ def list_fn(ctx, token):
         # Check for continuing an earlier list item, possibly after an
         # intervening sublist
         if (node.kind == NodeKind.LIST_ITEM and token.endswith(":") and
-            node.args == token[:-1]):
+            node.args == token[:-1] and node.children and
+            isinstance(node.children[-1], WikiNode)):
             # Suffixing a list item prefix with a colon can be used to continue
             # the same item after an intervening sublist.  In this case we
             # just return with the continued list item at the top of the stack.

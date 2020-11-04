@@ -21,6 +21,13 @@ setup(name="wikitextprocessor",
       packages=["wikitextprocessor"],
       package_data={"wikitextprocessor": ["lua"]},
       install_requires=[],
+      keywords=[
+          "dictionary",
+          "wiktionary",
+          "wikipedia",
+          "data extraction",
+          "wikitext",
+      ],
       classifiers=[
           "Development Status :: 3 - Alpha",
           "Intended Audience :: Developers",

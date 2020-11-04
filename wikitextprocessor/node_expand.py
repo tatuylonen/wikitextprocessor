@@ -158,5 +158,9 @@ def to_text(ctx, node, template_fn=None, post_template_fn=None):
     s = re.sub(r"(?s)<br\s*/?>", "\n\n", s)
     s = re.sub(r"(?s)<hr\s*/?>", "\n\n----\n\n", s)
     s = re.sub(r"(?s)<[^>]+>", "", s)
+    # Remove category links
+    s = re.sub(r"(?s)\[\[\s*Category:[^]]*\]\]", "", s)
+    s = re.sub(r"(?s)\[\[([^]|]*\|([^]]*))\]\]", r"\2", s)
+    s = re.sub(r"(?s)[][]", "", s)
     s = re.sub(r"\n\n\n+", "\n\n", s)
     return s.strip()
