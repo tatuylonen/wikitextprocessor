@@ -191,3 +191,6 @@ class NodeExpTests(unittest.TestCase):
 
     def test_text4(self):
         self.totext("<h1>foo</h1><p>bar</p>", "foo\n\nbar")
+
+    def test_text5(self):
+        self.totext("foo<ref x=1>bar</ref> z", "foo z")

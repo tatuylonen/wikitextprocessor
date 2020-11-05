@@ -153,8 +153,10 @@ def to_text(ctx, node, template_fn=None, post_template_fn=None):
     assert post_template_fn is None or callable(post_template_fn)
     s = to_html(ctx, node, template_fn=template_fn,
                 post_template_fn=post_template_fn)
-    s = re.sub(r"(?i)</?h[123456]\b[^>]*>", "\n\n", s)
-    s = re.sub(r"(?i)</?div[123456]\b[^>]*>", "\n\n", s)
+    print("TO_TEXT:", repr(s))
+    s = re.sub(r"(?is)<\s*ref\s*[^>]*?>.*?<\s*/\s*ref\s*>", "", s)
+    s = re.sub(r"(?is)</?h[123456]\b[^>]*>", "\n\n", s)
+    s = re.sub(r"(?is)</?div[123456]\b[^>]*>", "\n\n", s)
     s = re.sub(r"(?s)<br\s*/?>", "\n\n", s)
     s = re.sub(r"(?s)<hr\s*/?>", "\n\n----\n\n", s)
     s = re.sub(r"(?s)<[^>]+>", "", s)
