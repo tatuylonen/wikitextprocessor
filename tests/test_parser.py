@@ -1591,6 +1591,12 @@ def foo(x):
         tree = parse("test", "&lt;nowiki />")
         self.assertEqual(tree.children, ["<nowiki />"])
 
+    def test_plain14(self):
+        tree, ctx = parse_with_ctx("test", "a < b < c")
+        self.assertEqual(ctx.errors, [])
+        self.assertEqual(ctx.warnings, [])
+        self.assertEqual(tree.children, ["a < b < c"])
+
     def test_nonsense1(self):
         tree = parse("test", "<pre />")
         t = tree.children[0]
