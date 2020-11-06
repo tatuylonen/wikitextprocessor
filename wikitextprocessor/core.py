@@ -677,7 +677,7 @@ class Wtp(object):
             ret = call_lua_sandbox(self, invoke_args, expander, parent)
             return ret
 
-        def expand(coded, parent, templates_to_expand):
+        def expand_recurse(coded, parent, templates_to_expand):
             """This function does most of the work for expanding encoded
             templates, arguments, and parser functions."""
             assert isinstance(coded, str)
@@ -719,8 +719,8 @@ class Wtp(object):
                                          "reference {!r}"
                                          .format(len(args), args))
                         self.expand_stack.append("ARG-NAME")
-                        k = expand(expand_args(args[0], argmap),
-                                   parent, self.templates).strip()
+                        k = expand_recurse(expand_args(args[0], argmap),
+                                           parent, self.templates).strip()
                         self.expand_stack.pop()
                         if k.isdigit():
                             k = int(k)
@@ -757,7 +757,8 @@ class Wtp(object):
                     return "{{" + fn_name + ":" + "|".join(args) + "}}"
                 # Call parser function
                 self.expand_stack.append(fn_name)
-                expander = lambda arg: expand(arg, parent, self.templates)
+                expander = lambda arg: expand_recurse(arg, parent,
+                                                      self.templates)
                 if fn_name == "#invoke":
                     if not expand_invoke:
                         return "{{#invoke:" + "|".join(args) + "}}"
@@ -771,7 +772,7 @@ class Wtp(object):
                 # XXX current implementation of preprocess() does not match!!!
                 return str(ret)
 
-            # Main code of expand()
+            # Main code of expand_recurse()
             parts = []
             pos = 0
             for m in re.finditer(r"[{:c}-{:c}]"
@@ -802,7 +803,7 @@ class Wtp(object):
 
                     # Expand template/parserfn name
                     self.expand_stack.append("TEMPLATE_NAME")
-                    tname = expand(args[0], parent, templates_to_expand)
+                    tname = expand_recurse(args[0], parent, templates_to_expand)
                     self.expand_stack.pop()
 
                     # Strip safesubst: and subst: prefixes
@@ -880,7 +881,7 @@ class Wtp(object):
                                     num = k + 1
                             else:
                                 self.expand_stack.append("ARGNAME")
-                                k = expand(k, parent, self.templates)
+                                k = expand_recurse(k, parent, self.templates)
                                 self.expand_stack.pop()
                         else:
                             k = num
@@ -890,7 +891,7 @@ class Wtp(object):
                         # calls to #invoke within a template argument (the
                         # parent frame would be different).
                         self.expand_stack.append("ARGVAL-{}".format(k))
-                        arg = expand(arg, parent, self.templates)
+                        arg = expand_recurse(arg, parent, self.templates)
                         self.expand_stack.pop()
                         ht[k] = arg
 
@@ -933,8 +934,8 @@ class Wtp(object):
                         # XXX no real need to expand here, it will expanded on
                         # next iteration anyway (assuming parent unchanged)
                         # Otherwise expand the body
-                        t = expand(encoded_body, new_parent,
-                                   templates_to_expand)
+                        t = expand_recurse(encoded_body, new_parent,
+                                           templates_to_expand)
 
                     assert isinstance(t, str)
                     self.expand_stack.pop()  # template name
@@ -949,7 +950,8 @@ class Wtp(object):
                         # Link to another page
                         content = args[0]
                         self.expand_stack.append("[[link]]")
-                        content = expand(content, parent, templates_to_expand)
+                        content = expand_recurse(content, parent,
+                                                 templates_to_expand)
                         self.expand_stack.pop()
                         parts.append(self._unexpanded_link([content], nowiki))
                 else:
@@ -965,7 +967,7 @@ class Wtp(object):
 
         # Recursively expand the selected templates.  This is an outside-in
         # operation.
-        expanded = expand(encoded, parent, templates_to_expand)
+        expanded = expand_recurse(encoded, parent, templates_to_expand)
 
         # Expand any remaining magic cookies and remove nowiki char
         expanded = self._finalize_expand(expanded, False)
