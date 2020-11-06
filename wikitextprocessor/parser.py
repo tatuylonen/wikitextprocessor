@@ -697,16 +697,17 @@ def magic_fn(ctx, token):
             _parser_pop(ctx, True)
 
     elif kind == "L":
-        assert len(args) == 1
         if nowiki:
             process_text(ctx, "&lsqb;&lsqb;" + args[0] + "&rsqb;&rsqb;")
             return
         # Link to another page
         _parser_push(ctx, NodeKind.LINK)
 
-        # Process the only argument
-        assert len(args) == 1
+        # Process arguments
         process_text(ctx, args[0])
+        for arg in args[1:]:
+            vbar_fn(ctx, "|")
+            process_text(ctx, arg)
 
         while True:
             node = ctx.parser_stack[-1]

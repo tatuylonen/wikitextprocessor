@@ -207,7 +207,6 @@ class Wtp(object):
         #    name = name[0].upper() + name[1:]
         return name
 
-
     def _canonicalize_parserfn_name(self, name):
         """Canonicalizes a parser function name by making its first character
         uppercase and replacing underscores by spaces and sequences of
@@ -263,7 +262,8 @@ class Wtp(object):
             """Replacement function for links [[...]]."""
             nowiki = m.group(0).find(MAGIC_NOWIKI_CHAR) >= 0
             orig = m.group(1)
-            return self._save_value("L", (orig,), nowiki)
+            args = m.group(1).split("|")
+            return self._save_value("L", args, nowiki)
 
         # As a preprocessing step, remove comments from the text
         text = re.sub(r"(?s)<!\s*--.*?--\s*>", "", text)
@@ -273,17 +273,19 @@ class Wtp(object):
         # links as they affect the interpretation of templates.
         while True:
             prev = text
-            # Encode links.
-            text = re.sub(r"\[" + MAGIC_NOWIKI_CHAR +
-                          r"?\[(([^][{}]|\[[^][{}]*\])+)\]" +
-                          # XXXremove: r"?\[(([^][{}]|\[[^]]*\])+)\]" +
-                          MAGIC_NOWIKI_CHAR + r"?\]",
-                          repl_link, text)
             # Encode template arguments.  We repeat this until there are
             # no more matches, because otherwise we could encode the two
             # innermost braces as a template transclusion.
             while True:
                 prev2 = text
+                # Encode links.
+                text = re.sub(r"\[" + MAGIC_NOWIKI_CHAR +
+                              r"?\[(([^][{}]|\[[^][{}]*\])+)\]" +
+                              # XXXremove: r"?\[([^][{}]*)\]" +
+                              # XXXremove: r"?\[(([^][{}]|\[[^]]*\])+)\]" +
+                              MAGIC_NOWIKI_CHAR + r"?\]",
+                              repl_link, text)
+                # Encode templates
                 text = re.sub(r"(?s)\{" + MAGIC_NOWIKI_CHAR +
                               r"?\{" + MAGIC_NOWIKI_CHAR +
                               r"?\{([^{}]*?)\}" +
@@ -741,9 +743,9 @@ class Wtp(object):
                         continue
                     if kind == "L":
                         # Link to another page
-                        content = args[0]
-                        content = expand_args(content, argmap)
-                        parts.append(self._unexpanded_link([content], nowiki))
+                        new_args = list(expand_args(x, argmap)
+                                        for x in args)
+                        parts.append(self._unexpanded_link(new_args, nowiki))
                         continue
                     self.error("expand_arg: unsupported cookie kind {!r} in {}"
                                .format(kind, m.group(0)))
@@ -951,17 +953,16 @@ class Wtp(object):
                 elif kind == "A":
                     parts.append(self._unexpanded_arg(args, nowiki))
                 elif kind == "L":
-                    assert len(args) == 1
                     if nowiki:
                         parts.append(self._unexpanded_link(args, nowiki))
                     else:
                         # Link to another page
-                        content = args[0]
                         self.expand_stack.append("[[link]]")
-                        content = expand_recurse(content, parent,
-                                                 templates_to_expand)
+                        new_args = list(expand_recurse(x, parent,
+                                                       templates_to_expand)
+                                        for x in args)
                         self.expand_stack.pop()
-                        parts.append(self._unexpanded_link([content], nowiki))
+                        parts.append(self._unexpanded_link(new_args, nowiki))
                 else:
                     self.error("expand: unsupported cookie kind {!r} in {}"
                                .format(kind, m.group(0)))

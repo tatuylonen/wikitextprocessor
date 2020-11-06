@@ -66,7 +66,7 @@ def to_wikitext(node):
         parts.append(to_wikitext(node.children))
     elif kind == NodeKind.LINK:
         parts.append("[[")
-        parts.append(" ".join(map(to_wikitext, node.args)))
+        parts.append("|".join(map(to_wikitext, node.args)))
         parts.append("]]")
         parts.append(to_wikitext(node.children))
     elif kind == NodeKind.TEMPLATE:
@@ -130,7 +130,8 @@ def to_wikitext(node):
         parts.append("''")
     else:
         raise RuntimeError("unimplemented {}".format(kind))
-    return "".join(parts)
+    ret = "".join(parts)
+    return ret
 
 
 def to_html(ctx, node, template_fn=None, post_template_fn=None):

@@ -95,6 +95,49 @@ return export
         self.assertEqual(len(ctx.errors), 0)
         self.assertEqual(len(ctx.warnings), 0)
 
+    def test_basic11(self):
+        self.parserfn("a[[foo]]b", "a[[foo]]b")
+
+    def test_basic12(self):
+        self.parserfn("a[[foo|bar]]b", "a[[foo|bar]]b")
+
+    def test_basic13(self):
+        ctx = phase1_to_ctx([
+            ["wikitext", "Template:templ", "a[[{{{1}}}|{{{2}}}]]b"]])
+        ctx.start_page("Tt")
+        ret = ctx.expand("A{{templ|x|y}}B")
+        self.assertEqual(ret, "Aa[[x|y]]bB")
+
+    def test_basic14(self):
+        ctx = phase1_to_ctx([
+            ["wikitext", "Template:templ", "a[[{{t2|z|zz-{{{1}}}}}|{{{2}}}]]b"],
+            ["wikitext", "Template:t2", "t2{{{1}}}#{{{2}}}"]])
+        ctx.start_page("Tt")
+        ret = ctx.expand("A{{templ|x|y}}B")
+        self.assertEqual(ret, "Aa[[t2z#zz-x|y]]bB")
+
+    def test_basic15(self):
+        ctx = phase1_to_ctx([
+            ["wikitext", "Template:templ", "a[[:{{{1}}}:{{{2}}}|({{{1}}})]]b"]])
+        ctx.start_page("Tt")
+        ret = ctx.expand("A{{templ|hu|állati|langname=Hungarian|interwiki=1}}B")
+        self.assertEqual(ret, "Aa[[:hu:állati|(hu)]]bB")
+
+    def test_basic16(self):
+        ctx = phase1_to_ctx([
+            ["wikitext", "Template:templ", "a[[:{{{1}}}:{{{2}}}|({{{1}}})]]b"]])
+        ctx.start_page("Tt")
+        ret = ctx.expand("A{{templ|hu|állati|langname=Hungarian|interwiki=1}}B")
+        self.assertEqual(ret, "Aa[[:hu:állati|(hu)]]bB")
+
+    def test_basic17(self):
+        ctx = phase1_to_ctx([
+            ["wikitext", "Template:templ",
+             'a{{#ifeq:{{{interwiki|}}}|1|[[:{{{1}}}:{{{2}}}|({{{1}}})]]}}b']])
+        ctx.start_page("Tt")
+        ret = ctx.expand("A{{templ|hu|állati|langname=Hungarian|interwiki=1}}B")
+        self.assertEqual(ret, 'Aa[[:hu:állati|(hu)]]bB')
+
     def test_if1(self):
         self.parserfn("{{#if:|T|F}}", "F")
 

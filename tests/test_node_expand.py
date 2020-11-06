@@ -102,7 +102,7 @@ class NodeExpTests(unittest.TestCase):
         self.backcvt("[[foo bar]]", "[[foo bar]]")
 
     def test_link2(self):
-        self.backcvt("[[foo|bar]]", "[[foo bar]]")
+        self.backcvt("[[foo|bar]]", "[[foo|bar]]")
 
     def test_link3(self):
         self.backcvt("a [[foo]]s bar", "a [[foo]]s bar")
