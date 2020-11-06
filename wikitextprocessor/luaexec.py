@@ -444,9 +444,11 @@ def call_lua_sandbox(ctx, invoke_args, expander, parent):
     if text.find("'debug.error'") >= 0:
         if not msg.startswith("This template is deprecated."):
             ctx.warning(msg)
-    elif text.find("in function 'error'") >= 0:
-        if not msg.startswith('The parameter "'):
-            ctx.warning(msg)
+    # XXX This probably should be deleted; it can cause important errors
+    # to be missed
+    # elif text.find("in function 'error'") >= 0:
+    #     if not msg.startswith('The parameter "'):
+    #         ctx.warning(msg)
     else:
         parts = []
         in_traceback = 0

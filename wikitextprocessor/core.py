@@ -630,10 +630,14 @@ class Wtp(object):
         ``templates_to_expand`` should be None to expand all
         templates, or a set or dictionary whose keys are those
         canonicalized template names that should be expanded.
-        ``template_fn``, if given, will be used to expand templates;
-        if it is not defined or returns None, the default expansion
-        will be used (it can also be used to capture template
-        arguments).  This returns the text with the given templates
+        ``template_fn``, if given, will be be called as
+        template_fn(name, args_ht) to expand templates; if it is not
+        defined or returns None, the default expansion will be used
+        (it can also be used to capture template arguments).  If
+        ``post_template_fn`` is given, it will be called as
+        post_template_fn(name, args_ht, expanded) and if it returns
+        other than None, its return value will replace the template
+        expansion.  This returns the text with the given templates
         expanded."""
         assert isinstance(text, str)
         assert parent is None or (isinstance(parent, (list, tuple)) and
@@ -644,9 +648,6 @@ class Wtp(object):
         assert isinstance(templates_to_expand, (set, dict, type(None)))
         assert self.title is not None  # start_page() must have been called
         assert quiet in (False, True)
-
-        # XXX implement post_template_fn(name, args_ht, expanded), to be
-        # called after a template has been expanded
 
         # Handle <nowiki> in a preprocessing step
         text = preprocess_text(text)
@@ -874,8 +875,8 @@ class Wtp(object):
                             if k.isdigit():
                                 k = int(k)
                                 if k < 1 or k > 1000:
-                                    print("invalid argument number {}"
-                                          .format(k))
+                                    ctx.error("invalid argument number {}"
+                                              .format(k))
                                     k = 1000
                                 if num <= k:
                                     num = k + 1
@@ -936,6 +937,13 @@ class Wtp(object):
                         # Otherwise expand the body
                         t = expand_recurse(encoded_body, new_parent,
                                            templates_to_expand)
+
+                    # If a post_template_fn has been supplied, call it now
+                    # to capture or alter the expansion
+                    if post_template_fn is not None:
+                        t2 = post_template_fn(name, ht, t)
+                        if t2 is not None:
+                            t = t2
 
                     assert isinstance(t, str)
                     self.expand_stack.pop()  # template name
@@ -1047,7 +1055,7 @@ class Wtp(object):
             for model, title in self.page_seq:
                 success, ret = phase2_page_handler((model, title))
                 if not success:
-                    print(ret)
+                    print(ret)  # Print error in parent process - do not remove
                     continue
                 if ret is not None:
                     lst.append(ret)
@@ -1062,7 +1070,7 @@ class Wtp(object):
             for success, ret in pool.imap_unordered(phase2_page_handler,
                                                     self.page_seq):
                 if not success:
-                    print(ret)
+                    print(ret)  # Print error in parent process - do not remove
                     continue
                 if ret is not None:
                     lst.append(ret)
