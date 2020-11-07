@@ -639,7 +639,7 @@ def url_fn(ctx, token):
     text_fn(ctx, token)
     _parser_pop(ctx, False)
     if suffix:
-        text_fn(suffix)
+        text_fn(ctx, suffix)
 
 
 def magic_fn(ctx, token):
