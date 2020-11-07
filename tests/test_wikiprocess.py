@@ -378,7 +378,7 @@ MORE
         ctx = phase1_to_ctx([])
         ctx.start_page("Help:test page/doc")
         ret = ctx.expand("{{PAGENAMEE}}")
-        self.assertEqual(ret, "Test_page/doc")
+        self.assertEqual(ret, "test_page/doc")
 
     def test_rootpagenamee1(self):
         ctx = phase1_to_ctx([])
@@ -390,7 +390,7 @@ MORE
         ctx = phase1_to_ctx([])
         ctx.start_page("Help:test page/doc/bar/foo")
         ret = ctx.expand("{{ROOTPAGENAMEE}}")
-        self.assertEqual(ret, "Test_page")
+        self.assertEqual(ret, "test_page")
 
     def test_fullpagenamee1(self):
         ctx = phase1_to_ctx([])
@@ -402,7 +402,7 @@ MORE
         ctx = phase1_to_ctx([])
         ctx.start_page("Help:test page/doc")
         ret = ctx.expand("{{FULLPAGENAMEE}}")
-        self.assertEqual(ret, "Help:Test_page/doc")
+        self.assertEqual(ret, "Help:test_page/doc")
 
     def test_basepagename1(self):
         ctx = phase1_to_ctx([])
@@ -1726,6 +1726,21 @@ return export
         ret = ctx.expand("{{testtempl}}")
         self.assertEqual(ret, """nilnil""")
 
+    def test_invoke20(self):
+        ctx = phase1_to_ctx([
+            ["wikitext", "Template:testtempl", "{{#invoke:testmod|testfn}}"],
+            ["Scribunto", "Module:testmod", """
+local export = {}
+function export.testfn(frame)
+  local v = frame:getParent().args[1]
+  if v == "a<1>" then return "yes" else return "no" end
+end
+return export
+"""]])
+        ctx.start_page("Tt")
+        ret = ctx.expand("{{testtempl|a<1>}}")
+        self.assertEqual(ret, """yes""")
+
     def test_frame_parent1(self):
         ctx = phase1_to_ctx([
             ["wikitext", "Template:testtempl",
@@ -2849,9 +2864,6 @@ return export
 # warnings in a list
 
 # XXX implement #categorytree (note named arguments)
-
-# XXX it seems sometimes expressions are generated that have an empty value
-# (that should probably be interpreted as zero), e.g., "<176"
 
 # XXX implement mw.title.makeTitle with interwiki; t.interwiki field
 # XXX implement mw.title.exists by calling python get_page_info (cf isRedirect)

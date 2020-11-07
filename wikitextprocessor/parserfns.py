@@ -209,13 +209,15 @@ def fullpagename_fn(ctx, fn_name, args, expander):
     t = t.strip()
     ofs = t.find(":")
     if ofs == 0:
-        t = capitalizeFirstOnly(t[1:])
+        # t = capitalizeFirstOnly(t[1:])
+        t = t[1:]
     elif ofs > 0:
         ns = capitalizeFirstOnly(t[:ofs])
-        t = capitalizeFirstOnly(t[ofs + 1:])
+        # t = capitalizeFirstOnly(t[ofs + 1:])
+        t = t[ofs + 1:]
         t = ns + ":" + t
-    else:
-        t = capitalizeFirstOnly(t)
+    #else:
+    #    t = capitalizeFirstOnly(t)
     return t
 
 
@@ -244,9 +246,10 @@ def pagename_fn(ctx, fn_name, args, expander):
     t = t.strip()
     ofs = t.find(":")
     if ofs >= 0:
-        t = capitalizeFirstOnly(t[ofs + 1:])
-    else:
-        t = capitalizeFirstOnly(t)
+        # t = capitalizeFirstOnly(t[ofs + 1:])
+        t = t[ofs + 1:]
+    #else:
+    #    t = capitalizeFirstOnly(t)
     return t
 
 

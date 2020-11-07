@@ -404,6 +404,13 @@ dasfasddasfdas
         self.assertEqual(a.args, "span")
         self.assertEqual(a.children, ["["])
 
+    def test_html14(self):
+        tree, ctx = parse_with_ctx("test", "a<3>b")
+        self.assertEqual(ctx.errors, [])
+        self.assertEqual(ctx.warnings, [])
+        self.assertEqual(len(tree.children), 1)
+        self.assertEqual(tree.children, ["a<3>b"])
+
     def test_html_unknown(self):
         tree, ctx = parse_with_ctx("test", "a<unknown>foo</unknown>b")
         self.assertEqual(tree.children, ["a<unknown>foo</unknown>b"])

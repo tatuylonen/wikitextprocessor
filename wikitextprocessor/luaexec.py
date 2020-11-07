@@ -238,6 +238,7 @@ def call_lua_sandbox(ctx, invoke_args, expander, parent):
         assert isinstance(args, (list, tuple, dict))
         # Convert args to a dictionary with default value None
         if isinstance(args, dict):
+            args = {k: html.unescape(v) for k, v in args.items()}
             frame_args = args
         else:
             assert isinstance(args, (list, tuple))
@@ -259,6 +260,7 @@ def call_lua_sandbox(ctx, invoke_args, expander, parent):
                     # No argument name
                     k = num
                     num += 1
+                arg = html.unescape(arg)
                 frame_args[k] = arg
         frame_args = lua.table_from(frame_args)
 
