@@ -1023,8 +1023,8 @@ class Wtp(object):
     def process(self, path, page_handler, phase1_only=False):
         """Parses a WikiMedia dump file ``path`` (which should point to a
         "<project>-<date>-pages-articles.xml.bz2" file.  This calls
-        ``page_handler(model, title, page)`` for each raw page.  This works
-        in two phases - in the first phase this calls
+        ``page_handler(model, title, page)`` for each raw page.  This
+        works in two phases - in the first phase this calls
         ctx.collect_specials() for each page to collect raw pages,
         especially templates and Lua modules.  Then this goes over the
         articles a second time, calling page_handler for each page
@@ -1032,13 +1032,17 @@ class Wtp(object):
         before calling page_handler).  The page_handler will be called
         in parallel using the multiprocessing package, and thus it
         cannot save data in ``ctx`` or global variables.  It can only
-        return its results.  This function will return a list
-        containing all the results returned by page_handler (in
-        arbirary order), except None values will be ignored.  This function
-        is not re-entrant."""
+        return its results.  This function will return an iterator
+        that yields all the results returned by page_handler (in
+        arbirary order), except None values will be ignored.  This
+        function is not re-entrant."""
         assert isinstance(path, str)
         assert callable(page_handler)
-        return process_dump(self, path, page_handler, phase1_only)
+        # Process the dump and copy it to temporary file (Phase 1)
+        process_dump(self, path, page_handler, phase1_only)
+
+        # Reprocess all the pages that we captured in Phase 1
+        return self.reprocess(page_handler)
 
     def reprocess(self, page_handler):
         """Reprocess all pages captured by self.process() or explicit calls
@@ -1055,14 +1059,13 @@ class Wtp(object):
         if self.num_threads == 1:
             # Single-threaded version (without subprocessing).  This is
             # primarily intended for debugging.
-            lst = []
             for model, title in self.page_seq:
                 success, ret = phase2_page_handler((model, title))
                 if not success:
                     print(ret)  # Print error in parent process - do not remove
                     continue
                 if ret is not None:
-                    lst.append(ret)
+                    yield ret
         else:
             # Process pages using multiple parallel processes (the normal
             # case)
@@ -1070,22 +1073,22 @@ class Wtp(object):
                 pool = multiprocessing.Pool()
             else:
                 pool = multiprocessing.Pool(self.num_threads)
-            lst = []
+            cnt = 0
             for success, ret in pool.imap_unordered(phase2_page_handler,
                                                     self.page_seq):
                 if not success:
                     print(ret)  # Print error in parent process - do not remove
                     continue
                 if ret is not None:
-                    lst.append(ret)
-                    if not self.quiet and len(lst) % 1000 == 0:
+                    yield ret
+                    cnt += 1
+                    if not self.quiet and cnt % 1000 == 0:
                         print("  ... {}/{} pages ({:.1%}) processed"
-                              .format(len(lst), len(self.page_seq),
-                                      len(lst) / len(self.page_seq)))
+                              .format(cnt, len(self.page_seq),
+                                      cnt / len(self.page_seq)))
                         sys.stdout.flush()
             pool.close()
             pool.join()
-        return lst
 
     def page_exists(self, title):
         """Returns True if the given page exists, and False if it does not

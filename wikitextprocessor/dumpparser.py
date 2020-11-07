@@ -248,10 +248,6 @@ def process_dump(ctx, path, page_handler, phase1_only):
         print("Second pass - processing pages")
         sys.stdout.flush()
 
-    # Reprocess all pages that we captured in Phase 1.
-    lst = ctx.reprocess(page_handler)
-    return lst
-
 # XXX parse <namespaces> and use that in both Python and Lua code
 
 # XXX parse <case> to determine whether titles are case-sensitive

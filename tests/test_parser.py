@@ -411,6 +411,34 @@ dasfasddasfdas
         self.assertEqual(len(tree.children), 1)
         self.assertEqual(tree.children, ["a<3>b"])
 
+    def test_html15(self):
+        tree, ctx = parse_with_ctx("test", "<DIV>foo</DIV>")
+        self.assertEqual(ctx.errors, [])
+        self.assertEqual(ctx.warnings, [])
+        self.assertEqual(len(tree.children), 1)
+        a = tree.children[0]
+        assert isinstance(a, WikiNode)
+        self.assertEqual(a.kind, NodeKind.HTML)
+        self.assertEqual(a.args, "div")
+        self.assertEqual(a.children, ["foo"])
+
+    def test_html16(self):
+        tree, ctx = parse_with_ctx("test",
+            """<TABLE ALIGN=RIGHT border="1" cellpadding="5" cellspacing="0">
+            <TR><TD></TD><TD COLSPAN="9">Ordered Batch of 9 Values</TD></TR>
+            <TR ALIGN=RIGHT><TD>Value</TD><TD>15</TD><TD>32</TD><TD>45</TD>
+            <TD>48</TD><TD>49</TD><TD>56</TD><TD>69</TD><TD>77</TD>
+            <TD>97</TD></TR>
+            <TR ALIGN=RIGHT><TD>'''Depth'''</TD><TD>1</TD><TD>2</TD>
+            <TD>3</TD><TD>4</TD><TD>5</TD><TD>4</TD><TD>3</TD><TD>2</TD>
+            <TD>1</TD></TR></TABLE>""")
+        self.assertEqual(ctx.errors, [])
+        self.assertEqual(ctx.warnings, [])
+        self.assertEqual(len(tree.children), 1)
+        a = tree.children[0]
+        assert isinstance(a, WikiNode)
+        self.assertEqual(a.kind, NodeKind.HTML)
+
     def test_html_unknown(self):
         tree, ctx = parse_with_ctx("test", "a<unknown>foo</unknown>b")
         self.assertEqual(tree.children, ["a<unknown>foo</unknown>b"])

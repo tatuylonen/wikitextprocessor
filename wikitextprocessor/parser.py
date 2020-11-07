@@ -1071,7 +1071,7 @@ def tag_fn(ctx, token):
     # preprocessing
 
     # Try to parse it as a start tag
-    m = re.match(r"""<\s*([-a-zA-Z0-9]+)\s*((\b[-a-z0-9]+(=("[^"]*"|"""
+    m = re.match(r"""<\s*([-a-zA-Z0-9]+)\s*((\b[-a-zA-Z0-9]+(=("[^"]*"|"""
                  r"""'[^']*'|[^ \t\n"'`=<>/]*))?\s*)*)(/?)\s*>""", token)
     if m:
         # This is a start tag
