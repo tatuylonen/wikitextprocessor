@@ -11,6 +11,7 @@ import pickle
 import tempfile
 import traceback
 import collections
+import urllib.parse
 import html.entities
 import multiprocessing
 from .parserfns import (PARSER_FUNCTIONS, call_parser_function, tag_fn)
@@ -143,8 +144,10 @@ class Wtp(object):
         self.cache_file_old = False
         # Add predefined templates
         self.templates["!"] = "&vert;"
-        self.templates["%28%28"] = "&lbrace;&lbrace;"  # {{((}}
-        self.templates["%29%29"] = "&rbrace;&rbrace;"  # {{))}}
+        self.templates[self._canonicalize_template_name("((")] = \
+            "&lbrace;&lbrace;"  # {{((}}
+        self.templates[self._canonicalize_template_name("))")] = \
+            "&rbrace;&rbrace;"  # {{))}}
         # Create cache file or temporary file
         if self.cache_file:
             # Create new cache file
@@ -902,7 +905,7 @@ class Wtp(object):
                     # normal template expansion
                     t = None
                     if template_fn is not None:
-                        t = template_fn(name, ht)
+                        t = template_fn(urllib.parse.unquote(name), ht)
                     if t is None:
                         body = self.templates[name]
                         # XXX optimize by pre-encoding bodies during
@@ -943,7 +946,7 @@ class Wtp(object):
                     # If a post_template_fn has been supplied, call it now
                     # to capture or alter the expansion
                     if post_template_fn is not None:
-                        t2 = post_template_fn(name, ht, t)
+                        t2 = post_template_fn(urllib.parse.unquote(name), ht, t)
                         if t2 is not None:
                             t = t2
 
