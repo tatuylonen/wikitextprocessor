@@ -1092,8 +1092,7 @@ def tag_fn(ctx, token):
         # in preprocessing, but an unmatched start tag may be missed.
         if name == "nowiki":
             if also_end:
-                # XXX mark current link/template/templatearg/parserfn as
-                # nowiki, cause it to be expanded by escaped plaintext
+                text_fn(ctx, MAGIC_NOWIKI_CHAR)
                 return
             ctx.error("unmatched <nowiki>")
             return text_fn(ctx, token)
@@ -1253,7 +1252,7 @@ token_re = re.compile(r"(?m)^(={2,6})\s*(([^=]|=[^=])+?)\s*(={2,6})\s*$|"
                       r"^----+|"
                       r"^[*:;#]+|"
                       r":|"   # sometimes special when not beginning of line
-                      r"""<\s*[-a-zA-Z0-9]+\s*(\b[-a-z0-9]+(=("[^<>"]*"|"""
+                      r"""<\s*[-a-zA-Z0-9]+\s*(\b[-a-zA-Z0-9]+(=("[^<>"]*"|"""
                         r"""'[^<>']*'|[^ \t\n"'`=<>]*))?\s*)*(/\s*)?>|"""
                       r"<\s*/\s*[-a-zA-Z0-9]+\s*>|"
                       r"https?://[a-zA-Z0-9.]+(/[^][{}<>|\s]*)?|"
@@ -1345,7 +1344,7 @@ def process_text(ctx, text):
                 subtitle_start_fn(ctx, token)
             elif token.startswith(">=="):  # Note: > added by tokenizer
                 subtitle_end_fn(ctx, token)
-            elif token.startswith("<") and len(token):
+            elif token.startswith("<"):
                 tag_fn(ctx, token)
             elif token.startswith("----"):
                 hline_fn(ctx, token)
@@ -1364,7 +1363,9 @@ def process_text(ctx, text):
 
 
 def parse_encoded(ctx, text):
-    # XXX comment
+    """Parses the text, which should already have been encoded using magic
+    characters (see Wtp._encode()).  Parses the encoded string and returns
+    the parse tree."""
     assert ctx.title is not None  # ctx.start_page() must have been called
     node = WikiNode(NodeKind.ROOT, 0)
     node.args.append([ctx.title])

@@ -626,7 +626,7 @@ class Wtp(object):
             return "&lsqb;&lsqb;" + "&vert;".join(args) + "&rsqb;&rsqb;"
         return "[[" + "|".join(args) + "]]"
 
-    def expand(self, text, parent=None, pre_only=False,
+    def expand(self, text, parent=None, pre_expand=False,
                template_fn=None, post_template_fn=None,
                templates_to_expand=None,
                expand_parserfns=True, expand_invoke=True, quiet=False):
@@ -634,20 +634,22 @@ class Wtp(object):
         from ``text`` (which is from page with title ``title``).
         ``templates_to_expand`` should be None to expand all
         templates, or a set or dictionary whose keys are those
-        canonicalized template names that should be expanded.
-        ``template_fn``, if given, will be be called as
-        template_fn(name, args_ht) to expand templates; if it is not
-        defined or returns None, the default expansion will be used
-        (it can also be used to capture template arguments).  If
-        ``post_template_fn`` is given, it will be called as
-        post_template_fn(name, args_ht, expanded) and if it returns
-        other than None, its return value will replace the template
-        expansion.  This returns the text with the given templates
-        expanded."""
+        canonicalized template names that should be expanded; if
+        ``pre_expand`` is set to True, then only templates needing
+        pre-expansion before parsing plus those in
+        ``templates_to_expand`` are expanded.  ``template_fn``, if
+        given, will be be called as template_fn(name, args_ht) to
+        expand templates; if it is not defined or returns None, the
+        default expansion will be used (it can also be used to capture
+        template arguments).  If ``post_template_fn`` is given, it
+        will be called as post_template_fn(name, args_ht, expanded)
+        and if it returns other than None, its return value will
+        replace the template expansion.  This returns the text with
+        the given templates expanded."""
         assert isinstance(text, str)
         assert parent is None or (isinstance(parent, (list, tuple)) and
                                   len(parent) == 2)
-        assert pre_only in (True, False)
+        assert pre_expand in (True, False)
         assert template_fn is None or callable(template_fn)
         assert post_template_fn is None or callable(post_template_fn)
         assert isinstance(templates_to_expand, (set, dict, type(None)))
@@ -657,13 +659,17 @@ class Wtp(object):
         # Handle <nowiki> in a preprocessing step
         text = preprocess_text(text)
 
-        # If requesting to only pre_expand, then force templates to be expanded
-        # to be those we detected as requiring pre-expansion
-        if pre_only:
+        # If requesting to pre_expand, then add templates needing pre-expand
+        # to those to be expanded (and don't expand everything).
+        if pre_expand:
             if self.need_pre_expand is None:
                 raise RuntimeError("analyze_templates() must be run first to "
                                    "determine which templates need pre-expand")
-            templates_to_expand = self.need_pre_expand
+            if templates_to_expand is not None:
+                templates_to_expand = (set(templates_to_expand) |
+                                       set(self.need_pre_expand))
+            else:
+                templates_to_expand = self.need_pre_expand
 
         # If templates_to_expand is None, then expand all known templates
         if templates_to_expand is None:
@@ -1015,9 +1021,11 @@ class Wtp(object):
         # of normal expansion, but we do it at the end of parsing)
         if unescape:
             text = html.unescape(text)
-
-        # Remove the special <nowiki /> character
-        text = re.sub(MAGIC_NOWIKI_CHAR, "", text)
+            text = re.sub(MAGIC_NOWIKI_CHAR, "", text)
+        else:
+            # Convert the special <nowiki /> character back to <nowiki />.
+            # This is done at the end of normal expansion.
+            text = re.sub(MAGIC_NOWIKI_CHAR, "<nowiki />", text)
         return text
 
     def process(self, path, page_handler, phase1_only=False):
@@ -1112,22 +1120,32 @@ class Wtp(object):
         rawdata = os.pread(self.tmp_file.fileno(), page_size, ofs)
         return rawdata.decode("utf-8")
 
-    def parse(self, text, pre_expand=False, expand_all=False):
+    def parse(self, text, pre_expand=False, expand_all=False,
+              additional_expand=None):
         """Parses the given text into a parse tree (WikiNode tree).  If
-        ``pre_expand`` is True, then before parsing this will expand those
-        templates that have been detected to potentially influence the parsing
-        results (e.g., they might produce table start or end or table rows).
-        Likewise, if ``expand_all`` is True, this will expand all templates
-        that have definitions (usually all of them).  Parser function calls
-        and Lua macro invocations are expanded if they are inside expanded
-        templates."""
+        ``pre_expand`` is True, then before parsing this will expand
+        those templates that have been detected to potentially
+        influence the parsing results (e.g., they might produce table
+        start or end or table rows).  Likewise, if ``expand_all`` is
+        True, this will expand all templates that have definitions
+        (usually all of them).  If ``additional_expand`` is given, it
+        should be a set of additional templates to expand.  Parser
+        function calls and Lua macro invocations are expanded if they
+        are inside expanded templates."""
+        assert isinstance(text, str)
+        assert pre_expand in (True, False)
+        assert expand_all in (True, False)
+        assert additional_expand is None or isinstance(additional_expand, set)
+
+        # Preprocess.  This may also add some MAGIC_NOWIKI_CHARs.
         text = preprocess_text(text)
 
         # Expand some or all templates in the text as requested
         if expand_all:
             text = self.expand(text)
-        elif pre_expand:
-            text = self.expand(text, pre_only=True)
+        elif pre_expand or additional_expand:
+            text = self.expand(text, pre_expand=pre_expand,
+                               templates_to_expand=additional_expand)
 
         # The Wikitext syntax is not context-free.  Also, tokenizing the
         # syntax properly does not seem to be possible without reference to

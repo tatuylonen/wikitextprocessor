@@ -330,7 +330,7 @@ MORE
         self.parserfn("{{#tag:nowiki|&amp;}}", "&amp;amp&semi;")
 
     def test_tag8(self):
-        self.parserfn("{{{#tag:nowiki}}{!}}", "{{!}}")
+        self.parserfn("{{{#tag:nowiki}}{!}}", "{<nowiki />{!}}")
 
     def test_fullpagename1(self):
         ctx = phase1_to_ctx([])
