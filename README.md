@@ -123,7 +123,7 @@ class Wtp(object):
         its return value (except if num_threads=1, in which case it is run
         in the parent process)
 
-    parse(text, pre_expand=False, expand_all=False, additional_expand=set())
+    parse(text, pre_expand=False, expand_all=False, additional_expand=None)
       - parses the text as Wikitext, returning a parse tree.  If pre_expand
         is True, first expands those templates that affect the overall
         Wikitext syntax.  If expand_all is True, then expands all templates
@@ -131,8 +131,8 @@ class Wtp(object):
         this.
 
     expand(text, pre_expand=False, template_fn=None,
-           templates_to_expand=None,
-           expand_parserfns=True, expand_invoke=True)
+           templates_to_expand=None, expand_parserfns=True,
+           expand_invoke=True)
       - expands templates, parser functions, and Lua macros from
         the text.  start_page() must be called before this.
 
