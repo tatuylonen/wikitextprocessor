@@ -310,6 +310,16 @@ def _parser_pop(ctx, warn_unclosed):
                       trace="started on line {}, detected on line {}"
                       .format(node.loc, ctx.linenum))
 
+    # When popping BOLD and ITALIC nodes, if the node has no children,
+    # just remove the node from it's parent's children.  We may otherwise
+    # generate spurious empty BOLD and ITALIC nodes when closing them
+    # out-of-order (which happens always with '''''bolditalic''''').
+    if node.kind in (NodeKind.BOLD, NodeKind.ITALIC) and not node.children:
+        ctx.parser_stack.pop()
+        assert ctx.parser_stack[-1].children[-1].kind == node.kind
+        ctx.parser_stack[-1].children.pop()
+        return
+
     # If the node has arguments, move remamining children to be the last
     # argument
     if node.kind in HAVE_ARGS_KINDS:
@@ -478,6 +488,106 @@ def subtitle_end_fn(ctx, token):
     node.children = []
 
 
+def italic_fn(ctx, token):
+    """Processes an italic start/end token ('')."""
+    if ctx.pre_parse:
+        return text_fn(ctx, token)
+
+    if not _parser_have(ctx, NodeKind.ITALIC):
+        # Push new formatting node
+        _parser_push(ctx, NodeKind.ITALIC)
+        return
+
+    # Pop the italic.  If there is an intervening BOLD, push it afterwards
+    # to allow closing them in either order.
+    push_bold = False
+    while True:
+        node = ctx.parser_stack[-1]
+        if node.kind == NodeKind.ITALIC:
+            _parser_pop(ctx, False)
+            break
+        if node.kind == NodeKind.BOLD:
+            push_bold = True
+        _parser_pop(ctx, False)
+    if push_bold:
+        _parser_push(ctx, NodeKind.BOLD)
+
+
+def bold_fn(ctx, token):
+    """Processes a bold start/end token (''')."""
+    if ctx.pre_parse:
+        return text_fn(ctx, token)
+
+    if (ctx.parser_stack[-1].kind == NodeKind.ITALIC and
+        not _parser_have(ctx, NodeKind.BOLD) and
+        (not ctx.parser_stack[-1].children or
+         not isinstance(ctx.parser_stack[-1].children[-1], str) or
+         not ctx.parser_stack[-1].children[-1][-1].isspace())):
+        # It is relatively common to use italic in enPR in Wiktionary,
+        # immediately followed by a single quote.  Treat this as such.
+        # In this use, ''' always seems to be surrounded by non-space
+        # characters.  What a kludge we have here.
+        _parser_pop(ctx, True)
+        text_fn(ctx, "'")
+        return
+
+    if not _parser_have(ctx, NodeKind.BOLD):
+        # Push new formatting node
+        _parser_push(ctx, NodeKind.BOLD)
+        return
+
+    # Pop the bold.  If there is an intervening ITALIC, push it afterwards
+    # to allow closing them in either order.
+    push_italic = False
+    while True:
+        node = ctx.parser_stack[-1]
+        if node.kind == NodeKind.BOLD:
+            _parser_pop(ctx, False)
+            break
+        if node.kind == NodeKind.ITALIC:
+            push_italic = True
+        _parser_pop(ctx, False)
+    if push_italic:
+        _parser_push(ctx, NodeKind.ITALIC)
+
+
+def bolditalic_fn(ctx, token):
+    """Processes a combined bold-italic token (''''')."""
+    if ctx.pre_parse:
+        return text_fn(ctx, token)
+
+    def pop_until():
+        if (_parser_have(ctx, NodeKind.BOLD) or
+            _parser_have(ctx, NodeKind.ITALIC)):
+            while True:
+                node = ctx.parser_stack[-1]
+                if node.kind == NodeKind.BOLD or node.kind == NodeKind.ITALIC:
+                    break
+                _parser_pop(ctx, True)
+
+    pop_until()
+    if ctx.parser_stack[-1].kind == NodeKind.ITALIC:
+        _parser_pop(ctx, False)
+        pop_until()
+        if ctx.parser_stack[-1].kind == NodeKind.BOLD:
+            _parser_pop(ctx, False)
+            return
+        _parser_push(ctx, NodeKind.BOLD)
+        return
+
+    if ctx.parser_stack[-1].kind == NodeKind.BOLD:
+        _parser_pop(ctx, False)
+        pop_until()
+        if ctx.parser_stack[-1].kind == NodeKind.ITALIC:
+            _parser_pop(ctx, False)
+            return
+        _parser_push(ctx, NodeKind.ITALIC)
+        return
+
+    _parser_push(ctx, NodeKind.ITALIC)
+    _parser_push(ctx, NodeKind.BOLD)
+
+
 def ilink_start_fn(ctx, token):
     """Processes an internal link start token "[["."""
     if ctx.pre_parse:
@@ -588,8 +698,7 @@ def magic_fn(ctx, token):
 
     elif kind == "L":
         if nowiki:
-            process_text(ctx, "&lsqb;&lsqb;" + "&vert;".join(args) +
-                         "&rsqb;&rsqb;")
+            process_text(ctx, "&lsqb;&lsqb;" + args[0] + "&rsqb;&rsqb;")
             return
         # Link to another page
         _parser_push(ctx, NodeKind.LINK)
@@ -608,45 +717,6 @@ def magic_fn(ctx, token):
                 _parser_pop(ctx, False)
                 break
             _parser_pop(ctx, True)
-
-    elif kind == "B":
-        if nowiki:
-            process_text(ctx, "&apos;&apos;&apos;" + "&vert;".join(args) +
-                         "&apos;&apos;&apos;")
-            return
-        _parser_push(ctx, NodeKind.BOLD)
-        process_text(ctx, args[0])
-        for arg in args[1:]:
-            vbar_fn(ctx, "|")
-            process_text(ctx, arg)
-        while _parser_have(ctx, NodeKind.BOLD):
-            node = ctx.parser_stack[-1]
-            if node.kind == NodeKind.ROOT:
-                break
-            if node.kind == NodeKind.BOLD:
-                _parser_pop(ctx, False)
-                break
-            _parser_pop(ctx, True)
-
-    elif kind == "I":
-        if nowiki:
-            process_text(ctx, "&apos;&apos;" + "&vert;".join(args) +
-                         "&apos;&apos;")
-            return
-        _parser_push(ctx, NodeKind.ITALIC)
-        process_text(ctx, args[0])
-        for arg in args[1:]:
-            vbar_fn(ctx, "|")
-            process_text(ctx, arg)
-        while _parser_have(ctx, NodeKind.ITALIC):
-            node = ctx.parser_stack[-1]
-            if node.kind == NodeKind.ROOT:
-                break
-            if node.kind == NodeKind.ITALIC:
-                _parser_pop(ctx, False)
-                break
-            _parser_pop(ctx, True)
-
     else:
         self.error("magic_fn: unsupported cookie kind {!r}"
                    .format(kind))
@@ -1201,6 +1271,9 @@ list_prefix_re = re.compile(r"[*:;#]+")
 # Dictionary mapping fixed form tokens to their handler functions.
 # Tokens that have variable form are handled in the code in token_iter().
 tokenops = {
+    "'''": bold_fn,
+    "''": italic_fn,
+    "'''''": bolditalic_fn,
     "[": elink_start_fn,
     "]": elink_end_fn,
     "{|": table_start_fn,
