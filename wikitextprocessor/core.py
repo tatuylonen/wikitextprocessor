@@ -225,7 +225,8 @@ class Wtp(object):
     def _save_value(self, kind, args, nowiki):
         """Saves a value of a particular kind and returns a unique magic
         cookie for it."""
-        assert kind in ("T", "A", "L")  # Template/parserfn, arg, link
+        # kind values: Template/parserfn, arg, link, italic, bold
+        assert kind in ("T", "A", "L", "I", "B")
         assert isinstance(args, (list, tuple))
         assert nowiki in (True, False)
         # print("save_value", kind, args, nowiki)
@@ -268,6 +269,20 @@ class Wtp(object):
             args = m.group(1).split("|")
             return self._save_value("L", args, nowiki)
 
+        def repl_bold(m):
+            """Replacement function for bold '''text'''."""
+            nowiki = m.group(0).find(MAGIC_NOWIKI_CHAR) >= 0
+            args = [m.group(1)]
+            return self._save_value("B", args, nowiki)
+
+        def repl_italic(m):
+            """Replacement function for italic ''text''."""
+            nowiki = m.group(0).find(MAGIC_NOWIKI_CHAR) >= 0
+            prefix = m.group(1)
+            assert len(prefix) <= 1
+            args = [m.group(2)]
+            return prefix + self._save_value("I", args, nowiki)
+
         # As a preprocessing step, remove comments from the text
         text = re.sub(r"(?s)<!\s*--.*?--\s*>", "", text)
 
@@ -280,40 +295,47 @@ class Wtp(object):
             # no more matches, because otherwise we could encode the two
             # innermost braces as a template transclusion.
             while True:
+                while True:
+                    prev2 = text
+                    # Encode bold
+                    text = re.sub(r"'" + MAGIC_NOWIKI_CHAR +
+                                  r"?'" + MAGIC_NOWIKI_CHAR +
+                                  r"?'(([^][{}']|[^][{}']'[^][{}']|"
+                                  r"\[([^][{}']|[^][{}']'[^][{}'])*\])+)'" +
+                                  MAGIC_NOWIKI_CHAR + r"?'" +
+                                  MAGIC_NOWIKI_CHAR + r"?'",
+                                  repl_bold, text)
+                    # Encode italic.  This needs to be careful to not match
+                    # bold (we cannot rely on it having been handled above).
+                    # Consider, e.g., "''' ''bold italic test'''''".  Note
+                    # also that we don't allow apostrophe to preceed, but we
+                    # do allow it to follow.  See test_parser.py:test_italic2()
+                    # for more discussion.
+                    text = re.sub(r"(^|[^'])'" + MAGIC_NOWIKI_CHAR +
+                                  r"?'(([^][{}']|[^][{}']'[^][{}']|"
+                                  r"\[([^][{}']|'[^][{}'])*\])+)'" +
+                                  MAGIC_NOWIKI_CHAR + r"?'",
+                                  repl_italic, text)
+                    if text == prev2:
+                        break
                 prev2 = text
-                # Encode links.
+                # Encode links
                 text = re.sub(r"\[" + MAGIC_NOWIKI_CHAR +
-                              r"?\[(([^][{}]|\[[^][{}]*\])+)\]" +
-                              # XXXremove: r"?\[([^][{}]*)\]" +
-                              # XXXremove: r"?\[(([^][{}]|\[[^]]*\])+)\]" +
+                              r"?\[(([^][{}]|\[([^][{}])*\])+)\]" +
                               MAGIC_NOWIKI_CHAR + r"?\]",
                               repl_link, text)
-                # Encode templates
+                # Encode template arguments
                 text = re.sub(r"(?s)\{" + MAGIC_NOWIKI_CHAR +
                               r"?\{" + MAGIC_NOWIKI_CHAR +
-                              r"?\{([^{}]*?)\}" +
+                              r"?\{(([^{}]|\[([^][{}])*\])+)\}" +
                               MAGIC_NOWIKI_CHAR + r"?\}" +
                               MAGIC_NOWIKI_CHAR + r"?\}",
                               repl_arg, text)
                 if text == prev2:
                     break
-            # Handle template arguments that were INCORRECTLY closed by
-            # a double brace instead of a triple brace.  There seem to be
-            # annoyingly common.
-            # while True:
-            #     prev2 = text
-            #     # Note: intentionally only two closing braces here!
-            #     text = re.sub(r"(?s)\{" + MAGIC_NOWIKI_CHAR +
-            #                   r"?\{" + MAGIC_NOWIKI_CHAR +
-            #                   r"?\{([^{}]*?)\}" +
-            #                   MAGIC_NOWIKI_CHAR + r"?\}",
-            #                   repl_arg, text)
-            #     # XXX should report error/warning, need separate repl function
-            #     if text == prev2:
-            #         break
             # Encode templates
             text = re.sub(r"(?s)\{" + MAGIC_NOWIKI_CHAR +
-                          r"?\{(([^{}]|\}[^{}])+?)\}" +
+                          r"?\{(([^{}]|\}[^][{}'])+?)\}" +
                           MAGIC_NOWIKI_CHAR + r"?\}",
                           repl_templ, text)
             # We keep looping until there is no change during the iteration
@@ -626,6 +648,19 @@ class Wtp(object):
             return "&lsqb;&lsqb;" + "&vert;".join(args) + "&rsqb;&rsqb;"
         return "[[" + "|".join(args) + "]]"
 
+    def _unexpanded_bold(self, args, nowiki):
+        """Formats a bold typeface."""
+        if nowiki:
+            return ("&apos;&apos;&apos;" + "&vert;".join(args) +
+                    "&apos;&apos;&apos;")
+        return "'''" + "|".join(args) + "'''"
+
+    def _unexpanded_italic(self, args, nowiki):
+        """Formats a italic typeface."""
+        if nowiki:
+            return "&apos;&apos;" + "&vert;".join(args) + "&apos;&apos;"
+        return "''" + "|".join(args) + "''"
+
     def expand(self, text, parent=None, pre_expand=False,
                template_fn=None, post_template_fn=None,
                templates_to_expand=None,
@@ -755,6 +790,18 @@ class Wtp(object):
                         new_args = list(expand_args(x, argmap)
                                         for x in args)
                         parts.append(self._unexpanded_link(new_args, nowiki))
+                        continue
+                    if kind == "B":
+                        # Bold
+                        new_args = list(expand_args(x, argmap)
+                                        for x in args)
+                        parts.append(self._unexpanded_bold(new_args, nowiki))
+                        continue
+                    if kind == "I":
+                        # Italic
+                        new_args = list(expand_args(x, argmap)
+                                        for x in args)
+                        parts.append(self._unexpanded_italic(new_args, nowiki))
                         continue
                     self.error("expand_arg: unsupported cookie kind {!r} in {}"
                                .format(kind, m.group(0)))
@@ -972,6 +1019,26 @@ class Wtp(object):
                                         for x in args)
                         self.expand_stack.pop()
                         parts.append(self._unexpanded_link(new_args, nowiki))
+                elif kind == "B":
+                    if nowiki:
+                        parts.append(self._unexpanded_bold(args, nowiki))
+                    else:
+                        self.expand_stack.append("BOLD")
+                        new_args = list(expand_recurse(x, parent,
+                                                       templates_to_expand)
+                                        for x in args)
+                        self.expand_stack.pop()
+                        parts.append(self._unexpanded_bold(new_args, nowiki))
+                elif kind == "I":
+                    if nowiki:
+                        parts.append(self._unexpanded_italic(args, nowiki))
+                    else:
+                        self.expand_stack.append("ITALIC")
+                        new_args = list(expand_recurse(x, parent,
+                                                       templates_to_expand)
+                                        for x in args)
+                        self.expand_stack.pop()
+                        parts.append(self._unexpanded_italic(new_args, nowiki))
                 else:
                     self.error("expand: unsupported cookie kind {!r} in {}"
                                .format(kind, m.group(0)))
@@ -1004,6 +1071,10 @@ class Wtp(object):
                 return self._unexpanded_arg(args, nowiki)
             if kind == "L":
                 return self._unexpanded_link(args, nowiki)
+            if kind == "B":
+                return self._unexpanded_bold(args, nowiki)
+            if kind == "I":
+                return self._unexpanded_italic(args, nowiki)
             self.error("magic_repl: unsupported cookie kind {!r}"
                        .format(kind))
             return ""

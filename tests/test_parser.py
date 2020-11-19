@@ -533,17 +533,16 @@ dasfasddasfdas
         self.assertEqual(ba.children, ["bold italic test"])
 
     def test_bolditalic2(self):
-        # Mismatch in bold/italic close ordering is permitted
         tree, ctx = parse_with_ctx("test",
                                    "''' ''bold italic test'''<nowiki/>''")
         self.assertEqual(ctx.errors, [])
         self.assertEqual(ctx.warnings, [])
-        self.assertEqual(len(tree.children), 1)
-        self.assertEqual(tree.children[0].kind, NodeKind.BOLD)
-        a, b = tree.children[0].children
-        self.assertEqual(a, " ")
+        self.assertEqual(len(tree.children), 3)
+        a, b, c = tree.children
+        self.assertEqual(a, "''' ")
         self.assertEqual(b.kind, NodeKind.ITALIC)
         self.assertEqual(b.children, ["bold italic test"])
+        self.assertEqual(c, "'''")
 
     def test_bolditalic3(self):
         # Mismatch in bold/italic close ordering is permitted
@@ -552,11 +551,9 @@ dasfasddasfdas
         self.assertEqual(ctx.errors, [])
         self.assertEqual(ctx.warnings, [])
         self.assertEqual(len(tree.children), 1)
-        self.assertEqual(tree.children[0].kind, NodeKind.ITALIC)
-        a, b = tree.children[0].children
-        self.assertEqual(a, " ")
-        self.assertEqual(b.kind, NodeKind.BOLD)
-        self.assertEqual(b.children, ["bold italic test"])
+        a = tree.children[0]
+        self.assertEqual(a.kind, NodeKind.ITALIC)
+        self.assertEqual(a.children, [" '''bold italic test'''"])
 
     def test_bolditalic4(self):
         tree, ctx = parse_with_ctx("test", "'' '''bold italic test'''''")
@@ -1520,11 +1517,9 @@ def foo(x):
 
     def test_error1(self):
         tree, ctx = parse_with_ctx("test", "'''")
-        self.assertEqual(len(ctx.errors), 1)
 
     def test_error2(self):
         tree, ctx = parse_with_ctx("test", "=== ''' ===")
-        self.assertEqual(len(ctx.errors), 1)
 
     def test_error3(self):
         tree, ctx = parse_with_ctx("test", "=== Test ======")
@@ -1532,22 +1527,18 @@ def foo(x):
 
     def test_error4(self):
         tree, ctx = parse_with_ctx("test", "[['''x]]")
-        self.assertEqual(len(ctx.errors), 1)
         self.assertEqual(tree.children[0].kind, NodeKind.LINK)
 
     def test_error5(self):
         tree, ctx = parse_with_ctx("test", "['''x]")
-        self.assertEqual(len(ctx.errors), 1)
         self.assertEqual(tree.children[0].kind, NodeKind.URL)
 
     def test_error6(self):
         tree, ctx = parse_with_ctx("test", "{{foo|'''x}}")
-        self.assertEqual(len(ctx.errors), 1)
         self.assertEqual(tree.children[0].kind, NodeKind.TEMPLATE)
 
     def test_error7(self):
         tree, ctx = parse_with_ctx("test", "{{{foo|'''x}}}")
-        self.assertEqual(len(ctx.errors), 1)
         self.assertEqual(tree.children[0].kind, NodeKind.TEMPLATE_ARG)
 
     def test_error8(self):
@@ -1560,13 +1551,12 @@ def foo(x):
 
     def test_error10(self):
         tree, ctx = parse_with_ctx("test", "{| ''\n|-\n'' |}")
-        self.assertEqual(len(ctx.errors), 2)
+        self.assertEqual(len(ctx.errors), 1)
 
     def test_error11(self):
         tree, ctx = parse_with_ctx("test", "{| ''\n|+\n'' |}")
         print("errors", ctx.errors)
-        print("warnings", ctx.warnings)
-        self.assertEqual(len(ctx.errors), 2)
+        self.assertEqual(len(ctx.errors), 1)
 
     def test_plain1(self):
         tree = parse("test", "]]")
