@@ -32,6 +32,7 @@ PAIRED_HTML_TAGS = set(k for k, v in ALLOWED_HTML_TAGS.items()
 # pickleable.
 _global_ctx = None
 _global_page_handler = None
+_global_page_autoload = True
 
 def phase2_page_handler(dt):
     """Helper function for calling the Phase2 page handler (see
@@ -40,11 +41,15 @@ def phase2_page_handler(dt):
     re-entrant (i.e., cannot be called safely from multiple threads or
     recursively)"""
     ctx = _global_ctx
+    autoload = _global_page_autoload
     model, title = dt
     ctx.start_page(title)
-    data = ctx.read_by_title(title)
-    try:
+    if autoload:
+        data = ctx.read_by_title(title)
         assert isinstance(data, str)
+    else:
+        data = None
+    try:
         ret = _global_page_handler(model, title, data)
         return True, ret
     except Exception as e:
@@ -84,6 +89,8 @@ class Wtp(object):
         "title",         # current page title
         "tmp_file",	 # Temporary file used to store templates and pages
         "tmp_ofs",	 # Next write offset
+        "transient_pages",     # Unsaved pages added by extraction application
+        "transient_templates", # Unsaved templates added by application
         "warnings",	 # List of warning messages (cleared for each new page)
         # Data for parsing
         "beginning_of_line", # Parser at beginning of line
@@ -106,6 +113,8 @@ class Wtp(object):
         self.rev_ht = {}
         self.expand_stack = []
         self.num_threads = num_threads
+        self.transient_pages = {}
+        self.transient_templates = {}
         # Some predefined templates
         self.need_pre_expand = None
 
@@ -356,13 +365,13 @@ class Wtp(object):
         if False:
            m = re.search(r"(?is)<\s*(/\s*)?noinclude\s*(/\s*)?>", text)
            if m:
-               self.error("unbalanced {}".format(m.group(0)))
+               self.warning("unbalanced {}".format(m.group(0)))
            m = re.search(r"(?is)<\s*(/\s*)?onlyinclude\s*(/\s*)?>", text)
            if m:
-               self.error("unbalanced {}".format(m.group(0)))
+               self.warning("unbalanced {}".format(m.group(0)))
         return text
 
-    def add_page(self, model, title, text):
+    def add_page(self, model, title, text, transient=False):
         """Collects information about the page.  For templates and modules,
         this keeps the content in memory.  For other pages, this saves the
         content in a temporary file so that it can be accessed later.  There
@@ -373,10 +382,24 @@ class Wtp(object):
         only need to decompress and parse the dump file once.  ``model``
         is "wikitext" for normal pages, "redirect" for redirects (in which
         case ``text`` is the page pointed to), or "Scribunto" for Lua code;
-        other values may also be encountered."""
+        other values may also be encountered.  If ``transient`` is True, then
+        this page will not be saved but will replace any saved page.  This can
+        be used, for example, to add Lua code for data extraction, or for
+        debugging Lua modules."""
         assert isinstance(model, str)
         assert isinstance(title, str)
         assert isinstance(text, str)
+        assert transient in (True, False)
+
+        if transient:
+            self.transient_pages[title] = (title, model, text)
+            if (title.startswith("Template:") and
+                not title.endswith("/documentation") and
+                not title.endswith("/testcases")):
+                name = self._canonicalize_template_name(title)
+                body = self._template_to_body(title, text)
+                self.transient_templates[name] = body
+            return
 
         # If we have previously analyzed pages and this is called again,
         # reset all previously saved pages (e.g., in case we are to update
@@ -671,9 +694,16 @@ class Wtp(object):
             else:
                 templates_to_expand = self.need_pre_expand
 
+        # Create set or dict of all defined templates
+        if self.transient_templates:
+            all_templates = (set(self.templates) |
+                             set(self.transient_templates))
+        else:
+            all_templates = self.templates
+
         # If templates_to_expand is None, then expand all known templates
         if templates_to_expand is None:
-            templates_to_expand = self.templates
+            templates_to_expand = all_templates
 
         def invoke_fn(invoke_args, expander, parent):
             """This is called to expand a #invoke parser function."""
@@ -732,7 +762,7 @@ class Wtp(object):
                                          .format(len(args), args))
                         self.expand_stack.append("ARG-NAME")
                         k = expand_recurse(expand_args(args[0], argmap),
-                                           parent, self.templates).strip()
+                                           parent, all_templates).strip()
                         self.expand_stack.pop()
                         if k.isdigit():
                             k = int(k)
@@ -770,7 +800,7 @@ class Wtp(object):
                 # Call parser function
                 self.expand_stack.append(fn_name)
                 expander = lambda arg: expand_recurse(arg, parent,
-                                                      self.templates)
+                                                      all_templates)
                 if fn_name == "#invoke":
                     if not expand_invoke:
                         return "{{#invoke:" + "|".join(args) + "}}"
@@ -855,11 +885,13 @@ class Wtp(object):
                     name = self._canonicalize_template_name(name)
 
                     # Check for undefined templates
-                    if name not in self.templates:
+                    if name not in all_templates:
                         if not quiet:
                             self.warning("undefined template {!r}"
                                          .format(tname))
-                        parts.append(self._unexpanded_template(args, nowiki))
+                        parts.append('<strong class="error">Template:{}'
+                                     '</strong>'
+                                     .format(html.escape(name)))
                         continue
 
                     # If this template is not one of those we want to expand,
@@ -893,7 +925,7 @@ class Wtp(object):
                                     num = k + 1
                             else:
                                 self.expand_stack.append("ARGNAME")
-                                k = expand_recurse(k, parent, self.templates)
+                                k = expand_recurse(k, parent, all_templates)
                                 self.expand_stack.pop()
                         else:
                             k = num
@@ -903,7 +935,7 @@ class Wtp(object):
                         # calls to #invoke within a template argument (the
                         # parent frame would be different).
                         self.expand_stack.append("ARGVAL-{}".format(k))
-                        arg = expand_recurse(arg, parent, self.templates)
+                        arg = expand_recurse(arg, parent, all_templates)
                         self.expand_stack.pop()
                         ht[k] = arg
 
@@ -913,7 +945,10 @@ class Wtp(object):
                     if template_fn is not None:
                         t = template_fn(urllib.parse.unquote(name), ht)
                     if t is None:
-                        body = self.templates[name]
+                        if name in self.transient_templates:
+                            body = self.transient_templates[body]
+                        else:
+                            body = self.templates[name]
                         # XXX optimize by pre-encoding bodies during
                         # preprocessing
                         # (Each template is typically used many times)
@@ -1052,17 +1087,23 @@ class Wtp(object):
         # Reprocess all the pages that we captured in Phase 1
         return self.reprocess(page_handler)
 
-    def reprocess(self, page_handler):
-        """Reprocess all pages captured by self.process() or explicit calls
-        to self.add_page().  This calls page_handler(model, title, text)
-        for each page, and returns of list of their return values (ignoring
-        None values).  This may call page_handler in parallel, and thus
-        page_handler should not attempt to save anything between calls and
-        should not modify global data.  This function is not re-entrant."""
+    def reprocess(self, page_handler, autoload=True):
+        """Reprocess all pages captured by self.process() or explicit calls to
+        self.add_page().  This calls page_handler(model, title, text)
+        for each page, and returns of list of their return values
+        (ignoring None values).  If ``autoload`` is set to False, then
+        ``text`` will be None, and the page handler must use
+        self.read_by_title(title) to read the page contents (this may be
+        useful for scanning the cache for just a few pages quickly).  This may
+        call page_handler in parallel, and thus page_handler should
+        not attempt to save anything between calls and should not
+        modify global data.  This function is not re-entrant."""
         global _global_ctx
         global _global_page_handler
+        global _global_page_autoload
         _global_ctx = self
         _global_page_handler = page_handler
+        _global_page_autoload = autoload
 
         if self.num_threads == 1:
             # Single-threaded version (without subprocessing).  This is
@@ -1103,6 +1144,8 @@ class Wtp(object):
         exist."""
         assert isinstance(title, str)
         # XXX should we canonicalize title?
+        if title in self.transient_pages:
+            return True
         return title in self.page_contents
 
     def read_by_title(self, title):
@@ -1110,6 +1153,9 @@ class Wtp(object):
         not exist."""
         assert isinstance(title, str)
         # XXX should we canonicalize title?
+        if title in self.transient_pages:
+            title, model, text = self.transient_pages[title]
+            return text
         if title not in self.page_contents:
             return None
         # The page seems to exist

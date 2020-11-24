@@ -68,11 +68,13 @@ return export
 
     def test_basic4(self):
         self.parserfn("Some {{unknown template}} x",
-                      "Some {{unknown template}} x")
+                      'Some <strong class="error">Template:unknown template'
+                      '</strong> x')
 
     def test_basic5(self):
         self.parserfn("Some {{unknown template|arg1||arg3}}",
-                      "Some {{unknown template|arg1||arg3}}")
+                      'Some <strong class="error">Template:unknown template'
+                      '</strong>')
 
     def test_basic6(self):
         self.parserfn("Some [[link text]] x", "Some [[link text]] x")
@@ -2770,8 +2772,18 @@ return export
 
     def test_sandbox1(self):
         # For security, Python should not be callable from Lua modules
-        self.scribunto("", r"""
-        return python.eval("1")""")
+        body = r"""return python.eval("1")"""
+        ctx = phase1_to_ctx([
+            ["Scribunto", "Module:testmod", r"""
+local export = {}
+function export.testfn(frame)
+""" + body + """
+end
+return export
+"""]])
+        ctx.start_page("Tt")
+        ret = ctx.expand("{{#invoke:testmod|testfn}}")
+        assert ret.startswith('<strong class="error">')
 
     def test_sandbox2(self):
         # For security, dangerous Lua functions should not be callable from

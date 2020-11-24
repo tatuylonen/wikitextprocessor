@@ -63,7 +63,9 @@ local function deepcopy(obj, visited)
 end
 
 function mw.clone(v)
-   return deepcopy(v, {})
+   local ret = deepcopy(v, {})
+   -- print("mw_clone: " .. tostring(ret))
+   return ret
 end
 
 function mw.dumpObject(obj)

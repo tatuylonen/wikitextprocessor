@@ -463,4 +463,5 @@ def call_lua_sandbox(ctx, invoke_args, expander, parent):
         ctx.error("LUA error in #invoke {}"
                   .format(invoke_args),
                   trace=trace)
-    return ""
+    return '<strong class="error">{}</strong>'.format(
+        html.escape(text))

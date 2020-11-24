@@ -20,8 +20,42 @@ local mw_text = {
    trim = scribunto_mwtext.trim
    -- truncate
    -- unstripNoWiki
-   -- unstrip
+   -- unstrip (see below)
 }
+
+function mw_text.jsonDecode(s, flags)
+   print("XXX mw_text.jsonDecode")
+   return nil
+end
+
+function mw_text.jsonEncode(value, flags)
+   print("XXX mw_text.jsonEncode")
+   return nil
+end
+
+function mw_text.killMarkers(s)
+   print("XXX mw_text.killMarkers")
+   return nil
+end
+
+function mw_text.tag(name, attrs, content)
+   print("XXX mw_text.tag")
+   return nil
+end
+
+function mw_text.truncate(text, length, ellipsis, adjustLength)
+   print("XXX mw_text.truncate")
+   return nil
+end
+
+function mw_text.unstripNoWiki(s)
+   print("XXX mw_text.unstrupNoWiki")
+   return nil
+end
+
+function mw_text.unstrip(s)
+   return mw.text.killMarkers(mw.text.untripNoWiki(s))
+end
 
 function mw_text.listToText(list, separator, conjunction)
    -- XXX default separators should be language-dependent

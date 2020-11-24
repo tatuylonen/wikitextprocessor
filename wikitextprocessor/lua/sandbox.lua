@@ -10,6 +10,7 @@ python_loader = nil
 -- This function loads new a new module, whether built-in or defined in the
 -- data file.
 function new_loader(modname)
+   --print("lua new_loader: " .. modname)
    local content = nil
    if python_loader ~= nil then
       content = python_loader(modname)

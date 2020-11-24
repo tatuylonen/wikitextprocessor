@@ -297,18 +297,18 @@ def _parser_pop(ctx, warn_unclosed):
     # Warn about unclosed syntaxes.
     if warn_unclosed and node.kind in MUST_CLOSE_KINDS:
         if node.kind == NodeKind.HTML:
-            ctx.error("HTML tag <{}> not properly closed".format(node.args),
-                      trace="started on line {}, detected on line {}"
-                      .format(node.loc, ctx.linenum))
+            ctx.warning("HTML tag <{}> not properly closed".format(node.args),
+                        trace="started on line {}, detected on line {}"
+                        .format(node.loc, ctx.linenum))
         elif node.kind == NodeKind.PARSER_FN:
-            ctx.error("parser function {!r} not properly closed"
-                      .format(node.args[0]),
-                      trace="started on line {}, detected on line {}"
-                      .format(node.loc, ctx.linenum))
+            ctx.warning("parser function {!r} not properly closed"
+                        .format(node.args[0]),
+                        trace="started on line {}, detected on line {}"
+                        .format(node.loc, ctx.linenum))
         else:
-            ctx.error("{} not properly closed".format(node.kind.name),
-                      trace="started on line {}, detected on line {}"
-                      .format(node.loc, ctx.linenum))
+            ctx.warning("{} not properly closed".format(node.kind.name),
+                        trace="started on line {}, detected on line {}"
+                        .format(node.loc, ctx.linenum))
 
     # When popping BOLD and ITALIC nodes, if the node has no children,
     # just remove the node from it's parent's children.  We may otherwise
@@ -395,6 +395,11 @@ def text_fn(ctx, token):
                     not token.startswith(" ") and not token.isspace()):
                     _parser_pop(ctx, False)
                     continue
+            elif node.kind in (NodeKind.BOLD, NodeKind.ITALIC):
+                _parser_merge_str_children(ctx)
+                ctx.warning("{} not properly closed on the same line"
+                            .format(node.kind.name))
+                _parser_pop(ctx, False)
             break
 
         # Spaces at the beginning of a line indicate preformatted text
@@ -482,7 +487,7 @@ def subtitle_end_fn(ctx, token):
     # Move children of the subtitle node to be its first argument.
     node = ctx.parser_stack[-1]
     if node.kind != kind:
-        ctx.error("subtitle start and end markers level mismatch")
+        ctx.warning("subtitle start and end markers level mismatch")
     _parser_merge_str_children(ctx)
     node.args.append(node.children)
     node.children = []
@@ -517,19 +522,6 @@ def bold_fn(ctx, token):
     """Processes a bold start/end token (''')."""
     if ctx.pre_parse:
         return text_fn(ctx, token)
-
-    if (ctx.parser_stack[-1].kind == NodeKind.ITALIC and
-        not _parser_have(ctx, NodeKind.BOLD) and
-        (not ctx.parser_stack[-1].children or
-         not isinstance(ctx.parser_stack[-1].children[-1], str) or
-         not ctx.parser_stack[-1].children[-1][-1].isspace())):
-        # It is relatively common to use italic in enPR in Wiktionary,
-        # immediately followed by a single quote.  Treat this as such.
-        # In this use, ''' always seems to be surrounded by non-space
-        # characters.  What a kludge we have here.
-        _parser_pop(ctx, True)
-        text_fn(ctx, "'")
-        return
 
     if not _parser_have(ctx, NodeKind.BOLD):
         # Push new formatting node
@@ -1094,7 +1086,7 @@ def tag_fn(ctx, token):
             if also_end:
                 text_fn(ctx, MAGIC_NOWIKI_CHAR)
                 return
-            ctx.error("unmatched <nowiki>")
+            ctx.warning("unmatched <nowiki>")
             return text_fn(ctx, token)
 
         # Handle <pre> start tag
@@ -1159,7 +1151,7 @@ def tag_fn(ctx, token):
 
     # We should never see </section>
     if name == "section":
-        ctx.error("unexpected </section>")
+        ctx.warning("unexpected </section>")
         return
 
     # Check for </pre> end tag
@@ -1168,7 +1160,7 @@ def tag_fn(ctx, token):
         ctx.pre_parse = False
         node = ctx.parser_stack[-1]
         if node.kind != NodeKind.PRE:
-            ctx.error("unexpected </pre>")
+            ctx.warning("unexpected </pre>")
             return text_fn(ctx, token)
         _parser_pop(ctx, False)
         return
@@ -1197,7 +1189,7 @@ def tag_fn(ctx, token):
             node.args = name
             _parser_pop(ctx, False)
             return
-        ctx.error("no corresponding start tag found for {}".format(token))
+        ctx.warning("no corresponding start tag found for {}".format(token))
         return
 
     # Close nodes until we close the corresponding start tag
@@ -1295,26 +1287,117 @@ for x in MAGIC_WORDS:
     tokenops[x] = magicword_fn
 
 
+def bold_follows(parts, i):
+    """Checks if there is a bold (''') in parts after parts[i].  We allow
+    intervening italics ('')."""
+    parts = parts[i + 1:]
+    for p in parts:
+        if not p.startswith("''"):
+            continue
+        if p.startswith("'''"):
+            return True
+    return False
+
+
 def token_iter(ctx, text):
     """Tokenizes MediaWiki page content.  This yields (is_token, text) for
-    each token.  ``is_token`` is False for text and True for other tokens."""
+    each token.  ``is_token`` is False for text and True for other tokens.
+    Wikitext bold and italic are interpreted WITHIN A SINGLE LINE.  It seems
+    impossible to always disambiguate them without looking at what follows
+    on the same line."""
     assert isinstance(text, str)
-    pos = 0
-    for m in re.finditer(token_re, text):
-        start = m.start()
-        if pos != start:
-            yield False, text[pos:start]
-        pos = m.end()
-        token = m.group(0)
-        if token.startswith("=="):
-            yield True, "<" + m.group(1)
-            for x in token_iter(ctx, m.group(2)):
-                yield x
-            yield True, ">" + m.group(4)
-        else:
-            yield True, token
-    if pos != len(text):
-        yield False, text[pos:]
+    lines = re.split(r"(\n+)", text)  # Lines and separators
+    parts_re = re.compile(r"(''+)")
+    for line in lines:
+        parts = re.split(parts_re, line)
+        state = 0  # 1=in italic 2=in bold 3=in both
+        for i, part in enumerate(parts):
+            if part.startswith("''"):
+                # This is a bold/italic part.  Scan the rest of the line
+                # to determine how it should be interpreted if there are
+                # more than two apostrophes.
+                if part.startswith("'''''"):
+                    if state == 1:  # in italic
+                        yield True, "''"
+                        part = part[2:]
+                        state = 0
+                    if state == 2:  # in bold
+                        yield True, "'''"
+                        part = part[3:]
+                        state = 0
+                    elif state == 3:  # in both
+                        yield True, "'''"
+                        yield True, "''"
+                        state = 0
+                        part = part[5:]
+                    else:  # in nothing
+                        if bold_follows(parts, i):
+                            yield True, "''"
+                            yield True, "'''"
+                        else:
+                            yield True, "'''"
+                            yield True, "''"
+                        part = part[5:]
+                        state = 3
+                elif part.startswith("'''"):
+                    if state == 1:  # in italic
+                        if bold_follows(parts, i):
+                            yield True, "'''"
+                            part = part[3:]
+                            state = 3
+                        else:
+                            yield True, "''"
+                            part = part[2:]
+                            state = 0
+                    elif state == 2:  # in bold
+                        yield True, "'''"
+                        part = part[3:]
+                        state = 0
+                    elif state == 3:  # in both
+                        yield True, "'''"
+                        part = part[3:]
+                        state = 1
+                    else:  # in nothing
+                        yield True, "'''"
+                        part = part[3:]
+                        state = 2
+                elif part.startswith("''"):
+                    if state == 1:  # in italic
+                        yield True, "''"
+                        part = part[2:]
+                        state = 0
+                    elif state == 2:  # in bold
+                        yield True, "''"
+                        part = part[2:]
+                        state = 3
+                    elif state == 3:  # in both
+                        yield True, "''"
+                        part = part[2:]
+                        state = 2
+                    else:  # in nothing
+                        yield True, "''"
+                        part = part[2:]
+                        state = 1
+                if part:
+                    yield False, part
+                continue
+            # All other parts handled with normal tokenization
+            pos = 0
+            for m in re.finditer(token_re, part):
+                start = m.start()
+                if pos != start:
+                    yield False, part[pos:start]
+                pos = m.end()
+                token = m.group(0)
+                if token.startswith("=="):
+                    yield True, "<" + m.group(1)
+                    for x in token_iter(ctx, m.group(2)):
+                        yield x
+                    yield True, ">" + m.group(4)
+                else:
+                    yield True, token
+            if pos != len(part):
+                yield False, part[pos:]
 
 
 def process_text(ctx, text):
@@ -1322,6 +1405,7 @@ def process_text(ctx, text):
     called recursively (which we do to process tokens inside templates and
     certain other structures)."""
     for is_token, token in token_iter(ctx, text):
+        # print("process_text: token_iter yielded:", is_token, token)
         node = ctx.parser_stack[-1]
         if not is_token:
             # Process it as normal text.
