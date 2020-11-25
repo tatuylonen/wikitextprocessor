@@ -213,10 +213,10 @@ def get_page_content(ctx, title):
     # Read the page by its title
     data = ctx.read_by_title(title)
     if data is None:
-        ctx.warning("attempted to access page content for {!r} which "
-                    "is not available"
-                    .format(title))
-        return ""
+        # ctx.warning("attempted to access page content for {!r} which "
+        #             "is not available"
+        #             .format(title))
+        return None
     return data
 
 def fetch_language_name(code):

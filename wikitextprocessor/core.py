@@ -263,12 +263,32 @@ class Wtp(object):
             args = orig.split("|")
             return self._save_value("A", args, nowiki)
 
+        def repl_arg_err(m):
+            """Replacement function for template arguments, with error."""
+            nowiki = m.group(0).find(MAGIC_NOWIKI_CHAR) >= 0
+            prefix = m.group(1)
+            orig = m.group(2)
+            args = orig.split("|")
+            self.warning("heuristically added missing }} to template arg {}"
+                         .format(args[0].strip()))
+            return prefix + self._save_value("A", args, nowiki)
+
         def repl_templ(m):
             """Replacement function for templates {{name|...}} and parser
             functions."""
             nowiki = m.group(0).find(MAGIC_NOWIKI_CHAR) >= 0
             args = m.group(1).split("|")
             return self._save_value("T", args, nowiki)
+
+        def repl_templ_err(m):
+            """Replacement function for templates {{name|...}} and parser
+            functions, with error."""
+            nowiki = m.group(0).find(MAGIC_NOWIKI_CHAR) >= 0
+            prefix = m.group(1)
+            args = m.group(2).split("|")
+            self.warning("heuristically added missing }} to template {}"
+                         .format(args[0].strip()))
+            return prefix + self._save_value("T", args, nowiki)
 
         def repl_link(m):
             """Replacement function for links [[...]]."""
@@ -297,36 +317,46 @@ class Wtp(object):
                               # XXXremove: r"?\[(([^][{}]|\[[^]]*\])+)\]" +
                               MAGIC_NOWIKI_CHAR + r"?\]",
                               repl_link, text)
-                # Encode templates
+                # Encode template arguments
                 text = re.sub(r"(?s)\{" + MAGIC_NOWIKI_CHAR +
                               r"?\{" + MAGIC_NOWIKI_CHAR +
-                              r"?\{([^{}]*?)\}" +
+                              r"?\{(([^{}]|\{\|[^{}]*\|\})*?)\}" +
                               MAGIC_NOWIKI_CHAR + r"?\}" +
                               MAGIC_NOWIKI_CHAR + r"?\}",
                               repl_arg, text)
                 if text == prev2:
+                    # When everything else has been done, see if we can find
+                    # template arguments that have one missing closing bracket.
+                    # This is so common in Wiktionary that I'm suspecting it
+                    # might be allowed by the MediaWiki parser.
+                    # This needs to be done before processing templates, as
+                    # otherwise the argument with a missing closing brace would
+                    # be interpreted as a template.
+                    text = re.sub(r"(?s)([^{])\{" + MAGIC_NOWIKI_CHAR +
+                                  r"?\{" + MAGIC_NOWIKI_CHAR +
+                                  r"?\{([^{}]*?)\}" +
+                                  MAGIC_NOWIKI_CHAR + r"?\}",
+                                  repl_arg_err, text)
+                    if text != prev2:
+                        continue
                     break
-            # Handle template arguments that were INCORRECTLY closed by
-            # a double brace instead of a triple brace.  There seem to be
-            # annoyingly common.
-            # while True:
-            #     prev2 = text
-            #     # Note: intentionally only two closing braces here!
-            #     text = re.sub(r"(?s)\{" + MAGIC_NOWIKI_CHAR +
-            #                   r"?\{" + MAGIC_NOWIKI_CHAR +
-            #                   r"?\{([^{}]*?)\}" +
-            #                   MAGIC_NOWIKI_CHAR + r"?\}",
-            #                   repl_arg, text)
-            #     # XXX should report error/warning, need separate repl function
-            #     if text == prev2:
-            #         break
             # Encode templates
             text = re.sub(r"(?s)\{" + MAGIC_NOWIKI_CHAR +
-                          r"?\{(([^{}]|\}[^{}])+?)\}" +
+                          r"?\{(([^{}]|\{\|[^{}]*\|\}|\}[^{}])+?)\}" +
                           MAGIC_NOWIKI_CHAR + r"?\}",
                           repl_templ, text)
             # We keep looping until there is no change during the iteration
             if text == prev:
+                # When everything else has been done, see if we can find
+                # template calls that have one missing closing bracket.
+                # This is so common in Wiktionary that I'm suspecting it
+                # might be allowed by the MediaWiki parser.  We must allow
+                # tables {| ... |} inside these.
+                text = re.sub(r"(?s)([^{])\{" + MAGIC_NOWIKI_CHAR +
+                              r"?\{(([^{}]|\{\|[^{}]*\|\}|\}[^{}])+?)\}",
+                              repl_templ_err, text)
+                if text != prev:
+                    continue
                 break
             prev = text
         # Replace any remaining braces etc by corresponding character entities
