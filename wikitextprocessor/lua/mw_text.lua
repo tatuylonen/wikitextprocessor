@@ -34,18 +34,57 @@ function mw_text.jsonEncode(value, flags)
 end
 
 function mw_text.killMarkers(s)
-   print("XXX mw_text.killMarkers")
-   return nil
+   -- we have our magic characters, but I don't think they are visible to Lua
+   -- (except perhaps the nowiki magic)
+   return s
 end
 
 function mw_text.tag(name, attrs, content)
-   print("XXX mw_text.tag")
-   return nil
+   if type(name) == "table" then
+      attrs = name.attrs
+      content = name.content
+      name = name.name
+   end
+   local t = mw.html.create(name)
+   if attrs ~= nil then
+      for k, v in pairs(attrs) do
+         t:attr(k, v)
+      end
+   end
+   if content ~= nil and content ~= false then
+      t:wikitext(content)
+   end
+   return tostring(t)
 end
 
 function mw_text.truncate(text, length, ellipsis, adjustLength)
-   print("XXX mw_text.truncate")
-   return nil
+   if not length or length == 0 then
+      return text
+   end
+   if ellipsis == nil then
+      ellipsis = "…"
+   end
+   if #text <= length then
+      return text
+   end
+   if length >= 0 then
+      if adjustLength and ellipsis then
+         length = length - #ellipsis
+      end
+      text = mw.ustring.sub(text, 1, length)
+      if ellipsis then
+         text = text .. ellipsis
+      end
+   else
+      if adjustLength and ellipsis then
+         length = length + #ellipsis
+      end
+      text = mw.ustring.sub(text, #text + length + 1)
+      if ellipsis then
+         text = ellipsis .. text
+      end
+   end
+   return text
 end
 
 function mw_text.unstripNoWiki(s)

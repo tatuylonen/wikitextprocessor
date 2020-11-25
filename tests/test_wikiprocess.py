@@ -2176,6 +2176,59 @@ return export
                        "http&colon;//example.com\n", r"""
           return mw.text.nowiki('"test"\n----\nhttp://example.com\n')""")
 
+    def test_mw_text_tag1(self):
+        self.scribunto("<br />", """
+        return mw.text.tag("br")""")
+
+    def test_mw_text_tag2(self):
+        self.scribunto("<h1>Test title</h1>", """
+        return mw.text.tag("h1", nil, "Test title")""")
+
+    def test_mw_text_tag3(self):
+        self.scribunto("<h1>Test title</h1>", """
+        return mw.text.tag({name="h1", content="Test title"})""")
+
+    def test_mw_text_tag4(self):
+        self.scribunto('<h1 class="cls">Test title</h1>', """
+        return mw.text.tag("h1", {class="cls"}, "Test title")""")
+
+    def test_mw_text_tag5(self):
+        self.scribunto('<h1 class="cls">Test title</h1>', """
+        return mw.text.tag({name="h1", attrs={class="cls"},
+                            content="Test title"})""")
+
+    def test_mw_text_truncate1(self):
+        self.scribunto("abc", """
+        return mw.text.truncate("abc")""")
+
+    def test_mw_text_truncate2(self):
+        self.scribunto("abc", """
+        return mw.text.truncate("abc", 5)""")
+
+    def test_mw_text_truncate3(self):
+        self.scribunto("abc", """
+        return mw.text.truncate("abc", 3)""")
+
+    def test_mw_text_truncate4(self):
+        self.scribunto("ab…", """
+        return mw.text.truncate("abc", 2)""")
+
+    def test_mw_text_truncate4(self):
+        self.scribunto("aX", """
+        return mw.text.truncate("abc", 2, "X", true)""")
+
+    def test_mw_text_truncate5(self):
+        self.scribunto("abXY", """
+        return mw.text.truncate("abcdef", 4, "XY", true)""")
+
+    def test_mw_text_truncate6(self):
+        self.scribunto("XYef", """
+        return mw.text.truncate("abcdef", -4, "XY", true)""")
+
+    def test_mw_text_truncate7(self):
+        self.scribunto("…cdef", """
+        return mw.text.truncate("abcdef", -4)""")
+
     def test_mw_html1(self):
         self.scribunto("<table></table>", """
         local t = mw.html.create("table")
