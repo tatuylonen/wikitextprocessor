@@ -2229,6 +2229,92 @@ return export
         self.scribunto("…cdef", """
         return mw.text.truncate("abcdef", -4)""")
 
+    def test_mw_jsonencode1(self):
+        self.scribunto('"x"', """
+        return mw.text.jsonEncode("x")""")
+
+    def test_mw_jsonencode2(self):
+        self.scribunto('null', """
+        return mw.text.jsonEncode(nil)""")
+
+    def test_mw_jsonencode3(self):
+        self.scribunto('3', """
+        return mw.text.jsonEncode(3)""")
+
+    def test_mw_jsonencode4(self):
+        self.scribunto('4.1', """
+        return mw.text.jsonEncode(4.1)""")
+
+    def test_mw_jsonencode5(self):
+        self.scribunto('[]', """
+        return mw.text.jsonEncode({})""")
+
+    def test_mw_jsonencode6(self):
+        self.scribunto('[1, "foo"]', """
+        return mw.text.jsonEncode({1, "foo"})""")
+
+    def test_mw_jsonencode7(self):
+        self.scribunto('{"1": 1, "2": "foo"}', """
+        return mw.text.jsonEncode({1, "foo"}, mw.text.JSON_PRESERVE_KEYS)""")
+
+    def test_mw_jsonencode8(self):
+        self.scribunto('{"1": 1, "2": "foo", "x": 8}', """
+        return mw.text.jsonEncode({1, "foo", x=8})""")
+
+    def test_mw_jsonencode9(self):
+        self.scribunto('{"1": 1, "2": "foo", "x": 8}', """
+        return mw.text.jsonEncode({1, "foo", x=8},
+                                  mw.text.JSON_PRESERVE_KEYS)""")
+
+    def test_mw_jsonencode10(self):
+        self.scribunto('{"1": 1, "12": 8, "2": "foo"}', """
+        return mw.text.jsonEncode({1, "foo", [12]=8})""")
+
+    def test_mw_jsonencode11(self):
+        self.scribunto('true', """
+        return mw.text.jsonEncode(true)""")
+
+    def test_mw_jsondecode1(self):
+        self.scribunto('nil', """
+        return mw.text.jsonDecode('null')""")
+
+    def test_mw_jsondecode2(self):
+        self.scribunto('True', """
+        return mw.text.jsonDecode('true')""")
+
+    def test_mw_jsondecode3(self):
+        self.scribunto('1', """
+        return mw.text.jsonDecode('1')""")
+
+    def test_mw_jsondecode4(self):
+        self.scribunto('4.1', """
+        return mw.text.jsonDecode('4.1')""")
+
+    def test_mw_jsondecode5(self):
+        self.scribunto('foo', """
+        return mw.text.jsonDecode('"foo"')""")
+
+    def test_mw_jsondecode6(self):
+        self.scribunto('0', """
+        local x = mw.text.jsonDecode('[]')
+        return tostring(#x)""")
+
+    def test_mw_jsondecode7(self):
+        self.scribunto('4.0a', """
+        local x = mw.text.jsonDecode('[4, "a"]')
+        return x[1] .. x[2]""")
+
+    def test_mw_jsondecode8(self):
+        self.scribunto('35', """
+        local x = mw.text.jsonDecode('{"1": "3", "4": "5"}')
+        return x[1] .. x[4]""")
+
+    def test_mw_jsondecode9(self):
+        self.scribunto('35', """
+        local x = mw.text.jsonDecode('{"1": "3", "4": "5"}',
+                                     mw.text.JSON_PRESERVE_KEYS)
+        return x["1"] .. x["4"]""")
+
     def test_mw_html1(self):
         self.scribunto("<table></table>", """
         local t = mw.html.create("table")

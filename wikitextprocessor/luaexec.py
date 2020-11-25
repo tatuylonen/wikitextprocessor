@@ -6,6 +6,7 @@
 import os
 import re
 import html
+import json
 import traceback
 import pkg_resources
 import lupa
@@ -117,6 +118,67 @@ def mw_text_encode(text, charset='<>&\xa0"'):
             parts.append(ch)
     return "".join(parts)
 
+def mw_text_jsondecode(ctx, s, *rest):
+    flags = rest[0] if rest else 0
+    value = json.loads(s)
+
+    def recurse(x):
+        if isinstance(x, (list, tuple)):
+            return ctx.lua.table_from(list(map(recurse, x)))
+        if not isinstance(x, dict):
+            return x
+        # It is a dict.
+        if (flags & 1) == 1:
+            # JSON_PRESERVE_KEYS flag means we don't convert keys.
+            return ctx.lua.table_from({k: recurse(v) for k, v in x.items()})
+        # Convert numeric keys to integers and see if we can make it a
+        # table with sequential integer keys.
+        for k, v in list(x.items()):
+            if k.isdigit():
+                del x[k]
+                x[int(k)] = recurse(v)
+            else:
+                x[k] = recurse(v)
+        if not all(isinstance(k, int) for k in x.keys()):
+            return ctx.lua.table_from(x)
+        keys = list(sorted(x.keys()))
+        if not all(keys[i] == i + 1 for i in range(len(keys))):
+            return ctx.lua.table_from(x)
+        values = list(x[i + 1] for i in range(len(keys)))
+        return ctx.lua.table_from(x)
+
+    value = recurse(value)
+    return value
+
+def mw_text_jsonencode(s, *rest):
+    flags = rest[0] if rest else 0
+
+    def recurse(x):
+        if isinstance(x, (str, int, float, type(None), type(True))):
+            return x
+        if lupa.lua_type(x) == "table":
+            conv_to_dict = (flags & 1) != 0  # JSON_PRESERVE_KEYS flag
+            if not conv_to_dict:
+                # Also convert to dict if keys are not sequential integers
+                # starting from 1
+                if not all(isinstance(k, int) for k in x.keys()):
+                    conv_to_dict = True
+                else:
+                    keys = list(sorted(x.keys()))
+                    if not all(keys[i] == i + 1 for i in range(len(keys))):
+                        conv_to_dict = True
+            if conv_to_dict:
+                ht = {}
+                for k, v in x.items():
+                    ht[str(k)] = recurse(v)
+                return ht
+            # Convert to list (JSON array)
+            return list(map(recurse, x.values()))
+        return x
+
+    value = recurse(s)
+    return json.dumps(value, sort_keys=True)
+
 
 def get_page_info(ctx, title):
     """Retrieves information about a page identified by its table (with
@@ -193,6 +255,9 @@ def initialize_lua(ctx):
     lua.eval("lua_set_loader")(lambda x: lua_loader(ctx, x),
                                mw_text_decode,
                                mw_text_encode,
+                               mw_text_jsonencode,
+                               lambda x, *rest:
+                               mw_text_jsondecode(ctx, x, *rest),
                                lambda x: get_page_info(ctx, x),
                                lambda x: get_page_content(ctx, x),
                                fetch_language_name,

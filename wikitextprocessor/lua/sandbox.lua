@@ -53,12 +53,15 @@ package.searchers[1] = new_loader
 -- other Python functions that implement some of the functionality needed
 -- for executing Scribunto code (these functions are called from Lua code).
 function lua_set_loader(loader, mw_text_decode, mw_text_encode,
+                        mw_text_jsonencode, mw_text_jsondecode,
                         get_page_info, get_page_content, fetch_language_name,
                         fetch_language_names)
    python_loader = loader
    mw = require("mw")
    mw.text.decode = mw_text_decode
    mw.text.encode = mw_text_encode
+   mw.text.jsonEncode = mw_text_jsonencode
+   mw.text.jsonDecode = mw_text_jsondecode
    mw.title.python_get_page_info = get_page_info
    mw.title.python_get_page_content = get_page_content
    mw.language.python_fetch_language_name = fetch_language_name

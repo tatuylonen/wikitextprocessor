@@ -9,33 +9,36 @@ scribunto_mwtext = require("mw.text")
 local mw_text = {
    -- decode (set from Python)
    -- encode (set from Python)
-   -- jsonDecode
-   -- jsonEncode
+   -- jsonDecode (set from Python)
+   -- jsonEncode (set from Python)
    -- killMarkers
    -- listToText  (see below)
    -- nowiki  (see below)
    split = scribunto_mwtext.split,
    gsplit = scribunto_mwtext.gsplit,
    -- tag
-   trim = scribunto_mwtext.trim
+   trim = scribunto_mwtext.trim,
    -- truncate
    -- unstripNoWiki
    -- unstrip (see below)
+   JSON_PRESERVE_KEYS = 1,
+   JSON_TRY_FIXING = 2  -- we ignore this flag
 }
 
 function mw_text.jsonDecode(s, flags)
-   print("XXX mw_text.jsonDecode")
-   return nil
+   flags = flags or 0
+   return mw_text.jsondecode_python(value, flags)
 end
 
 function mw_text.jsonEncode(value, flags)
-   print("XXX mw_text.jsonEncode")
-   return nil
+   flags = flags or 0
+   return mw_text.jsonencode_python(value, flags)
 end
 
 function mw_text.killMarkers(s)
    -- we have our magic characters, but I don't think they are visible to Lua
    -- (except perhaps the nowiki magic)
+   print("mw.text.killMarkers called")
    return s
 end
 
@@ -88,8 +91,9 @@ function mw_text.truncate(text, length, ellipsis, adjustLength)
 end
 
 function mw_text.unstripNoWiki(s)
-   print("XXX mw_text.unstrupNoWiki")
-   return nil
+   print("mw.text.unstripNoWiki called")
+   -- We don't currently do anything here
+   return s
 end
 
 function mw_text.unstrip(s)
