@@ -87,45 +87,45 @@ end
 
 function Uri:parse(s)
    local ofs
-   if string.match(s, "[a-z0-9]+:") then
-      ofs = string.find(s, ":")
-      self.protocol = string.sub(s, 1, ofs - 1)
-      s = string.sub(s, ofs + 1)
+   if mw.ustring.match(s, "[a-z0-9]+:") then
+      ofs = mw.ustring.find(s, ":")
+      self.protocol = mw.ustring.sub(s, 1, ofs - 1)
+      s = mw.ustring.sub(s, ofs + 1)
    end
-   if string.sub(s, 1, 2) == "//" then
-      s = string.sub(s, 3)
+   if mw.ustring.sub(s, 1, 2) == "//" then
+      s = mw.ustring.sub(s, 3)
       -- next is optional user@password, followed by mandatory host
-      if string.match(s, "[^#?/@]+@.*") then
-         ofs = string.find(s, "@")
-         local userpass = string.sub(s, 1, ofs - 1)
-         s = string.sub(s, ofs + 1)
-         ofs = string.find(userpass, ":")
+      if mw.ustring.match(s, "[^#?/@]+@.*") then
+         ofs = mw.ustring.find(s, "@")
+         local userpass = mw.ustring.sub(s, 1, ofs - 1)
+         s = mw.ustring.sub(s, ofs + 1)
+         ofs = mw.ustring.find(userpass, ":")
          if ofs then
-            local user = string.sub(userpass, 1, ofs - 1)
-            local pass = string.sub(userpass, ofs + 1)
+            local user = mw.ustring.sub(userpass, 1, ofs - 1)
+            local pass = mw.ustring.sub(userpass, ofs + 1)
             self.user = mw.uri.decode(user, "QUERY")
             self.pass = mw.uri.decode(pass, "QUERY")
          end
       end
       -- next is host
       local host
-      ofs = string.find(s, "/")
+      ofs = mw.ustring.find(s, "/")
       if ofs then
-         host = string.sub(s, 1, ofs - 1)
-         s = string.sub(s, ofs)  -- initial / is part of path
+         host = mw.ustring.sub(s, 1, ofs - 1)
+         s = mw.ustring.sub(s, ofs)  -- initial / is part of path
          self.host = mw.uri.decode(host, "QUERY")
       else
          -- there is no path, but there could be fragment or query string
-         ofs = string.find(s, "#")
+         ofs = mw.ustring.find(s, "#")
          if ofs then
-            host = string.sub(s, 1, ofs - 1)
-            s = string.sub(s, ofs - 1)
+            host = mw.ustring.sub(s, 1, ofs - 1)
+            s = mw.ustring.sub(s, ofs - 1)
             self.host = mw.uri.decode(host, "QUERY")
          else
-            ofs = string.find(s, "?")
+            ofs = mw.ustring.find(s, "?")
             if ofs then
-               host = string.sub(s, 1, ofs - 1)
-               s = string.sub(s, ofs - 1)
+               host = mw.ustring.sub(s, 1, ofs - 1)
+               s = mw.ustring.sub(s, ofs - 1)
                self.host = mw.uri.decode(host, "QUERY")
             else
                self.host = mw.uri.decode(host, s)
@@ -136,17 +136,17 @@ function Uri:parse(s)
    end
    -- whatever remains is path, fragment and/or query string
    local qs = ""
-   ofs = string.find(s, "?")
+   ofs = mw.ustring.find(s, "?")
    if ofs then
       -- have query string
-      local path = string.sub(s, 1, ofs - 1)
-      s = string.sub(s, ofs + 1)
+      local path = mw.ustring.sub(s, 1, ofs - 1)
+      s = mw.ustring.sub(s, ofs + 1)
       self.path = mw.uri.decode(path, "PATH")
-      ofs = string.find(s, "#")
+      ofs = mw.ustring.find(s, "#")
       if ofs then
          -- have both query string and fragment
-         qs = string.sub(s, ofs - 1)
-         s = string.sub(s, ofs + 1)
+         qs = mw.ustring.sub(s, ofs - 1)
+         s = mw.ustring.sub(s, ofs + 1)
       else
          -- no fragment after query string
          qs = s
@@ -154,12 +154,12 @@ function Uri:parse(s)
       end
    else
       -- no query string
-      ofs = string.find(s, "#")
+      ofs = mw.ustring.find(s, "#")
       if ofs then
          -- have fragment
-         local path = string.sub(s, 1, ofs - 1)
+         local path = mw.ustring.sub(s, 1, ofs - 1)
          self.path = mw.uri.decode(path, "PATH")
-         s = string.sub(s, ofs + 1)
+         s = mw.ustring.sub(s, ofs + 1)
       else
          -- no fragment
          self.path = mw.uri.decode(s, "PATH")
@@ -169,11 +169,11 @@ function Uri:parse(s)
 
    -- parse any trailing fragment
    if s ~= "" then
-      if string.sub(s, 1, 1) ~= "#" then
+      if mw.ustring.sub(s, 1, 1) ~= "#" then
          print("Uri:parse unexpected stuff at end:", s)
          s = ""
       else
-         local frag = string.sub(s, 2)
+         local frag = mw.ustring.sub(s, 2)
          self.fragment = mw.uri.decode(frag, "PATH")
       end
    end
@@ -181,11 +181,11 @@ function Uri:parse(s)
    -- parse query string into a table
    self.query = {}
    if qs ~= "" then
-      for x in string.gmatch(qs, "([^&]*)") do
-         ofs = string.find(x, "=")
+      for x in mw.ustring.gmatch(qs, "([^&]*)") do
+         ofs = mw.ustring.find(x, "=")
          if ofs then
-            k = string.sub(x, 1, ofs - 1)
-            v = string.sub(x, 1, ofs + 1)
+            k = mw.ustring.sub(x, 1, ofs - 1)
+            v = mw.ustring.sub(x, 1, ofs + 1)
          else
             k = x
             v = ""
@@ -206,7 +206,7 @@ function Uri:extend(query)
    if query == nil then return end
    if type(query) == "string" then
       print("Uri:extend string query", query)
-      for k, v in string.gmatch(query, "([^=&]+)(=([^&]*))?&?") do
+      for k, v in mw.ustring.gmatch(query, "([^=&]+)(=([^&]*))?&?") do
          if v == nil then v = "" end
          self.query[k] = v
       end
@@ -297,15 +297,15 @@ function mw_uri.parseQueryString(s, i, j)
    if i == nil then i = 1 end
    if i < 0 then i = #s + i end
    if j == nil then j = #s - i + 1 end
-   s = "&" .. string.sub(s, i, j) .. "&"
+   s = "&" .. mw.ustring.sub(s, i, j) .. "&"
    args = {}
-   for k in string.gmatch(s, "&([^&]+)") do
-      local ofs = string.find(k, "=")
+   for k in mw.ustring.gmatch(s, "&([^&]+)") do
+      local ofs = mw.ustring.find(k, "=")
       if ofs == nil then
          v = false
       else
-         v = string.sub(k, ofs + 1)
-         k = string.sub(k, 1, ofs - 1)
+         v = mw.ustring.sub(k, ofs + 1)
+         k = mw.ustring.sub(k, 1, ofs - 1)
          v = mw.uri.decode(v)
       end
       if args[k] ~= nil then

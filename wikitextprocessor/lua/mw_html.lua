@@ -152,7 +152,7 @@ function Html:addClass(new_class)
    if new_class == nil then return end
    local classes = self:getAttr("class") or ""
    local new_classes = {}
-   for cl in string.gmatch(classes, "([^%s]+)") do
+   for cl in mw.ustring.gmatch(classes, "([^%s]+)") do
       if cl == new_class then return end
    end
    if classes == "" then
@@ -179,7 +179,7 @@ end
 
 function Html:cssText(new_css)
    if new_css == nil or new_css == "" then return end
-   if string.sub(new_css, -1) ~= ";" then new_css = new_css .. ";" end
+   if mw.ustring.sub(new_css, -1) ~= ";" then new_css = new_css .. ";" end
       local css = self:getAttr("style") or ""
    if css == "" then
       css = new_css

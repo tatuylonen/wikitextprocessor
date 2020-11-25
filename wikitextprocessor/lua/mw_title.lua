@@ -55,10 +55,10 @@ function mw_title_meta:isSubpageOf(titleobj2)
    if #t1 >= #t2 then
       return false
    end
-   if string.sub(t2, 1, #t1) ~= t1 then
+   if mw.ustring.sub(t2, 1, #t1) ~= t1 then
       return false
    end
-   if string.sub(t2, #t1 + 1, #t1 + 1) ~= "/" then
+   if mw.ustring.sub(t2, #t1 + 1, #t1 + 1) ~= "/" then
       return false
    end
    return true
@@ -182,9 +182,9 @@ function mw_title.makeTitle(namespace, title, fragment, interwiki)
          break
       end
    end
-   local root = string.gsub(title, "/.*$", "")
-   local parent = string.gsub(title, "/[^/]*$", "")
-   local subpage = string.gsub(title, "^.*/", "")
+   local root = mw.ustring.gsub(title, "/.*$", "")
+   local parent = mw.ustring.gsub(title, "/[^/]*$", "")
+   local subpage = mw.ustring.gsub(title, "^.*/", "")
    local fullName
    if ns.name == "Main" then
       fullName = title
@@ -226,7 +226,8 @@ function mw_title.makeTitle(namespace, title, fragment, interwiki)
       isRedirect = redirectTo ~= nil,
       isSpecialPage = ns.name == "Special",
       isSubpage = title ~= base,
-      isTalkPage = ns.name == "Talk" or string.find(ns.name, "_talk") ~= nil,
+      isTalkPage = (ns.name == "Talk" or
+                       mw.ustring.find(ns.name, "_talk") ~= nil),
       _redirectTarget = redirectTo,
    }
    setmetatable(t, mw_title_meta)
@@ -240,13 +241,13 @@ function mw_title.new(text, namespace)
    end
    assert(type(text) == "string")
    if not namespace then namespace = "Main" end
-   local idx = string.find(text, ":")
+   local idx = mw.ustring.find(text, ":")
    if idx ~= nil then
-      local ns1 = string.sub(text, 1, idx - 1)
+      local ns1 = mw.ustring.sub(text, 1, idx - 1)
       local nsobj = mw.site.findNamespace(ns1)
       if nsobj ~= nil then
          namespace = ns1
-         text = string.sub(text, idx + 1)
+         text = mw.ustring.sub(text, idx + 1)
       end
    end
    return mw_title.makeTitle(namespace, text)

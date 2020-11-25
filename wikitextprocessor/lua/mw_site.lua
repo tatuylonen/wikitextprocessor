@@ -178,11 +178,11 @@ function mw_site.matchNamespaceName(v, name)
       return false
    end
    assert(type(name) == "string")
-   name = string.upper(name)
-   if name == string.upper(v.name) then return true end
-   if name == string.upper(v.canonicalName) then return true end
+   name = mw.ustring.upper(name)
+   if name == mw.ustring.upper(v.name) then return true end
+   if name == mw.ustring.upper(v.canonicalName) then return true end
    for i, alias in ipairs(v.aliases) do
-      if name == string.upper(alias) then return true end
+      if name == mw.ustring.upper(alias) then return true end
    end
    return false
 end
