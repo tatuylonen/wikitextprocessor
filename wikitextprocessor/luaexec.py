@@ -8,6 +8,7 @@ import re
 import html
 import json
 import traceback
+import unicodedata
 import pkg_resources
 import lupa
 from lupa import LuaRuntime
@@ -496,7 +497,9 @@ def call_lua_sandbox(ctx, invoke_args, expander, parent):
     if ok:
         if text is None:
             text = "nil"
-        return str(text)
+        text = str(text)
+        text = unicodedata.normalize("NFC", text)
+        return text
     if isinstance(text, Exception):
         parts = [str(text)]
         lst = traceback.format_exception(etype=type(text),
