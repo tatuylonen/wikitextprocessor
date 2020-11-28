@@ -292,8 +292,9 @@ dasfasddasfdas
 
     def test_html5(self):
         tree, ctx = parse_with_ctx("test", """<div><span>foo</div></span>""")
-        self.assertEqual(len(tree.children), 1)
-        a = tree.children[0]
+        self.assertEqual(len(tree.children), 2)
+        a, rest = tree.children
+        self.assertEqual(rest, "</span>")
         self.assertEqual(a.kind, NodeKind.HTML)
         self.assertEqual(a.args, "div")
         self.assertEqual(len(a.children), 1)
@@ -339,8 +340,9 @@ dasfasddasfdas
         h = tree.children[0]
         self.assertEqual(h.kind, NodeKind.LEVEL2)
         self.assertEqual(h.args, [["Title"]])
-        self.assertEqual(len(h.children), 2)
-        x, a = h.children
+        self.assertEqual(len(h.children), 3)
+        x, a, rest = h.children
+        self.assertEqual(rest, "</div>")
         self.assertEqual(x, "\n")
         self.assertEqual(a.kind, NodeKind.HTML)
         self.assertEqual(a.args, "ul")
@@ -434,9 +436,13 @@ dasfasddasfdas
         self.assertEqual(a.kind, NodeKind.HTML)
 
     def test_html_unknown(self):
-        tree, ctx = parse_with_ctx("test", "a<unknown>foo</unknown>b")
-        self.assertEqual(tree.children, ["a<unknown>foo</unknown>b"])
-        self.assertEqual(len(ctx.warnings), 2)
+        tree, ctx = parse_with_ctx("test", "<unknown>foo</unknown>")
+        self.assertNotEqual(ctx.warnings, [])
+        self.assertEqual(len(tree.children), 1)
+        a = tree.children[0]
+        self.assertEqual(a.kind, NodeKind.HTML)
+        self.assertEqual(a.args, "unknown")
+        self.assertEqual(a.children, ["foo"])
 
     def test_html_section1(self):
         tree, ctx = parse_with_ctx("test", "a<section begin=foo />b")
@@ -1740,7 +1746,6 @@ def foo(x):
         text = open("tests/fi-gradation.txt", "r").read()
         tree, ctx = parse_with_ctx("fi-gradation", text, pre_expand=True)
         self.assertEqual(ctx.errors, [])
-
 
 # XXX implement <nowiki/> marking for links, templates
 #  - https://en.wikipedia.org/wiki/Help:Wikitext#Nowiki

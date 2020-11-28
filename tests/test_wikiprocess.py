@@ -271,6 +271,9 @@ return export
                       "\nd\n=\nfour\n|\nb\n=\ntwo\n}}",
                       "four")
 
+    def test_switch12(self):
+        self.parserfn("{{#switch:|a=one|=empty|three}}", "empty")
+
     # XXX test that both sides of switch are evaluated
 
     def test_categorytree1(self):
@@ -2208,23 +2211,20 @@ return export
         self.scribunto("a@a@",
             """return table.concat(mw.text.split("abcabc", "[bc]+"), "@")""")
 
-    # XXX mw.ustring.find is broken for plain patterns!!!
-    # But that code is imported directly from Scribunto!?!
+    def test_mw_text_split9(self):
+        self.scribunto("abcabc",
+            """return table.concat(mw.text.split("abcabc", "[bc]+", true),
+                                   "@")""")
 
-    # def test_mw_text_split9(self):
-    #     self.scribunto("abcabc",
-    #         """return table.concat(mw.text.split("abcabc", "[bc]+", TRUE),
-    #                                "@")""")
+    def test_mw_text_split10(self):
+        self.scribunto("abc@abc",
+            """return table.concat(mw.text.split("abc[bc]+abc", "[bc]+", true),
+                                   "@")""")
 
-    # def test_mw_text_split10(self):
-    #     self.scribunto("abc@abc",
-    #         """return table.concat(mw.text.split("abc[bc]+abc", "[bc]+", TRUE),
-    #                                "@")""")
-
-    # def test_mw_ustring_find1(self):
-    #     self.scribunto("nil",
-    #         """local s, e = mw.ustring.find("abcdef", "[b]", 1, TRUE)
-    #            return tostring(s)""")
+    def test_mw_ustring_find1(self):
+        self.scribunto("nil",
+            """local s, e = mw.ustring.find("abcdef", "[b]", 1, true)
+               return tostring(s)""")
 
     def test_mw_text_gsplit1(self):
         self.scribunto("ab@ab@", """
@@ -2242,8 +2242,6 @@ return export
         self.scribunto("a b",
                        r"""return mw.text.trim("   a b  c\n\r\f\t  ",
                                                " \n\r\f\tc")""")
-
-    # XXX mw.text.trim
 
     def test_mw_text_tag1(self):
         self.scribunto("<br />", """
@@ -3063,6 +3061,18 @@ return export
             os.remove(path + ".json")
         except FileNotFoundError:
             pass
+
+    def test_lua_max_time1(self):
+        t = time.time()
+        self.scribunto('<strong class="error">Lua timeout error in '
+                       'Module:testmod function testfn</strong>', """
+          lua_reduce_timeout(2)
+          local i = 0
+          while true do
+            i = i + 1
+          end
+          return i""")
+        self.assertLess(time.time() - t, 10)
 
 # XXX Test template_fn in expand()
 
