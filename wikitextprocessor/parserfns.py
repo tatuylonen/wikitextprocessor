@@ -116,7 +116,7 @@ def switch_fn(ctx, fn_name, args, expander):
     last = None
     for i in range(1, len(args)):
         arg = expander(args[i]).strip()
-        m = re.match(r"(?s)^([^=]+)=(.*)$", arg)
+        m = re.match(r"(?s)^([^=]*)=(.*)$", arg)
         if not m:
             last = arg
             if arg == val:
