@@ -104,6 +104,7 @@ local Language = {
 }
 
 function Language:new(obj)
+   -- print("mw.language Language:new called")
    obj = obj or {}
    setmetatable(obj, self)
    self.__index = self
@@ -302,15 +303,18 @@ function mw_language.fetchLanguageName(code, inLanguage)
 end
 
 function mw_language.fetchLanguageNames(inLanguage, include)
+   print("mw.language.fetchLanguageNames called")
    include = include or "mw"
    return mw.language.python_fetch_language_names(include)
 end
 
 function mw_language.getContentLanguage()
+   print("mw.language.getContentLanguage called")
    return en_lang
 end
 
 function mw_language.getFallbacksFor(code)
+   print("mw.language.getFallbacksFor called")
    return fallbacks[code] or {}
 end
 
@@ -319,6 +323,7 @@ function mw_language.isKnownLanguageTag(code)
 end
 
 function mw_language.isSupportedLanguage(code)
+   print("mw.language.isSupportedLanguage called")
    -- XXX
    return code == "en"
 end
