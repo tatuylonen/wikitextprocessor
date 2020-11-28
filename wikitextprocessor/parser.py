@@ -1106,10 +1106,11 @@ def tag_fn(ctx, token):
             # languages.  Treat them as text.  This method of handling
             # them may need to be reconsidered in the future if
             # problems arise.
-            if not name.isdigit():
-                ctx.warning("html tag <{}{}> not allowed in WikiText"
-                            "".format(name, "/" if also_end else ""))
-            return text_fn(ctx, token)
+            if name.isdigit():
+                text_fn(ctx, token)
+                return
+            ctx.warning("html tag <{}{}> not allowed in WikiText"
+                        "".format(name, "/" if also_end else ""))
 
         # Automatically close parent HTML tags that should be ended by this tag
         # until we have a parent that is not a HTML tag or that is an allowed
@@ -1171,10 +1172,9 @@ def tag_fn(ctx, token):
 
     # Give a warning on unsupported HTML tags.  WikiText limits the set of
     # tags that are allowed.
-    if name not in ALLOWED_HTML_TAGS:
+    if name not in ALLOWED_HTML_TAGS and name != "nowiki":
         ctx.warning("html tag </{}> not allowed in WikiText"
                     "".format(name))
-        return text_fn(ctx, token)
 
     # See if we can find the opening tag from the stack
     for i in range(0, len(ctx.parser_stack)):
@@ -1190,6 +1190,7 @@ def tag_fn(ctx, token):
             _parser_pop(ctx, False)
             return
         ctx.warning("no corresponding start tag found for {}".format(token))
+        text_fn(ctx, token)
         return
 
     # Close nodes until we close the corresponding start tag
