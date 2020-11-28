@@ -7,6 +7,13 @@ local env = _ENV
 mw = nil  -- assigned in lua_set_loader()
 python_loader = nil
 
+-- Maximum allowed execution time in Lua code (seconds)
+lua_max_time = 20
+
+-- Max time for the current call to Lua.  This is reset for every call to the
+-- Lua sandbox.
+lua_current_max_time = nil
+
 -- This function loads new a new module, whether built-in or defined in the
 -- data file.
 function new_loader(modname)
@@ -181,6 +188,15 @@ function lua_invoke(mod_name, fn_name, frame, page_title)
    mw._frame = frame
    mw._pageTitle = page_title
 
+   -- Set time limit for execution of the Lua code
+   local start_time = os.time()
+   lua_current_max_time = lua_max_time
+   debug.sethook(function()
+         if os.time() > start_time + lua_current_max_time then
+            error("Lua timeout error")
+         end
+                 end, "", 100000)
+
    -- Load the module.  Note that the initilizations above must be done before
    -- loading the module, as the module could refer to, e.g., page title
    -- during loading.
@@ -199,6 +215,16 @@ function lua_invoke(mod_name, fn_name, frame, page_title)
    end
    -- Call the function in the module
    return xpcall(function() return fn(frame) end, debug.traceback)
+end
+
+-- Sets maximum lua execution time for the current call to t seconds.  The
+-- value can only be lowered.  This intended for tests only.
+function lua_reduce_timeout(t)
+   if t < lua_current_max_time then
+      lua_current_max_time = t
+   else
+      error("maximum execution time can only be lowered")
+   end
 end
 
 -- math.log10 seems to be sometimes missing???
@@ -287,7 +313,7 @@ function table.insert(...)
    end
 end
 
--- This debugging snippet is from:
+-- This debugging snippet is adapted from:
 -- https://stackoverflow.com/questions/53399079/tracing-execution-of-lua-sripts
 local level=0
 local function hook(event)
@@ -314,7 +340,9 @@ local function hook(event)
  io.write("\n")
 end
 
--- Comment this out to disable debugging, uncomment to enable tracing Lua code
+-- Comment this out to disable debugging, uncomment to enable tracing Lua code.
+-- Warning: you may need to disable max time checking by commenting out
+-- its hook for this to work.
 -- debug.sethook(hook,"cr")
 
 -- Wiktionary uses a Module named "string".  Force it to be loaded by
@@ -359,6 +387,7 @@ env["tostring"] = tostring
 env["type"] = type
 env["unpack"] = table.unpack
 env["xpcall"] = xpcall   -- MODIFY
+env["lua_reduce_timeout"] = lua_reduce_timeout
 
 -- Start using the new environment we just constructed.
 local _ENV = env
