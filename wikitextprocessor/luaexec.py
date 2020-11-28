@@ -42,7 +42,7 @@ def lua_loader(ctx, modname):
     This will load it from either the user-defined modules on special
     pages or from a built-in module in the file system.  This returns None
     if the module could not be loaded."""
-    print("lua_loader", modname)
+    # print("lua_loader", modname)
     assert isinstance(modname, str)
     # XXX consider implementing some kind of cache here, e.g., LRU cache
     # for the most recently used modules (modname -> text)
@@ -278,7 +278,7 @@ def call_lua_sandbox(ctx, invoke_args, expander, parent):
     assert callable(expander)
     assert parent is None or isinstance(parent, (list, tuple))
 
-    print("call_lua_sandbox", invoke_args, parent)
+    # print("call_lua_sandbox", invoke_args, parent)
 
     if len(invoke_args) < 2:
         ctx.error("#invoke {}: too few arguments"
@@ -534,5 +534,8 @@ def call_lua_sandbox(ctx, invoke_args, expander, parent):
         ctx.error("LUA error in #invoke {}"
                   .format(invoke_args),
                   trace=trace)
-    return ('<strong class="error">Lua execution error in Module:{} function {}'
-            '</strong>'.format(html.escape(modname), html.escape(modfn)))
+    msg = "Lua execution error"
+    if text.find("Lua timeout error") >= 0:
+        msg = "Lua timeout error"
+    return ('<strong class="error">{} in Module:{} function {}'
+            '</strong>'.format(msg, html.escape(modname), html.escape(modfn)))
