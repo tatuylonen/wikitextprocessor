@@ -2176,6 +2176,75 @@ return export
                        "http&colon;//example.com\n", r"""
           return mw.text.nowiki('"test"\n----\nhttp://example.com\n')""")
 
+    def test_mw_text_split1(self):
+        self.scribunto("",
+            """return table.concat(mw.text.split("", "/"), "@")""")
+
+    def test_mw_text_split2(self):
+        self.scribunto("abc",
+            """return table.concat(mw.text.split("abc", "/"), "@")""")
+
+    def test_mw_text_split3(self):
+        self.scribunto("ab@c",
+            """return table.concat(mw.text.split("ab/c", "/"), "@")""")
+
+    def test_mw_text_split4(self):
+        self.scribunto("@abc",
+            """return table.concat(mw.text.split("/abc", "/"), "@")""")
+
+    def test_mw_text_split5(self):
+        self.scribunto("abc@",
+            """return table.concat(mw.text.split("abc/", "/"), "@")""")
+
+    def test_mw_text_split6(self):
+        self.scribunto("a@bc@",
+            """return table.concat(mw.text.split("a/bc/", "/"), "@")""")
+
+    def test_mw_text_split7(self):
+        self.scribunto("a@b@c@",
+            """return table.concat(mw.text.split("abc", ""), "@")""")
+
+    def test_mw_text_split8(self):
+        self.scribunto("a@a@",
+            """return table.concat(mw.text.split("abcabc", "[bc]+"), "@")""")
+
+    # XXX mw.ustring.find is broken for plain patterns!!!
+    # But that code is imported directly from Scribunto!?!
+
+    # def test_mw_text_split9(self):
+    #     self.scribunto("abcabc",
+    #         """return table.concat(mw.text.split("abcabc", "[bc]+", TRUE),
+    #                                "@")""")
+
+    # def test_mw_text_split10(self):
+    #     self.scribunto("abc@abc",
+    #         """return table.concat(mw.text.split("abc[bc]+abc", "[bc]+", TRUE),
+    #                                "@")""")
+
+    # def test_mw_ustring_find1(self):
+    #     self.scribunto("nil",
+    #         """local s, e = mw.ustring.find("abcdef", "[b]", 1, TRUE)
+    #            return tostring(s)""")
+
+    def test_mw_text_gsplit1(self):
+        self.scribunto("ab@ab@", """
+          local result = {}
+          for v in mw.text.gsplit("abcabc", "[c]+") do
+              table.insert(result, v)
+          end
+          return table.concat(result, "@")""")
+
+    def test_mw_text_trim1(self):
+        self.scribunto("a b  c",
+                       r"""return mw.text.trim("   a b  c\n\r\f\t  ")""")
+
+    def test_mw_text_trim2(self):
+        self.scribunto("a b",
+                       r"""return mw.text.trim("   a b  c\n\r\f\t  ",
+                                               " \n\r\f\tc")""")
+
+    # XXX mw.text.trim
+
     def test_mw_text_tag1(self):
         self.scribunto("<br />", """
         return mw.text.tag("br")""")

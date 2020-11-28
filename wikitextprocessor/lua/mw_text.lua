@@ -3,27 +3,34 @@
 --
 -- Copyright (c) 2020 Tatu Ylonen.  See file LICENSE and https://ylonen.org
 
--- Use the original WikiMedia Scribunto code for some things
-scribunto_mwtext = require("mw.text")
-
 local mw_text = {
    -- decode (set from Python)
    -- encode (set from Python)
-   -- jsonDecode (set from Python)
-   -- jsonEncode (set from Python)
-   -- killMarkers
+   -- gsplit (see below)
+   -- jsonDecode (see below, calls Python)
+   -- jsonEncode (see below, calls Python)
+   -- killMarkers (see below)
    -- listToText  (see below)
    -- nowiki  (see below)
-   split = scribunto_mwtext.split,
-   gsplit = scribunto_mwtext.gsplit,
-   -- tag
-   trim = scribunto_mwtext.trim,
-   -- truncate
-   -- unstripNoWiki
+   -- split (see below)
+   -- tag (see below)
+   -- trim (see below)
+   -- truncate (see below)
+   -- unstripNoWiki (see below)
    -- unstrip (see below)
    JSON_PRESERVE_KEYS = 1,
    JSON_TRY_FIXING = 2  -- we ignore this flag
 }
+
+function mw_text.gsplit(text, pattern, plain)
+   local result = mw_text.split(text, pattern, plain)
+   local i = 0
+   local n = table.getn(result)
+   return function()
+         i = i + 1
+         if i <= n then return result[i] end
+   end
+end
 
 function mw_text.jsonDecode(s, flags)
    flags = flags or 0
@@ -58,6 +65,12 @@ function mw_text.tag(name, attrs, content)
       t:wikitext(content)
    end
    return tostring(t)
+end
+
+function mw_text.trim(s, charset)
+   charset = charset or "\r\n\t\f "
+   return mw.ustring.gsub(s, "^[" .. charset .. "]*(.-)[" .. charset .. "]*$",
+                          "%1")
 end
 
 function mw_text.truncate(text, length, ellipsis, adjustLength)
@@ -119,6 +132,33 @@ function mw_text.listToText(list, separator, conjunction)
    table.insert(lst, " ")
    table.insert(lst, list[#list])
    return table.concat(lst, "")
+end
+
+function mw_text.split(text, pattern, plain)
+   local result = {}
+   local start = 1
+   local length = mw.ustring.len(text)
+   while start <= length do
+      local ofs, last = mw.ustring.find(text, pattern, start, plain)
+      if ofs == nil then
+         break
+      elseif last < ofs then
+         -- empty match
+         table.insert(result, mw.ustring.sub(text, start, ofs))
+         if last > length then
+            break
+         end
+         start = ofs + 1
+      elseif ofs == start then
+         table.insert(result, "")
+         start = last + 1
+      else
+         table.insert(result, mw.ustring.sub(text, start, ofs - 1))
+         start = last + 1
+      end
+   end
+   table.insert(result, mw.ustring.sub(text, start))
+   return result
 end
 
 function mw_text.nowiki(s)
