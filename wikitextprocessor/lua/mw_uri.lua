@@ -205,7 +205,7 @@ end
 function Uri:extend(query)
    if query == nil then return end
    if type(query) == "string" then
-      print("Uri:extend string query", query)
+      -- print("Uri:extend string query", query)
       for k, v in mw.ustring.gmatch(query, "([^=&]+)(=([^&]*))?&?") do
          if v == nil then v = "" end
          self.query[k] = v
