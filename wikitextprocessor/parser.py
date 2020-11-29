@@ -363,13 +363,25 @@ def text_fn(ctx, token):
     """Inserts the token as raw text into the parse tree."""
     node = ctx.parser_stack[-1]
 
-    # Whitespaces inside an external link divide its first argument from its
-    # second argument.  All remaining words go into the second argument.
-    if token.isspace() and node.kind == NodeKind.URL and not node.args:
-        _parser_merge_str_children(ctx)
-        node.args.append(node.children)
-        node.children = []
-        return
+    # External links [https://...] require some magic.  They only seem to
+    # be links if the content looks like a URL."""
+    if node.kind == NodeKind.URL:
+        if not node.args and not node.children:
+            if not re.match(r"^(http|https|mailto):", token):
+                # It does not look like a URL
+                ctx.parser_stack.pop()
+                node2 = ctx.parser_stack[-1]
+                node3 = node2.children.pop()
+                assert node3 is node
+                return text_fn(ctx, "[" + token)
+
+        # Whitespaces inside an external link divide its first argument from its
+        # second argument.  All remaining words go into the second argument.
+        if token.isspace() and not node.args:
+            _parser_merge_str_children(ctx)
+            node.args.append(node.children)
+            node.children = []
+            return
 
     # Some nodes are automatically popped on newline/text
     if ctx.beginning_of_line:
@@ -1446,7 +1458,6 @@ def process_text(ctx, text):
         ctx.beginning_of_line = token[-1] == "\n"
 
 
-
 def parse_encoded(ctx, text):
     """Parses the text, which should already have been encoded using magic
     characters (see Wtp._encode()).  Parses the encoded string and returns
@@ -1460,21 +1471,26 @@ def parse_encoded(ctx, text):
     ctx.parser_stack = [node]
     ctx.suppress_special = False
 
-    # Process all tokens from the input.
-    process_text(ctx, text)
+    try:
+        # Process all tokens from the input.
+        process_text(ctx, text)
 
-    # We are at the end of the text.  Keep popping stack until we only have
-    # the root node left.  This is used to finalize processing any nodes
-    # on the stack.
-    while True:
-        node = ctx.parser_stack[-1]
-        if node.kind == NodeKind.ROOT:
-            break
-        _parser_pop(ctx, True)
-    assert len(ctx.parser_stack) == 1
-    # If the last children are strings, merge them to one string.
-    _parser_merge_str_children(ctx)
-    return ctx.parser_stack[0]
+        # We are at the end of the text.  Keep popping stack until we only have
+        # the root node left.  This is used to finalize processing any nodes
+        # on the stack.
+        while True:
+            node = ctx.parser_stack[-1]
+            if node.kind == NodeKind.ROOT:
+                break
+            _parser_pop(ctx, True)
+        assert len(ctx.parser_stack) == 1
+        # If the last children are strings, merge them to one string.
+        _parser_merge_str_children(ctx)
+        ret = ctx.parser_stack[0]
+    finally:
+        ctx.parser_stack = None
+    return ret
+
 
 def print_tree(tree, indent=0):
     """Prints the parse tree for debugging purposes.  This does not expand

@@ -951,6 +951,12 @@ dasfasddasfdas
         self.assertEqual(b.kind, NodeKind.URL)
         self.assertEqual(b.args, [["https://wiktionary.org"]])
 
+    def test_url6(self):
+        tree, ctx = parse_with_ctx("test", "Ed[ward] Foo")
+        self.assertEqual(ctx.errors, [])
+        self.assertEqual(ctx.warnings, [])
+        self.assertEqual(tree.children, ["Ed[ward] Foo"])
+
     def test_preformatted1(self):
         tree = parse("test", """
  Start each line with a space.
