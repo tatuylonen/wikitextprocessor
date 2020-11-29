@@ -27,11 +27,6 @@ builtin_lua_search_paths = [
 lua_dir = pkg_resources.resource_filename("wikitextprocessor", "lua/")
 #print("lua_dir", lua_dir)
 
-# Set of known language codes.
-# XXX remove this?
-#KNOWN_LANGUAGE_TAGS = set(x["code"] for x in ALL_LANGUAGES
-#                          if x.get("code") and x.get("name"))
-
 # Mapping from language code code to language name.
 LANGUAGE_CODE_TO_NAME = { x["code"]: x["name"]
                           for x in ALL_LANGUAGES
@@ -50,9 +45,8 @@ def lua_loader(ctx, modname):
     modname = modname.strip()
     if modname.startswith("Module:"):
         modname = modname[7:]
-    # XXX check module name normalization
-    # XXX modname1 = ctx._canonicalize_template_name(modname)
     modname1 = "Module:" + modname
+    modname1 = ctx._canonicalize_template_name(modname1)
     body = ctx.read_by_title(modname1)
     if body is not None:
         return body
@@ -73,8 +67,11 @@ def lua_loader(ctx, modname):
             with open(p, "r") as f:
                 data = f.read()
             return data
-    ctx.error("Lua module not found: {}"
-              .format(modname))
+    # It is very common that modules are not found; e.g., many Chinese macros
+    # attempt to load modules related to the characters and generate tons
+    # of these errors.
+    #ctx.error("Lua module not found: {}"
+    #          .format(modname))
     return None
 
 
