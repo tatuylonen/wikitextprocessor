@@ -309,7 +309,8 @@ function mw_language.fetchLanguageNames(inLanguage, include)
 end
 
 function mw_language.getContentLanguage()
-   print("mw.language.getContentLanguage called")
+   -- This appears to be called very commonly by English nouns
+   -- print("mw.language.getContentLanguage called")
    return en_lang
 end
 
