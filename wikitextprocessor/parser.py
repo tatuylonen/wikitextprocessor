@@ -305,6 +305,14 @@ def _parser_pop(ctx, warn_unclosed):
                         .format(node.args[0]),
                         trace="started on line {}, detected on line {}"
                         .format(node.loc, ctx.linenum))
+        elif node.kind == NodeKind.URL and not node.children:
+            # This can happen at least when [ is inside tempate argument.
+            ctx.parser_stack.pop()
+            node2 = ctx.parser_stack[-1]
+            node3 = node2.children.pop()
+            assert node3 is node
+            text_fn(ctx, "[")
+            return
         else:
             ctx.warning("{} not properly closed".format(node.kind.name),
                         trace="started on line {}, detected on line {}"

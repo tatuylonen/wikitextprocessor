@@ -528,8 +528,8 @@ def call_lua_sandbox(ctx, invoke_args, expander, parent):
             #    break
             parts.append(line)
         trace = "\n".join(parts)
-        ctx.error("LUA error in #invoke {}"
-                  .format(invoke_args),
+        ctx.error("LUA error in #invoke {} parent {}"
+                  .format(invoke_args, parent),
                   trace=trace)
     msg = "Lua execution error"
     if text.find("Lua timeout error") >= 0:

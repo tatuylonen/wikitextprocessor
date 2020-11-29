@@ -1201,6 +1201,26 @@ def foo(x):
         self.assertEqual(tt.args, [["a"], []])
         self.assertEqual(tt.children, [])
 
+    def test_template14(self):
+        tree, ctx = parse_with_ctx("test", "{{x|[}}")
+        self.assertEqual(ctx.errors, [])
+        self.assertEqual(ctx.warnings, [])
+        self.assertEqual(len(tree.children), 1)
+        t = tree.children[0]
+        self.assertEqual(t.kind, NodeKind.TEMPLATE)
+        self.assertEqual(t.children, [])
+        self.assertEqual(t.args, [["x"], ["["]])
+
+    def test_template15(self):
+        tree, ctx = parse_with_ctx("test", "{{x|]}}")
+        self.assertEqual(ctx.errors, [])
+        self.assertEqual(ctx.warnings, [])
+        self.assertEqual(len(tree.children), 1)
+        t = tree.children[0]
+        self.assertEqual(t.kind, NodeKind.TEMPLATE)
+        self.assertEqual(t.children, [])
+        self.assertEqual(t.args, [["x"], ["]"]])
+
     def test_templatevar1(self):
         tree = parse("test", "{{{foo}}}")
         self.assertEqual(len(tree.children), 1)
