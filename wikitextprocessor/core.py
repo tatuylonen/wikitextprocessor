@@ -242,6 +242,17 @@ class Wtp(object):
                             "path": tuple(self.expand_stack)})
         self._fmt_errmsg("DEBUG", msg, trace)
 
+    def to_return(self):
+        """Returns a dictionary with errors, warnings, and debug messages
+        from the context.  Note that the values are reset whenever starting
+        processing a new word.  The value returned by this function is
+        JSON-compatible and can easily be returned by a paralle process."""
+        return {
+            "errors": self.errors,
+            "warnings": self.warnings,
+            "debug": self.debug,
+        }
+
     def _canonicalize_template_name(self, name):
         """Canonicalizes a template name by making its first character
         uppercase and replacing underscores by spaces and sequences of
