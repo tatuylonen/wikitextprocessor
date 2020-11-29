@@ -72,6 +72,7 @@ class Wtp(object):
         "cache_file",	 # Prefix to cache files (instead of temporary file)
         "cache_file_old",  # Using pre-existing cache file
         "cookies",	 # Mapping from magic cookie -> expansion data
+        "debugs",	 # List of debug messages (cleared for each new page)
         "errors",	 # List of error messages (cleared for each new page)
         "fullpage",	 # The unprocessed text of the current page (or None)
         "lua",		 # Lua runtime or None if not yet initialized
@@ -97,6 +98,8 @@ class Wtp(object):
         "linenum",	 # Current line number
         "pre_parse",	 # XXX is pre-parsing still needed?
         "parser_stack",	 # Parser stack
+        "section",	 # Section within page, for error messages
+        "subsection",    # Subsection within page, for error messages
         "suppress_special",  # XXX never set to True???
     )
     def __init__(self, quiet=False, num_threads=None, cache_file=None):
@@ -108,10 +111,14 @@ class Wtp(object):
         self.cookies = []
         self.errors = []
         self.warnings = []
+        self.debugs = []
+        self.section = None
+        self.subsection = None
         self.lua = None
         self.quiet = quiet
         self.rev_ht = {}
         self.expand_stack = []
+        self.parser_stack = None
         self.num_threads = num_threads
         self.transient_pages = {}
         self.transient_templates = {}
@@ -173,19 +180,45 @@ class Wtp(object):
             # Create temporary file
             self.tmp_file = tempfile.TemporaryFile(mode="w+b", buffering=0)
 
+    def _fmt_errmsg(self, kind, msg, trace):
+        assert isinstance(kind, str)
+        assert isinstance(msg, str)
+        assert isinstance(trace, (str, type(None)))
+        loc = self.title
+        if self.section:
+            loc += "/" + self.section
+        if self.subsection:
+            loc += "/" + self.subsection
+        if self.expand_stack:
+            msg += " at {}".format(self.expand_stack)
+        if self.parser_stack:
+            titles = []
+            for node in self.parser_stack:
+                if node.kind in (NodeKind.LEVEL2, NodeKind.LEVEL3,
+                                 NodeKind.LEVEL4, NodeKind.LEVEL5,
+                                 NodeKind.LEVEL6):
+                    if not node.args:
+                        continue
+                    lst = filter(lambda x: x if isinstance(x, str) else "???",
+                                 node.args[0])
+                    title = "".join(lst)
+                    titles.append(title.strip())
+            msg += " parsing "  + "/".join(titles)
+        if trace:
+            msg += "\n" + trace
+        print("{}: {}: {}".format(loc, kind,msg))
+        sys.stdout.flush()
+
     def error(self, msg, trace=None):
         """Prints an error message to stdout.  The error is also saved in
         self.errors."""
         assert isinstance(msg, str)
         assert isinstance(trace, (str, type(None)))
         self.errors.append({"msg": msg, "trace": trace,
+                            "section": self.section,
+                            "subsection": self.subsection,
                             "path": tuple(self.expand_stack)})
-        if self.expand_stack:
-            msg += " at {}".format(self.expand_stack)
-        if trace:
-            msg += "\n" + trace
-        print("{}: ERROR: {}".format(self.title, msg))
-        sys.stdout.flush()
+        self._fmt_errmsg("ERROR", msg, trace)
 
     def warning(self, msg, trace=None):
         """Prints a warning message to stdout.  The error is also saved in
@@ -193,13 +226,21 @@ class Wtp(object):
         assert isinstance(msg, str)
         assert isinstance(trace, (str, type(None)))
         self.warnings.append({"msg": msg, "trace": trace,
+                              "section": self.section,
+                              "subsection": self.subsection,
                               "path": tuple(self.expand_stack)})
-        if self.expand_stack:
-            msg += " at {}".format(self.expand_stack)
-        if trace:
-            msg += "\n" + trace
-        print("{}: {}".format(self.title, msg))
-        sys.stdout.flush()
+        self._fmt_errmsg("WARNING", msg, trace)
+
+    def debug(self, msg, trace=None):
+        """Prints a debug message to stdout.  The error is also saved in
+        self.debug."""
+        assert isinstance(msg, str)
+        assert isinstance(trace, (str, type(None)))
+        self.debugs.append({"msg": msg, "trace": trace,
+                            "section": self.section,
+                            "subsection": self.subsection,
+                            "path": tuple(self.expand_stack)})
+        self._fmt_errmsg("DEBUG", msg, trace)
 
     def _canonicalize_template_name(self, name):
         """Canonicalizes a template name by making its first character
@@ -643,18 +684,38 @@ class Wtp(object):
 
     def start_page(self, title):
         """Starts a new page for expanding Wikitext.  This saves the title and
-        full page source in the context.  Calling this is mandatory for each
-        page; expand_wikitext() can then be called multiple times for the same
-        page.  This clears the self.errors and self.warnings lists."""
+        full page source in the context.  Calling this is mandatory
+        for each page; expand_wikitext() can then be called multiple
+        times for the same page.  This clears the self.errors,
+        self.warnings, and self.debugs lists and any current section
+        or subsection."""
         assert isinstance(title, str)
         # variables and thus must be reloaded for each page.
         self.lua = None  # Force reloading modules for every page
         self.title = title
         self.errors = []
         self.warnings = []
+        self.debugs = []
+        self.section = None
+        self.subsection = None
         self.cookies = []
         self.rev_ht = {}
         self.expand_stack = [title]
+
+    def start_section(self, title):
+        """Starts processing a new section of the current page.  Calling this
+        is optional, but can help provide better error messages.  This clears
+        any current subsection."""
+        assert title is None or isinstance(title, str)
+        self.section = title
+        self.subsection = None
+
+    def start_subsection(self, title):
+        """Starts processing a new subsection of the current section on the
+        current page.  Calling this is optional, but can help provide better
+        error messages."""
+        assert title is None or isinstance(title, str)
+        self.subsection = title
 
     def _unexpanded_template(self, args, nowiki):
         """Formats an unexpanded template (whose arguments may have been
