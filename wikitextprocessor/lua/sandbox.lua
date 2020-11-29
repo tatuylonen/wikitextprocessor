@@ -25,7 +25,7 @@ function new_loader(modname)
       error("PYTHON LOADER NOT SET - call lua_set_loader() first")
    end
    if content == nil then
-      error("MODULE NOT FOUND: " .. modname)
+      return nil
    end
 
    -- Wikimedia uses an older version of Lua.  Make certain substitutions
