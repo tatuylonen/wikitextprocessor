@@ -94,6 +94,7 @@ function frame_args_pairs(new_args)
    -- print("frame_args_pairs")
    local frame = new_args._frame
    local function stateless_iter(new_args, key)
+      -- print("stateless_iter: " .. tostring(key))
       if key == nil then key = "***nil***" end
       local nkey = new_args._next_key[key]
       if nkey == nil then return nil end
@@ -108,6 +109,7 @@ function frame_args_ipairs(new_args)
    -- print("frame_args_ipairs")
    local frame = new_args._frame
    local function stateless_iter(new_args, key)
+      -- print("ipairs stateless_iter: " .. tostring(key))
       if key == nil then key = 1 else key = key + 1 end
       local v = new_args[key]
       if v == nil then return nil end
@@ -120,9 +122,19 @@ function frame_args_len(new_args)
    return #new_args._orig
 end
 
+function frame_args_next(t, key)
+   if key == nil then key = "***nil***" end
+   local nkey = t._next_key[key]
+   if nkey == nil then return nil end
+   local v = t[nkey]
+   if v == nil then return nil end
+   return nkey, v
+end
+
 frame_args_meta = {
    __index = frame_args_index,
    __pairs = frame_args_pairs,
+   __next = frame_args_next,
    __len = frame_args_len
 }
 
@@ -141,6 +153,7 @@ function prepare_frame_args(frame)
   local next_key = {}
   local prev = "***nil***"
   for k, v in pairs(frame.args) do
+     -- print("prepare_frame_args: k=" .. tostring(k) .. " v=" .. tostring(v))
      next_key[prev] = k
      prev = k
   end
@@ -311,6 +324,15 @@ function table.insert(...)
          orig_insert(table.unpack(args))
       end
    end
+end
+
+-- Change next() to use a new metamethod __next so that we can redefine it for
+-- certain tables
+local orig_next = next
+function next(t, k)
+   local m = getmetatable(t)
+   local n = m and m.__next or orig_next
+   return n(t, k)
 end
 
 -- This debugging snippet is adapted from:

@@ -1746,6 +1746,36 @@ return export
         ret = ctx.expand("{{testtempl|a<1>}}")
         self.assertEqual(ret, """yes""")
 
+    def test_invoke21(self):
+        ctx = phase1_to_ctx([
+            ["wikitext", "Template:testtempl", "{{#invoke:testmod|testfn}}"],
+            ["Scribunto", "Module:testmod", """
+local export = {}
+function export.testfn(frame)
+  local v = next(frame.args)
+  if v then return "HAVE-ARGS" else return "NO-ARGS" end
+end
+return export
+"""]])
+        ctx.start_page("Tt")
+        ret = ctx.expand("{{testtempl}}")
+        self.assertEqual(ret, """NO-ARGS""")
+
+    def test_invoke22(self):
+        ctx = phase1_to_ctx([
+            ["wikitext", "Template:testtempl", "{{#invoke:testmod|testfn|x}}"],
+            ["Scribunto", "Module:testmod", """
+local export = {}
+function export.testfn(frame)
+  local k, v = next(frame.args)
+  return tostring(k) .. "=" .. tostring(v)
+end
+return export
+"""]])
+        ctx.start_page("Tt")
+        ret = ctx.expand("{{testtempl}}")
+        self.assertEqual(ret, """1=x""")
+
     def test_frame_parent1(self):
         ctx = phase1_to_ctx([
             ["wikitext", "Template:testtempl",
