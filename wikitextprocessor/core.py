@@ -250,7 +250,7 @@ class Wtp(object):
         return {
             "errors": self.errors,
             "warnings": self.warnings,
-            "debug": self.debug,
+            "debugs": self.debugs,
         }
 
     def _canonicalize_template_name(self, name):
