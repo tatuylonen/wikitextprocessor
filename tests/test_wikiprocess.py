@@ -2204,7 +2204,7 @@ return export
             """return table.concat(mw.text.split("a/bc/", "/"), "@")""")
 
     def test_mw_text_split7(self):
-        self.scribunto("a@b@c@",
+        self.scribunto("a@b@c",
             """return table.concat(mw.text.split("abc", ""), "@")""")
 
     def test_mw_text_split8(self):
@@ -2230,6 +2230,14 @@ return export
         self.scribunto("ab@ab@", """
           local result = {}
           for v in mw.text.gsplit("abcabc", "[c]+") do
+              table.insert(result, v)
+          end
+          return table.concat(result, "@")""")
+
+    def test_mw_text_gsplit2(self):
+        self.scribunto("a@b@c", """
+          local result = {}
+          for v in mw.text.gsplit("abc", "") do
               table.insert(result, v)
           end
           return table.concat(result, "@")""")

@@ -142,13 +142,14 @@ function mw_text.split(text, pattern, plain)
       local ofs, last = mw.ustring.find(text, pattern, start, plain)
       if ofs == nil then
          break
-      elseif last < ofs then
+      elseif ofs > last then
          -- empty match
          table.insert(result, mw.ustring.sub(text, start, ofs))
-         if last > length then
-            break
-         end
          start = ofs + 1
+         if start >= length then
+            table.insert(result, mw.ustring.sub(text, start))
+            return result
+         end
       elseif ofs == start then
          table.insert(result, "")
          start = last + 1
