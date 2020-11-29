@@ -69,8 +69,9 @@ end
 
 function mw_text.trim(s, charset)
    charset = charset or "\r\n\t\f "
-   return mw.ustring.gsub(s, "^[" .. charset .. "]*(.-)[" .. charset .. "]*$",
-                          "%1")
+   local ret = mw.ustring.gsub(s, "^[" .. charset .. "]*(.-)[" ..
+                                  charset .. "]*$", "%1")
+   return ret
 end
 
 function mw_text.truncate(text, length, ellipsis, adjustLength)
