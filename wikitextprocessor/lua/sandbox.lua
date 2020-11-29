@@ -100,6 +100,8 @@ function frame_args_pairs(new_args)
       if nkey == nil then return nil end
       local v = new_args[nkey]
       if v == nil then return nil end
+      -- print("stateless_iter returning: " .. tostring(nkey) .. "=" ..
+      --          tostring(v))
       return nkey, v
    end
    return stateless_iter, new_args, nil
@@ -113,6 +115,8 @@ function frame_args_ipairs(new_args)
       if key == nil then key = 1 else key = key + 1 end
       local v = new_args[key]
       if v == nil then return nil end
+      -- print("stateless_iter returning: " .. tostring(key) .. "=" ..
+      --       tostring(v))
       return key, v
    end
    return stateless_iter, new_args, nil
