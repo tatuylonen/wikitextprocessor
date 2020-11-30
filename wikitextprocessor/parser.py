@@ -518,6 +518,11 @@ def italic_fn(ctx, token):
     if ctx.pre_parse:
         return text_fn(ctx, token)
 
+    # Do not try to parse italic inside template arguments.
+    if (_parser_have(ctx, NodeKind.TEMPLATE) or
+        _parser_have(ctx, NodeKind.TEMPLATE_ARG)):
+        return text_fn(ctx, token)
+
     if not _parser_have(ctx, NodeKind.ITALIC):
         # Push new formatting node
         _parser_push(ctx, NodeKind.ITALIC)
@@ -541,6 +546,11 @@ def italic_fn(ctx, token):
 def bold_fn(ctx, token):
     """Processes a bold start/end token (''')."""
     if ctx.pre_parse:
+        return text_fn(ctx, token)
+
+    # Do not try to parse italic inside template arguments.
+    if (_parser_have(ctx, NodeKind.TEMPLATE) or
+        _parser_have(ctx, NodeKind.TEMPLATE_ARG)):
         return text_fn(ctx, token)
 
     if not _parser_have(ctx, NodeKind.BOLD):

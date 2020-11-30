@@ -1586,13 +1586,17 @@ def foo(x):
         self.assertEqual(tree.children[0].kind, NodeKind.URL)
 
     def test_error6(self):
-        tree, ctx = parse_with_ctx("test", "{{foo|'''x}}")
-        self.assertEqual(len(ctx.warnings), 1)
+        # This is not actually an error; italic is not processed inside
+        # template args
+        tree, ctx = parse_with_ctx("test", "{{foo|''x}}")
+        self.assertEqual(len(ctx.warnings), 0)
         self.assertEqual(tree.children[0].kind, NodeKind.TEMPLATE)
 
     def test_error7(self):
+        # This is not actually an error; bold is not processed inside
+        # template args
         tree, ctx = parse_with_ctx("test", "{{{foo|'''x}}}")
-        self.assertEqual(len(ctx.warnings), 1)
+        self.assertEqual(len(ctx.warnings), 0)
         self.assertEqual(tree.children[0].kind, NodeKind.TEMPLATE_ARG)
 
     def test_error8(self):
