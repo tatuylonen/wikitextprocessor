@@ -1082,6 +1082,13 @@ def tag_fn(ctx, token):
     # Note: <nowiki> and HTML comments have already been handled in
     # preprocessing
 
+    # Do not try to parse HTML inside template arguments.  Many templates
+    # use tag-like constructions as internal markers, and they are not
+    # valid HTML tags.  HTML is only parsed after template processing.
+    if (_parser_have(ctx, NodeKind.TEMPLATE) or
+        _parser_have(ctx, NodeKind.TEMPLATE_ARG)):
+        return text_fn(ctx, token)
+
     # Try to parse it as a start tag
     m = re.match(r"""<\s*([-a-zA-Z0-9]+)\s*((\b[-a-zA-Z0-9]+(=("[^"]*"|"""
                  r"""'[^']*'|[^ \t\n"'`=<>/]*))?\s*)*)(/?)\s*>""", token)
@@ -1122,12 +1129,7 @@ def tag_fn(ctx, token):
         # Give a warning on unsupported HTML tags.  WikiText limits the set of
         # tags that are allowed.
         if name not in ALLOWED_HTML_TAGS:
-            # Wiktionary seems to use markings like <3> in some
-            # languages.  Treat them as text.  This method of handling
-            # them may need to be reconsidered in the future if
-            # problems arise.
-            if not name.isdigit() and name not in (
-                    "m", "f", "c", "anml"):
+            if not name.isdigit():
                 ctx.warning("html tag <{}{}> not allowed in WikiText"
                             "".format(name, "/" if also_end else ""))
             text_fn(ctx, token)
@@ -1266,6 +1268,7 @@ token_re = re.compile(r"(?m)^(={2,6})\s*(([^=]|=[^=])+?)\s*(={2,6})\s*$|"
                       r"^----+|"
                       r"^[*:;#]+|"
                       r":|"   # sometimes special when not beginning of line
+                      r"<<[-a-zA-Z0-9/]*>>|"
                       r"""<\s*[-a-zA-Z0-9]+\s*(\b[-a-zA-Z0-9]+(=("[^<>"]*"|"""
                         r"""'[^<>']*'|[^ \t\n"'`=<>]*))?\s*)*(/\s*)?>|"""
                       r"<\s*/\s*[-a-zA-Z0-9]+\s*>|"

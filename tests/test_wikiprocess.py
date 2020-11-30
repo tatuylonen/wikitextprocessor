@@ -3112,9 +3112,9 @@ return export
           return i""")
         self.assertLess(time.time() - t, 10)
 
-# XXX Test template_fn in expand()
+# XXX Test template_fn
 
-# XXX implement and test post_template_fn in expand()
+# XXX test post_template_fn
 
 # XXX test expand() with expand_parserfns=False
 # XXX test expand() with expand_templates=False
@@ -3122,14 +3122,6 @@ return export
 # XXX test expand() with pre_only
 # XXX test expand() with templates_to_expand as a given set
 # XXX test expand() with templates_to_expand=None (meaning all templates)
-
-# XXX add warning about unbalanced parentheses; should try to handle
-# them heuristically as a last resort
-
-# XXX Why do I sometimes get {{{...}}} remaining in final text?
-
-# XXX change unrecognized HTML tag parse error to a warning.  Collect
-# warnings in a list
 
 # XXX implement #categorytree (note named arguments)
 
@@ -3141,4 +3133,7 @@ return export
 # XXX test frame:newParserValue
 # XXX test frame:newTemplateParserValue
 # XXX test frame:newChild
+
 # XXX test case variations of template names and parser function names
+#  - these are apparently configured for each wiki and listed in the
+#    dump file

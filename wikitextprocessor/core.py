@@ -258,7 +258,7 @@ class Wtp(object):
         uppercase and replacing underscores by spaces and sequences of
         whitespace by a single whitespace."""
         assert isinstance(name, str)
-        if name[:9] == "Template:":
+        if name.lower().startswith("template:"):
             name = name[9:]
         name = re.sub(r"_", " ", name)
         name = re.sub(r"\s+", " ", name)
@@ -539,6 +539,7 @@ class Wtp(object):
         pre_expand = False
 
         # Determine if the template starts with a list item
+        # XXX should we expand other templates that produce list items???
         contains_list = re.match(r"(?s)^[#*;:]", body) is not None
 
         # Remove paired tables
@@ -576,8 +577,8 @@ class Wtp(object):
             if newt == outside:
                 break
             outside = newt
-        # For now, we'll ignore !! and ||
-        m = re.search(r"(?s)(^|\n)(\|\+|\|-|\||\!)", outside)
+        # For now, we'll ignore !! and || as well as |
+        m = re.search(r"(?s)(^|\n)(\|\+|\|-|\!)", outside)
         contains_table_element = m is not None
         # if contains_table_element:
         #     print("contains_table_element {!r} at {}"
