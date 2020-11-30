@@ -371,6 +371,8 @@ def text_fn(ctx, token):
     """Inserts the token as raw text into the parse tree."""
     node = ctx.parser_stack[-1]
 
+    print("text_fn", ctx.beginning_of_line, node.kind, repr(token))
+
     # External links [https://...] require some magic.  They only seem to
     # be links if the content looks like a URL."""
     if node.kind == NodeKind.URL:
@@ -401,7 +403,8 @@ def text_fn(ctx, token):
                     return
                 _parser_merge_str_children(ctx)
                 if (node.children and isinstance(node.children[-1], str) and
-                    not node.children[-1].isspace() and
+                    (len(node.children) > 1 or
+                     not node.children[-1].isspace()) and
                     node.children[-1].endswith("\n")):
                     _parser_pop(ctx, False)
                     continue
@@ -1227,7 +1230,7 @@ token_re = re.compile(r"(?m)^(={2,6})\s*(([^=]|=[^=])+?)\s*(={2,6})\s*$|"
                       r"'''|"
                       r"''|"
                       r"[ \t]+\n*|"
-                      r"\n+|"
+                      r"\n|"
                       r"\[|"
                       r"\]|"
                       r"\|\}|"

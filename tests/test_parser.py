@@ -435,6 +435,20 @@ dasfasddasfdas
         assert isinstance(a, WikiNode)
         self.assertEqual(a.kind, NodeKind.HTML)
 
+    def test_html17(self):
+        tree, ctx = parse_with_ctx("test",
+            """<table>
+            <tr><th>Depth
+            <tr><td>4
+            <tr><td>5
+            </table>""")
+        self.assertEqual(ctx.errors, [])
+        self.assertEqual(ctx.warnings, [])
+        self.assertEqual(len(tree.children), 1)
+        a = tree.children[0]
+        assert isinstance(a, WikiNode)
+        self.assertEqual(a.kind, NodeKind.HTML)
+
     def test_html_unknown(self):
         tree, ctx = parse_with_ctx("test", "<unknown>foo</unknown>")
         self.assertNotEqual(ctx.warnings, [])
@@ -607,6 +621,15 @@ dasfasddasfdas
         self.assertEqual(b.kind, NodeKind.LIST)
         self.assertEqual(c.kind, NodeKind.HLINE)
         self.assertEqual(d, "\nmore")
+
+    def test_list_html(self):
+        tree = parse("test", "foo\n*item\n\n<strong>bar</strong>")
+        self.assertEqual(len(tree.children), 4)
+        a, b, c, d = tree.children
+        self.assertEqual(a, "foo\n")
+        self.assertEqual(b.kind, NodeKind.LIST)
+        self.assertEqual(c, "\n")
+        self.assertEqual(d.kind, NodeKind.HTML)
 
     def test_ul(self):
         tree = parse("test", "foo\n\n* item1\n** item1.1\n** item1.2\n"
