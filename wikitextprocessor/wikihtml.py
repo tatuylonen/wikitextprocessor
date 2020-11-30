@@ -21,7 +21,7 @@
 # "phrasing and "text", and "phrasing" implies "text".
 #
 # no-end-tag set to true means the tag should not have an end tag.
-# close-next lists tags that automatically closes this tag.  Closing a
+# close-next lists tags that automatically close this tag.  Closing a
 # parent tag will also silently close them.  Otherwise a missing end tag
 # results in an error message.
 ALLOWED_HTML_TAGS = {
@@ -227,7 +227,7 @@ ALLOWED_HTML_TAGS = {
         "content": []},
     "td": {
         "parents": ["tr"],
-        "close-next": ["th", "td"],
+        "close-next": ["th", "td", "tr"],
         "content": ["flow"]},
     # From TemplateStyles extension; see
     # https://www.mediawiki.org/wiki/Extension:TemplateStyles
@@ -241,7 +241,7 @@ ALLOWED_HTML_TAGS = {
         "content": []},
     "th": {
         "parents": ["tr"],
-        "close-next": ["th", "td"],
+        "close-next": ["th", "td", "tr"],
         "content": ["flow"]},
     "thead": {
         "parents": ["table"],
