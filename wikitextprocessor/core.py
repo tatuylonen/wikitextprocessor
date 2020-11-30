@@ -424,6 +424,10 @@ class Wtp(object):
         returns an str."""
         assert isinstance(title, str)
         assert isinstance(text, str)
+        # Remove all comments
+        text = re.sub(r"(?s)<!\s*--.*?--\s*>", "", text)
+        # Apparently unclosed <!-- at the end of a template body is ignored
+        text = re.sub(r"(?s)<!\s*--.*", "", text)
         # Remove all text inside <noinclude> ... </noinclude>
         text = re.sub(r"(?is)<\s*noinclude\s*>.*?<\s*/\s*noinclude\s*>",
                       "", text)
