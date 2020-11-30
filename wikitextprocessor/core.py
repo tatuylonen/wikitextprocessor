@@ -1000,7 +1000,15 @@ class Wtp(object):
                     # return it unexpanded (but with arguments possibly
                     # expanded)
                     if name not in templates_to_expand:
-                        parts.append(self._unexpanded_template(args, nowiki))
+                        # Note: we will still expand parser functions in its
+                        # arguments, because those parser functions could
+                        # refer to its parent frame and fail if expanded
+                        # after eliminating the intermediate templates.
+                        new_args = list(expand_recurse(x, parent,
+                                                       templates_to_expand)
+                                        for x in args)
+                        parts.append(self._unexpanded_template(new_args,
+                                                               nowiki))
                         continue
 
                     # Construct and expand template arguments

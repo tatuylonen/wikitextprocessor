@@ -439,10 +439,7 @@ dasfasddasfdas
         tree, ctx = parse_with_ctx("test", "<unknown>foo</unknown>")
         self.assertNotEqual(ctx.warnings, [])
         self.assertEqual(len(tree.children), 1)
-        a = tree.children[0]
-        self.assertEqual(a.kind, NodeKind.HTML)
-        self.assertEqual(a.args, "unknown")
-        self.assertEqual(a.children, ["foo"])
+        self.assertEqual(tree.children, ["<unknown>foo</unknown>"])
 
     def test_html_section1(self):
         tree, ctx = parse_with_ctx("test", "a<section begin=foo />b")
