@@ -1126,11 +1126,12 @@ def tag_fn(ctx, token):
             # languages.  Treat them as text.  This method of handling
             # them may need to be reconsidered in the future if
             # problems arise.
-            if name.isdigit():
-                text_fn(ctx, token)
-                return
-            ctx.warning("html tag <{}{}> not allowed in WikiText"
-                        "".format(name, "/" if also_end else ""))
+            if not name.isdigit() and name not in (
+                    "m", "f", "c", "anml"):
+                ctx.warning("html tag <{}{}> not allowed in WikiText"
+                            "".format(name, "/" if also_end else ""))
+            text_fn(ctx, token)
+            return
 
         # Automatically close parent HTML tags that should be ended by this tag
         # until we have a parent that is not a HTML tag or that is an allowed
