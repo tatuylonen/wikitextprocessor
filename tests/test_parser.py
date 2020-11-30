@@ -590,6 +590,15 @@ dasfasddasfdas
         self.assertEqual(len(tree.children), 1)
         self.assertEqual(tree.children[0].kind, NodeKind.ITALIC)
 
+    def test_bolditalic7(self):
+        tree, ctx = parse_with_ctx("test", """''S '''''n''''' .''""")
+        self.assertEqual(ctx.errors, [])
+        self.assertEqual(ctx.warnings, [])
+        self.assertEqual(len(tree.children), 3)
+        self.assertEqual(tree.children[0].kind, NodeKind.ITALIC)
+        self.assertEqual(tree.children[1].kind, NodeKind.BOLD)
+        self.assertEqual(tree.children[2].kind, NodeKind.ITALIC)
+
     def test_hline(self):
         tree = parse("test", "foo\n*item\n----\nmore")
         self.assertEqual(len(tree.children), 4)

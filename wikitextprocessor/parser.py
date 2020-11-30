@@ -563,43 +563,6 @@ def bold_fn(ctx, token):
         _parser_push(ctx, NodeKind.ITALIC)
 
 
-def bolditalic_fn(ctx, token):
-    """Processes a combined bold-italic token (''''')."""
-    if ctx.pre_parse:
-        return text_fn(ctx, token)
-
-    def pop_until():
-        if (_parser_have(ctx, NodeKind.BOLD) or
-            _parser_have(ctx, NodeKind.ITALIC)):
-            while True:
-                node = ctx.parser_stack[-1]
-                if node.kind == NodeKind.BOLD or node.kind == NodeKind.ITALIC:
-                    break
-                _parser_pop(ctx, True)
-
-    pop_until()
-    if ctx.parser_stack[-1].kind == NodeKind.ITALIC:
-        _parser_pop(ctx, False)
-        pop_until()
-        if ctx.parser_stack[-1].kind == NodeKind.BOLD:
-            _parser_pop(ctx, False)
-            return
-        _parser_push(ctx, NodeKind.BOLD)
-        return
-
-    if ctx.parser_stack[-1].kind == NodeKind.BOLD:
-        _parser_pop(ctx, False)
-        pop_until()
-        if ctx.parser_stack[-1].kind == NodeKind.ITALIC:
-            _parser_pop(ctx, False)
-            return
-        _parser_push(ctx, NodeKind.ITALIC)
-        return
-
-    _parser_push(ctx, NodeKind.ITALIC)
-    _parser_push(ctx, NodeKind.BOLD)
-
-
 def ilink_start_fn(ctx, token):
     """Processes an internal link start token "[["."""
     if ctx.pre_parse:
@@ -1290,7 +1253,6 @@ list_prefix_re = re.compile(r"[*:;#]+")
 tokenops = {
     "'''": bold_fn,
     "''": italic_fn,
-    "'''''": bolditalic_fn,
     "[": elink_start_fn,
     "]": elink_end_fn,
     "{|": table_start_fn,
@@ -1344,12 +1306,14 @@ def token_iter(ctx, text):
                 if part.startswith("'''''"):
                     if state == 1:  # in italic
                         yield True, "''"
-                        part = part[2:]
-                        state = 0
-                    if state == 2:  # in bold
                         yield True, "'''"
-                        part = part[3:]
-                        state = 0
+                        part = part[5:]
+                        state = 2
+                    elif state == 2:  # in bold
+                        yield True, "'''"
+                        yield True, "''"
+                        part = part[5:]
+                        state = 1
                     elif state == 3:  # in both
                         yield True, "'''"
                         yield True, "''"
@@ -1517,9 +1481,3 @@ def print_tree(tree, indent=0):
         print("{}    {}={}".format(" " * indent, k, v))
     for child in tree.children:
         print_tree(child, indent + 2)
-
-
-# Very simple test:
-# data = open("pages/Words/ho/horse.txt", "r").read()
-# tree = parse("horse", data)
-# print_tree(tree, 0)
