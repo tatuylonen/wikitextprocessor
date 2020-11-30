@@ -371,8 +371,6 @@ def text_fn(ctx, token):
     """Inserts the token as raw text into the parse tree."""
     node = ctx.parser_stack[-1]
 
-    print("text_fn", ctx.beginning_of_line, node.kind, repr(token))
-
     # External links [https://...] require some magic.  They only seem to
     # be links if the content looks like a URL."""
     if node.kind == NodeKind.URL:
