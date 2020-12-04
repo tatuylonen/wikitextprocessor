@@ -272,13 +272,13 @@ def _parser_merge_str_children(ctx):
             strings.append(x)
         else:
             if strings:
-                s = ctx._finalize_expand("".join(strings), True)
+                s = ctx._finalize_expand("".join(strings), False)
                 if s:
                     new_children.append(s)
                 strings = []
             new_children.append(x)
     if strings:
-        s = ctx._finalize_expand("".join(strings), True)
+        s = ctx._finalize_expand("".join(strings), False)
         if s:
             new_children.append(s)
     node.children = new_children
