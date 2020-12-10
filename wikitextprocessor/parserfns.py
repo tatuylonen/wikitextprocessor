@@ -370,7 +370,8 @@ def currentmonthname_fn(ctx, fn_name, args, expander):
     # XXX support for other languages?
     month = datetime.datetime.utcnow().month
     return ("", "January", "February", "March", "April", "May", "June",
-            "July", "August", "September", "November", "December")[month]
+            "July", "August", "September", "October", "November",
+            "December")[month]
 
 
 def currentmonthabbrev_fn(ctx, fn_name, args, expander):
@@ -378,7 +379,7 @@ def currentmonthabbrev_fn(ctx, fn_name, args, expander):
     # XXX support for other languages?
     month = datetime.datetime.utcnow().month
     return ("", "Jan", "Feb", "Mar", "Apr", "May", "Jun",
-            "Jul", "Aug", "Sep", "Nov", "Dec")[month]
+            "Jul", "Aug", "Sep", "Oct", "Nov", "Dec")[month]
 
 
 def currentday_fn(ctx, fn_name, args, expander):
