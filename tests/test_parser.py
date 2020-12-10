@@ -150,17 +150,19 @@ dasfasddasfdas
         h2b = tree.children[1]
         self.assertEqual(h2a.kind, NodeKind.LEVEL2)
         self.assertEqual(h2b.kind, NodeKind.LEVEL2)
-        self.assertEqual(h2a.children, ["\na ===Bar=== b\n"])
+        self.assertEqual(h2a.children,
+                         ["\na &equals;&equals;&equals;Bar"
+                          "&equals;&equals;&equals; b\n"])
         self.assertEqual(h2b.args, [["Zappa"]])
         self.assertEqual(h2b.children, ["\nc\n"])
 
     def test_nowiki2(self):
         tree = parse("test", "<<nowiki/>foo>")
-        assert tree.children == ["<foo>"]
+        assert tree.children == ["<<nowiki />foo>"]
 
     def test_nowiki3(self):
         tree = parse("test", "&<nowiki/>amp;")
-        self.assertEqual(tree.children, ["&amp;"])  # Should be expanded later
+        self.assertEqual(tree.children, ["&<nowiki />amp;"])
 
     def test_nowiki4(self):
         tree, ctx = parse_with_ctx("test", "a</nowiki>b")
@@ -169,7 +171,7 @@ dasfasddasfdas
 
     def test_nowiki5(self):
         tree = parse("test", "<nowiki />#b")
-        self.assertEqual(tree.children, ["#b"])
+        self.assertEqual(tree.children, ["<nowiki />#b"])
 
     def test_nowiki6(self):
         tree = parse("test", "a<nowiki>\n</nowiki>b")
@@ -180,72 +182,80 @@ dasfasddasfdas
         self.assertEqual(tree.children, ["a bc"])
 
     def test_nowiki8(self):
-        tree = parse("test", "'<nowiki />'Italics' markup'<nowiki />'")
-        self.assertEqual(tree.children, ["''Italics' markup''"])
+        tree = parse("test", "'<nowiki />'Italics' markup'<nowiki/>'")
+        self.assertEqual(tree.children, ["'<nowiki />'Italics' markup'<nowiki />'"])
 
     def test_nowiki9(self):
         tree = parse("test", "<nowiki>[[Example]]</nowiki>")
-        self.assertEqual(tree.children, ["[[Example]]"])
+        self.assertEqual(tree.children, ["&lsqb;&lsqb;Example&rsqb;&rsqb;"])
 
     def test_nowiki10(self):
         tree = parse("test", "<nowiki><!-- revealed --></nowiki>")
-        self.assertEqual(tree.children, ["<!-- revealed -->"])
+        self.assertEqual(tree.children, ["&lt;&excl;-- revealed --&gt;"])
 
     def test_nowiki11(self):
         tree = parse("test", "__HIDDENCAT<nowiki />__")
-        self.assertEqual(tree.children, ["__HIDDENCAT__"])
+        self.assertEqual(tree.children, ["__HIDDENCAT<nowiki />__"])
 
     def test_nowiki12(self):
         tree = parse("test", "[<nowiki />[x]]")
-        self.assertEqual(tree.children, ["[[x]]"])
+        self.assertEqual(tree.children, ["&lsqb;&lsqb;x&rsqb;&rsqb;"])
 
     def test_nowiki13(self):
         tree = parse("test", "[[x]<nowiki />]")
-        self.assertEqual(tree.children, ["[[x]]"])
+        self.assertEqual(tree.children, ["&lsqb;&lsqb;x&rsqb;&rsqb;"])
 
     def test_nowiki14(self):
         tree = parse("test", "[[<nowiki />x]]")
-        self.assertEqual(tree.children, ["[[x]]"])
+        self.assertEqual(tree.children, ["&lsqb;&lsqb;<nowiki />x&rsqb;&rsqb;"])
 
     def test_nowiki15(self):
         tree = parse("test", "{<nowiki />{x}}")
-        self.assertEqual(tree.children, ["{{x}}"])
+        self.assertEqual(tree.children, ["&lbrace;&lbrace;x&rbrace;&rbrace;"])
 
     def test_nowiki16(self):
         tree = parse("test", "{{x}<nowiki />}")
-        self.assertEqual(tree.children, ["{{x}}"])
+        self.assertEqual(tree.children, ["&lbrace;&lbrace;x&rbrace;&rbrace;"])
 
     def test_nowiki17(self):
         tree = parse("test", "{{x<nowiki />}}")
-        self.assertEqual(tree.children, ["{{x}}"])
+        self.assertEqual(tree.children,
+                         ["&lbrace;&lbrace;x<nowiki />&rbrace;&rbrace;"])
 
     def test_nowiki18(self):
         tree = parse("test", "{{<nowiki />{x}}}")
-        self.assertEqual(tree.children, ["{{{x}}}"])
+        self.assertEqual(tree.children,
+                         ["&lbrace;&lbrace;&lbrace;x&rbrace;&rbrace;&rbrace;"])
 
     def test_nowiki19(self):
         tree = parse("test", "{<nowiki />{{x}}}")
-        self.assertEqual(tree.children, ["{{{x}}}"])
+        self.assertEqual(tree.children,
+                         ["&lbrace;&lbrace;&lbrace;x&rbrace;&rbrace;&rbrace;"])
 
     def test_nowiki20(self):
         tree = parse("test", "{{{x|1}<nowiki />}}")
-        self.assertEqual(tree.children, ["{{{x|1}}}"])
+        self.assertEqual(tree.children,
+                         ["&lbrace;&lbrace;&lbrace;x&vert;1"
+                          "&rbrace;&rbrace;&rbrace;"])
 
     def test_nowiki21(self):
         tree = parse("test", "{{{x}}<nowiki />}")
-        self.assertEqual(tree.children, ["{{{x}}}"])
+        self.assertEqual(tree.children,
+                         ["&lbrace;&lbrace;&lbrace;x&rbrace;&rbrace;&rbrace;"])
 
     def test_nowiki22(self):
         tree = parse("test", "{{{x<nowiki />|}}}")
-        self.assertEqual(tree.children, ["{{{x|}}}"])
+        self.assertEqual(tree.children,
+                         ["&lbrace;&lbrace;&lbrace;x<nowiki />&vert;"
+                          "&rbrace;&rbrace;&rbrace;"])
 
     def test_entity_expand(self):
         tree = parse("test", "R&amp;D")
-        self.assertEqual(tree.children, ["R&D"])
+        self.assertEqual(tree.children, ["R&amp;D"])
 
     def test_processonce1(self):
         tree = parse("test", "&amp;amp;")
-        self.assertEqual(tree.children, ["&amp;"])
+        self.assertEqual(tree.children, ["&amp;amp;"])
 
     def test_html1(self):
         tree = parse("test", "<b>foo</b>")
@@ -394,7 +404,8 @@ dasfasddasfdas
         assert isinstance(a, WikiNode)
         self.assertEqual(a.kind, NodeKind.HTML)
         self.assertEqual(a.args, "tt")
-        self.assertEqual(a.children, ["{{f|oo}}"])
+        self.assertEqual(a.children,
+                         ["&lbrace;&lbrace;f&vert;oo&rbrace;&rbrace;"])
 
     def test_html13(self):
         tree, ctx = parse_with_ctx("test", "<span>[</span>")
@@ -555,12 +566,15 @@ dasfasddasfdas
                                    "''' ''bold italic test'''<nowiki/>''")
         self.assertEqual(ctx.errors, [])
         self.assertEqual(ctx.warnings, [])
-        self.assertEqual(len(tree.children), 1)
-        self.assertEqual(tree.children[0].kind, NodeKind.BOLD)
-        a, b = tree.children[0].children
-        self.assertEqual(a, " ")
+        self.assertEqual(len(tree.children), 2)
+        a, b = tree.children
+        self.assertEqual(a.kind, NodeKind.BOLD)
+        aa, ab = a.children
+        self.assertEqual(aa, " ")
+        self.assertEqual(ab.kind, NodeKind.ITALIC)
+        self.assertEqual(ab.children, ["bold italic test"])
         self.assertEqual(b.kind, NodeKind.ITALIC)
-        self.assertEqual(b.children, ["bold italic test"])
+        self.assertEqual(b.children, ["<nowiki />"])
 
     def test_bolditalic3(self):
         # Mismatch in bold/italic close ordering is permitted
@@ -568,12 +582,15 @@ dasfasddasfdas
                                    "'' '''bold italic test''<nowiki/>'''")
         self.assertEqual(ctx.errors, [])
         self.assertEqual(ctx.warnings, [])
-        self.assertEqual(len(tree.children), 1)
-        self.assertEqual(tree.children[0].kind, NodeKind.ITALIC)
-        a, b = tree.children[0].children
-        self.assertEqual(a, " ")
+        self.assertEqual(len(tree.children), 2)
+        a, b = tree.children
+        self.assertEqual(a.kind, NodeKind.ITALIC)
+        aa, ab = a.children
+        self.assertEqual(aa, " ")
+        self.assertEqual(ab.kind, NodeKind.BOLD)
+        self.assertEqual(ab.children, ["bold italic test"])
         self.assertEqual(b.kind, NodeKind.BOLD)
-        self.assertEqual(b.children, ["bold italic test"])
+        self.assertEqual(b.children, ["<nowiki />"])
 
     def test_bolditalic4(self):
         tree, ctx = parse_with_ctx("test", "'' '''bold italic test'''''")
@@ -906,7 +923,7 @@ dasfasddasfdas
         self.assertEqual(a.kind, NodeKind.LINK)
         self.assertEqual(a.args, [["Help"]])
         self.assertEqual(a.children, [])
-        self.assertEqual(b, "ful advise")
+        self.assertEqual(b, "<nowiki />ful advise")
 
     def test_link6(self):
         tree, ctx = parse_with_ctx("test", "[[of [[musk]]]]")
@@ -1013,7 +1030,7 @@ def foo(x):
         self.assertEqual(tree.children[0], "\n")
         p = tree.children[1]
         self.assertEqual(p.kind, NodeKind.PREFORMATTED)
-        self.assertEqual(p.children, ["  def foo(x): print(x) "])
+        self.assertEqual(p.children, ["  def foo(x)&colon; print(x) "])
 
     def test_pre1(self):
         tree, ctx = parse_with_ctx(
@@ -1025,7 +1042,7 @@ def foo(x):
         a, b, c = tree.children
         self.assertEqual(a, "\n")
         self.assertEqual(b.kind, NodeKind.PRE)
-        self.assertEqual(b.children, ["preformatted & '''not bold''' text"])
+        self.assertEqual(b.children, ["preformatted &amp; '''not bold''' text"])
         self.assertEqual(c, " after")
 
     def test_pre2(self):
@@ -1072,7 +1089,7 @@ def foo(x):
     def test_comment3(self):
         tree = parse("test", "fo<nowiki>o<!-- not\nshown-->b</nowiki>ar")
         self.assertEqual(tree.children,
-                         ["foo<!-- not shown-->bar"])
+                         ["foo&lt;&excl;-- not shown--&gt;bar"])
 
     def test_magicword1(self):
         tree = parse("test", "a __NOTOC__ b")
@@ -1693,7 +1710,7 @@ def foo(x):
 
     def test_plain13(self):
         tree = parse("test", "&lt;nowiki />")
-        self.assertEqual(tree.children, ["<nowiki />"])
+        self.assertEqual(tree.children, ["&lt;nowiki />"])
 
     def test_plain14(self):
         tree, ctx = parse_with_ctx("test", "a < b < c")
