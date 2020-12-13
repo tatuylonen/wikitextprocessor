@@ -313,6 +313,11 @@ def _parser_pop(ctx, warn_unclosed):
             assert node3 is node
             text_fn(ctx, "[")
             return
+        elif node.kind in (NodeKind.ITALIC, NodeKind.BOLD):
+            # Unbalanced italic/bold annotation is so extremely common
+            # in Wiktionary that let's suppress any warnings about
+            # them.
+            pass
         else:
             ctx.warning("{} not properly closed".format(node.kind.name),
                         trace="started on line {}, detected on line {}"
@@ -370,6 +375,10 @@ def _parser_have(ctx, kind):
 def text_fn(ctx, token):
     """Inserts the token as raw text into the parse tree."""
     node = ctx.parser_stack[-1]
+
+    # Convert certain characters from the token into HTML entities
+    token = re.sub(r"<", "&lt;", token)
+    token = re.sub(r">", "&gt;", token)
 
     # External links [https://...] require some magic.  They only seem to
     # be links if the content looks like a URL."""
@@ -519,12 +528,13 @@ def italic_fn(ctx, token):
     if ctx.pre_parse:
         return text_fn(ctx, token)
 
-    # Do not try to parse italic inside template arguments.
-    if (_parser_have(ctx, NodeKind.TEMPLATE) or
-        _parser_have(ctx, NodeKind.TEMPLATE_ARG)):
+    node = ctx.parser_stack[-1]
+
+    if node.kind in (NodeKind.TEMPLATE, NodeKind.TEMPLATE_ARG):
         return text_fn(ctx, token)
 
-    if not _parser_have(ctx, NodeKind.ITALIC):
+    if (not _parser_have(ctx, NodeKind.ITALIC) or
+        node.kind in (NodeKind.LINK,)):
         # Push new formatting node
         _parser_push(ctx, NodeKind.ITALIC)
         return
@@ -549,12 +559,13 @@ def bold_fn(ctx, token):
     if ctx.pre_parse:
         return text_fn(ctx, token)
 
-    # Do not try to parse italic inside template arguments.
-    if (_parser_have(ctx, NodeKind.TEMPLATE) or
-        _parser_have(ctx, NodeKind.TEMPLATE_ARG)):
+    node = ctx.parser_stack[-1]
+
+    if node.kind in (NodeKind.TEMPLATE, NodeKind.TEMPLATE_ARG):
         return text_fn(ctx, token)
 
-    if not _parser_have(ctx, NodeKind.BOLD):
+    if (not _parser_have(ctx, NodeKind.BOLD) or
+        node.kind in (NodeKind.LINK,)):
         # Push new formatting node
         _parser_push(ctx, NodeKind.BOLD)
         return
