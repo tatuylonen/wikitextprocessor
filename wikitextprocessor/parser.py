@@ -34,6 +34,13 @@ HTML_PERMITTED_PARENTS = {
 }
 HTML_PERMITTED_PARENTS["text"] = HTML_PHRASING_PARENTS
 
+# Set of HTML tag like names that we treat as literal without any warning
+SILENT_HTML_LIKE = set([
+    "gu",
+    "qu",
+    "e",
+])
+
 
 # MediaWiki magic words.  See https://www.mediawiki.org/wiki/Help:Magic_words
 MAGIC_WORDS = set([
@@ -1114,7 +1121,7 @@ def tag_fn(ctx, token):
         # Give a warning on unsupported HTML tags.  WikiText limits the set of
         # tags that are allowed.
         if name not in ALLOWED_HTML_TAGS:
-            if not name.isdigit():
+            if not name.isdigit() and not SILENT_HTML_LIKE:
                 ctx.warning("html tag <{}{}> not allowed in WikiText"
                             "".format(name, "/" if also_end else ""))
             text_fn(ctx, token)
