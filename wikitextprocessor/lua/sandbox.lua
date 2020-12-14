@@ -44,6 +44,7 @@ function new_loader(modname)
    content = string.gsub(content, "\\%-", "%%-")
    content = string.gsub(content, "\\!", "!")
    content = string.gsub(content, "\\|", "|")  -- XXX tentative, see ryu:951
+   content = string.gsub(content, "\\ʺ", "ʺ")
 
    -- Load the content into the Lua interpreter.
    local ret = assert(load(content, modname, "bt", env))
@@ -231,7 +232,9 @@ function lua_invoke(mod_name, fn_name, frame, page_title)
       return false, "\tNo function '" .. fn_name .. "' in module " .. mod_name
    end
    -- Call the function in the module
-   return xpcall(function() return fn(frame) end, debug.traceback)
+   local st, v = xpcall(function() return fn(frame) end, debug.traceback)
+   -- print("Lua sandbox:", tostring(v))
+   return st, v
 end
 
 -- Sets maximum lua execution time for the current call to t seconds.  The
