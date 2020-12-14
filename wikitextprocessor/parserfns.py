@@ -415,7 +415,9 @@ def displaytitle_fn(ctx, fn_name, args, expander):
     # XXX this should at least remove html tags h1 h2 h3 h4 h5 h6 div blockquote
     # ol ul li hr table tr th td dl dd caption p ruby rb rt rtc rp br
     # Looks as if this should also set the display title for the page in ctx???
-    return t
+    # XXX I think this parser function exists for the side effect of
+    # setting page title
+    return ""
 
 def defaultsort_fn(ctx, fn_nae, args, expander):
     """Implements the DEFAULTSORT magic word/parser function."""
