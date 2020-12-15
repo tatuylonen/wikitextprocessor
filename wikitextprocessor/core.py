@@ -426,12 +426,12 @@ class Wtp(object):
         assert isinstance(text, str)
         # Remove all comments
         text = re.sub(r"(?s)<!\s*--.*?--\s*>", "", text)
-        # Apparently unclosed <!-- at the end of a template body is ignored
-        text = re.sub(r"(?s)<!\s*--.*", "", text)
         # Remove all text inside <noinclude> ... </noinclude>
         text = re.sub(r"(?is)<\s*noinclude\s*>.*?<\s*/\s*noinclude\s*>",
                       "", text)
         text = re.sub(r"(?is)<\s*noinclude\s*/\s*>", "", text)
+        # Apparently unclosed <!-- at the end of a template body is ignored
+        text = re.sub(r"(?s)<!\s*--.*", "", text)
         # <onlyinclude> tags, if present, include the only text that will be
         # transcluded.  All other text is ignored.
         onlys = list(re.finditer(r"(?is)<\s*onlyinclude\s*>(.*?)"
@@ -1307,6 +1307,8 @@ class Wtp(object):
         elif pre_expand or additional_expand:
             text = self.expand(text, pre_expand=pre_expand,
                                templates_to_expand=additional_expand)
+
+        # print("parse:", repr(text))
 
         # The Wikitext syntax is not context-free.  Also, tokenizing the
         # syntax properly does not seem to be possible without reference to
