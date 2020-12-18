@@ -793,6 +793,10 @@ class Wtp(object):
         # to those to be expanded (and don't expand everything).
         if pre_expand:
             if self.need_pre_expand is None:
+                if self.cache_file and not self.cache_file_old:
+                    raise RuntimeError("You have specified a cache file "
+                                       "but have not properly initialized "
+                                       "the cache file.")
                 raise RuntimeError("analyze_templates() must be run first to "
                                    "determine which templates need pre-expand")
             if templates_to_expand is not None:
