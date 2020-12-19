@@ -997,9 +997,8 @@ class Wtp(object):
 
                     # Check for undefined templates
                     if name not in all_templates:
-                        if not quiet:
-                            self.warning("undefined template {!r}"
-                                         .format(tname))
+                        self.warning("undefined template {!r}"
+                                     .format(tname))
                         parts.append('<strong class="error">Template:{}'
                                      '</strong>'
                                      .format(html.escape(name)))

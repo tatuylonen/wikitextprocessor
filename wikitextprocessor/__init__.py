@@ -6,6 +6,6 @@ __all__ = (
     "Wtp",
     "NodeKind",
     "WikiNode",
-    "phase1_to_ctx",
     "ALL_LANGUAGES",
+    "phase1_to_ctx",  # For tests only
 )
