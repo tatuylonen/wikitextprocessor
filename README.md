@@ -444,7 +444,59 @@ phase 1.  An explicit call is only necessary if ``Wtp.add_page()`` has been
 used by the application.
 ```
 
-XXX error handling
+### Error handling
+
+Various functions in this module, including ``Wtp.parse()`` and
+``Wtp.expand()`` may generate errors and warnings.  Those will be displayed
+on ``stdout`` as well as collected in ``Wtp.errors``, ``Wtp.warnings``, and
+``Wtp.debugs``.  These fields will contain lists of dictionaries, where
+each dictionary describes an error/warning/debug message.  The dictionary can
+have the following keys (not all of them are always present):
+* ``msg`` (str) - the error message
+* ``trace`` (str or ``None``) - optional stacktrace where the error occurred
+* ``section`` (str or ``None``) - the section where the error occurred
+* ``subsection`` (str or ``None``) - the subsection where the error occurred
+* ``path`` (tuple of str) - a path of title, template names, parser function
+  names, or Lua module/function names, giving information about where the
+  error occurred during expansion or parsing.
+
+XXX title?
+
+The fields containing the error messages will be cleared by every call to
+``Wtp.start_page()`` (including the implicit calls during ``Wtp.process()``
+and ``Wtp.reprocess()``).  Thus, the ``page_handler`` function often returns
+these lists together with any information extracted from the page, and they
+can be collected together from the values returned by the iterators
+returned by these functions.
+
+The following functions can be used for reporting errors.  These can also
+be called by application code within the ``page_handler`` function as well
+as ``template_fn`` and ``post_template_fn`` functions to report errors,
+warnings, and debug messages in a uniform way.
+
+```
+def error(self, msg, trace=None)
+```
+
+Reports an error message.  The error will be added to ``Wtp.errors`` list and
+printed to stdout.  The arguments are:
+* msg (str) - the error message (need not include page title or section)
+* trace (str or ``None``) - an optional stack trace giving more information
+  about where the error occurred
+
+```
+def warning(self, msg, trace=None)
+```
+
+Reports a warning message.  The warning will be added to ``Wtp.warnings`` list
+and printed to stdout.  The arguments are the same as for ``Wtp.error()``.
+
+```
+def debug(self, msg, trace=None)
+```
+
+Reports a debug message.  The message will be added to ``Wtp.debugs`` list
+and printed to stdout.  The arguments are the same as for ``Wtp.error()``.
 
 ### class WikiNode(object)
 
