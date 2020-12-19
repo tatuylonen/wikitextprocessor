@@ -75,20 +75,6 @@ download WikiMedia dump files, go to the [dump download
 page](https://dumps.wikimedia.org/backup-index.html).  We recommend
 using the &lt;name&gt;-&lt;date&gt;-pages-articles.xml.bz2 files.
 
-## Expected performance
-
-This can generally process a few Wiktionary pages second per processor
-core, including expansion of all templates, Lua macros, parsing the
-full page, and analyzing the parse.  On a multi-core machine, this can
-generally process a few dozen to a few hundred pages per second,
-depending on the speed and number of cores.
-
-Most of the processing effort goes to expanding Lua macros.  You can
-elect not to expand Lua macros, but they are used extensively in
-Wiktionary and for important information.  Expanding templates and Lua
-macros allows much more robust and complete data extraction, but does
-not come cheap.
-
 ## API documentation
 
 Usage example:
@@ -621,3 +607,21 @@ need to be prefixed by ``Nodekind.``, e.g., ``NodeKind.LEVEL2``):
   name of the HTML tag directly (not in a list and always without a slash).
   ``attrs`` is set to a dictionary of any HTML attributes from the tag.
   The contents of the HTML tag is in ``children``.
+
+## Expected performance
+
+This can generally process a few Wiktionary pages second per processor
+core, including expansion of all templates, Lua macros, parsing the
+full page, and analyzing the parse.  On a multi-core machine, this can
+generally process a few dozen to a few hundred pages per second,
+depending on the speed and number of cores.
+
+Most of the processing effort goes to expanding Lua macros.  You can
+elect not to expand Lua macros, but they are used extensively in
+Wiktionary and for important information.  Expanding templates and Lua
+macros allows much more robust and complete data extraction, but does
+not come cheap.
+
+## Contributing and bug reports
+
+Please create an issue on github to report bugs or to contribute!
