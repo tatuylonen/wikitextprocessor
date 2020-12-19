@@ -73,7 +73,7 @@ Wikipedia dump files (though you can also use it for processing
 individual pages or other files that are in wikitext format).  To
 download WikiMedia dump files, go to the [dump download
 page](https://dumps.wikimedia.org/backup-index.html).  We recommend
-using the <name>-<date>-pages-articles.xml.bz2 files.
+using the &lt;name&gt;-&lt;date&gt;-pages-articles.xml.bz2 files.
 
 ## Expected performance
 
@@ -578,7 +578,8 @@ need to be prefixed by ``Nodekind.``, e.g., ``NodeKind.LEVEL2``):
   is in ``children``.  This is used for lines starting with a space in
   wikitext.
 * ``PRE`` - Preformatted text where markup is not interpreted.  Content
-  is in ``children``.  This is indicated in wikitext by <pre>...</pre>.
+  is in ``children``.  This is indicated in wikitext by
+  &lt;pre&gt;...&lt;/pre&gt;.
 * ``LINK`` - An internal wikimedia link ([[...]] in wikitext).  The link
   arguments are in ``args``.  This tag is also used for media inclusion.
   Links with a trailing word end immediately after the link have the trailing
