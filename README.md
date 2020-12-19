@@ -131,10 +131,10 @@ Additionally, ``ALL_LANGUAGES`` is exported and is a list that
 describes all languages (language codes, names, and other data) used
 in Wiktionary.
 
-### class Wtp(object):
+### class Wtp(object)
 
-    __init__(self, quiet=False, num_threads=None, cache_file=None)
-```
+  def __init__(self, quiet=False, num_threads=None, cache_file=None)
+
 The initializer can usually be called without arguments, but recognizes
 the following arguments:
 * ``quiet`` - if set to True, suppress progress messages during processing
