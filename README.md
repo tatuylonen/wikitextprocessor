@@ -442,7 +442,6 @@ Wiktionary.
 This function is automatically called by ``Wtp.process()`` at the end of
 phase 1.  An explicit call is only necessary if ``Wtp.add_page()`` has been
 used by the application.
-```
 
 ### Error handling
 
