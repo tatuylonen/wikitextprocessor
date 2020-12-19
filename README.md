@@ -163,15 +163,15 @@ the following arguments:
   the old cache file first.  The cache file path is actually a prefix for
   multiple individual files.
 
-**Windows note: For now you probably need to set ``num_threads`` to 1
-on Windows.** This is because Python's ``multiprocessing`` module
+**Windows note:** For now you probably need to set ``num_threads`` to 1
+on Windows. This is because Python's ``multiprocessing`` module
 doesn't use ``fork()`` in Windows, and the code relies on being able
 to access global variables in the child processes.  Setting
 ``num_threads`` to 1 avoids ``fork()`` altogether and should work.
 
-**Based on notes in Python ``multiprocessing`` module version 3.8,
-  MacOS also doesn't use fork() any more by default.** So you probably
-  need to set ``num_threads`` to 1 on MacOS too for now.
+**MacOS note:** Based on notes in Python ``multiprocessing`` module version 3.8,
+MacOS also doesn't use fork() any more by default. So you probably
+need to set ``num_threads`` to 1 on MacOS too for now.
 
 ```
 def process(self, path, page_handler, phase1_only=False)
@@ -208,7 +208,60 @@ cannot pass any values back in global variables.  It can, however, access
 global variables assigned before calling ``Wtp.process()`` (in Linux only).
 
 ```
-def parse(text, pre_expand=False, expand_all=False, additional_expand=None)
+def reprocess(self, page_handler, autoload=True)
+```
+
+Iterates over all pages in the cache file and calls ``page_handler``
+for each page.  This basically implements phase 2 of processing a dump
+file (see ``Wtp.process()``).  This can be called more than once if desired.
+
+The arguments are:
+* ``page_handler`` (function) - this function will be called for every page.
+  The call takes the form ``page_handler(model, title, data)``,
+  where ``model`` is the ``model`` value
+  for the page in the dump (``wikitext`` for normal wikitext pages and
+  templates, ``Scribunto`` for Lua modules; other values are also possible),
+  ``title`` is page title (e.g., ``sample`` or ``Template:foobar``
+  or ``Module:mystic``), and ``data`` is the contents of the page (usually
+  wikitext).  If ``autoload`` is set to ``False``, then ``data`` will be
+  ``None``.
+* ``autoload`` (boolean) - Normally this function loads the page contents
+  automatically before calling the page handler.  If ``autoload`` is set to
+  ``False``, then this will not automatically load the contents.  This will
+  make the iteration over the pages much faster, and is useful for scanning
+  all pages when only a small fraction of them are likely to be of interest.
+  The ``Wtp.read_by_title()`` function can then be used to load the page
+  contents.
+
+This function returns an iterator that iterates over the return values
+of ``page_handler``.  If the return value is ``None`` or ``page_handler``
+returns no value, no value is returned by the iterator for such calls.
+
+This calls the ``page_handler`` using subprocesses (unless ``num_threads``
+was set to 1 in the initializer).  It may be necessary to set it to 1
+on Windows and MacOS due to operating system/python limitations on those
+platforms.
+
+```
+def read_by_title(self, title):
+```
+
+Reads the contents of the with the specified title from the cache file.  There
+is usually no need to call this function explicitly, as ``Wtp.process()`` and
+``Wtp.reprocess()`` normally load the page automatically.  However, this can
+be useful if calling ``Wtp.reprocess()`` with ``autoload`` set to ``False``.
+This function does not automatically call ``Wtp.start_page()``.
+
+Arguments are:
+* ``title`` (str) - the title of the page to read
+
+This returns the page contents as a string, or ``None`` if the page
+does not exist.  If a transient page has been added with that title
+(see ``Wtp.add_page()``), then this returns the transient page.
+
+```
+def parse(self, text, pre_expand=False, expand_all=False,
+          additional_expand=None)
 ```
 
 Parses wikitext into a parse tree (``WikiNode``), optionally expanding
@@ -240,45 +293,163 @@ This returns the parse tree.  See below for a documentation of the ``WikiNode``
 type used for representing the parse tree.
 
 ```
-def expand(text, template_fn=None, post_template_fn=None,
+def expand(self, text, template_fn=None, post_template_fn=None,
            pre_expand=False, templates_to_expand=None,
            expand_parserfns=True, expand_invoke=True)
 ```
 
+Expands the selected templates, parser functions and Lua macros in the
+given Wikitext.  This can selectively expand some or all templates.  This can
+also capture the arguments and/or the expansion of any template as well as
+substitute programmatic expansions instead of the default expansions.
+
+The ``Wtp.start_page()`` function must be called before this function to
+set the page title (which may be used by templates and Lua macros).  The
+``Wtp.process()`` and ``Wtp.reprocess()`` will call it automatically.  The
+page title is also used in error messages.
+
+The arguments are as follows:
+* ``text`` (str) - the wikitext to be expanded
+* ``template_fn`` (function) - if set, this will be called as
+  ``template_fn(name, args)``, where ``name`` (str) is the name of the
+  template and ``args`` is a dictionary containing arguments to the
+  template.  Positional arguments (and named arguments with numeric
+  names) will have integer keys in the dictionary, whereas other named
+  arguments will have their names as keys.  All values corresponding
+  to arguments are strings (after they have been expanded).  This
+  function can return ``None`` to cause the template to be expanded in
+  the normal way, or a string that will be used instead of the
+  expansion of the template.  This can return ``""`` (empty string) to
+  expand the template to nothing.  This can also capture the template name
+  and its arguments.
+* ``post_template_fn`` (function) - if set, this will be called
+  as ``post_template_fn(name, ht, expansion)`` after the template has
+  been expanded in the normal way.  This can return ``None`` to use the
+  default expansion, or a string to use a that string as the expansion.
+  This can also be used to capture the template, its arguments, and/or its
+  expansion.
+* ``pre_expand`` (boolean) - if set to ``True``, all templates that were
+  heuristically determined as needing to be expanded before parsing will be
+  expanded.
+* ``templates_to_expand`` (``None`` or set or dictionary) - if this is set,
+  these templates will be expanded in addition to any other templates that
+  have been specified to be expanded.  If a dictionary is provided, its keys
+  will be taken as the names of the templates to be expanded.  If this has not
+  been set or is ``None``, all templates will be expanded.
+* ``expand_parserfns`` (boolean) - Normally, wikitext parser functions will
+  be expanded.  This can be set to ``False`` to prevent parser function
+  expansion.
+* ``expand_invoke`` (boolean) - Normally, the ``#invoke`` parser function
+  (which calls a Lua module) will be expanded along with other parser
+  functions.  This can be set to ``False`` to prevent expansion of the
+  ``#invoke`` parser function.
+
+```
+def start_page(self, title)
+```
+
+This function should be called before starting the processing of a new page
+or file.  This saves the page title (which is frequently accessed by
+templates, parser functions, and Lua macros).  The page title is also
+used in error messages.
+
+The ``Wtp.process()`` and ``Wtp.reprocess()`` functions will automatically
+call this before calling the page handler for each page.  This needs to be
+called manually when processing wikitext obtained from other sources.
+
+The arguments are as follows:
+* ``title`` (str) - The page title.  For normal pages, there is usually no
+  prefix.  Templates typically have ``Template:`` prefix and Lua modules
+  ``Module:`` prefix, and other prefixes are also used (e.g., ``Thesaurus:``).
+  This does not care about the form of the name, but some parser functions do.
+
+```
+def start_section(self, title)
+```
+
+Sets the title of the current section on the page.  This is
+autimatically reset to ``None`` by ``Wtp.start_page()``.  The section
+title is only used in error, warning, and debug messages.
+
+The arguments are:
+* ``title`` (str) - the title of the section, or ``None`` to clear it.
+
+
+```
+def start_subsection(self, title)
+```
+
+Sets the title of the current subsection of the current section on the
+page.  This is autimatically reset to ``None`` by ``Wtp.start_page()``
+and ``Wtp.start_section()``.  The subsection title is only used in error,
+warning, and debug messages.
+
+The arguments are:
+* ``title`` (str) - the title of the subsection, or ``None`` to clear it.
+
+```
+def add_page(self, model, title, text, transient=False)
+```
+
+This function is used to add pages, templates, and modules for
+processing.  There is usually no need to use this if ``Wtp.process()``
+is used; however, this can be used to add templates and pages for
+testing or other special processing needs.  This can also be used for
+adding transient pages that are not stored in the cache file but could
+be used for debugging or information extraction.  An example would be
+overriding some Lua module from the dump file for debugging the Lua
+code, or adding a new Lua module that can import other modules and
+then dump data from them, for example to extract the category
+hierarchy.
+
+The arguments are:
+* ``model`` (str) - the model value for the page (usually ``wikitext``
+  for normal pages and templates and ``Scribunto`` for Lua modules)
+* ``title`` (str) - the title of the page to be added (normal pages typically
+  have no prefix in the title, templates begin with ``Template:``, and Lua
+  modules begin with ``Module:``)
+* ``text`` (str) - the content of the page, template, or module
+* ``transient`` (boolean) - normally, the added pages will be stored in
+  the cache file.  If this is set to ``True``, the page will not be stored
+  in the cache file and will only affect the current run.  Transient
+  pages will override any pages in the cache file, and are useful for
+  debugging and data extraction.
+
+The ``Wtp.analyze_templates()`` function needs to be called after
+calling ``Wtp.add_page()`` before pages can be expanded or parsed (it should
+preferably only be called once after adding all pages and templates).
+
+```
+def analyze_templates(self)
+```
+
+Analyzes the template definitions in the cache file and determines which
+of them should be pre-expanded before parsing because they affect the
+document structure significantly.  Some templates in, e.g., Wiktionary
+expand to table start tags, table end tags, or list items, and parsing
+results are generally much better if they are expanded before parsing.
+The actual expansion only happens if ``pre_expand`` or some other argument
+to ``Wtp.expand()`` or ``Wtp.parse()`` tells them to do so.
+
+The analysis is heuristic and is not guaranteed to find every such template.
+In particular, it cannot detect templates that call Lua modules that output
+Wikitext control structures (there are several templates in Wiktionary that
+call Lua code that outputs list items, for example).  Such templates may need
+to be identified manually and specified as additional templates to expand.
+Luckily, there seem to be relatively few such templates, at least in
+Wiktionary.
+
+This function is automatically called by ``Wtp.process()`` at the end of
+phase 1.  An explicit call is only necessary if ``Wtp.add_page()`` has been
+used by the application.
+```
+
+XXX error handling
+
+### class WikiNode(object)
+
 XXX
 
-```
-      - expands templates, parser functions, and Lua macros from
-        the text.  start_page() must be called before this.
+### class NodeKind(enum)
 
-    expand_node(node, template_fn=None, templates_to_expand=None,
-                expand_parserfns=True, expand_invoke=True)
-      - expands the wikitext covered by the given node in a parse tree
-        returned by parse()
-      - XXX this function has not yet been implemented
-
-    start_page(title)
-      - this must be called to start processing a new page
-      - automatically called by process() during the second page before
-        calling the page handler
-      - no need to call this when processing pages via process(), but this
-        must be called if processing pages obtained otherwise
-
-    add_page(model, title, text)
-      - Adds a new page for interpretation (it could define template, lua
-        macros, or could be a normal wikitext page).  Pages are saved in a
-        temporary file for use during expansion.
-      - This is exposed primarily for testing or for processing single pages
-        without reading the whole dump file.
-      - This is automatically called by process(), so there is normally no
-        need to call this explicitly.
-
-    analyze_templates()
-      - Analyzes which templates should be expanded before parsing a page
-        (e.g., because they may produce syntactic elements, such as table
-        starts or table rows).
-      - This is automatically called by process(), so there is normally no
-        need to call this explicitly.  However, if templates are added by
-        calling add_page() manually, then this should be called after adding
-        the last template.
-```
+XXX
