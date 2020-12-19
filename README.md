@@ -133,7 +133,9 @@ in Wiktionary.
 
 ### class Wtp(object)
 
-  def __init__(self, quiet=False, num_threads=None, cache_file=None)
+```
+def __init__(self, quiet=False, num_threads=None, cache_file=None)
+```
 
 The initializer can usually be called without arguments, but recognizes
 the following arguments:
