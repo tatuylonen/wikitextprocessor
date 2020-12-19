@@ -145,9 +145,10 @@ the following arguments:
   are available cores/hyperthreads.  You may need to limit the number of
   parallel processes if you are limited by available memory; we have found
   that processing Wiktionary (including templates and Lua macros)
-  requires 3-4GB of memory per process.
-* ``cache_file`` can normally be None, in which case a temporary file will
-  be created under ``/tmp``.  There are two reasons why you might want to
+  requires 3-4GB of memory per process.  This MUST be set to 1 on Windows.
+* ``cache_file`` can normally be ``None``, in which case a temporary file will
+  be created under ``/tmp``, or a path (string) for the cache file(s).
+  There are two reasons why you might want to
   set this: 1) you don't have enough space on ``/tmp`` (the whole uncompressed
   dump must fit there, which can easily be 10-20GB), or 2) for testing.
   If you specify the cache file, if an existing cache file exists, that will be
@@ -162,18 +163,54 @@ the following arguments:
   the old cache file first.  The cache file path is actually a prefix for
   multiple individual files.
 
-```
-    process(path, page_handler)
-      - parses dump file, calls page_handler(model, title, text) for each page
-        (in parallel using multiprocessing) and returns list of results
-      - model is "wikitext" for normal pages and templates, "Scribunto"
-        for Lua macros; other values are also possible
-      - page_handler may be called in a separate process and cannot update
-        external variables; the only way it can communicate out is through
-        its return value (except if num_threads=1, in which case it is run
-        in the parent process)
+**Windows note: For now you probably need to set ``num_threads`` to 1
+on Windows.** This is because Python's ``multiprocessing`` module
+doesn't use ``fork()`` in Windows, and the code relies on being able
+to access global variables in the child processes.  Setting
+``num_threads`` to 1 avoids ``fork()`` altogether and should work.
 
-    parse(text, pre_expand=False, expand_all=False, additional_expand=None)
+**Based on notes in Python ``multiprocessing`` module version 3.8,
+  MacOS also doesn't use fork() any more by default.** So you probably
+  need to set ``num_threads`` to 1 on MacOS too for now.
+
+```
+def process(self, path, page_handler, phase1_only=False)
+```
+
+This function processes a WikiMedia dump, uncompressing and extracing pages
+(including templates and Lua modules), and calling ``Wtp.add_page()`` for
+each page (phase 1).  Then this calls ``Wtp.reprocess()`` to execute the
+second phase.
+
+This takes the following arguments:
+* ``path`` (string) - path to the WikiMedia dump file to be processed
+  (e.g., "enwiktionary-20201201-pages-articles.xml.bz2").  Note that the
+  compressed file can be used.  Dump files can be
+  downloaded [here](https://dumps.wikimedia.org).
+* ``page_handler`` (function) - this function will be called for each page
+  in phase 2 (unless ``phase1_only`` is set to True).  The call takes the form
+  ``page_handler(model, title, data)``, where ``model`` is the ``model`` value
+  for the page in the dump (``wikitext`` for normal wikitext pages and
+  templates, ``Scribunto`` for Lua modules; other values are also possible),
+  ``title`` is page title (e.g., ``sample`` or ``Template:foobar``
+  or ``Module:mystic``), and ``data`` is the contents of the page (usually
+  Wikitext).
+* ``phase1_only`` (boolean) - if set to True, prevents calling phase 2
+  processing and the ``page_handler`` function will not be called.  The
+  ``Wtp.reprocess()`` function can be used to run the second phase separately,
+  or ``Wtp.expand()``, ``Wtp.parse()`` and other functions can be used.
+
+This function returns an iterator over the values returned by the
+``page_handler`` function (if ``page_handler`` returns ``None`` or no value,
+the iterator does not return those values).  Note that ``page_handler`` will
+usually be run a separate process (separate processes in parallel), and
+cannot pass any values back in global variables.  It can, however, access
+global variables assigned before calling ``Wtp.process()`` (in Linux only).
+
+```
+def parse(text, pre_expand=False, expand_all=False, additional_expand=None)
+```
+
       - parses the text as Wikitext, returning a parse tree.  If pre_expand
         is True, first expands those templates that affect the overall
         Wikitext syntax.  If expand_all is True, then expands all templates
