@@ -94,7 +94,7 @@ not come cheap.
 Usage example:
 
 ```
-   from wikitextprocessor import Wtp
+   from wikitextprocessor import Wtp, WikiNode, NodeKind
    ctx = Wtp()
 
    def page_handler(model, title, text):
@@ -293,6 +293,17 @@ This returns the parse tree.  See below for a documentation of the ``WikiNode``
 type used for representing the parse tree.
 
 ```
+def node_to_wikitext(self, node)
+```
+
+Converts a part of a parse tree back to wikitext.
+* ``node`` (``WikiNode``, str, list/tuple of these) - This is the part of the
+  parse tree that is to be converted back to wikitext.  We also allow
+  strings and lists, so that ``node.children`` can be used directly as
+  the argument.
+
+
+```
 def expand(self, text, template_fn=None, post_template_fn=None,
            pre_expand=False, templates_to_expand=None,
            expand_parserfns=True, expand_invoke=True)
@@ -453,20 +464,20 @@ each dictionary describes an error/warning/debug message.  The dictionary can
 have the following keys (not all of them are always present):
 * ``msg`` (str) - the error message
 * ``trace`` (str or ``None``) - optional stacktrace where the error occurred
+* ``title`` (str) - the page title on which the error occurred
 * ``section`` (str or ``None``) - the section where the error occurred
 * ``subsection`` (str or ``None``) - the subsection where the error occurred
 * ``path`` (tuple of str) - a path of title, template names, parser function
   names, or Lua module/function names, giving information about where the
   error occurred during expansion or parsing.
 
-XXX title?
-
-The fields containing the error messages will be cleared by every call to
-``Wtp.start_page()`` (including the implicit calls during ``Wtp.process()``
-and ``Wtp.reprocess()``).  Thus, the ``page_handler`` function often returns
-these lists together with any information extracted from the page, and they
-can be collected together from the values returned by the iterators
-returned by these functions.
+The fields containing the error messages will be cleared by every call
+to ``Wtp.start_page()`` (including the implicit calls during
+``Wtp.process()`` and ``Wtp.reprocess()``).  Thus, the
+``page_handler`` function often returns these lists together with any
+information extracted from the page, and they can be collected
+together from the values returned by the iterators returned by these
+functions.  The ``Wtp.to_return()`` function maybe useful for this.
 
 The following functions can be used for reporting errors.  These can also
 be called by application code within the ``page_handler`` function as well
@@ -497,10 +508,115 @@ def debug(self, msg, trace=None)
 Reports a debug message.  The message will be added to ``Wtp.debugs`` list
 and printed to stdout.  The arguments are the same as for ``Wtp.error()``.
 
+```
+def to_return(self)
+```
+
+Produces a dictionary containing the error, warning, and debug
+messages from ``Wtp``.  This would typically be called at the end of a
+``page_handler`` function and the value returned along with whatever
+data was extracted from that page.  The error lists are reset by
+``Wtp.start_page()`` (including the implicit calls from
+``Wtp.process()`` and ``Wtp.reprocess()``), so they should be saved
+(e.g., by this call) for each page.  (Given the parallelism in
+processing the pages, they cannot just be accumulated in the
+subprocesses.)
+
+The returned dictionary contains the following keys:
+* ``errors`` - a list of dictionaries describing any error messages
+* ``warnings`` - a list of dictionaries describing any warning messages
+* ``debugs`` - a list of dictionaries describing any debug messages.
+
 ### class WikiNode(object)
 
-XXX
+The ``WikiNode`` class represents a parse tree node and is returned by
+``Wtp.parse()``.  This object can be printed as or converted to a string and
+will display a human-readable format that is readable enough for
+debugging purposes (at least for small parse trees); however, it is not
+suitable for displaying to end users.
 
-### class NodeKind(enum)
+The ``WikiNode`` objects have the following fields:
+* ``kind`` (NodeKind, see below) - The type of the node.  This determines
+  how to interpret the other fields.
+* ``children`` (list) - Contents of the node.  This is generally used when
+  the node has arbitrary size content, such as subsections, list items/sublists,
+  other HTML tags, etc.
+* ``args`` (list or str, depending on ``kind``) - Direct arguments to the
+  node.  This is used, for example, for template arguments, parser function
+  arguments, and link arguments, in which case this is a list.  For some node
+  types (e.g., list, list item, and HTML tag), this is directly a string.
+* ``attrs`` - A dictionary containing HTML attributes or definition list
+  definition (under ``def`` key).
 
-XXX
+### class NodeKind(enum.Enum)
+
+The ``NodeKind`` type is an enumerated value for parse tree (``WikiNode``)
+node types.  Currently the following values are used (typically these
+need to be prefixed by ``Nodekind.``, e.g., ``NodeKind.LEVEL2``):
+* ``ROOT`` - The root node of the parse tree.
+* ``LEVEL2`` - Level 2 subtitle (==).  The ``args`` field contains the title
+  (as a list of WikiNode and/or str) and ``children`` field contains
+  any contents that are within this section
+* ``LEVEL3`` - Level 3 subtitle (===)
+* ``LEVEL4`` - Level 4 subtitle (====)
+* ``LEVEL5`` - Level 5 subtitle (=====)
+* ``LEVEL6`` - Level 6 subtitle (======)
+* ``ITALIC`` - Italic, content is in ``children``
+* ``BOLD`` - Bold, content is in ``children``
+* ``HLINE`` - A horizontal line (no arguments or children)
+* ``LIST`` - Indicates a list.  Each list and sublist will start with
+  this node.  ``args`` will contain the prefix used to open the list (e.g.,
+  ``"##"`` - note this is stored directly as a string in ``args``).  List
+  items will be stored in ``children``.
+* ``LIST_ITEM`` - A list item in the children of a ``LIST`` node.  ``args``
+  is the prefix used to open the list item (same as for the ``LIST`` node).
+  The contents of the list item (including any possible sublists) are in
+  ``children``.  If the list is a definition list (i.e., the prefix ends
+  in ``";"``), then ``children`` contains the item label to be defined
+  and ``attrs["def"]`` contains the definition.
+* ``PREFORMATTED`` - Preformatted text where markup is interpreted.  Content
+  is in ``children``.  This is used for lines starting with a space in
+  wikitext.
+* ``PRE`` - Preformatted text where markup is not interpreted.  Content
+  is in ``children``.  This is indicated in wikitext by <pre>...</pre>.
+* ``LINK`` - An internal wikimedia link ([[...]] in wikitext).  The link
+  arguments are in ``args``.  This tag is also used for media inclusion.
+  Links with a trailing word end immediately after the link have the trailing
+  part in ``children``.
+* ``TEMPLATE`` - A template call (transclusion).  Template name is in the
+  first argument and template arguments in subsequent arguments in ``args``.
+  The ``children`` field is not used.  In wikitext templates are marked up
+  as {{name|arg1|arg2|...}}.
+* ``TEMPLATE_ARG`` - A template argument.  The argument name is in the first
+  item in ``args`` followed by any subsequet arguments (normally at most two
+  items, but I've seen arguments with more - probably an error in those
+  template definitions).  The ``children`` field is not used.
+* ``PARSER_FN`` - A parser function invocation.  This is also used for built-in
+  variables such as {{PAGENAME}}.  The parser function name is in the
+  first element of ``args`` and parser function arguments in subsequent
+  elements.
+* ``URL`` - An external URL. The first argument is the URL.  The second
+  optional argument (in ``args``) is the display text.  The ``children``
+  field is not used.
+* ``TABLE`` - A table.  Content is in ``children``.  In wikitext, a table
+  is encoded as {| ... |}.
+* ``TABLE_CAPTION`` - A table caption.  This can only occur under
+  ``TABLE``.  The content is in ``children``.  The ``attrs`` field contains
+  a dictionary of any HTML attributes given to the table.
+* ``TABLE_ROW`` - A table row.  This can only occur under ``TABLE``.  The
+  content is in ``children`` (normally the content would be ``TABLE_CELL``
+  or ``TABLE_HEADER_CELL`` nodes).  The ``attrs`` field contains a dictionary
+  of any HTML attributes given to the table row.
+* ``TABLE_HEADER_CELL`` - A table header cell.  This can only occur under
+  ``TABLE_ROW``.  Content is in children.  The ``attrs`` field contains
+  a dictionary of any HTML attributes given to the table row.
+* ``TABLE_CELL`` - A table cfell.  This can only occur under ``TABLE_ROW``.
+  Content is in ``children``.  The ``attrs`` field contains a dictionary
+  of any HTML attributes given to the table row.
+* ``MAGIC_WORD`` - A MediaWiki magic word.  The magic word is assigned
+  directly to ``args`` as a string (i.e., not in a list).  ``children`` is
+  not used.  An example of a magic word would be ``__NOTOC__``.
+* ``HTML`` - A HTML tag (or a matched pair of HTML tags).  ``args`` is the
+  name of the HTML tag directly (not in a list and always without a slash).
+  ``attrs`` is set to a dictionary of any HTML attributes from the tag.
+  The contents of the HTML tag is in ``children``.

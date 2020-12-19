@@ -134,7 +134,7 @@ class NodeKind(enum.Enum):
     # In WikiText {{name|arg1|...}}.
     TEMPLATE = enum.auto(),
 
-    # A template argument expansion.  Variable name is in first argument and
+    # A template argument expansion.  Argument name is in first argument and
     # subsequent arguments in remaining arguments.  Children are not used.
     # In WikiText {{{name|...}}}
     TEMPLATE_ARG = enum.auto(),
@@ -173,10 +173,8 @@ class NodeKind(enum.Enum):
     # merged into a single node and the content between them is stored
     # in the node's children.  Args is the name of the tag directly
     # (i.e., not a list and always without a slash).  Attrs contains
-    # attributes from the HTML start tag.  The special tags
-    # <onlyinclude>, <noinclude>, and <includeonly> as well as WikiText-related
-    # tags with HTML-like syntax also generate this tag (with the exception
-    # of <pre> and <nowiki>, which are handled specially).
+    # attributes from the HTML start tag.  Contents in a paired tag
+    # are stored in ``children``.
     HTML = enum.auto(),
 
 
@@ -239,7 +237,7 @@ class WikiNode(object):
         self.args = []  # List of lists
         self.attrs = {}
         self.children = []   # list of str and WikiNode
-        self.loc = loc
+        self.loc = loc  # XXX is this used???
 
     def __str__(self):
         return "<{}({}){} {}>".format(self.kind.name,

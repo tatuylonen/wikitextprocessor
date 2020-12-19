@@ -215,6 +215,7 @@ class Wtp(object):
         assert isinstance(msg, str)
         assert isinstance(trace, (str, type(None)))
         self.errors.append({"msg": msg, "trace": trace,
+                            "title": self.title,
                             "section": self.section,
                             "subsection": self.subsection,
                             "path": tuple(self.expand_stack)})
@@ -226,6 +227,7 @@ class Wtp(object):
         assert isinstance(msg, str)
         assert isinstance(trace, (str, type(None)))
         self.warnings.append({"msg": msg, "trace": trace,
+                              "title": self.title,
                               "section": self.section,
                               "subsection": self.subsection,
                               "path": tuple(self.expand_stack)})
@@ -237,6 +239,7 @@ class Wtp(object):
         assert isinstance(msg, str)
         assert isinstance(trace, (str, type(None)))
         self.debugs.append({"msg": msg, "trace": trace,
+                            "title": self.title,
                             "section": self.section,
                             "subsection": self.subsection,
                             "path": tuple(self.expand_stack)})
