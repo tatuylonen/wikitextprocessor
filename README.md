@@ -37,7 +37,9 @@ data extraction.  You will need to write code to use this.
 For pre-existing extraction modules that use this package, please see:
 
 * [Wiktextract](https://github.com/tatuylonen/wiktextract/) for
-extracting rich machine-readable dictionaries from Wiktionary.
+  extracting rich machine-readable dictionaries from Wiktionary.  You can also
+  find pre-extracted machine-readable Wiktionary data in JSON format at
+  [kaikki.org](https://kaikki.org/dictionary).
 
 ## Getting started
 
@@ -48,7 +50,7 @@ The best way to install this package is from [pypi](https://pypi.org):
 pip3 install wikitextprocessor
 ```
 
-Alternatively, you may install the master branch from github:
+Alternatively, you can install the master branch from github:
 ```
 git clone https://github.com/tatuylonen/wikitextprocessor
 cd wikitextprocessor
@@ -110,9 +112,9 @@ The basic operation of ``Wtp.process()`` is as follows:
   same data several times (it basically repeats the second phase).
 
 Most of the functionality is hidden behind the ``Wtp`` object.
-Additionally, ``WikiNode`` objects are used for representing the parse
+``WikiNode`` objects are used for representing the parse
 tree that is returned by the ``Wtp.parse()`` function.  ``NodeKind``
-is an enumeration type used to encode the type of a WikiNode.
+is an enumeration type used to encode the type of a ``WikiNode``.
 Additionally, ``ALL_LANGUAGES`` is exported and is a list that
 describes all languages (language codes, names, and other data) used
 in Wiktionary.
@@ -120,12 +122,11 @@ in Wiktionary.
 ### class Wtp(object)
 
 ```
-def __init__(self, quiet=False, num_threads=None, cache_file=None)
+def __init__(self, num_threads=None, cache_file=None, quiet=False)
 ```
 
 The initializer can usually be called without arguments, but recognizes
 the following arguments:
-* ``quiet`` - if set to True, suppress progress messages during processing
 * ``num_threads`` - if set to an integer, use that many parallel processes
   for processing the dump.  The default is to use as many processors as there
   are available cores/hyperthreads.  You may need to limit the number of
@@ -148,6 +149,7 @@ the following arguments:
   first phase.  If you wish to re-create cache file, you should remove
   the old cache file first.  The cache file path is actually a prefix for
   multiple individual files.
+* ``quiet`` - if set to True, suppress progress messages during processing
 
 **Windows note:** For now you probably need to set ``num_threads`` to 1
 on Windows. This is because Python's ``multiprocessing`` module
@@ -165,7 +167,7 @@ def process(self, path, page_handler, phase1_only=False)
 
 This function processes a WikiMedia dump, uncompressing and extracing pages
 (including templates and Lua modules), and calling ``Wtp.add_page()`` for
-each page (phase 1).  Then this calls ``Wtp.reprocess()`` to execute the
+each page (phase 1).  This then calls ``Wtp.reprocess()`` to execute the
 second phase.
 
 This takes the following arguments:
@@ -181,17 +183,18 @@ This takes the following arguments:
   ``title`` is page title (e.g., ``sample`` or ``Template:foobar``
   or ``Module:mystic``), and ``data`` is the contents of the page (usually
   wikitext).
-* ``phase1_only`` (boolean) - if set to True, prevents calling phase 2
+* ``phase1_only`` (boolean) - if set to True, prevents phase 2
   processing and the ``page_handler`` function will not be called.  The
   ``Wtp.reprocess()`` function can be used to run the second phase separately,
   or ``Wtp.expand()``, ``Wtp.parse()`` and other functions can be used.
 
 This function returns an iterator over the values returned by the
-``page_handler`` function (if ``page_handler`` returns ``None`` or no value,
-the iterator does not return those values).  Note that ``page_handler`` will
-usually be run a separate process (separate processes in parallel), and
-cannot pass any values back in global variables.  It can, however, access
-global variables assigned before calling ``Wtp.process()`` (in Linux only).
+``page_handler`` function (if ``page_handler`` returns ``None`` or no
+value, the iterator does not return those values).  Note that
+``page_handler`` will usually be run in a separate process, and cannot
+pass any values back in global variables.  It can, however, access
+global variables assigned before calling ``Wtp.process()`` (in Linux
+only).
 
 ```
 def reprocess(self, page_handler, autoload=True)
@@ -232,11 +235,12 @@ platforms.
 def read_by_title(self, title):
 ```
 
-Reads the contents of the with the specified title from the cache file.  There
-is usually no need to call this function explicitly, as ``Wtp.process()`` and
-``Wtp.reprocess()`` normally load the page automatically.  However, this can
-be useful if calling ``Wtp.reprocess()`` with ``autoload`` set to ``False``.
-This function does not automatically call ``Wtp.start_page()``.
+Reads the contents of the page with the specified title from the cache
+file.  There is usually no need to call this function explicitly, as
+``Wtp.process()`` and ``Wtp.reprocess()`` normally load the page
+automatically.  However, this can be useful if calling
+``Wtp.reprocess()`` with ``autoload`` set to ``False``.  This function
+does not automatically call ``Wtp.start_page()``.
 
 Arguments are:
 * ``title`` (str) - the title of the page to read
@@ -255,10 +259,10 @@ some or all the templates and Lua macros in the wikitext (using the definitions
 for the templates and macros in the cache files, as added by ``Wtp.process()``
 or calls to ``Wtp.add_page()``.
 
-The ``Wtp.start_page()`` function must be called before this function to
-set the page title (which may be used by templates and Lua macros).  The
-``Wtp.process()`` and ``Wtp.reprocess()`` will call it automatically.  The
-page title is also used in error messages.
+The ``Wtp.start_page()`` function must be called before this function
+to set the page title (which may be used by templates, Lua macros, and
+error messages).  The ``Wtp.process()`` and ``Wtp.reprocess()``
+functions will call it automatically.
 
 This accepts the following arguments:
 * ``text`` (str) - the wikitext to be parsed
@@ -276,7 +280,7 @@ This accepts the following arguments:
   ``True``).
 
 This returns the parse tree.  See below for a documentation of the ``WikiNode``
-type used for representing the parse tree.
+class used for representing the parse tree.
 
 ```
 def node_to_wikitext(self, node)
@@ -298,7 +302,7 @@ def expand(self, text, template_fn=None, post_template_fn=None,
 Expands the selected templates, parser functions and Lua macros in the
 given Wikitext.  This can selectively expand some or all templates.  This can
 also capture the arguments and/or the expansion of any template as well as
-substitute programmatic expansions instead of the default expansions.
+substitute custom expansions instead of the default expansions.
 
 The ``Wtp.start_page()`` function must be called before this function to
 set the page title (which may be used by templates and Lua macros).  The
@@ -365,7 +369,7 @@ def start_section(self, title)
 ```
 
 Sets the title of the current section on the page.  This is
-autimatically reset to ``None`` by ``Wtp.start_page()``.  The section
+automatically reset to ``None`` by ``Wtp.start_page()``.  The section
 title is only used in error, warning, and debug messages.
 
 The arguments are:
@@ -397,7 +401,7 @@ be used for debugging or information extraction.  An example would be
 overriding some Lua module from the dump file for debugging the Lua
 code, or adding a new Lua module that can import other modules and
 then dump data from them, for example to extract the category
-hierarchy.
+hierarchy of Wiktionary pages.
 
 The arguments are:
 * ``model`` (str) - the model value for the page (usually ``wikitext``
@@ -465,10 +469,10 @@ information extracted from the page, and they can be collected
 together from the values returned by the iterators returned by these
 functions.  The ``Wtp.to_return()`` function maybe useful for this.
 
-The following functions can be used for reporting errors.  These can also
-be called by application code within the ``page_handler`` function as well
-as ``template_fn`` and ``post_template_fn`` functions to report errors,
-warnings, and debug messages in a uniform way.
+The following functions can be used for reporting errors.  These can
+also be called by application code from within the ``page_handler``
+function as well as ``template_fn`` and ``post_template_fn`` functions
+to report errors, warnings, and debug messages in a uniform way.
 
 ```
 def error(self, msg, trace=None)
@@ -505,7 +509,7 @@ data was extracted from that page.  The error lists are reset by
 ``Wtp.start_page()`` (including the implicit calls from
 ``Wtp.process()`` and ``Wtp.reprocess()``), so they should be saved
 (e.g., by this call) for each page.  (Given the parallelism in
-processing the pages, they cannot just be accumulated in the
+the processing of the pages, they cannot just be accumulated in the
 subprocesses.)
 
 The returned dictionary contains the following keys:
@@ -516,10 +520,9 @@ The returned dictionary contains the following keys:
 ### class WikiNode(object)
 
 The ``WikiNode`` class represents a parse tree node and is returned by
-``Wtp.parse()``.  This object can be printed as or converted to a string and
-will display a human-readable format that is readable enough for
-debugging purposes (at least for small parse trees); however, it is not
-suitable for displaying to end users.
+``Wtp.parse()``.  This object can be printed or converted to a string
+and will display a human-readable format that is suitable for
+debugging purposes (at least for small parse trees).
 
 The ``WikiNode`` objects have the following fields:
 * ``kind`` (NodeKind, see below) - The type of the node.  This determines
@@ -528,11 +531,12 @@ The ``WikiNode`` objects have the following fields:
   the node has arbitrary size content, such as subsections, list items/sublists,
   other HTML tags, etc.
 * ``args`` (list or str, depending on ``kind``) - Direct arguments to the
-  node.  This is used, for example, for template arguments, parser function
-  arguments, and link arguments, in which case this is a list.  For some node
-  types (e.g., list, list item, and HTML tag), this is directly a string.
-* ``attrs`` - A dictionary containing HTML attributes or definition list
-  definition (under ``def`` key).
+  node.  This is used, for example, for templates, template arguments, parser
+  function arguments, and link arguments, in which case this is a list.
+  For some node types (e.g., list, list item, and HTML tag), this is
+  directly a string.
+* ``attrs`` - A dictionary containing HTML attributes or a definition list
+  definition (under the ``def`` key).
 
 ### class NodeKind(enum.Enum)
 
@@ -541,8 +545,7 @@ node types.  Currently the following values are used (typically these
 need to be prefixed by ``Nodekind.``, e.g., ``NodeKind.LEVEL2``):
 * ``ROOT`` - The root node of the parse tree.
 * ``LEVEL2`` - Level 2 subtitle (==).  The ``args`` field contains the title
-  (as a list of WikiNode and/or str) and ``children`` field contains
-  any contents that are within this section
+  and ``children`` field contains any contents that are within this section
 * ``LEVEL3`` - Level 3 subtitle (===)
 * ``LEVEL4`` - Level 4 subtitle (====)
 * ``LEVEL5`` - Level 5 subtitle (=====)
@@ -551,9 +554,9 @@ need to be prefixed by ``Nodekind.``, e.g., ``NodeKind.LEVEL2``):
 * ``BOLD`` - Bold, content is in ``children``
 * ``HLINE`` - A horizontal line (no arguments or children)
 * ``LIST`` - Indicates a list.  Each list and sublist will start with
-  this node.  ``args`` will contain the prefix used to open the list (e.g.,
-  ``"##"`` - note this is stored directly as a string in ``args``).  List
-  items will be stored in ``children``.
+  this kind of node.  ``args`` will contain the prefix used to open the
+  list (e.g., ``"##"`` - note this is stored directly as a string
+  in ``args``).  List items will be stored in ``children``.
 * ``LIST_ITEM`` - A list item in the children of a ``LIST`` node.  ``args``
   is the prefix used to open the list item (same as for the ``LIST`` node).
   The contents of the list item (including any possible sublists) are in
@@ -598,7 +601,7 @@ need to be prefixed by ``Nodekind.``, e.g., ``NodeKind.LEVEL2``):
 * ``TABLE_HEADER_CELL`` - A table header cell.  This can only occur under
   ``TABLE_ROW``.  Content is in children.  The ``attrs`` field contains
   a dictionary of any HTML attributes given to the table row.
-* ``TABLE_CELL`` - A table cfell.  This can only occur under ``TABLE_ROW``.
+* ``TABLE_CELL`` - A table cell.  This can only occur under ``TABLE_ROW``.
   Content is in ``children``.  The ``attrs`` field contains a dictionary
   of any HTML attributes given to the table row.
 * ``MAGIC_WORD`` - A MediaWiki magic word.  The magic word is assigned
@@ -615,7 +618,7 @@ This can generally process a few Wiktionary pages second per processor
 core, including expansion of all templates, Lua macros, parsing the
 full page, and analyzing the parse.  On a multi-core machine, this can
 generally process a few dozen to a few hundred pages per second,
-depending on the speed and number of cores.
+depending on the speed and the number of the cores.
 
 Most of the processing effort goes to expanding Lua macros.  You can
 elect not to expand Lua macros, but they are used extensively in
