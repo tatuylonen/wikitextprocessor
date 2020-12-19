@@ -18,7 +18,7 @@ other uses.  Key features include:
   heuristically identifying templates that need to be expanded before
   parsing is reasonably possible (e.g., templates that emit table
   start and end tags)
-* Processing and expanding Wikitext parser functions
+* Processing and expanding wikitext parser functions
 * Processing, executing, and expanding Scribunto Lua modules (they are
   very widely used in, e.g., Wiktionary, for example for generating
   [IPA](https://en.wikipedia.org/wiki/International_Phonetic_Alphabet)
@@ -70,7 +70,7 @@ nosetests
 
 This package is primarily intended for processing Wiktionary and
 Wikipedia dump files (though you can also use it for processing
-individual pages or other files that are in Wikitext format).  To
+individual pages or other files that are in wikitext format).  To
 download WikiMedia dump files, go to the [dump download
 page](https://dumps.wikimedia.org/backup-index.html).  We recommend
 using the <name>-<date>-pages-articles.xml.bz2 files.
@@ -112,7 +112,7 @@ The basic operation of ``Wtp.process()`` is as follows:
   them in a temporary file
 * Heuristically analyze which templates need to be pre-expanded before
   parsing to make sense of the page structure (this cannot detect templates
-  that call Lua code that outputs Wikitext that affects parsed structure).
+  that call Lua code that outputs wikitext that affects parsed structure).
   These first steps together are called the "first phase".
 * Process the pages again, calling a page handler function for each page.
   The page handler can extract, parse, and otherwise process the page, and
@@ -147,7 +147,7 @@ the following arguments:
   that processing Wiktionary (including templates and Lua macros)
   requires 3-4GB of memory per process.  This MUST be set to 1 on Windows.
 * ``cache_file`` can normally be ``None``, in which case a temporary file will
-  be created under ``/tmp``, or a path (string) for the cache file(s).
+  be created under ``/tmp``, or a path (str) for the cache file(s).
   There are two reasons why you might want to
   set this: 1) you don't have enough space on ``/tmp`` (the whole uncompressed
   dump must fit there, which can easily be 10-20GB), or 2) for testing.
@@ -156,7 +156,7 @@ the following arguments:
   important for testing, allowing processing single pages reasonably fast).
   In this case, you should not call ``Wtp.process()`` but instead use
   ``Wtp.reprocess()`` or just call ``Wtp.expand()`` or ``Wtp.parse()`` on
-  Wikitext that you have obtained otherwise (e.g., from some file).
+  wikitext that you have obtained otherwise (e.g., from some file).
   If the cache file doesn't exist, you will need to call ``Wtp.process()``
   to parse a dump file, which will initialize the cache file during the
   first phase.  If you wish to re-create cache file, you should remove
@@ -183,7 +183,7 @@ each page (phase 1).  Then this calls ``Wtp.reprocess()`` to execute the
 second phase.
 
 This takes the following arguments:
-* ``path`` (string) - path to the WikiMedia dump file to be processed
+* ``path`` (str) - path to the WikiMedia dump file to be processed
   (e.g., "enwiktionary-20201201-pages-articles.xml.bz2").  Note that the
   compressed file can be used.  Dump files can be
   downloaded [here](https://dumps.wikimedia.org).
@@ -194,7 +194,7 @@ This takes the following arguments:
   templates, ``Scribunto`` for Lua modules; other values are also possible),
   ``title`` is page title (e.g., ``sample`` or ``Template:foobar``
   or ``Module:mystic``), and ``data`` is the contents of the page (usually
-  Wikitext).
+  wikitext).
 * ``phase1_only`` (boolean) - if set to True, prevents calling phase 2
   processing and the ``page_handler`` function will not be called.  The
   ``Wtp.reprocess()`` function can be used to run the second phase separately,
@@ -211,15 +211,43 @@ global variables assigned before calling ``Wtp.process()`` (in Linux only).
 def parse(text, pre_expand=False, expand_all=False, additional_expand=None)
 ```
 
-      - parses the text as Wikitext, returning a parse tree.  If pre_expand
-        is True, first expands those templates that affect the overall
-        Wikitext syntax.  If expand_all is True, then expands all templates
-        and Lua macros before parsing.  start_page() must be called before
-        this.
+Parses wikitext into a parse tree (``WikiNode``), optionally expanding
+some or all the templates and Lua macros in the wikitext (using the definitions
+for the templates and macros in the cache files, as added by ``Wtp.process()``
+or calls to ``Wtp.add_page()``.
 
-    expand(text, pre_expand=False, template_fn=None,
-           templates_to_expand=None, expand_parserfns=True,
-           expand_invoke=True)
+The ``Wtp.start_page()`` function must be called before this function to
+set the page title (which may be used by templates and Lua macros).  The
+``Wtp.process()`` and ``Wtp.reprocess()`` will call it automatically.  The
+page title is also used in error messages.
+
+This accepts the following arguments:
+* ``text`` (str) - the wikitext to be parsed
+* ``pre_expand`` (boolean) - if set to ``True``, the templates that were
+  heuristically detected as affecting parsing (e.g., expanding to table start
+  or end tags or list items) will be automatically expanded before parsing.
+  Any Lua macros those templates use may also be called.
+* ``expand_all`` - if set to ``True``, expands all templates and Lua
+  macros in the wikitext before parsing.
+* ``additional_expand`` (set or ``None``) - if this argument is provided, it
+  should be a set of template names that should be expanded in addition to
+  those specified by the other options (i.e., in addition to to the
+  heuristically detected templates if ``pre_expand`` is ``True`` or just these
+  if it is false; this option is meaningless if ``expand_all`` is set to
+  ``True``).
+
+This returns the parse tree.  See below for a documentation of the ``WikiNode``
+type used for representing the parse tree.
+
+```
+def expand(text, template_fn=None, post_template_fn=None,
+           pre_expand=False, templates_to_expand=None,
+           expand_parserfns=True, expand_invoke=True)
+```
+
+XXX
+
+```
       - expands templates, parser functions, and Lua macros from
         the text.  start_page() must be called before this.
 
