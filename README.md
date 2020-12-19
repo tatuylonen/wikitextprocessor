@@ -577,7 +577,8 @@ need to be prefixed by ``Nodekind.``, e.g., ``NodeKind.LEVEL2``):
 * ``TEMPLATE_ARG`` - A template argument.  The argument name is in the first
   item in ``args`` followed by any subsequet arguments (normally at most two
   items, but I've seen arguments with more - probably an error in those
-  template definitions).  The ``children`` field is not used.
+  template definitions).  The ``children`` field is not used.  In wikitext
+  template arguments are marked up as {{{name|defval}}}.
 * ``PARSER_FN`` - A parser function invocation.  This is also used for built-in
   variables such as {{PAGENAME}}.  The parser function name is in the
   first element of ``args`` and parser function arguments in subsequent
