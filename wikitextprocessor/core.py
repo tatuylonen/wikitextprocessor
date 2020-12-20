@@ -102,10 +102,10 @@ class Wtp(object):
         "subsection",    # Subsection within page, for error messages
         "suppress_special",  # XXX never set to True???
     )
-    def __init__(self, quiet=False, num_threads=None, cache_file=None):
-        assert quiet in (True, False)
+    def __init__(self, num_threads=None, cache_file=None, quiet=False):
         assert num_threads is None or isinstance(num_threads, int)
         assert cache_file is None or isinstance(cache_file, str)
+        assert quiet in (True, False)
         if num_threads is None:
             import platform
             if platform.system() in ("Windows", "Darwin"):
