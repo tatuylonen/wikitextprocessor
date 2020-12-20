@@ -27,6 +27,8 @@ setup(name="wikitextprocessor",
           "wikipedia",
           "data extraction",
           "wikitext",
+          "scribunto",
+          "lua",
       ],
       classifiers=[
           "Development Status :: 3 - Alpha",
