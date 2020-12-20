@@ -189,10 +189,10 @@ for m in re.finditer(r"(?s)<tr[^>]*>(.*?)</tr>", text):
 
 ######################################################################
 # Write information about languages and families to
-# wiktextract/languages.py
+# wikitextprocessor/languages.py
 ######################################################################
 
-with open("wiktextract/languages.py", "w") as f:
+with open("wikitextprocessor/languages.py", "w") as f:
     f.write("# This file is automagically generated from Wiktionary by the\n")
     f.write("# extract_language_codes.py script.  DO NOT EDIT.\n")
     f.write("#\n")
