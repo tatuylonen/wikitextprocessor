@@ -1,4 +1,4 @@
-from .core import Wtp, phase1_to_ctx
+from .core import Wtp
 from .parser import NodeKind, WikiNode
 from .languages import ALL_LANGUAGES
 
@@ -7,5 +7,4 @@ __all__ = (
     "NodeKind",
     "WikiNode",
     "ALL_LANGUAGES",
-    "phase1_to_ctx",  # For tests only
 )

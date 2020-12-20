@@ -8,8 +8,21 @@ import math
 import time
 import datetime
 import unittest
-from wikitextprocessor import Wtp, phase1_to_ctx
+from wikitextprocessor import Wtp
 from wikitextprocessor.common import preprocess_text, MAGIC_NOWIKI_CHAR
+
+
+def phase1_to_ctx(pages):
+    """Creates a context and adds the given pages to it.  ``pages`` is a
+    list or tuple of (tag, title, text), where ``tag`` is "Template"
+    for templates and "Module" for modules.  Title is the title of the
+    page and text the content of the page."""
+    ctx = Wtp()
+    for tag, title, text in pages:
+        ctx.add_page(tag, title, text)
+    ctx.analyze_templates()
+    return ctx
+
 
 class WikiProcTests(unittest.TestCase):
 

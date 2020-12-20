@@ -103,6 +103,15 @@ class Wtp(object):
         "suppress_special",  # XXX never set to True???
     )
     def __init__(self, quiet=False, num_threads=None, cache_file=None):
+        assert quiet in (True, False)
+        assert num_threads is None or isinstance(num_threads, int)
+        assert cache_file is None or isinstance(cache_file, str)
+        if num_threads is None:
+            import platform
+            if platform.system() in ("Windows", "Darwin"):
+                # Default num_threads to 1 on Windows and MacOS, as they
+                # apparently don't use fork() for multiprocessing.Pool()
+                num_threads = 1
         self.buf_ofs = 0
         self.buf_size = 4 * 1024 * 1024
         self.buf = bytearray(self.buf_size)
@@ -1343,14 +1352,3 @@ class Wtp(object):
         """Converts the given parse tree node to plain text."""
         return to_text(self, node, template_fn=template_fn,
                        post_template_fn=post_template_fn)
-
-def phase1_to_ctx(pages):
-    """Creates a context and adds the given pages to it.  THIS IS MOSTLY
-    INTENDED FOR TESTS.  ``pages`` is a list or tuple of (tag, title, text),
-    where ``tag`` is "Template" for templates and "Module" for modules.
-    Title is the title of the page and text the content of the page."""
-    ctx = Wtp()
-    for tag, title, text in pages:
-        ctx.add_page(tag, title, text)
-    ctx.analyze_templates()
-    return ctx

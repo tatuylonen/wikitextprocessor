@@ -151,15 +151,11 @@ the following arguments:
   multiple individual files.
 * ``quiet`` - if set to True, suppress progress messages during processing
 
-**Windows note:** For now you probably need to set ``num_threads`` to 1
-on Windows. This is because Python's ``multiprocessing`` module
-doesn't use ``fork()`` in Windows, and the code relies on being able
-to access global variables in the child processes.  Setting
-``num_threads`` to 1 avoids ``fork()`` altogether and should work.
-
-**MacOS note:** Based on notes in Python ``multiprocessing`` module version 3.8,
-MacOS also doesn't use fork() any more by default. So you probably
-need to set ``num_threads`` to 1 on MacOS too for now.
+**Windows and MacOS note:** Setting ``num_threads`` to a value other than 1
+probably doesn't currently work on Windows and MacOS.  It now defaults to 1
+on these platforms.  This is because these platforms don't use ``fork()`` in
+the Python multiprocessing package, and the current parallelization
+implementation depends on this.
 
 ```
 def process(self, path, page_handler, phase1_only=False)
