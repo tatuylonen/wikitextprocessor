@@ -8,7 +8,7 @@ with open("README.md", "r") as f:
     long_description = f.read()
 
 setup(name="wikitextprocessor",
-      version="0.4.90",
+      version="0.4.91",
       description="Parser and expander for Wikipedia, Wiktionary etc. dump files, with Lua execution support",
       long_description=long_description,
       long_description_content_type="text/markdown",
@@ -20,7 +20,7 @@ setup(name="wikitextprocessor",
       scripts=[],
       packages=["wikitextprocessor"],
       package_data={"wikitextprocessor": ["lua"]},
-      install_requires=[],
+      install_requires=["lupa", "dateparser"],
       keywords=[
           "dictionary",
           "wiktionary",
