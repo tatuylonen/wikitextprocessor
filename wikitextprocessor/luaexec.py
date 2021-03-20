@@ -25,6 +25,8 @@ builtin_lua_search_paths = [
 
 # Determine which directory our data files are in
 lua_dir = pkg_resources.resource_filename("wikitextprocessor", "lua/")
+if not lua_dir.endswith("/"):
+    lua_dir += "/"
 #print("lua_dir", lua_dir)
 
 # Mapping from language code code to language name.
@@ -62,7 +64,7 @@ def lua_loader(ctx, modname):
     for prefix, exceptions in builtin_lua_search_paths:
         if modname in exceptions:
             continue
-        p = lua_dir + "/" + prefix + "/" + path
+        p = lua_dir + prefix + "/" + path
         if os.path.isfile(p):
             with open(p, "r") as f:
                 data = f.read()
@@ -239,7 +241,7 @@ def fetch_language_names(ctx, include):
 def initialize_lua(ctx):
     assert ctx.lua is None
     # Load Lua sandbox code.
-    lua_sandbox = open(lua_dir + "/sandbox.lua").read()
+    lua_sandbox = open(lua_dir + "sandbox.lua").read()
 
     def filter_attribute_access(obj, attr_name, is_setting):
         if isinstance(attr_name, unicode):
