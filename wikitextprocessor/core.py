@@ -1,7 +1,7 @@
 # Definition of the processing context for Wikitext processing, and code for
 # expanding templates, parser functions, and Lua macros.
 #
-# Copyright (c) 2020 Tatu Ylonen.  See file LICENSE and https://ylonen.org
+# Copyright (c) 2020-2021 Tatu Ylonen.  See file LICENSE and https://ylonen.org
 
 import os
 import re
@@ -1229,6 +1229,8 @@ class Wtp(object):
         call page_handler in parallel, and thus page_handler should
         not attempt to save anything between calls and should not
         modify global data.  This function is not re-entrant."""
+        assert callable(page_handler)
+        assert autoload in (True, False)
         global _global_ctx
         global _global_page_handler
         global _global_page_autoload
@@ -1255,18 +1257,18 @@ class Wtp(object):
                 pool = multiprocessing.Pool(self.num_threads)
             cnt = 0
             for success, ret in pool.imap_unordered(phase2_page_handler,
-                                                    self.page_seq):
+                                                    self.page_seq, 64):
                 if not success:
                     print(ret)  # Print error in parent process - do not remove
                     continue
                 if ret is not None:
                     yield ret
-                    cnt += 1
-                    if not self.quiet and cnt % 1000 == 0:
-                        print("  ... {}/{} pages ({:.1%}) processed"
-                              .format(cnt, len(self.page_seq),
-                                      cnt / len(self.page_seq)))
-                        sys.stdout.flush()
+                cnt += 1
+                if not self.quiet and cnt % 1000 == 0:
+                    print("  ... {}/{} pages ({:.1%}) processed"
+                          .format(cnt, len(self.page_seq),
+                                  cnt / len(self.page_seq)))
+                    sys.stdout.flush()
             pool.close()
             pool.join()
 
