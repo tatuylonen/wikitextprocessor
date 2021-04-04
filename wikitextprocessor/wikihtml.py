@@ -112,6 +112,9 @@ ALLOWED_HTML_TAGS = {
     "h6": {
         "parents": ["flow"],
         "content": ["phrasing"]},
+    "hiero": {
+        "parents": ["phrasing"],
+        "content": ["phrasing"]},
     "hr": {
         "parents": ["flow"],
         "no-end-tag": True,
