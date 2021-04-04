@@ -1038,7 +1038,8 @@ class Wtp(object):
                     num = 1
                     for i in range(1, len(args)):
                         arg = str(args[i])
-                        m = re.match(r"""^\s*([^<>="']+?)\s*=\s*(.*?)\s*$""",
+                        m = re.match(r"""(?s)^\s*([^<>="']+?)\s*="""
+                                     """\s*(.*?)\s*$""",
                                      arg)
                         if m:
                             # Note: Whitespace is stripped by the regexp
