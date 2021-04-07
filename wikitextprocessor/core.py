@@ -1078,7 +1078,7 @@ class Wtp(object):
                         t = template_fn(urllib.parse.unquote(name), ht)
                     if t is None:
                         if name in self.transient_templates:
-                            body = self.transient_templates[body]
+                            body = self.transient_templates[name]
                         else:
                             body = self.templates[name]
                         # XXX optimize by pre-encoding bodies during
