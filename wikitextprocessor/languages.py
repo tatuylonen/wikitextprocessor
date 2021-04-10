@@ -1865,6 +1865,7 @@ ALL_LANGUAGES = json.loads("""
             "Lana",
             "Laoo",
             "Mlym",
+            "Modi",
             "Mymr",
             "Newa",
             "Orya",
@@ -2654,19 +2655,6 @@ ALL_LANGUAGES = json.loads("""
         "wikidata": "Q3507873"
     },
     {
-        "code": "aao",
-        "family_code": "sem-arb",
-        "family_name": "Arabic",
-        "has_diacr": true,
-        "language_url": "https://en.wiktionary.org/wiki/Category:Algerian_Saharan_Arabic_language",
-        "name": "Algerian Saharan Arabic",
-        "other_names": [],
-        "scripts": [
-            "Arab"
-        ],
-        "wikidata": "Q56725"
-    },
-    {
         "code": "aap",
         "family_code": "sai-car",
         "family_name": "Cariban",
@@ -3252,21 +3240,6 @@ ALL_LANGUAGES = json.loads("""
         "wikidata": "Q5329945"
     },
     {
-        "code": "acq",
-        "family_code": "sem-arb",
-        "family_name": "Arabic",
-        "has_diacr": true,
-        "language_url": "https://en.wiktionary.org/wiki/Category:Ta%27izzi-Adeni_Arabic_language",
-        "name": "Ta'izzi-Adeni Arabic",
-        "other_names": [
-            "Southern Yemeni Arabic"
-        ],
-        "scripts": [
-            "Arab"
-        ],
-        "wikidata": "Q56579"
-    },
-    {
         "code": "acr",
         "family_code": "myn",
         "family_name": "Mayan",
@@ -3402,13 +3375,15 @@ ALL_LANGUAGES = json.loads("""
         "code": "add",
         "family_code": "nic-nka",
         "family_name": "Nkambe",
+        "language_url": "https://en.wiktionary.org/wiki/Category:Dzodinka_language",
         "name": "Dzodinka",
         "other_names": [
             "Lidzonka"
         ],
         "scripts": [
             "Latn"
-        ]
+        ],
+        "wikidata": "Q35266"
     },
     {
         "code": "ade",
@@ -3663,19 +3638,6 @@ ALL_LANGUAGES = json.loads("""
             "Arab"
         ],
         "wikidata": "Q56240"
-    },
-    {
-        "code": "aec",
-        "family_code": "sem-arb",
-        "family_name": "Arabic",
-        "has_diacr": true,
-        "language_url": "https://en.wiktionary.org/wiki/Category:Saidi_Arabic_language",
-        "name": "Saidi Arabic",
-        "other_names": [],
-        "scripts": [
-            "Arab"
-        ],
-        "wikidata": "Q56592"
     },
     {
         "code": "aed",
@@ -7954,22 +7916,6 @@ ALL_LANGUAGES = json.loads("""
         "wikidata": "Q1377116"
     },
     {
-        "code": "avl",
-        "family_code": "sem-arb",
-        "family_name": "Arabic",
-        "has_diacr": true,
-        "language_url": "https://en.wiktionary.org/wiki/Category:Eastern_Egyptian_Bedawi_Arabic_language",
-        "name": "Eastern Egyptian Bedawi Arabic",
-        "other_names": [
-            "Bedawi Arabic",
-            "Levantine Bedawi Arabic"
-        ],
-        "scripts": [
-            "Arab"
-        ],
-        "wikidata": "Q56714"
-    },
-    {
         "code": "avm",
         "family_code": "aus-pmn",
         "family_name": "Paman",
@@ -8436,22 +8382,6 @@ ALL_LANGUAGES = json.loads("""
         ]
     },
     {
-        "aliases": [
-            "Hadhrami Arabic"
-        ],
-        "code": "ayh",
-        "family_code": "sem-arb",
-        "family_name": "Arabic",
-        "has_diacr": true,
-        "language_url": "https://en.wiktionary.org/wiki/Category:Hadrami_Arabic_language",
-        "name": "Hadrami Arabic",
-        "other_names": [],
-        "scripts": [
-            "Arab"
-        ],
-        "wikidata": "Q3510366"
-    },
-    {
         "code": "ayi",
         "family_code": "nic-uce",
         "family_name": "East-West Upper Cross River",
@@ -8491,13 +8421,13 @@ ALL_LANGUAGES = json.loads("""
         "family_code": "sem-arb",
         "family_name": "Arabic",
         "has_diacr": true,
-        "language_url": "https://en.wiktionary.org/wiki/Category:Sanaani_Arabic_language",
-        "name": "Sanaani Arabic",
+        "language_url": "https://en.wiktionary.org/wiki/Category:Yemeni_Arabic_language",
+        "name": "Yemeni Arabic",
         "other_names": [],
         "scripts": [
             "Arab"
         ],
-        "wikidata": "Q56578"
+        "wikidata": "Q1686766"
     },
     {
         "code": "ayo",
@@ -12820,7 +12750,7 @@ ALL_LANGUAGES = json.loads("""
         "code": "boh",
         "family_code": "bnt-bdz",
         "family_name": "Boma-Dzing",
-        "name": "Boma",
+        "name": "North Boma",
         "other_names": [],
         "scripts": [
             "Latn"
@@ -79270,10 +79200,13 @@ ALL_LANGUAGES = json.loads("""
     },
     {
         "code": "xcv",
-        "family_code": "",
-        "family_name": "",
+        "family_code": "qfa-yuk",
+        "family_name": "Yukaghir",
         "name": "Chuvantsy",
-        "other_names": [],
+        "other_names": [
+            "Chuvan",
+            "Chuvansky"
+        ],
         "scripts": []
     },
     {
@@ -82995,7 +82928,9 @@ ALL_LANGUAGES = json.loads("""
         "family_name": "Yukaghir",
         "language_url": "https://en.wiktionary.org/wiki/Category:Northern_Yukaghir_language",
         "name": "Northern Yukaghir",
-        "other_names": [],
+        "other_names": [
+            "Tundra Yukaghir"
+        ],
         "scripts": [
             "Cyrl"
         ],
@@ -84167,7 +84102,10 @@ ALL_LANGUAGES = json.loads("""
         "family_name": "Yukaghir",
         "language_url": "https://en.wiktionary.org/wiki/Category:Southern_Yukaghir_language",
         "name": "Southern Yukaghir",
-        "other_names": [],
+        "other_names": [
+            "Forest Yukaghir",
+            "Kolyma Yukaghir"
+        ],
         "scripts": [
             "Cyrl"
         ],
@@ -85338,17 +85276,15 @@ ALL_LANGUAGES = json.loads("""
     },
     {
         "code": "zmp",
-        "family_code": "bnt-tek",
-        "family_name": "Teke",
+        "family_code": "bnt",
+        "family_name": "Bantu",
         "language_url": "https://en.wiktionary.org/wiki/Category:Mbuun_language",
         "name": "Mbuun",
-        "other_names": [
-            "Mpuono"
-        ],
+        "other_names": [],
         "scripts": [
             "Latn"
         ],
-        "wikidata": "Q36056"
+        "wikidata": "Q106249400"
     },
     {
         "code": "zmq",
@@ -87431,6 +87367,26 @@ ALL_LANGUAGES = json.loads("""
         "wikidata": "Q93935237"
     },
     {
+        "code": "bnt-bon",
+        "family_code": "bnt",
+        "family_name": "Bantu",
+        "name": "Boma Nkuu",
+        "other_names": [],
+        "scripts": [
+            "Latn"
+        ]
+    },
+    {
+        "code": "bnt-boy",
+        "family_code": "bnt",
+        "family_name": "Bantu",
+        "name": "Boma Yumu",
+        "other_names": [],
+        "scripts": [
+            "Latn"
+        ]
+    },
+    {
         "code": "bnt-cmw",
         "family_code": "bnt-swh",
         "family_name": "Swahili",
@@ -87503,6 +87459,18 @@ ALL_LANGUAGES = json.loads("""
         "wikidata": "Q93937013"
     },
     {
+        "code": "bnt-mpu",
+        "family_code": "bnt",
+        "family_name": "Bantu",
+        "language_url": "https://en.wiktionary.org/wiki/Category:Mpuono_language",
+        "name": "Mpuono",
+        "other_names": [],
+        "scripts": [
+            "Latn"
+        ],
+        "wikidata": "Q36056"
+    },
+    {
         "code": "bnt-ngu-pro",
         "family_code": "bnt-ngu",
         "family_name": "Nguni",
@@ -87543,6 +87511,16 @@ ALL_LANGUAGES = json.loads("""
             "Latinx"
         ],
         "wikidata": "Q3408025"
+    },
+    {
+        "code": "bnt-sbo",
+        "family_code": "bnt",
+        "family_name": "Bantu",
+        "name": "South Boma",
+        "other_names": [],
+        "scripts": [
+            "Latn"
+        ]
     },
     {
         "code": "bnt-sts-pro",

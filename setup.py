@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 #
-# Copyright (c) 2020 Tatu Ylonen.  See LICENSE and https://ylonen.org
+# Copyright (c) 2020-2021 Tatu Ylonen.  See LICENSE and https://ylonen.org
 
 from setuptools import setup
 
@@ -8,7 +8,7 @@ with open("README.md", "r") as f:
     long_description = f.read()
 
 setup(name="wikitextprocessor",
-      version="0.4.91",
+      version="0.4.92",
       description="Parser and expander for Wikipedia, Wiktionary etc. dump files, with Lua execution support",
       long_description=long_description,
       long_description_content_type="text/markdown",
