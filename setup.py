@@ -19,7 +19,12 @@ setup(name="wikitextprocessor",
       download_url="https://github.com/tatuylonen/wikitextprocessor",
       scripts=[],
       packages=["wikitextprocessor"],
-      package_data={"wikitextprocessor": ["lua/*"]},
+      package_data={"wikitextprocessor":
+                    ["lua/*.lua",
+                     "lua/mediawiki-extensions-Scribunto/COPYING",
+                     "lua/mediawiki-extensions-Scribunto/includes/engines/LuaCommon/lualib/*.lua",
+                     "lua/mediawiki-extensions-Scribunto/includes/engines/LuaCommon/lualib/ustring/*.lua",
+                     "lua/mediawiki-extensions-Scribunto/includes/engines/LuaCommon/lualib/luabit/*.lua"]},
       install_requires=["lupa", "dateparser"],
       keywords=[
           "dictionary",
