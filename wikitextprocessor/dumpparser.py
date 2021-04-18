@@ -1,6 +1,6 @@
 # WikiMedia dump file parser for Wiktionary, Wikipedia, and other projects.
 #
-# Copyright (c) 2018-2020 Tatu Ylonen.  See file LICENSE and https://ylonen.org
+# Copyright (c) 2018-2021 Tatu Ylonen.  See file LICENSE and https://ylonen.org
 
 import re
 import sys
@@ -202,23 +202,15 @@ def process_input(path, page_cb):
     return lst
 
 
-def process_dump(ctx, path, page_handler, phase1_only):
-    """Parses a WikiMedia dump file ``path`` (which should point
-    to a "<project>-<date>-pages-articles.xml.bz2" file.  This
-    calls ``page_handler(title, page)`` for each raw page.  This works in
-    two phases - in the first phase this calls ctx.collect_specials() for
-    each page to collect raw pages, especially templates and Lua modules.
-    Then this goes over the articles a second time, calling page_handler
-    for each page (this automatically calls ctx.start_page(title) for
-    each page before calling page_handler).  The page_handler will be called
-    in parallel using the multiprocessing package, and thus it cannot
-    save data in ``ctx`` or global variables.  It can only return its results.
-    This function will return a list containing all the results returned by
-    page_handler (in arbirary order).  This function is not re-entrant
-    for multi-threaded applications."""
+def process_dump(ctx, path, page_handler):
+    """Parses a WikiMedia dump file ``path`` (which should point to a
+    "<project>-<date>-pages-articles.xml.bz2" file.  This calls
+    ``page_handler(title, page)`` for each raw page.  This implements
+    the first phase of processing a dump - copying it to a temporary
+    file with some preprocessing.  The Wtp.reprocess() must then be
+    called to actually process the data."""
     assert isinstance(path, str)
     assert callable(page_handler)
-    assert phase1_only in (True, False)
 
     def phase1_page_handler(model, title, text):
         """Handler for pages in Phase 1, for extracting special pages and saving
@@ -227,9 +219,6 @@ def process_dump(ctx, path, page_handler, phase1_only):
 
     # Run Phase 1 in a single thread; this mostly just extracts pages into
     # a temporary file.
-    if not ctx.quiet:
-        print("First pass - extracting templates, macros, and pages")
-        sys.stdout.flush()
     process_input(path, phase1_page_handler)
 
     # Analyze which templates should be expanded before parsing
@@ -237,16 +226,6 @@ def process_dump(ctx, path, page_handler, phase1_only):
         print("Analyzing which templates should be expanded before parsing")
         sys.stdout.flush()
     ctx.analyze_templates()
-
-    # If we were requested to only perform phase1 (e.g., for building a new
-    # cache file), return now.
-    if phase1_only:
-        return []
-
-    # Phase 2 - process the pages using the user-supplied callback
-    if not ctx.quiet:
-        print("Second pass - processing pages")
-        sys.stdout.flush()
 
 # XXX parse <namespaces> and use that in both Python and Lua code
 

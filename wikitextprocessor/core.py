@@ -208,8 +208,8 @@ class Wtp(object):
                                  NodeKind.LEVEL6):
                     if not node.args:
                         continue
-                    lst = filter(lambda x: x if isinstance(x, str) else "???",
-                                 node.args[0])
+                    lst = map(lambda x: x if isinstance(x, str) else "???",
+                              node.args[0])
                     title = "".join(lst)
                     titles.append(title.strip())
             msg += " parsing "  + "/".join(titles)
@@ -1214,7 +1214,9 @@ class Wtp(object):
         assert isinstance(path, str)
         assert callable(page_handler)
         # Process the dump and copy it to temporary file (Phase 1)
-        process_dump(self, path, page_handler, phase1_only)
+        process_dump(self, path, page_handler)
+        if phase1_only:
+            return []
 
         # Reprocess all the pages that we captured in Phase 1
         return self.reprocess(page_handler)
