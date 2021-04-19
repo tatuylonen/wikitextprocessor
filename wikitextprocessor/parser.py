@@ -1,6 +1,6 @@
 # Simple WikiMedia markup (WikiText) syntax parser
 #
-# Copyright (c) 2020 Tatu Ylonen.  See file LICENSE and https://ylonen.org
+# Copyright (c) 2020-2021 Tatu Ylonen.  See file LICENSE and https://ylonen.org
 
 import re
 import enum
@@ -588,14 +588,6 @@ def bold_fn(ctx, token):
         _parser_pop(ctx, False)
     if push_italic:
         _parser_push(ctx, NodeKind.ITALIC)
-
-
-def ilink_start_fn(ctx, token):
-    """Processes an internal link start token "[["."""
-    if ctx.pre_parse:
-        return text_fn(ctx, token)
-
-    _parser_push(ctx, NodeKind.LINK)
 
 
 def elink_start_fn(ctx, token):

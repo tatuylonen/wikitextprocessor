@@ -377,8 +377,6 @@ class Wtp(object):
                 # Encode links.
                 text = re.sub(r"\[" + MAGIC_NOWIKI_CHAR +
                               r"?\[(([^][{}]|\[[^][{}]*\])+)\]" +
-                              # XXXremove: r"?\[([^][{}]*)\]" +
-                              # XXXremove: r"?\[(([^][{}]|\[[^]]*\])+)\]" +
                               MAGIC_NOWIKI_CHAR + r"?\]",
                               repl_link, text)
                 # Encode template arguments
