@@ -147,8 +147,10 @@ function mw_text.split(text, pattern, plain)
          -- empty match
          table.insert(result, mw.ustring.sub(text, start, ofs))
          start = ofs + 1
-         if start >= length then
+         if start == length then
             table.insert(result, mw.ustring.sub(text, start))
+         end
+         if start >= length then
             return result
          end
       elseif ofs == start then

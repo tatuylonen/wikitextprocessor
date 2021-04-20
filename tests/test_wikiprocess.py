@@ -2264,6 +2264,10 @@ return export
             """return table.concat(mw.text.split("abc[bc]+abc", "[bc]+", true),
                                    "@")""")
 
+    def test_mw_text_split11(self):
+        self.scribunto("귀",
+            """return table.concat(mw.text.split("귀", ""), "@")""")
+
     def test_mw_ustring_find1(self):
         self.scribunto("nil",
             """local s, e = mw.ustring.find("abcdef", "[b]", 1, true)
