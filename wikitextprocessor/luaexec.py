@@ -239,7 +239,6 @@ def fetch_language_names(ctx, include):
 
 
 def initialize_lua(ctx):
-    assert ctx.lua is None
     # Load Lua sandbox code.
     lua_sandbox = open(lua_dir + "sandbox.lua").read()
 
@@ -263,16 +262,14 @@ def initialize_lua(ctx):
                                lambda x: get_page_content(ctx, x),
                                fetch_language_name,
                                lambda x: fetch_language_names(ctx, x))
-    ctx.lua = lua
+    return lua
 
 
 def call_lua_sandbox(ctx, invoke_args, expander, parent):
-    """Calls a function in a Lua module in the Lua sandbox.  This creates
-    the sandbox instance if it does not already exist and stores it in
-    ctx.lua.  ``invoke_args`` is the arguments to the call;
-    ``expander`` should be a function to expand an argument.
-    ``parent`` should be None or (parent_title, parent_args) for the
-    parent page."""
+    """Calls a function in a Lua module in the Lua sandbox.
+    ``invoke_args`` is the arguments to the call; ``expander`` should
+    be a function to expand an argument.  ``parent`` should be None or
+    (parent_title, parent_args) for the parent page."""
     assert isinstance(invoke_args, (list, tuple))
     assert callable(expander)
     assert parent is None or isinstance(parent, (list, tuple))
@@ -290,8 +287,7 @@ def call_lua_sandbox(ctx, invoke_args, expander, parent):
     modfn = expander(invoke_args[1]).strip()
 
     # Initialize the Lua sandbox if not already initialized
-    if ctx.lua is None:
-        initialize_lua(ctx)
+    ctx.lua = initialize_lua(ctx)
     lua = ctx.lua
 
     def value_with_expand(frame, fexpander, x):
@@ -496,6 +492,7 @@ def call_lua_sandbox(ctx, invoke_args, expander, parent):
     finally:
         while len(ctx.expand_stack) > stack_len:
             ctx.expand_stack.pop()
+    ctx.lua = None  # Free the Lua sandbox
     if ok:
         if text is None:
             text = "nil"

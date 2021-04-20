@@ -7,6 +7,7 @@ import os
 import re
 import sys
 import html
+import time
 import pickle
 import tempfile
 import traceback
@@ -717,7 +718,7 @@ class Wtp(object):
         or subsection."""
         assert isinstance(title, str)
         # variables and thus must be reloaded for each page.
-        self.lua = None  # Force reloading modules for every page
+        self.lua = None
         self.title = title
         self.errors = []
         self.warnings = []
@@ -1257,6 +1258,7 @@ class Wtp(object):
             else:
                 pool = multiprocessing.Pool(self.num_threads)
             cnt = 0
+            last_t = time.time()
             for success, ret in pool.imap_unordered(phase2_page_handler,
                                                     self.page_seq, 64):
                 if not success:
@@ -1265,11 +1267,14 @@ class Wtp(object):
                 if ret is not None:
                     yield ret
                 cnt += 1
-                if not self.quiet and cnt % 1000 == 0:
+                if (not self.quiet and
+                    cnt % 1000 == 0 and
+                    time.time() - last_t > 1):
                     print("  ... {}/{} pages ({:.1%}) processed"
                           .format(cnt, len(self.page_seq),
                                   cnt / len(self.page_seq)))
                     sys.stdout.flush()
+                    last_t = time.time()
             pool.close()
             pool.join()
 
