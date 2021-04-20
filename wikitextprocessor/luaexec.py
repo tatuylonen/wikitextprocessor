@@ -42,7 +42,7 @@ def lua_loader(ctx, modname):
     # print("lua_loader", modname)
     assert isinstance(modname, str)
     # XXX consider implementing some kind of cache here, e.g., LRU cache
-    # for the most recently used modules (modname -> text)
+    # for the most recently used modules (modname -> text after compat xforms)
     # print("Loading", modname)
     modname = modname.strip()
     if modname.startswith("Module:"):
@@ -55,7 +55,7 @@ def lua_loader(ctx, modname):
     path = modname
     path = re.sub(r":", "/", path)
     path = re.sub(r" ", "_", path)
-    # path = re.sub(r"\.", "/", path)
+    # path = re.sub(r"\.", "/", path) XXX remove?
     path = re.sub(r"//+", "/", path)
     path = re.sub(r"\.\.", ".", path)
     if path.startswith("/"):
@@ -69,11 +69,6 @@ def lua_loader(ctx, modname):
             with open(p, "r") as f:
                 data = f.read()
             return data
-    # It is very common that modules are not found; e.g., many Chinese macros
-    # attempt to load modules related to the characters and generate tons
-    # of these errors.
-    #ctx.error("Lua module not found: {}"
-    #          .format(modname))
     return None
 
 
@@ -213,9 +208,6 @@ def get_page_content(ctx, title):
     # Read the page by its title
     data = ctx.read_by_title(title)
     if data is None:
-        # ctx.warning("attempted to access page content for {!r} which "
-        #             "is not available"
-        #             .format(title))
         return None
     return data
 
@@ -251,6 +243,7 @@ def initialize_lua(ctx):
     lua = LuaRuntime(unpack_returned_tuples=True,
                      register_eval=False,
                      attribute_filter=filter_attribute_access)
+    ctx.lua = lua
     lua.execute(lua_sandbox)
     lua.eval("lua_set_loader")(lambda x: lua_loader(ctx, x),
                                mw_text_decode,
@@ -262,7 +255,6 @@ def initialize_lua(ctx):
                                lambda x: get_page_content(ctx, x),
                                fetch_language_name,
                                lambda x: fetch_language_names(ctx, x))
-    return lua
 
 
 def call_lua_sandbox(ctx, invoke_args, expander, parent):
@@ -282,13 +274,16 @@ def call_lua_sandbox(ctx, invoke_args, expander, parent):
         return ("{{" + invoke_args[0] + ":" +
                 "|".join(invoke_args[1:]) + "}}")
 
+    # Initialize the Lua sandbox if not already initialized
+    if ctx.lua_depth == 0:
+        ctx.lua = None
+        initialize_lua(ctx)  # This sets ctx.lua
+    ctx.lua_depth += 1
+    lua = ctx.lua
+
     # Get module and function name
     modname = expander(invoke_args[0]).strip()
     modfn = expander(invoke_args[1]).strip()
-
-    # Initialize the Lua sandbox if not already initialized
-    ctx.lua = initialize_lua(ctx)
-    lua = ctx.lua
 
     def value_with_expand(frame, fexpander, x):
         assert isinstance(frame, dict)
@@ -492,7 +487,7 @@ def call_lua_sandbox(ctx, invoke_args, expander, parent):
     finally:
         while len(ctx.expand_stack) > stack_len:
             ctx.expand_stack.pop()
-    ctx.lua = None  # Free the Lua sandbox
+    ctx.lua_depth -= 1
     if ok:
         if text is None:
             text = "nil"

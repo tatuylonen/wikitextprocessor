@@ -77,6 +77,7 @@ class Wtp(object):
         "errors",	 # List of error messages (cleared for each new page)
         "fullpage",	 # The unprocessed text of the current page (or None)
         "lua",		 # Lua runtime or None if not yet initialized
+        "lua_depth",     # Recursion depth in Lua calls
         "lua_path",	 # Path to Lua modules
         "modules",	 # Lua code for defined Lua modules
         "need_pre_expand",  # Set of template names to be expanded before parse
@@ -125,6 +126,7 @@ class Wtp(object):
         self.section = None
         self.subsection = None
         self.lua = None
+        self.lua_depth = 0
         self.quiet = quiet
         self.rev_ht = {}
         self.expand_stack = []
@@ -717,8 +719,8 @@ class Wtp(object):
         self.warnings, and self.debugs lists and any current section
         or subsection."""
         assert isinstance(title, str)
-        # variables and thus must be reloaded for each page.
         self.lua = None
+        self.lua_depth = 0
         self.title = title
         self.errors = []
         self.warnings = []
