@@ -25,7 +25,7 @@ setup(name="wikitextprocessor",
                      "lua/mediawiki-extensions-Scribunto/includes/engines/LuaCommon/lualib/*.lua",
                      "lua/mediawiki-extensions-Scribunto/includes/engines/LuaCommon/lualib/ustring/*.lua",
                      "lua/mediawiki-extensions-Scribunto/includes/engines/LuaCommon/lualib/luabit/*.lua"]},
-      install_requires=["lupa", "dateparser"],
+      install_requires=["lupa", "dateparser", "lru-dict"],
       keywords=[
           "dictionary",
           "wiktionary",
