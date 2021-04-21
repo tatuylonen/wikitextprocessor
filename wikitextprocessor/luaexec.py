@@ -183,9 +183,8 @@ def get_page_info(ctx, title):
     titles."""
     assert isinstance(title, str)
 
-    # XXX actually look at information collected in phase 1 to determine
     page_id = 0  # XXX collect required info in phase 1
-    page_exists = False  # XXX collect required info in Phase 1
+    page_exists = ctx.page_exists(title)
     redirect_to = ctx.redirects.get(title, None)
 
     # whether the page exists and what its id might be

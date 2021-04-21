@@ -1285,6 +1285,8 @@ class Wtp(object):
         """Returns True if the given page exists, and False if it does not
         exist."""
         assert isinstance(title, str)
+        if title.startswith("Main:"):
+            title = title[5:]
         # XXX should we canonicalize title?
         if title in self.transient_pages:
             return True
@@ -1294,6 +1296,8 @@ class Wtp(object):
         """Reads the contents of the page.  Returns None if the page does
         not exist."""
         assert isinstance(title, str)
+        if title.startswith("Main:"):
+            title = title[5:]
         # XXX should we canonicalize title?
         if title in self.transient_pages:
             title, model, text = self.transient_pages[title]
