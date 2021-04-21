@@ -10,6 +10,7 @@ import json
 import traceback
 import unicodedata
 import pkg_resources
+from lru import LRU
 import lupa
 from lupa import LuaRuntime
 from .parserfns import PARSER_FUNCTIONS, call_parser_function, tag_fn
@@ -34,6 +35,47 @@ LANGUAGE_CODE_TO_NAME = { x["code"]: x["name"]
                           for x in ALL_LANGUAGES
                           if x.get("code") and x.get("name") }
 
+# Substitutions to perform on Lua code from the dump to convert from
+# Lua 5.1 to current 5.3
+loader_replace_patterns = list((re.compile(src), dst) for src, dst in [
+    [r"\\\\", r"\092"],
+    [r"\\\[", r"%%["],
+    [r"\\:", r":"],
+    [r"\\,", r","],
+    [r"\\\(", r"%("],
+    [r"\\\)", r"%)"],
+    [r"\\\+", r"%+"],
+    [r"\\\*", r"%*"],
+    [r"\\>", r">"],
+    [r"\\\.", r"%."],
+    [r"\\\?", r"%?"],
+    [r"\\-", r"%-"],
+    [r"\\!", r"!"],
+    [r"\\\|", r"|"],
+    [r"\\ʺ", r"ʺ"],
+])
+
+# -- Wikimedia uses an older version of Lua.  Make certain substitutions
+# -- to make existing code run on more modern versions of Lua.
+# content = string.gsub(content, "\\\\", "\\092")
+# content = string.gsub(content, "%%\\%[", "%%%%[")
+# content = string.gsub(content, "\\:", ":")
+# content = string.gsub(content, "\\,", ",")
+# content = string.gsub(content, "\\%(", "%%(")
+# content = string.gsub(content, "\\%)", "%%)")
+# content = string.gsub(content, "\\%+", "%%+")
+# content = string.gsub(content, "\\%*", "%%*")
+# content = string.gsub(content, "\\>", ">")
+# content = string.gsub(content, "\\%.", "%%.")
+# content = string.gsub(content, "\\%?", "%%?")
+# content = string.gsub(content, "\\%-", "%%-")
+# content = string.gsub(content, "\\!", "!")
+# content = string.gsub(content, "\\|", "|")  -- XXX tentative, see ryu:951
+# content = string.gsub(content, "\\ʺ", "ʺ")
+
+# Cache of loaded and compatibility-mungled Lua modules
+lua_module_cache = LRU(10000)
+
 def lua_loader(ctx, modname):
     """This function is called from the Lua sandbox to load a Lua module.
     This will load it from either the user-defined modules on special
@@ -41,38 +83,51 @@ def lua_loader(ctx, modname):
     if the module could not be loaded."""
     # print("lua_loader", modname)
     assert isinstance(modname, str)
-    # XXX consider implementing some kind of cache here, e.g., LRU cache
-    # for the most recently used modules (modname -> text after compat xforms)
-    # print("Loading", modname)
     modname = modname.strip()
     if modname.startswith("Module:"):
         modname = modname[7:]
     modname1 = "Module:" + modname
     modname1 = ctx._canonicalize_template_name(modname1)
-    body = ctx.read_by_title(modname1)
-    if body is not None:
-        return body
-    path = modname
-    path = re.sub(r":", "/", path)
-    path = re.sub(r" ", "_", path)
-    # path = re.sub(r"\.", "/", path) XXX remove?
-    path = re.sub(r"//+", "/", path)
-    path = re.sub(r"\.\.", ".", path)
-    if path.startswith("/"):
-        path = path[1:]
-    path += ".lua"
-    for prefix, exceptions in builtin_lua_search_paths:
-        if modname in exceptions:
-            continue
-        p = lua_dir + prefix + "/" + path
-        if os.path.isfile(p):
-            with open(p, "r") as f:
-                data = f.read()
-            return data
-    return None
+
+    # See if we already have this module cached (with compat changes done)
+    if modname1 in lua_module_cache:
+        return lua_module_cache[modname1]
+
+    # First try to load it as a module
+    data = ctx.read_by_title(modname1)
+    if data is None:
+        # Try to load it from a file
+        path = modname
+        path = re.sub(r":", "/", path)
+        path = re.sub(r" ", "_", path)
+        # path = re.sub(r"\.", "/", path) XXX remove?
+        path = re.sub(r"//+", "/", path)
+        path = re.sub(r"\.\.", ".", path)
+        if path.startswith("/"):
+            path = path[1:]
+        path += ".lua"
+        for prefix, exceptions in builtin_lua_search_paths:
+            if modname in exceptions:
+                continue
+            p = lua_dir + prefix + "/" + path
+            if os.path.isfile(p):
+                with open(p, "r") as f:
+                    data = f.read()
+                break
+        else:
+            # Not found
+            return None
+
+    # Perform compatibility substitutions on the Lua code
+    for src, dst in loader_replace_patterns:
+        data = re.sub(src, dst, data)
+
+    # Save the module (with compat substitutions) in the cache
+    lua_module_cache[modname1] = data
+    return data
 
 
-def mw_text_decode(text, decodeNamedEntities=False):
+def mw_text_decode(text, decodeNamedEntities):
     """Implements the mw.text.decode function for Lua code."""
     if decodeNamedEntities:
         return html.unescape(text)
@@ -100,7 +155,7 @@ def mw_text_decode(text, decodeNamedEntities=False):
     parts.append(text[pos:])
     return "".join(parts)
 
-def mw_text_encode(text, charset='<>&\xa0"'):
+def mw_text_encode(text, charset):
     """Implements the mw.text.encode function for Lua code."""
     parts = []
     for ch in str(text):

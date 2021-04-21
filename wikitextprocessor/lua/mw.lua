@@ -1,7 +1,39 @@
 -- Simplified implementation of mw for running WikiMedia Scribunto code
 -- under Python
 --
--- Copyright (c) 2020 Tatu Ylonen.  See file LICENSE and https://ylonen.org
+-- Copyright (c) 2020-2021 Tatu Ylonen.  See file LICENSE and https://ylonen.org
+
+local mw_autoload = {
+   hash = "mw_hash",
+   html = "mw_html",
+   language = "mw_language",
+   site = "mw_site",
+   text = "mw_text",
+   title = "mw_title",
+   uri = "mw_uri",
+   ustring = "ustring:ustring",
+   getContentLanguage = function(table)
+      return table.language.getContentLanguage
+   end,
+   getLanguage = function(table)
+      return table.language.getContentLanguage
+   end
+}
+
+local mw_meta = {}
+function mw_meta.__index(table, key)
+   local modname = mw_autoload[key]
+   if modname == nil then return nil end
+   local ret
+   if type(modname) == "string" then
+      ret = require(modname)
+   elseif type(modname) == "function" then
+      ret = modname(table)
+   else
+      error("mw_meta.__index had modname", modname)
+   end
+   return ret
+end
 
 mw = {
    -- addWarning  (see below)
@@ -9,24 +41,22 @@ mw = {
    -- clone  (see below)
    -- dumpObject  (see below)
    -- getCurrentFrame -- assigned in lua_invoke for each call
-   hash = require("mw_hash"),
-   html = require("mw_html"),
+   -- hash - autoloaded
+   -- html - autoloaded
    -- incrementExpensiveFunctionCount (see below)
    -- isSubsting  (see below)
-   language = require("mw_language"),
+   -- language - autoloaded
    -- loadData  (see below)
    -- log  (see below)
    -- logObject  (see below)
    -- XXX message.*
-   site = require("mw_site"),
-   text = require("mw_text"),
-   title = require("mw_title"),
-   uri = require("mw_uri"),
-   ustring = require("ustring:ustring")
+   -- site - autoloaded
+   -- text - autoloaded
+   -- title - autoloaded
+   -- uri - autoloaded
+   -- ustring - autoloaded
 }
-
--- This can also be accessed with just the mw prefix
-mw.getContentLanguage = mw.language.getContentLanguage
+setmetatable(mw, mw_meta)
 
 function mw.addWarning(text)
    print("mw.addWarning", text)
@@ -97,8 +127,5 @@ end
 function mw.getCurrentFrame()
    return mw._frame
 end
-
--- mw.getLanguage is an alias for mw.language.new
-mw.getLanguage = mw.language.new
 
 return mw

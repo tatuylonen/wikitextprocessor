@@ -34,12 +34,21 @@ end
 
 function mw_text.jsonDecode(s, flags)
    flags = flags or 0
-   return mw_text.jsondecode_python(value, flags)
+   return mw.jsondecode_python(value, flags)
 end
 
 function mw_text.jsonEncode(value, flags)
    flags = flags or 0
-   return mw_text.jsonencode_python(value, flags)
+   return mw.jsonencode_python(value, flags)
+end
+
+function mw_text.decode(value, decodeNamedEntities)
+   return mw.decode_python(value, decodeNamedEntities)
+end
+
+function mw_text.encode(value, charset)
+   if charset == nil then charset="<>& " end
+   return mw.encode_python(value, charset)
 end
 
 function mw_text.killMarkers(s)

@@ -1,2 +1,3 @@
 lupa
 dateparser
+lru-dict

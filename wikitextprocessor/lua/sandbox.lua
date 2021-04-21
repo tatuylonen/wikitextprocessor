@@ -1,6 +1,6 @@
 -- Sandbox for executing WikiMedia Scribunto Lua code under Python
 --
--- Copyright (c) 2020 Tatu Ylonen.  See file LICENSE and https://ylonen.org
+-- Copyright (c) 2020-2021 Tatu Ylonen.  See file LICENSE and https://ylonen.org
 
 local env = _ENV
 
@@ -28,24 +28,6 @@ function new_loader(modname)
       return nil
    end
 
-   -- Wikimedia uses an older version of Lua.  Make certain substitutions
-   -- to make existing code run on more modern versions of Lua.
-   content = string.gsub(content, "\\\\", "\\092")
-   content = string.gsub(content, "%%\\%[", "%%%%[")
-   content = string.gsub(content, "\\:", ":")
-   content = string.gsub(content, "\\,", ",")
-   content = string.gsub(content, "\\%(", "%%(")
-   content = string.gsub(content, "\\%)", "%%)")
-   content = string.gsub(content, "\\%+", "%%+")
-   content = string.gsub(content, "\\%*", "%%*")
-   content = string.gsub(content, "\\>", ">")
-   content = string.gsub(content, "\\%.", "%%.")
-   content = string.gsub(content, "\\%?", "%%?")
-   content = string.gsub(content, "\\%-", "%%-")
-   content = string.gsub(content, "\\!", "!")
-   content = string.gsub(content, "\\|", "|")  -- XXX tentative, see ryu:951
-   content = string.gsub(content, "\\ʺ", "ʺ")
-
    -- Load the content into the Lua interpreter.
    local ret = assert(load(content, modname, "bt", env))
    return ret
@@ -66,14 +48,14 @@ function lua_set_loader(loader, mw_text_decode, mw_text_encode,
                         fetch_language_names)
    python_loader = loader
    mw = require("mw")
-   mw.text.decode = mw_text_decode
-   mw.text.encode = mw_text_encode
-   mw.text.jsonEncode = mw_text_jsonencode
-   mw.text.jsonDecode = mw_text_jsondecode
-   mw.title.python_get_page_info = get_page_info
-   mw.title.python_get_page_content = get_page_content
-   mw.language.python_fetch_language_name = fetch_language_name
-   mw.language.python_fetch_language_names = fetch_language_names
+   mw.decode_python = mw_text_decode
+   mw.encode_python = mw_text_encode
+   mw.jsonencode_python = mw_text_jsonencode
+   mw.jsondecode_python = mw_text_jsondecode
+   mw.python_get_page_info = get_page_info
+   mw.python_get_page_content = get_page_content
+   mw.python_fetch_language_name = fetch_language_name
+   mw.python_fetch_language_names = fetch_language_names
 end
 
 function frame_args_index(new_args, key)

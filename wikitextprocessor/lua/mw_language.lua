@@ -1,7 +1,7 @@
 -- Simplified implementation of mw.language for running WikiMedia Scribunto
 -- code under Python
 --
--- Copyright (c) 2020 Tatu Ylonen.  See file LICENSE and https://ylonen.org
+-- Copyright (c) 2020-2021 Tatu Ylonen.  See file LICENSE and https://ylonen.org
 
 local ustring = require("ustring:ustring")
 
@@ -299,13 +299,13 @@ local mw_language = {
 
 function mw_language.fetchLanguageName(code, inLanguage)
    -- XXX inLanguage
-   return mw.language.python_fetch_language_name(code)
+   return mw.python_fetch_language_name(code)
 end
 
 function mw_language.fetchLanguageNames(inLanguage, include)
    print("mw.language.fetchLanguageNames called")
    include = include or "mw"
-   return mw.language.python_fetch_language_names(include)
+   return mw.python_fetch_language_names(include)
 end
 
 function mw_language.getContentLanguage()

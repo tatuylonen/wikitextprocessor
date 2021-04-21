@@ -1,7 +1,7 @@
 -- Simplified implementation of mw.title for running WikiMedia Scribunto
 -- code under Python
 --
--- Copyright (c) 2020 Tatu Ylonen.  See file LICENSE and https://ylonen.org
+-- Copyright (c) 2020-2021 Tatu Ylonen.  See file LICENSE and https://ylonen.org
 
 local mw_title_meta = {
 }
@@ -114,7 +114,7 @@ function mw_title_meta:canonicalUrl(query)
 end
 
 function mw_title_meta:getContent()
-   return mw.title.python_get_page_content(self.fullText)
+   return mw.python_get_page_content(self.fullText)
 end
 
 local mw_title = {
@@ -199,7 +199,7 @@ function mw_title.makeTitle(namespace, title, fragment, interwiki)
    end
 
    -- mw_title.python_get_page_info is set in lua_set_fns
-   local dt = mw_title.python_get_page_info(ns.name .. ":" .. title)
+   local dt = mw.python_get_page_info(ns.name .. ":" .. title)
    local id = dt.id
    local exists = dt.exists
    local redirectTo = dt.redirectTo
