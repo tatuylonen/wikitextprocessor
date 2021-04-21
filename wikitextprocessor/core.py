@@ -407,7 +407,8 @@ class Wtp(object):
                     break
             # Encode templates
             text = re.sub(r"(?s)\{" + MAGIC_NOWIKI_CHAR +
-                          r"?\{(([^{}]|\{\|[^{}]*\|\}|\}[^{}])+?)\}" +
+                          r"?\{(([^{}]|\{\|[^{}]*\|\}|\}[^{}]|"
+                          r"[^{}][{}][^{}])+?)\}" +
                           MAGIC_NOWIKI_CHAR + r"?\}",
                           repl_templ, text)
             # We keep looping until there is no change during the iteration

@@ -641,6 +641,7 @@ def magic_fn(ctx, token):
     arguments, and parser function calls."""
     idx = ord(token) - MAGIC_FIRST
     kind, args, nowiki = ctx.cookies[idx]
+    # print("MAGIC_FN:", kind, args, nowiki)
     ctx.beginning_of_line = False
     if kind == "T":
         if nowiki:
@@ -1064,13 +1065,6 @@ def tag_fn(ctx, token):
     # Note: <nowiki> and HTML comments have already been handled in
     # preprocessing
 
-    # Do not try to parse HTML inside template arguments.  Many templates
-    # use tag-like constructions as internal markers, and they are not
-    # valid HTML tags.  HTML is only parsed after template processing.
-    if (_parser_have(ctx, NodeKind.TEMPLATE) or
-        _parser_have(ctx, NodeKind.TEMPLATE_ARG)):
-        return text_fn(ctx, token)
-
     # Try to parse it as a start tag
     m = re.match(r"""<\s*([-a-zA-Z0-9]+)\s*((\b[-a-zA-Z0-9]+(=("[^"]*"|"""
                  r"""'[^']*'|[^ \t\n"'`=<>/]*))?\s*)*)(/?)\s*>""", token)
@@ -1080,6 +1074,14 @@ def tag_fn(ctx, token):
         attrs = m.group(2)
         also_end = m.group(6) == "/"
         name = name.lower()
+
+        # Some templates have markers like <1> in their arguments.  Only parse
+        # valid HTML tags in template arguments (tags like <math> can and
+        # do occur in them).
+        if (name not in ALLOWED_HTML_TAGS and
+            _parser_have(ctx, NodeKind.TEMPLATE) or
+            _parser_have(ctx, NodeKind.TEMPLATE_ARG)):
+            return text_fn(ctx, token)
 
         # If preparsing, only handle template control tags like <noinclude>
         if ctx.pre_parse:
@@ -1412,6 +1414,7 @@ def process_text(ctx, text):
     """Tokenizes ``text`` and processes each token in sequence.  This can be
     called recursively (which we do to process tokens inside templates and
     certain other structures)."""
+    # print("PARSER PROCESS_TEXT:", repr(text))
     for is_token, token in token_iter(ctx, text):
         # print("process_text: token_iter yielded:", is_token, token)
         node = ctx.parser_stack[-1]
@@ -1436,7 +1439,7 @@ def process_text(ctx, text):
                 subtitle_start_fn(ctx, token)
             elif token.startswith(">=="):  # Note: > added by tokenizer
                 subtitle_end_fn(ctx, token)
-            elif token.startswith("<"):
+            elif token.startswith("<"):  # HTML tag like construct
                 tag_fn(ctx, token)
             elif token.startswith("----"):
                 hline_fn(ctx, token)
