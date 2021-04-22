@@ -99,6 +99,7 @@ def lua_loader(ctx, modname):
     if data is None:
         # Try to load it from a file
         path = modname
+        path = re.sub(r"[\0-\037]", "", path)  # Remove control chars, e.g. \n
         path = re.sub(r":", "/", path)      # Replace : by /
         path = re.sub(r" ", "_", path)      # Replace spaces by underscore
         path = re.sub(r"//+", "/", path)    # Replace multiple slashes by one
