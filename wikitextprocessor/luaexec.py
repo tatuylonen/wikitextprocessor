@@ -99,13 +99,11 @@ def lua_loader(ctx, modname):
     if data is None:
         # Try to load it from a file
         path = modname
-        path = re.sub(r":", "/", path)
-        path = re.sub(r" ", "_", path)
-        # path = re.sub(r"\.", "/", path) XXX remove?
-        path = re.sub(r"//+", "/", path)
-        path = re.sub(r"\.\.", ".", path)
-        if path.startswith("/"):
-            path = path[1:]
+        path = re.sub(r":", "/", path)      # Replace : by /
+        path = re.sub(r" ", "_", path)      # Replace spaces by underscore
+        path = re.sub(r"//+", "/", path)    # Replace multiple slashes by one
+        path = re.sub(r"\.\.+", ".", path)  # Replace .. and longer by .
+        path = re.sub(r"^//+", "", path)    # Remove initial slashes
         path += ".lua"
         for prefix, exceptions in builtin_lua_search_paths:
             if modname in exceptions:
@@ -117,6 +115,7 @@ def lua_loader(ctx, modname):
                 break
         else:
             # Not found
+            lua_module_cache[modname1] = None
             return None
 
     # Perform compatibility substitutions on the Lua code
