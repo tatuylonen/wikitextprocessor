@@ -56,8 +56,9 @@ def phase2_page_handler(dt):
     except Exception as e:
         lst = traceback.format_exception(etype=type(e), value=e,
                                          tb=e.__traceback__)
-
-        return False, "=== EXCEPTION:\n" + "".join(lst)
+        msg = ("=== EXCEPTION while parsing page \"{}\":\n".format(title) +
+               "".join(lst))
+        return False, msg
 
 
 class Wtp(object):

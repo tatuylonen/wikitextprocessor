@@ -90,8 +90,9 @@ def lua_loader(ctx, modname):
     modname1 = ctx._canonicalize_template_name(modname1)
 
     # See if we already have this module cached (with compat changes done)
-    if modname1 in lua_module_cache:
-        return lua_module_cache[modname1]
+    # XXX this currently breaks things
+    #if modname1 in lua_module_cache:
+    #    return lua_module_cache[modname1]
 
     # First try to load it as a module
     data = ctx.read_by_title(modname1)

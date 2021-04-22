@@ -32,7 +32,7 @@ function mw_text.gsplit(text, pattern, plain)
    end
 end
 
-function mw_text.jsonDecode(s, flags)
+function mw_text.jsonDecode(value, flags)
    flags = flags or 0
    return mw.jsondecode_python(value, flags)
 end
@@ -47,7 +47,7 @@ function mw_text.decode(value, decodeNamedEntities)
 end
 
 function mw_text.encode(value, charset)
-   if charset == nil then charset="<>& " end
+   if charset == nil then charset="\"<>& " end
    return mw.encode_python(value, charset)
 end
 
