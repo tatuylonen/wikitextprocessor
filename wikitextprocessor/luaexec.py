@@ -52,6 +52,7 @@ loader_replace_patterns = list((re.compile(src), dst) for src, dst in [
     [r"\\-", r"%-"],
     [r"\\!", r"!"],
     [r"\\\|", r"|"],
+    [r"\\\^", r"%^"],
     [r"\\ʺ", r"ʺ"],
     [r"\\s", r"%s"],
 ])
