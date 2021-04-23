@@ -1057,8 +1057,8 @@ class Wtp(object):
                             if k.isdigit():
                                 k = int(k)
                                 if k < 1 or k > 1000:
-                                    ctx.error("invalid argument number {}"
-                                              .format(k))
+                                    self.error("invalid argument number {}"
+                                               .format(k))
                                     k = 1000
                                 if num <= k:
                                     num = k + 1
