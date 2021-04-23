@@ -1065,6 +1065,10 @@ def tag_fn(ctx, token):
     # Note: <nowiki> and HTML comments have already been handled in
     # preprocessing
 
+    # There are strings like <<country>> in some template arguments
+    if token.startswith("<<"):
+        return text_fn(ctx, token)
+
     # Try to parse it as a start tag
     m = re.match(r"""<\s*([-a-zA-Z0-9]+)\s*((\b[-a-zA-Z0-9]+(=("[^"]*"|"""
                  r"""'[^']*'|[^ \t\n"'`=<>/]*))?\s*)*)(/?)\s*>""", token)
@@ -1153,7 +1157,9 @@ def tag_fn(ctx, token):
 
     # Since it was not a start tag, it should be an end tag
     m = re.match(r"<\s*/\s*([-a-zA-Z0-9]+)\s*>", token)
-    assert m  # If fails, then mismatch between regexp here and tokenization
+    if m is None:
+        print("Could not match end tag token: {!r}".format(token))
+        assert False
     name = m.group(1)
     name = name.lower()
 
