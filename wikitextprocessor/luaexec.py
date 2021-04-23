@@ -53,6 +53,7 @@ loader_replace_patterns = list((re.compile(src), dst) for src, dst in [
     [r"\\!", r"!"],
     [r"\\\|", r"|"],
     [r"\\ʺ", r"ʺ"],
+    [r"\\s", r"%s"],
 ])
 
 # -- Wikimedia uses an older version of Lua.  Make certain substitutions
@@ -73,9 +74,6 @@ loader_replace_patterns = list((re.compile(src), dst) for src, dst in [
 # content = string.gsub(content, "\\|", "|")  -- XXX tentative, see ryu:951
 # content = string.gsub(content, "\\ʺ", "ʺ")
 
-# Cache of loaded and compatibility-mungled Lua modules
-lua_module_cache = {}
-
 def lua_loader(ctx, modname):
     """This function is called from the Lua sandbox to load a Lua module.
     This will load it from either the user-defined modules on special
@@ -88,12 +86,6 @@ def lua_loader(ctx, modname):
         modname = modname[7:]
     modname = "Module:" + modname
     modname = ctx._canonicalize_template_name(modname)
-
-    # See if we already have this module cached (with compat changes done)
-    old = lua_module_cache.get(modname)
-    if old is not None:
-        assert isinstance(old, str)
-        return old
 
     # First try to load it as a module
     if modname.startswith("_"):
@@ -125,16 +117,11 @@ def lua_loader(ctx, modname):
                 break
         else:
             # Not found
-            lua_module_cache[modname] = None
             return None
 
     # Perform compatibility substitutions on the Lua code
     for src, dst in loader_replace_patterns:
         data = re.sub(src, dst, data)
-
-    # Save the module (with compat substitutions) in the cache
-    assert isinstance(data, str)
-    # XXX lua_module_cache[modname] = data
     return data
 
 
