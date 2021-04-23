@@ -114,7 +114,7 @@ function mw_title_meta:canonicalUrl(query)
 end
 
 function mw_title_meta:getContent()
-   return mw.python_get_page_content(self.fullText)
+   return mw_python_get_page_content(self.fullText)
 end
 
 local mw_title = {
@@ -199,7 +199,7 @@ function mw_title.makeTitle(namespace, title, fragment, interwiki)
    end
 
    -- mw_title.python_get_page_info is set in lua_set_fns
-   local dt = mw.python_get_page_info(ns.name .. ":" .. title)
+   local dt = mw_python_get_page_info(ns.name .. ":" .. title)
    local id = dt.id
    local exists = dt.exists
    local redirectTo = dt.redirectTo

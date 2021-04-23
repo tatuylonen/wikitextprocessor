@@ -26,7 +26,7 @@ def phase1_to_ctx(pages):
 
 class WikiProcTests(unittest.TestCase):
 
-    def scribunto(self, expected_ret, body):
+    def scribunto(self, expected_ret, body, timeout=None):
         """This runs a very basic test of scribunto code."""
         ctx = phase1_to_ctx([
             ["Scribunto", "Module:testmod", r"""
@@ -37,7 +37,7 @@ end
 return export
 """]])
         ctx.start_page("Tt")
-        ret = ctx.expand("{{#invoke:testmod|testfn}}")
+        ret = ctx.expand("{{#invoke:testmod|testfn}}", timeout=timeout)
         self.assertEqual(len(ctx.expand_stack), 1)
         self.assertEqual(ret, expected_ret)
 
@@ -3121,12 +3121,12 @@ return export
         t = time.time()
         self.scribunto('<strong class="error">Lua timeout error in '
                        'Module:testmod function testfn</strong>', """
-          lua_reduce_timeout(2)
           local i = 0
           while true do
             i = i + 1
           end
-          return i""")
+          return i""",
+                       timeout=2)
         self.assertLess(time.time() - t, 10)
 
 # XXX Test template_fn

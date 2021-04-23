@@ -10,7 +10,7 @@ import json
 import traceback
 import unicodedata
 import pkg_resources
-from lru import LRU
+#from lru import LRU
 import lupa
 from lupa import LuaRuntime
 from .parserfns import PARSER_FUNCTIONS, call_parser_function, tag_fn
@@ -74,7 +74,7 @@ loader_replace_patterns = list((re.compile(src), dst) for src, dst in [
 # content = string.gsub(content, "\\ʺ", "ʺ")
 
 # Cache of loaded and compatibility-mungled Lua modules
-lua_module_cache = LRU(10000)
+lua_module_cache = {}
 
 def lua_loader(ctx, modname):
     """This function is called from the Lua sandbox to load a Lua module.
@@ -86,19 +86,28 @@ def lua_loader(ctx, modname):
     modname = modname.strip()
     if modname.startswith("Module:"):
         modname = modname[7:]
-    modname1 = "Module:" + modname
-    modname1 = ctx._canonicalize_template_name(modname1)
+    modname = "Module:" + modname
+    modname = ctx._canonicalize_template_name(modname)
 
     # See if we already have this module cached (with compat changes done)
-    # XXX this currently breaks things
-    #if modname1 in lua_module_cache:
-    #    return lua_module_cache[modname1]
+    old = lua_module_cache.get(modname)
+    if old is not None:
+        assert isinstance(old, str)
+        return old
 
     # First try to load it as a module
-    data = ctx.read_by_title(modname1)
+    if modname.startswith("_"):
+        # Module names starting with _ are considered internal and cannot be
+        # loaded from the dump file for security reasons.  This is to ensure
+        # that the sandbox always gets loaded from a local file.
+        data = None
+    else:
+        data = ctx.read_by_title(modname)
     if data is None:
         # Try to load it from a file
-        path = modname
+        assert modname.startswith("Module:")
+        modname1 = modname[7:]
+        path = modname1
         path = re.sub(r"[\0-\037]", "", path)  # Remove control chars, e.g. \n
         path = re.sub(r":", "/", path)      # Replace : by /
         path = re.sub(r" ", "_", path)      # Replace spaces by underscore
@@ -107,7 +116,7 @@ def lua_loader(ctx, modname):
         path = re.sub(r"^//+", "", path)    # Remove initial slashes
         path += ".lua"
         for prefix, exceptions in builtin_lua_search_paths:
-            if modname in exceptions:
+            if modname1 in exceptions:
                 continue
             p = lua_dir + prefix + "/" + path
             if os.path.isfile(p):
@@ -116,7 +125,7 @@ def lua_loader(ctx, modname):
                 break
         else:
             # Not found
-            lua_module_cache[modname1] = None
+            lua_module_cache[modname] = None
             return None
 
     # Perform compatibility substitutions on the Lua code
@@ -124,7 +133,8 @@ def lua_loader(ctx, modname):
         data = re.sub(src, dst, data)
 
     # Save the module (with compat substitutions) in the cache
-    lua_module_cache[modname1] = data
+    assert isinstance(data, str)
+    # XXX lua_module_cache[modname] = data
     return data
 
 
@@ -285,9 +295,20 @@ def fetch_language_names(ctx, include):
     return ctx.lua.table_from(dt)
 
 
+def call_set_functions(ctx, set_functions):
+    # Set functions that are implemented in Python
+    set_functions(mw_text_decode,
+                  mw_text_encode,
+                  mw_text_jsonencode,
+                  lambda x, *rest:
+                  mw_text_jsondecode(ctx, x, *rest),
+                  lambda x: get_page_info(ctx, x),
+                  lambda x: get_page_content(ctx, x),
+                  fetch_language_name,
+                  lambda x: fetch_language_names(ctx, x))
+
+
 def initialize_lua(ctx):
-    # Load Lua sandbox code.
-    lua_sandbox = open(lua_dir + "sandbox.lua").read()
 
     def filter_attribute_access(obj, attr_name, is_setting):
         if isinstance(attr_name, unicode):
@@ -299,20 +320,29 @@ def initialize_lua(ctx):
                      register_eval=False,
                      attribute_filter=filter_attribute_access)
     ctx.lua = lua
-    lua.execute(lua_sandbox)
-    lua.eval("lua_set_loader")(lambda x: lua_loader(ctx, x),
-                               mw_text_decode,
-                               mw_text_encode,
-                               mw_text_jsonencode,
-                               lambda x, *rest:
-                               mw_text_jsondecode(ctx, x, *rest),
-                               lambda x: get_page_info(ctx, x),
-                               lambda x: get_page_content(ctx, x),
-                               fetch_language_name,
-                               lambda x: fetch_language_names(ctx, x))
+
+    # Load Lua sandbox Phase 1.  This is a very minimal file that only sets
+    # the Lua loader to our custom loader; we will then use it to load the
+    # bigger phase 2 of the sandbox.  This way, most of the sandbox loading
+    # will benefit from caching and precompilation (when implemented).
+    lua_sandbox = open(lua_dir + "_sandbox_phase1.lua").read()
+    set_loader = lua.execute(lua_sandbox)
+    # Call the function that sets the Lua loader
+    set_loader(lambda x: lua_loader(ctx, x))
+
+    # Then load the second phase of the sandbox.  This now goes through the
+    # new loader and is evaluated in the sandbox.  This mostly implements
+    # compatibility code.
+    ret = lua.require("_sandbox_phase2")
+    set_functions = ret[1]
+    ctx.lua_invoke = ret[2]
+    ctx.lua_reset_env = ret[3]
+
+    # Set Python functions for Lua
+    call_set_functions(ctx, set_functions)
 
 
-def call_lua_sandbox(ctx, invoke_args, expander, parent):
+def call_lua_sandbox(ctx, invoke_args, expander, parent, timeout):
     """Calls a function in a Lua module in the Lua sandbox.
     ``invoke_args`` is the arguments to the call; ``expander`` should
     be a function to expand an argument.  ``parent`` should be None or
@@ -320,6 +350,7 @@ def call_lua_sandbox(ctx, invoke_args, expander, parent):
     assert isinstance(invoke_args, (list, tuple))
     assert callable(expander)
     assert parent is None or isinstance(parent, (list, tuple))
+    assert timeout is None or isinstance(timeout, (int, float))
 
     # print("call_lua_sandbox", invoke_args, parent)
 
@@ -331,8 +362,20 @@ def call_lua_sandbox(ctx, invoke_args, expander, parent):
 
     # Initialize the Lua sandbox if not already initialized
     if ctx.lua_depth == 0:
-        ctx.lua = None
-        initialize_lua(ctx)  # This sets ctx.lua
+        if ctx.lua is None:
+            # This is the first call to the Lua sandbox.
+            # Create a Lua context and initialize it.
+            initialize_lua(ctx)  # This sets ctx.lua
+        else:
+            # This is a second or later call to the Lua sandbox.
+            # Reset the Lua context back to initial state.
+            ctx.lua_reset_env()
+            ret = ctx.lua.require("_sandbox_phase2")
+            set_functions = ret[1]
+            ctx.lua_invoke = ret[2]
+            ctx.lua_reset_env = ret[3]
+            call_set_functions(ctx, set_functions)
+
     ctx.lua_depth += 1
     lua = ctx.lua
 
@@ -528,7 +571,7 @@ def call_lua_sandbox(ctx, invoke_args, expander, parent):
     stack_len = len(ctx.expand_stack)
     ctx.expand_stack.append("Lua:{}:{}()".format(modname, modfn))
     try:
-        ret = lua.eval("lua_invoke")(modname, modfn, frame, ctx.title)
+        ret = ctx.lua_invoke(modname, modfn, frame, ctx.title, timeout)
         if not isinstance(ret, (list, tuple)):
             ok, text = ret, ""
         elif len(ret) == 1:

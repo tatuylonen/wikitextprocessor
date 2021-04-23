@@ -79,6 +79,8 @@ class Wtp(object):
         "fullpage",	 # The unprocessed text of the current page (or None)
         "lua",		 # Lua runtime or None if not yet initialized
         "lua_depth",     # Recursion depth in Lua calls
+        "lua_invoke",	 # Lua function used to invoke a Lua module
+        "lua_reset_env", # Function to reset Lua environment
         "lua_path",	 # Path to Lua modules
         "modules",	 # Lua code for defined Lua modules
         "need_pre_expand",  # Set of template names to be expanded before parse
@@ -127,6 +129,8 @@ class Wtp(object):
         self.section = None
         self.subsection = None
         self.lua = None
+        self.lua_invoke = None
+        self.lua_reset_env = None
         self.lua_depth = 0
         self.quiet = quiet
         self.rev_ht = {}
@@ -721,8 +725,6 @@ class Wtp(object):
         self.warnings, and self.debugs lists and any current section
         or subsection."""
         assert isinstance(title, str)
-        self.lua = None
-        self.lua_depth = 0
         self.title = title
         self.errors = []
         self.warnings = []
@@ -774,7 +776,8 @@ class Wtp(object):
     def expand(self, text, parent=None, pre_expand=False,
                template_fn=None, post_template_fn=None,
                templates_to_expand=None,
-               expand_parserfns=True, expand_invoke=True, quiet=False):
+               expand_parserfns=True, expand_invoke=True, quiet=False,
+               timeout=None):
         """Expands templates and parser functions (and optionally Lua macros)
         from ``text`` (which is from page with title ``title``).
         ``templates_to_expand`` should be None to expand all
@@ -800,6 +803,7 @@ class Wtp(object):
         assert isinstance(templates_to_expand, (set, dict, type(None)))
         assert self.title is not None  # start_page() must have been called
         assert quiet in (False, True)
+        assert timeout is None or isinstance(timeout, (int, float))
 
         # Handle <nowiki> in a preprocessing step
         text = preprocess_text(text)
@@ -842,7 +846,7 @@ class Wtp(object):
             # Use the Lua sandbox to execute a Lua macro.  This will initialize
             # the Lua environment and store it in self.lua if it does not
             # already exist (it needs to be re-created for each new page).
-            ret = call_lua_sandbox(self, invoke_args, expander, parent)
+            ret = call_lua_sandbox(self, invoke_args, expander, parent, timeout)
             return ret
 
         def expand_recurse(coded, parent, templates_to_expand):
