@@ -31,7 +31,9 @@ local function _new_loader(modname)
 
    -- Load the content into the Lua interpreter.
    local ret = assert(load(content, modname, "t", env))
-   loader_cache[modname] = ret
+   -- XXX this seems to break things, apparently modules get initialized
+   -- in wrong environments.  Temporarily disabled while fixing the real issue.
+   -- loader_cache[modname] = ret
    return ret
 end
 
