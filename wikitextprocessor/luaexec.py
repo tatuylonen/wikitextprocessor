@@ -599,6 +599,11 @@ def call_lua_sandbox(ctx, invoke_args, expander, parent, timeout):
         # Ignore this error - it is an error but a clear error in Wiktionary
         # rather than in the extractor.
         return ""
+    elif (text.find("attempt to index a nil value (local 'lang')") >= 0 and
+          text.find("in function 'Module:links.getLinkPage'") >= 0):
+        # Ignore this error - happens when an unknown language code is passed
+        # to various templates (a Wiktionary error, not extractor error)
+        return ""
     else:
         parts = []
         in_traceback = 0
