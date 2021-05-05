@@ -5,7 +5,8 @@
 -- Python function for loading a source file or Scribunto Lua module
 local _python_loader = nil
 
-env = _ENV
+-- The new sandbox environment we create
+env = {}
 
 local loader_cache = {}
 
@@ -31,9 +32,8 @@ local function _new_loader(modname)
 
    -- Load the content into the Lua interpreter.
    local ret = assert(load(content, modname, "t", env))
-   -- XXX this seems to break things, apparently modules get initialized
-   -- in wrong environments.  Temporarily disabled while fixing the real issue.
-   -- loader_cache[modname] = ret
+   -- Cache the loaded module initialization function
+   loader_cache[modname] = ret
    return ret
 end
 
@@ -123,7 +123,7 @@ local _orig_next = next
 -- to access the functionality that is available in this restricted
 -- environment.  Please report an issue on github if you find a way to
 -- circumvent the environment restrictions and access outside the sandbox.
-function make_env()
+function _lua_reset_env()
 
     -- Flushes stdin buffers.  This is mostly used to make sure debug
     -- buffers are properly output before possible crashes.  This is
@@ -143,27 +143,28 @@ function make_env()
        time = os.time,
     }
 
-    -- Resets the environment to the default sandbox environment
-    function _lua_reset_env(setter)
-       assert(os.clock ~= nil)
-       assert(package ~= nil)
-       for k, v in pairs(package.loaded) do
-          if k ~= "coroutine" and k ~= "math" and k ~= "io" and
-             k ~= "python" and k ~= "utf8" and k ~= "os" and k ~= "package" and
-             k ~= "table" and k ~= "_G" and k ~= "_sandbox_phase1" then
-                package.loaded[k] = nil
-          end
+    -- Cause most packages to be reloaded
+    for k, v in pairs(package.loaded) do
+       if k ~= "coroutine" and k ~= "math" and k ~= "io" and
+          k ~= "python" and k ~= "utf8" and k ~= "os" and k ~= "package" and
+          k ~= "table" and k ~= "_G" and k ~= "_sandbox_phase1" then
+             package.loaded[k] = nil
        end
-       setter(make_env())
     end
 
-    env = {}
+    -- Clear the sandbox environment
+    for k, v in pairs(env) do
+       env[k] = nil
+    end
+
+    -- Set only a few desired values in the sandbox environment
+    assert(_VERSION ~= nil)
     env["_G"] = env
     env["_VERSION"] = _VERSION
     env["assert"] = assert
     env["debug"] = new_debug
     env["error"] = error
-    env["getmetatable"] = getmetatable  -- MODIFY
+    env["getmetatable"] = getmetatable
     env["ipairs"] = ipairs
     env["math"] = math
     env["next"] = next
@@ -183,11 +184,11 @@ function make_env()
     env["tostring"] = tostring
     env["type"] = type
     env["unpack"] = table.unpack
-    env["xpcall"] = xpcall   -- MODIFY
+    env["xpcall"] = xpcall
     env["_lua_set_python_loader"] = _lua_set_python_loader
     env["_lua_set_timeout"] = _lua_set_timeout
     env["_lua_io_flush"] = _lua_io_flush
-    env["_lua_reset_env_with_setter"] = _lua_reset_env
+    env["_lua_reset_env"] = _lua_reset_env
     env["_orig_format"] = _orig_format
     env["_orig_gsub"] = _orig_gsub
     env["_orig_insert"] = _orig_insert
@@ -195,11 +196,12 @@ function make_env()
     return env
 end
 
--- Override the environment by the restricted sandbox environment
-assert(io ~= nil)
-local _ENV = make_env()
+-- Switch to the sandbox environment
+assert(io ~= nil)  -- We should not be in the sandbox now
+local _ENV = _lua_reset_env()
+-- Now we should be in the sandbox environment
 assert(io == nil)
 assert(_G.io == nil)
-assert(make_env == nil)
+assert(env == nil)
 
 return _lua_set_python_loader

@@ -283,7 +283,7 @@ function Language.getDurationIntervals(self, seconds, allowedIntervals)
    return ret
 end
 
-en_lang = Language:new{code="en"}
+_en_lang = Language:new{code="en"}
 
 local mw_language = {
    -- fetchLanguageName(code, inLanguage)
@@ -311,7 +311,7 @@ end
 function mw_language.getContentLanguage()
    -- This appears to be called very commonly by English nouns
    -- print("mw.language.getContentLanguage called")
-   return en_lang
+   return _en_lang
 end
 
 function mw_language.getFallbacksFor(code)

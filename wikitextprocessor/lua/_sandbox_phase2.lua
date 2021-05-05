@@ -16,6 +16,12 @@ mw_python_get_page_content = nil
 mw_python_fetch_language_name = nil
 mw_python_fetch_language_names = nil
 
+-- These are used for passing information about the current call to
+-- _lua_invoke().  The values are restred on return, as calls can be
+-- recursive.
+_mw_frame = "<unassigned>"
+_mw_pageTitle = "<unassigned>"
+
 function frame_args_index(new_args, key)
    -- print("frame_args_index", key)
    local v = new_args._orig[key]
@@ -148,8 +154,10 @@ function _lua_invoke(mod_name, fn_name, frame, page_title, timeout)
    end
 
    -- Initialize some fields that will be referenced from functions
-   mw._frame = frame
-   mw._pageTitle = page_title
+   local saved_frame = _mw_frame
+   local saved_pageTitle = _mw_pageTitle
+   _mw_frame = frame
+   _mw_pageTitle = page_title
 
    -- Set time limit for execution of the Lua code
    _lua_set_timeout(timeout)
@@ -162,17 +170,23 @@ function _lua_invoke(mod_name, fn_name, frame, page_title, timeout)
    success, mod = xpcall(function() return require(mod_name) end,
       debug.traceback)
    if not success then
+      _mw_frame = saved_frame
+      _mw_pageTitle = saved_pageTitle
       return False, ("\tLoading module failed in #invoke: " ..
                         mod_name .. "\n" .. mod)
    end
    -- Look up the target function in the module
    local fn = mod[fn_name]
    if fn == nil then
+      _mw_frame = saved_frame
+      _mw_pageTitle = saved_pageTitle
       return false, "\tNo function '" .. fn_name .. "' in module " .. mod_name
    end
    -- Call the function in the module
    local st, v = xpcall(function() return fn(frame) end, debug.traceback)
    -- print("Lua sandbox:", tostring(v))
+   _mw_frame = saved_frame
+   _mw_pageTitle = saved_pageTitle
    return st, v
 end
 
@@ -196,12 +210,6 @@ local function _lua_set_functions(mw_text_decode, mw_text_encode,
    mw_python_get_page_content = get_page_content
    mw_python_fetch_language_name = fetch_language_name
    mw_python_fetch_language_names = fetch_language_names
-end
-
--- This function resets the Lua sandbox environment back to its original state,
--- as if Lua had just been started.
-local function _lua_reset_env()
-   _lua_reset_env_with_setter(function(env) _ENV = env end)
 end
 
 -- math.log10 seems to be sometimes missing???
@@ -288,5 +296,9 @@ end
     -- bit32
     -- libraryUtil
     -- luabit
+
+-- Make sure we are operating in the restricted environment
+assert(io == nil)
+assert(_G.io == nil)
 
 return { _lua_set_functions, _lua_invoke, _lua_reset_env }

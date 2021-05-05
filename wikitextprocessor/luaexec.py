@@ -340,7 +340,8 @@ def call_lua_sandbox(ctx, invoke_args, expander, parent, timeout):
     assert parent is None or isinstance(parent, (list, tuple))
     assert timeout is None or isinstance(timeout, (int, float))
 
-    # print("call_lua_sandbox", invoke_args, parent)
+    # print("{}: CALL_LUA_SANDBOX: {} {}"
+    #  .format(ctx.title, invoke_args, parent))
 
     if len(invoke_args) < 2:
         ctx.error("#invoke {}: too few arguments"

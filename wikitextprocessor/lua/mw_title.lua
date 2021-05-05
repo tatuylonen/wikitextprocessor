@@ -254,9 +254,9 @@ function mw_title.new(text, namespace)
 end
 
 function mw_title.getCurrentTitle()
-   local t = mw_title.new(mw._pageTitle)
+   local t = mw_title.new(_mw_pageTitle)
    if t == nil then
-      print("mw.title.getCurrentTitle returns nil:", mw._pageTitle)
+      print("mw.title.getCurrentTitle returns nil")
    end
    return t
    -- local frame = mw.getCurrentFrame()

@@ -21,19 +21,6 @@ local mw_autoload = {
 }
 
 local mw_meta = {}
-function mw_meta.__index(table, key)
-   local modname = mw_autoload[key]
-   if modname == nil then return nil end
-   local ret
-   if type(modname) == "string" then
-      ret = require(modname)
-   elseif type(modname) == "function" then
-      ret = modname(table)
-   else
-      error("mw_meta.__index had modname", modname)
-   end
-   return ret
-end
 
 mw = {
    -- addWarning  (see below)
@@ -58,6 +45,21 @@ mw = {
 }
 setmetatable(mw, mw_meta)
 
+function mw_meta.__index(table, key)
+   local modname = mw_autoload[key]
+   if modname == nil then return nil end
+   local ret
+   if type(modname) == "string" then
+      ret = require(modname)
+   elseif type(modname) == "function" then
+      ret = modname(table)
+   else
+      error("mw_meta.__index had modname", modname)
+   end
+   table[key] = ret
+   return ret
+end
+
 function mw.addWarning(text)
    print("mw.addWarning", text)
 end
@@ -70,7 +72,7 @@ function mw.allToString(...)
    return ret
 end
 
-local function deepcopy(obj, visited)
+local function _mw_deepcopy(obj, visited)
    -- non-table objects can be returned as-is
    if type(obj) ~= "table" then return obj end
    -- handle cyclic data structures
@@ -84,7 +86,7 @@ local function deepcopy(obj, visited)
    setmetatable(obj, nil)
    -- Copy fields of the object
    for k, v in pairs(obj) do
-      new_table[deepcopy(k, visited)] = deepcopy(v, visited)
+      new_table[_mw_deepcopy(k, visited)] = _mw_deepcopy(v, visited)
    end
    -- copy metatable pointer for copy
    setmetatable(obj, old_meta)
@@ -93,7 +95,7 @@ local function deepcopy(obj, visited)
 end
 
 function mw.clone(v)
-   local ret = deepcopy(v, {})
+   local ret = _mw_deepcopy(v, {})
    -- print("mw_clone: " .. tostring(ret))
    return ret
 end
@@ -125,7 +127,7 @@ function mw.logObject(obj)
 end
 
 function mw.getCurrentFrame()
-   return mw._frame
+   return _mw_frame
 end
 
 return mw
