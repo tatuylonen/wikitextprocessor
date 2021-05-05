@@ -1,6 +1,6 @@
 # Definitions for various parser functions supported in WikiText
 #
-# Copyright (c) 2020 Tatu Ylonen.  See file LICENSE and https://ylonen.org
+# Copyright (c) 2020, 2021 Tatu Ylonen.  See file LICENSE and https://ylonen.org
 
 import re
 import html
@@ -115,23 +115,22 @@ def switch_fn(ctx, fn_name, args, expander):
     defval = None
     last = None
     for i in range(1, len(args)):
-        arg = expander(args[i]).strip()
+        arg = args[i]
         m = re.match(r"(?s)^([^=]*)=(.*)$", arg)
         if not m:
-            last = arg
+            last = expander(arg).strip()
             if arg == val:
                 match_next = True
             continue
         k, v = m.groups()
-        k = k.strip()
-        v = v.strip()
+        k = expander(k).strip()
         if k == val or match_next:
-            return v
+            return expander(v).strip()
         if k == "#default":
             defval = v
         last = None
     if defval is not None:
-        return defval
+        return expander(defval).strip()
     return last or ""
 
 
