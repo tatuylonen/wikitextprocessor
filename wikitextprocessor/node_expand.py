@@ -168,6 +168,7 @@ def to_text(ctx, node, template_fn=None, post_template_fn=None):
     # Remove category links
     s = re.sub(r"(?s)\[\[\s*Category:[^]]*\]\]", "", s)
     s = re.sub(r"(?s)\[\[([^]|]*?\|([^]]*?))\]\]", r"\2", s)
+    s = re.sub(r"(?s)\[(https?:)?//[^]\s]+\s+([^]]+)\]", r"\2", s)
     #s = re.sub(r"(?s)[][]", "", s)
     s = re.sub(r"\n\n\n+", "\n\n", s)
     return s.strip()

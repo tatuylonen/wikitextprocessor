@@ -1318,7 +1318,7 @@ class Wtp(object):
         return rawdata.decode("utf-8")
 
     def parse(self, text, pre_expand=False, expand_all=False,
-              additional_expand=None):
+              additional_expand=None, template_fn=None, post_template_fn=None):
         """Parses the given text into a parse tree (WikiNode tree).  If
         ``pre_expand`` is True, then before parsing this will expand
         those templates that have been detected to potentially
@@ -1339,10 +1339,13 @@ class Wtp(object):
 
         # Expand some or all templates in the text as requested
         if expand_all:
-            text = self.expand(text)
+            text = self.expand(text, template_fn=template_fn,
+                               post_template_fn=post_template_fn)
         elif pre_expand or additional_expand:
             text = self.expand(text, pre_expand=pre_expand,
-                               templates_to_expand=additional_expand)
+                               templates_to_expand=additional_expand,
+                               template_fn=template_fn,
+                               post_template_fn=post_template_fn)
 
         # print("parse:", repr(text))
 
