@@ -1,12 +1,12 @@
 # Expanding parse tree nodes to Wikitext or HTML or plain text
 #
-# Copyright (c) 2020, 2021 Tatu Ylonen.  See file LICENSE and https://ylonen.org
+# Copyright (c) 2020-2021 Tatu Ylonen.  See file LICENSE and https://ylonen.org
 
 import re
 import html
 import urllib.parse
 from .parser import WikiNode, NodeKind
-
+from .wikihtml import ALLOWED_HTML_TAGS
 
 kind_to_level = {
     NodeKind.LEVEL2: "==",
