@@ -1,6 +1,6 @@
 # Expanding parse tree nodes to Wikitext or HTML or plain text
 #
-# Copyright (c) 2020 Tatu Ylonen.  See file LICENSE and https://ylonen.org
+# Copyright (c) 2020, 2021 Tatu Ylonen.  See file LICENSE and https://ylonen.org
 
 import re
 import html
@@ -120,7 +120,11 @@ def to_wikitext(node):
             if node.attrs:
                 parts.append(" ")
                 parts.append(to_attrs(node))
-            parts.append(" />")
+            if ALLOWED_HTML_TAGS.get(node.args, {
+                    "no-end-tag": True}).get("no-end-tag"):
+                parts.append(">")
+            else:
+                parts.append(" />")
     elif kind == NodeKind.ROOT:
         parts.append(to_wikitext(node.children))
     elif kind == NodeKind.BOLD:

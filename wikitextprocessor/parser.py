@@ -1086,7 +1086,10 @@ def tag_fn(ctx, token):
     # preprocessing
 
     # There are strings like <<country>> in some template arguments
-    if token.startswith("<<"):
+    if (token.startswith("<<") or
+        _parser_have(ctx, NodeKind.TEMPLATE) or
+        _parser_have(ctx, NodeKind.TEMPLATE_ARG) or
+        _parser_have(ctx, NodeKind.PARSER_FN)):
         return text_fn(ctx, token)
 
     # If we are at the beginning of a line, close pending list
