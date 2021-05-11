@@ -377,6 +377,16 @@ def _parser_have(ctx, kind):
     return False
 
 
+def close_begline_lists(ctx):
+    """Closes currently open list if at the beginning of a line."""
+    if not ctx.beginning_of_line:
+        return
+    node = ctx.parser_stack[-1]
+    while node.kind in (NodeKind.LIST, NodeKind.LIST_ITEM):
+        _parser_pop(ctx, False)
+        node = ctx.parser_stack[-1]
+
+
 def text_fn(ctx, token):
     """Inserts the token as raw text into the parse tree."""
     node = ctx.parser_stack[-1]
@@ -639,6 +649,9 @@ def url_fn(ctx, token):
 def magic_fn(ctx, token):
     """Handler for a magic character used to encode templates, template
     arguments, and parser function calls."""
+    # Close lists if at the beginning of a line
+    close_begline_lists(ctx)
+    # Handle the magic character token
     idx = ord(token) - MAGIC_FIRST
     kind, args, nowiki = ctx.cookies[idx]
     # print("MAGIC_FN:", kind, args, nowiki)
@@ -750,6 +763,7 @@ def table_start_fn(ctx, token):
     if ctx.pre_parse:
         return text_fn(ctx, token)
 
+    close_begline_lists(ctx)
     _parser_push(ctx, NodeKind.TABLE)
 
 
@@ -767,6 +781,7 @@ def table_check_attrs(ctx):
 
 def table_row_check_attrs(ctx):
     """Checks if the table row has attributes, and if so, parses them."""
+    close_begline_lists(ctx)
     node = ctx.parser_stack[-1]
     if node.kind != NodeKind.TABLE_ROW:
         return
@@ -782,6 +797,7 @@ def table_caption_fn(ctx, token):
     if ctx.pre_parse:
         return text_fn(ctx, token)
 
+    close_begline_lists(ctx)
     table_check_attrs(ctx)
     if not _parser_have(ctx, NodeKind.TABLE):
         return text_fn(ctx, token)
@@ -801,6 +817,7 @@ def table_hdr_cell_fn(ctx, token):
     if token == "!" and not ctx.beginning_of_line:
         return text_fn(ctx, token)
 
+    close_begline_lists(ctx)
     table_row_check_attrs(ctx)
     table_check_attrs(ctx)
     if not _parser_have(ctx, NodeKind.TABLE):
@@ -832,6 +849,7 @@ def table_row_fn(ctx, token):
     if ctx.pre_parse:
         return text_fn(ctx, token)
 
+    close_begline_lists(ctx)
     table_check_attrs(ctx)
     if not _parser_have(ctx, NodeKind.TABLE):
         return text_fn(ctx, token)
@@ -848,6 +866,7 @@ def table_cell_fn(ctx, token):
     if ctx.pre_parse:
         return text_fn(ctx, token)
 
+    close_begline_lists(ctx)
     table_row_check_attrs(ctx)
     table_check_attrs(ctx)
 
@@ -915,6 +934,7 @@ def table_end_fn(ctx, token):
     if ctx.pre_parse:
         return text_fn(ctx, token)
 
+    close_begline_lists(ctx)
     table_row_check_attrs(ctx)
     table_check_attrs(ctx)
     if not _parser_have(ctx, NodeKind.TABLE):
@@ -1068,6 +1088,9 @@ def tag_fn(ctx, token):
     # There are strings like <<country>> in some template arguments
     if token.startswith("<<"):
         return text_fn(ctx, token)
+
+    # If we are at the beginning of a line, close pending list
+    close_begline_lists(ctx)
 
     # Try to parse it as a start tag
     m = re.match(r"""<\s*([-a-zA-Z0-9]+)\s*((\b[-a-zA-Z0-9]+(=("[^"]*"|"""
@@ -1232,6 +1255,7 @@ def tag_fn(ctx, token):
 
 def magicword_fn(ctx, token):
     """Handles a magic word, such as "__NOTOC__"."""
+    close_begline_lists(ctx)
     node = _parser_push(ctx, NodeKind.MAGIC_WORD)
     node.args = token
     _parser_pop(ctx, False)
