@@ -1,9 +1,9 @@
 -- Implementation of mw.html for running WikiMedia Scribunto code under
 -- Python.
 --
--- Copyright (c) 2020 Tatu Ylonen.  See file LICENSE and https://ylonen.org
+-- Copyright (c) 2020-2021 Tatu Ylonen.  See file LICENSE and https://ylonen.org
 
-mw_html = {
+local mw_html = {
 }
 
 local Html = {

@@ -840,7 +840,7 @@ class Wtp(object):
             assert isinstance(invoke_args, (list, tuple))
             assert callable(expander)
             assert isinstance(parent, (tuple, type(None)))
-            # print("invoke_fn", invoke_args)
+            # print("INVOKE_FN", invoke_args, parent)
             # sys.stdout.flush()
 
             # Use the Lua sandbox to execute a Lua macro.  This will initialize
@@ -1083,6 +1083,8 @@ class Wtp(object):
                     t = None
                     if template_fn is not None:
                         t = template_fn(urllib.parse.unquote(name), ht)
+                        # print("TEMPLATE_FN {}: {} {} -> {}"
+                        #       .format(template_fn, name, ht, repr(t)))
                     if t is None:
                         if name in self.transient_templates:
                             body = self.transient_templates[name]
@@ -1125,6 +1127,8 @@ class Wtp(object):
 
                     # If a post_template_fn has been supplied, call it now
                     # to capture or alter the expansion
+                    # print("TEMPLATE EXPANDED: {} {} -> {!r}"
+                    #       .format(name, ht, t))
                     if post_template_fn is not None:
                         t2 = post_template_fn(urllib.parse.unquote(name), ht, t)
                         if t2 is not None:

@@ -283,7 +283,7 @@ function Language.getDurationIntervals(self, seconds, allowedIntervals)
    return ret
 end
 
-_en_lang = Language:new{code="en"}
+local _en_lang = Language:new{code="en"}
 
 local mw_language = {
    -- fetchLanguageName(code, inLanguage)

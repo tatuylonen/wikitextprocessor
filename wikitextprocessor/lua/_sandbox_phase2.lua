@@ -3,6 +3,11 @@
 --
 -- Copyright (c) 2020-2021 Tatu Ylonen.  See file LICENSE and https://ylonen.org
 
+-- Sanity check - ensure that sandbox is working
+assert(new_require == nil)
+assert(io == nil)
+assert(_new_loadData ~= nil)
+
 -- The main MediaWiki namespace for accessing its functions.  This is
 -- created in _lua_set_functions.
 mw = nil
@@ -22,7 +27,7 @@ mw_python_fetch_language_names = nil
 _mw_frame = "<unassigned>"
 _mw_pageTitle = "<unassigned>"
 
-function frame_args_index(new_args, key)
+local function frame_args_index(new_args, key)
    -- print("frame_args_index", key)
    local v = new_args._orig[key]
    if v == nil then return nil end
@@ -37,7 +42,7 @@ function frame_args_index(new_args, key)
    return v
 end
 
-function frame_args_pairs(new_args)
+local function frame_args_pairs(new_args)
    -- print("frame_args_pairs")
    local frame = new_args._frame
    local function stateless_iter(new_args, key)
@@ -54,7 +59,7 @@ function frame_args_pairs(new_args)
    return stateless_iter, new_args, nil
 end
 
-function frame_args_ipairs(new_args)
+local function frame_args_ipairs(new_args)
    -- print("frame_args_ipairs")
    local frame = new_args._frame
    local function stateless_iter(new_args, key)
@@ -69,11 +74,11 @@ function frame_args_ipairs(new_args)
    return stateless_iter, new_args, nil
 end
 
-function frame_args_len(new_args)
+local function frame_args_len(new_args)
    return #new_args._orig
 end
 
-function frame_args_next(t, key)
+local function frame_args_next(t, key)
    if key == nil then key = "***nil***" end
    local nkey = t._next_key[key]
    if nkey == nil then return nil end
@@ -82,25 +87,14 @@ function frame_args_next(t, key)
    return nkey, v
 end
 
-frame_args_meta = {
+local frame_args_meta = {
    __index = frame_args_index,
    __pairs = frame_args_pairs,
    __next = frame_args_next,
    __len = frame_args_len
 }
 
-function frame_new_child(frame, o)
-   local title = (o and o.title) or ""
-   local args = (o and o.args) or {}
-   local new_frame = mw.clone(frame)
-   new_frame.getParent = function() return frame end
-   new_frame.getTitle = function() return title end
-   new_frame.args = args
-   prepare_frame_args(new_frame)
-   return new_frame
-end
-
-function prepare_frame_args(frame)
+local function prepare_frame_args(frame)
   local next_key = {}
   local prev = "***nil***"
   for k, v in pairs(frame.args) do
@@ -113,15 +107,22 @@ function prepare_frame_args(frame)
   setmetatable(new_args, frame_args_meta)
   frame.args = new_args
   frame.argumentPairs = function (frame) return pairs(frame.args) end
-  frame.getArgument = frame_get_argument
-  frame.newChild = frame_new_child
-end
-
-function frame_get_argument(frame, name)
-   if type(name) == "table" then name = name.name end
-   v = frame.args[name]
-   if v == nil then return nil end
-   return { expand = function() return v end }
+  frame.getArgument = function(frame, name)
+    if type(name) == "table" then name = name.name end
+    v = frame.args[name]
+    if v == nil then return nil end
+    return { expand = function() return v end }
+  end
+  frame.newChild = function(frame, o)
+    local title = (o and o.title) or ""
+    local args = (o and o.args) or {}
+    local new_frame = mw.clone(frame)
+    new_frame.getParent = function() return frame end
+    new_frame.getTitle = function() return title end
+    new_frame.args = args
+    prepare_frame_args(new_frame)
+    return new_frame
+  end;
 end
 
 -- This function implements the {{#invoke:...}} parser function.  XXX
@@ -132,7 +133,7 @@ end
 -- in calls from Python.  Python code must keep in mind that those
 -- arguments and any functions and data structures in them can be
 -- accessed, called, and modified by hostile code.
-function _lua_invoke(mod_name, fn_name, frame, page_title, timeout)
+local function _lua_invoke(mod_name, fn_name, frame, page_title, timeout)
    -- Initialize frame and parent frame
    local pframe = frame:getParent()
    -- print("lua_invoke", mod_name, fn_name)
@@ -165,16 +166,43 @@ function _lua_invoke(mod_name, fn_name, frame, page_title, timeout)
    -- Load the module.  Note that the initilizations above must be done before
    -- loading the module, as the module could refer to, e.g., page title
    -- during loading.
-   local success
-   local mod
-   success, mod = xpcall(function() return require(mod_name) end,
-      debug.traceback)
-   if not success then
-      _mw_frame = saved_frame
-      _mw_pageTitle = saved_pageTitle
-      return False, ("\tLoading module failed in #invoke: " ..
-                        mod_name .. "\n" .. mod)
+   local mod, success
+   if string.sub(mod_name, 1, 7) ~= "Module:" then
+      local mod1 = "Module:" .. mod_name
+      mod = _cached_mod(mod1)
+      if not mod then
+         local initfn, msg = _new_loader(mod1)
+         if initfn then
+            success, mod = xpcall(initfn, debug.traceback, _G)
+            if not success then
+               _mw_frame = saved_frame
+               _mw_pageTitle = saved_pageTitle
+               return False, ("\tLoading module failed in #invoke: " ..
+                                 mod1 .. "\n" .. mod)
+            end
+            _save_mod(mod1, mod)
+         end
+      end
    end
+   if not mod then
+      mod = _cached_mod(mod_name)
+      if not mod then
+         local initfn, msg = _new_loader(mod_name)
+         if initfn then
+            success, mod = xpcall(initfn, debug.traceback, _G)
+            if not success then
+               _mw_frame = saved_frame
+               _mw_pageTitle = saved_pageTitle
+               return False, ("\tLoading module failed in #invoke: " ..
+                                 mod_name .. "\n" .. mod)
+            end
+            _save_mod(mod_name, mod)
+         else
+            error("Could not find module " .. mod_name)
+         end
+      end
+   end
+   assert(mod)
    -- Look up the target function in the module
    local fn = mod[fn_name]
    if fn == nil then
@@ -183,7 +211,7 @@ function _lua_invoke(mod_name, fn_name, frame, page_title, timeout)
       return false, "\tNo function '" .. fn_name .. "' in module " .. mod_name
    end
    -- Call the function in the module
-   local st, v = xpcall(function() return fn(frame) end, debug.traceback)
+   local st, v = xpcall(fn, debug.traceback, frame)
    -- print("Lua sandbox:", tostring(v))
    _mw_frame = saved_frame
    _mw_pageTitle = saved_pageTitle

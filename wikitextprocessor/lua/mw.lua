@@ -22,6 +22,7 @@ local mw_autoload = {
 
 local mw_meta = {}
 
+-- This is intentionally a global variable, as this is accessed by many modules
 mw = {
    -- addWarning  (see below)
    -- allToString  (see below)
@@ -115,7 +116,7 @@ end
 -- mw.loadData function - loads a data file.  This is same as require(),
 -- which already implements caching.
 function mw.loadData(modname)
-   return require(modname)
+   return _new_loadData(modname)
 end
 
 function mw.log(...)

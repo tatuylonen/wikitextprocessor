@@ -80,27 +80,24 @@ def lua_loader(ctx, modname):
     This will load it from either the user-defined modules on special
     pages or from a built-in module in the file system.  This returns None
     if the module could not be loaded."""
-    # print("lua_loader", modname)
+    # print("LUA_LOADER IN PYTHON:", modname)
     assert isinstance(modname, str)
     modname = modname.strip()
     if modname.startswith("Module:"):
-        modname = modname[7:]
-    modname = "Module:" + modname
-    modname = ctx._canonicalize_template_name(modname)
+        # Canonicalize the name
+        modname = ctx._canonicalize_template_name(modname)
 
-    # First try to load it as a module
-    if modname.startswith("_"):
-        # Module names starting with _ are considered internal and cannot be
-        # loaded from the dump file for security reasons.  This is to ensure
-        # that the sandbox always gets loaded from a local file.
-        data = None
+        # First try to load it as a module
+        if modname.startswith("Module:_"):
+            # Module names starting with _ are considered internal and cannot be
+            # loaded from the dump file for security reasons.  This is to ensure
+            # that the sandbox always gets loaded from a local file.
+            data = None
+        else:
+            data = ctx.read_by_title(modname)
     else:
-        data = ctx.read_by_title(modname)
-    if data is None:
         # Try to load it from a file
-        assert modname.startswith("Module:")
-        modname1 = modname[7:]
-        path = modname1
+        path = modname
         path = re.sub(r"[\0-\037]", "", path)  # Remove control chars, e.g. \n
         path = re.sub(r":", "/", path)      # Replace : by /
         path = re.sub(r" ", "_", path)      # Replace spaces by underscore
@@ -108,23 +105,24 @@ def lua_loader(ctx, modname):
         path = re.sub(r"\.\.+", ".", path)  # Replace .. and longer by .
         path = re.sub(r"^//+", "", path)    # Remove initial slashes
         path += ".lua"
+        data = None
         for prefix, exceptions in builtin_lua_search_paths:
-            if modname1 in exceptions:
+            if modname in exceptions:
                 continue
             p = lua_dir + prefix + "/" + path
             if os.path.isfile(p):
                 with open(p, "r") as f:
                     data = f.read()
                 break
-        else:
-            # Not found
-            return None
+
+    if data is None:
+        # We did not find the module
+        return None
 
     # Perform compatibility substitutions on the Lua code
     for src, dst in loader_replace_patterns:
         data = re.sub(src, dst, data)
     return data
-
 
 def mw_text_decode(text, decodeNamedEntities):
     """Implements the mw.text.decode function for Lua code."""
@@ -321,7 +319,7 @@ def initialize_lua(ctx):
     # Then load the second phase of the sandbox.  This now goes through the
     # new loader and is evaluated in the sandbox.  This mostly implements
     # compatibility code.
-    ret = lua.require("_sandbox_phase2")
+    ret = lua.eval('new_require("_sandbox_phase2")')
     set_functions = ret[1]
     ctx.lua_invoke = ret[2]
     ctx.lua_reset_env = ret[3]
@@ -359,7 +357,7 @@ def call_lua_sandbox(ctx, invoke_args, expander, parent, timeout):
             # This is a second or later call to the Lua sandbox.
             # Reset the Lua context back to initial state.
             ctx.lua_reset_env()
-            ret = ctx.lua.require("_sandbox_phase2")
+            ret = ctx.lua.eval('new_require("_sandbox_phase2")')
             set_functions = ret[1]
             ctx.lua_invoke = ret[2]
             ctx.lua_reset_env = ret[3]

@@ -6,20 +6,29 @@
 local _python_loader = nil
 
 -- The new sandbox environment we create
-env = {}
+local env = {}
+-- for k, v in pairs(_ENV) do
+--    env[k] = v
+-- end
+-- print("_ENV", _ENV, type(_ENV))
+-- local _ENV = env
+-- print("new _ENV", _ENV, type(_ENV))
 
 local loader_cache = {}
+local value_cache = {}
+local _orig_package = package
 
 -- This function loads new a new module, whether built-in or defined in the
--- data file.
-local function _new_loader(modname)
-   if string.sub(modname, 1, 7) == "Module:" then
-      modname = string.sub(modname, 8)
-   end
+-- data file, and returns its initialization function.  This caches the
+-- initialization function.
+function new_loader(modname)
    -- print("lua new_loader: " .. modname)
+   -- If the module is in the normal cache (loaded by require), call its
+   -- intialization function
    if loader_cache[modname] ~= nil then
       return loader_cache[modname]
    end
+   -- Otherwise load the module
    local content = nil
    if _python_loader ~= nil then
       content = _python_loader(modname)
@@ -31,16 +40,78 @@ local function _new_loader(modname)
    end
 
    -- Load the content into the Lua interpreter.
-   local ret = assert(load(content, modname, "t", env))
+   local fn, msg = load(content, modname, "t", env)
    -- Cache the loaded module initialization function
-   loader_cache[modname] = ret
+   loader_cache[modname] = fn
+   return fn, msg
+end
+
+-- Tries to look up a module loaded by require() from the cache.  This is
+-- also called from _lua_invoke().
+function _cached_mod(modname)
+   if _orig_package.loaded[modname] then
+      return _orig_package.loaded[modname]
+   end
+   return nil
+end
+
+-- Saves module loaded by require() into a cache.  This is also called
+-- from _lua_invoke().
+function _save_mod(modname, mod)
+   _orig_package.loaded[modname] = mod
+end
+
+-- Re-implements require()
+function new_require(modname)
+   -- If the module has already been loaded after last Lua reset, then
+   -- just return the same values (even for non-data packages)
+   -- print("new_require", modname)
+   local mod = _cached_mod(modname)
+   if mod ~= nil then
+      return mod
+   end
+   -- Prevent reloading the package recursively
+   _orig_package.loaded[modname] = true
+   -- Load the module and create initialization function
+   local fn, msg = new_loader(modname)
+   assert(fn, msg)
+   assert(fn ~= true)
+   local ret = fn(env)
+   assert(ret)
+   -- Save value in package.loaded.  Note that package.loaded is cleared
+   -- whenever we reset the Lua environment.
+   _save_mod(modname, ret)
    return ret
 end
 
--- Register the new loader as the only package searcher in Lua.
+-- Implements mw.loadData function, which always returns the same data without
+-- re-executing the initialization function.
+local function new_loadData(modname)
+   -- If the module is in value cache (loaded by mw.loadData), just use its
+   -- value as-is
+   -- print("new_loadData", modname)
+   if value_cache[modname] ~= nil then
+      return value_cache[modname]
+   end
+   -- Load the module and create initialization function
+   local fn, msg = new_loader(modname)
+   assert(fn, msg)
+   local ret = fn(env)
+
+   -- If caching data (for mw.loadData), save the value.  This is kept
+   -- across Lua environment resets.
+   value_cache[modname] = ret
+   return ret
+end
+
+-- We don't use the default require. Disable its paths too.
 package.searchers = {}
 package.searchers[0] = nil
-package.searchers[1] = _new_loader
+package.searchers[1] = nil
+
+-- Wiktionary uses a Module named "string".  Force it to be loaded by
+-- require() when requested (it is used in many places in Wiktionary).
+package.loaded["string"] = nil
 
 local function _lua_set_python_loader(fn)
    -- Only allow calling this function once for security reasons.
@@ -59,7 +130,7 @@ local _lua_current_max_time = nil
 
 -- Reduces Lua timeout (used only for testing).  This is exposed to the
 -- sandbox and may be called from hostile code.
-function _lua_set_timeout(timeout)
+local function _lua_set_timeout(timeout)
    if timeout ~= nil and timeout > 0.01 and timeout < _lua_max_time then
       _lua_current_max_time = timeout
    else
@@ -72,10 +143,6 @@ function _lua_set_timeout(timeout)
          end
                  end, "", 100000)
 end
-
--- Wiktionary uses a Module named "string".  Force it to be loaded by
--- require() when requested (it is used in many places in Wiktionary).
-package.loaded["string"] = nil
 
 -- Wiktionary uses a Module named "debug".  Force it to be loaded by
 -- require() when requested.
@@ -119,11 +186,118 @@ local _orig_gsub = string.gsub
 local _orig_insert = table.insert
 local _orig_next = next
 
+local _orig_VERSION = _VERSION
+local _orig_assert = assert
+local _orig_debug = new_debug
+local _orig_error = error
+local _orig_getmetatable = getmetatable
+local _orig_ipairs = ipairs
+local _orig_math = math
+local _orig_next = next
+local _orig_next = next
+local _orig_pairs = pairs
+local _orig_pcall = pcall
+local _orig_print = print
+local _orig_rawequal = rawequal
+local _orig_rawget = rawget
+local _orig_rawset = rawset
+local _orig_select = select
+local _orig_setmetatable = setmetatable
+local _orig_string = string
+local _orig_table = table
+local _orig_tonumber = tonumber
+local _orig_tostring = tostring
+local _orig_type = type
+local _orig_unpack = table.unpack
+local _orig_xpcall = xpcall
+local _orig_new_require = new_require
+
+local retained_modules = {
+   coroutine = true,
+   math = true,
+   io = true,
+   python = true,
+   utf8 = true,
+   os = true,
+   package = true,
+   table = true,
+   _G = true,
+   _sandbox_phase1 = true,
+   _sandbox_phase2 = true,
+   -- We also keep some very frequently used modules that we know can be
+   -- reused for other calls and pages
+   string = true,
+   mw = true, -- needs special handling due to global "mw" in _lua_reset_env()
+   mw_hash = true,
+   mw_html = true,
+   mw_language = true,
+   mw_site = true,
+   mw_text = true,
+   mw_title = true,
+   mw_uri = true,
+};
+
+retained_modules["ustring:ustring"] = true
+retained_modules["ustring/lower"] = true
+retained_modules["ustring/upper"] = true
+retained_modules["ustring/charsets"] = true
+retained_modules["ustring/normalization-data"] = true
+retained_modules["libraryUtil"] = true
+-- Some Wiktionary modules that we know to be safe.  These really should
+-- come from elsewhere.  These are loaded very frequently, so keeping them
+-- cached speeds up things.
+retained_modules["Module:languages"] = true
+retained_modules["Module:languages/templates"] = true
+retained_modules["Module:language-like"] = true
+retained_modules["Module:wikimedia languages"] = true
+retained_modules["Module:families"] = true
+retained_modules["Module:scripts"] = true
+retained_modules["Module:links"] = true
+retained_modules["Module:links/templates"] = true
+retained_modules["Module:utilities"] = true
+retained_modules["Module:utils"] = true
+retained_modules["Module:debug"] = true
+retained_modules["Module:palindromes"] = true
+retained_modules["Module:table"] = true
+retained_modules["Module:IPA"] = true
+retained_modules["Module:IPA/templates"] = true
+retained_modules["Module:IPA/tracking"] = true
+retained_modules["Module:script utilities"] = true
+retained_modules["Module:string"] = true
+retained_modules["Module:string utilities"] = true
+retained_modules["Module:syllables"] = true
+retained_modules["Module:parameters"] = true
+retained_modules["Module:translations"] = true
+retained_modules["Module:gender and number"] = true
+retained_modules["Module:qualifier"] = true
+retained_modules["Module:accent qualifier"] = true
+retained_modules["Module:ugly hacks"] = true
+retained_modules["Module:redlink category"] = true
+retained_modules["Module:etymology"] = true
+retained_modules["Module:etymology/templates"] = true
+retained_modules["Module:italics"] = true
+retained_modules["Module:usex"] = true
+retained_modules["Module:usex/templates"] = true
+retained_modules["Module:number-utilities"] = true
+retained_modules["Module:check isxn"] = true
+retained_modules["Module:rhymes"] = true
+retained_modules["Module:labels"] = true
+retained_modules["Module:TemplateStyles"] = true
+retained_modules["Module:columns"] = true
+retained_modules["Module:collation"] = true
+retained_modules["Module:glossary"] = true
+
+-- Note: the following are examples that cannot be retained:
+--   Module:headword (saves page title)
+--   Module:time ??? (uses mw.getContentLanguage() - is this page-dependent?)
+--   Module:quote (uses Module:time)
+--   Module:form of (form_of/functions table display_handlers is suspicious)
+
 -- Construct a new restricted environment.  Lua modules should only be able
 -- to access the functionality that is available in this restricted
 -- environment.  Please report an issue on github if you find a way to
 -- circumvent the environment restrictions and access outside the sandbox.
-function _lua_reset_env()
+local function _lua_reset_env()
 
     -- Flushes stdin buffers.  This is mostly used to make sure debug
     -- buffers are properly output before possible crashes.  This is
@@ -145,46 +319,47 @@ function _lua_reset_env()
 
     -- Cause most packages to be reloaded
     for k, v in pairs(package.loaded) do
-       if k ~= "coroutine" and k ~= "math" and k ~= "io" and
-          k ~= "python" and k ~= "utf8" and k ~= "os" and k ~= "package" and
-          k ~= "table" and k ~= "_G" and k ~= "_sandbox_phase1" then
-             package.loaded[k] = nil
+       if retained_modules[k] == nil then
+          package.loaded[k] = nil
        end
     end
 
-    -- Clear the sandbox environment
+    -- Clear the sandbox environment, except the "mw" global.  Not clearing it
+    -- enables us to cache the module, which provides some speedup.
     for k, v in pairs(env) do
-       env[k] = nil
+       if k ~= "mw" then
+          env[k] = nil
+       end
     end
 
     -- Set only a few desired values in the sandbox environment
     assert(_VERSION ~= nil)
     env["_G"] = env
-    env["_VERSION"] = _VERSION
-    env["assert"] = assert
+    env["_VERSION"] = _orig_VERSION
+    env["assert"] = _orig_assert
     env["debug"] = new_debug
-    env["error"] = error
-    env["getmetatable"] = getmetatable
-    env["ipairs"] = ipairs
-    env["math"] = math
-    env["next"] = next
+    env["error"] = _orig_error
+    env["getmetatable"] = _orig_getmetatable
+    env["ipairs"] = _orig_ipairs
+    env["math"] = _orig_math
+    env["next"] = _orig_next
     env["os"] = new_os
-    env["pairs"] = pairs
-    env["pcall"] = pcall
-    env["print"] = print
-    env["rawequal"] = rawequal
-    env["rawget"] = rawget
-    env["rawset"] = rawset
-    env["require"] = require
-    env["select"] = select
-    env["setmetatable"] = setmetatable
-    env["string"] = string
-    env["table"] = table
-    env["tonumber"] = tonumber
-    env["tostring"] = tostring
-    env["type"] = type
-    env["unpack"] = table.unpack
-    env["xpcall"] = xpcall
+    env["pairs"] = _orig_pairs
+    env["pcall"] = _orig_pcall
+    env["print"] = _orig_print
+    env["rawequal"] = _orig_rawequal
+    env["rawget"] = _orig_rawget
+    env["rawset"] = _orig_rawset
+    env["require"] = _orig_new_require
+    env["select"] = _orig_select
+    env["setmetatable"] = _orig_setmetatable
+    env["string"] = _orig_string
+    env["table"] = _orig_table
+    env["tonumber"] = _orig_tonumber
+    env["tostring"] = _orig_tostring
+    env["type"] = _orig_type
+    env["unpack"] = _orig_table.unpack
+    env["xpcall"] = _orig_xpcall
     env["_lua_set_python_loader"] = _lua_set_python_loader
     env["_lua_set_timeout"] = _lua_set_timeout
     env["_lua_io_flush"] = _lua_io_flush
@@ -193,15 +368,19 @@ function _lua_reset_env()
     env["_orig_gsub"] = _orig_gsub
     env["_orig_insert"] = _orig_insert
     env["_orig_next"] = _orig_next
+    env["_new_loadData"] = new_loadData
+    env["_new_loader"] = new_loader
+    env["_cached_mod"] = _cached_mod
+    env["_save_mod"] = _save_mod
     return env
 end
 
 -- Switch to the sandbox environment
 assert(io ~= nil)  -- We should not be in the sandbox now
-local _ENV = _lua_reset_env()
+_lua_reset_env()
+-- call it a couple more times to ensure it still works
+_lua_reset_env()
+_lua_reset_env()
 -- Now we should be in the sandbox environment
-assert(io == nil)
-assert(_G.io == nil)
-assert(env == nil)
 
 return _lua_set_python_loader

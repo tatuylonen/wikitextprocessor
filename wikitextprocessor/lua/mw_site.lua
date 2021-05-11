@@ -1,7 +1,7 @@
 -- Simplified implementation of mw.site for running WikiMedia Scribunto
 -- code under Python
 --
--- Copyright (c) 2020 Tatu Ylonen.  See file LICENSE and https://ylonen.org
+-- Copyright (c) 2020-2021 Tatu Ylonen.  See file LICENSE and https://ylonen.org
 
 local Namespace = {
    hasGenderDistinction = true,
@@ -77,7 +77,7 @@ thesaurus_ns.talk = thesaurus_talk_ns
 reconstruction_ns.talk = reconstruction_talk_ns
 module_ns.talk = module_talk_ns
 
-function add_ns(t, ns)
+local function add_ns(t, ns)
    assert(ns.name ~= nil)
    assert(ns.id ~= nil)
    t[ns.id] = ns
@@ -148,7 +148,7 @@ add_ns(mw_site_talkNamespaces, thesaurus_talk_ns)
 add_ns(mw_site_talkNamespaces, reconstruction_talk_ns)
 add_ns(mw_site_talkNamespaces, module_talk_ns)
 
-function mw_site_index(x, ns)
+local function mw_site_index(x, ns)
    return mw.site.findNamespace(ns)
 end
 
