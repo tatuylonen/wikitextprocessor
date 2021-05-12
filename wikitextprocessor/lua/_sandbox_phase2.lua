@@ -198,7 +198,7 @@ local function _lua_invoke(mod_name, fn_name, frame, page_title, timeout)
             end
             _save_mod(mod_name, mod)
          else
-            error("Could not find module " .. mod_name)
+            error("Could not find module " .. mod_name .. ": " .. msg)
          end
       end
    end

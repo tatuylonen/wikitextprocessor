@@ -1,6 +1,6 @@
 # Tests for processing WikiText templates and macros
 #
-# Copyright (c) 2020 Tatu Ylonen.  See file LICENSE and https://ylonen.org
+# Copyright (c) 2020, 2021 Tatu Ylonen.  See file LICENSE and https://ylonen.org
 
 import os
 import html

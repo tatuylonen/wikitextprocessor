@@ -36,7 +36,7 @@ function new_loader(modname)
       error("PYTHON LOADER NOT SET - call lua_set_loader() first")
    end
    if content == nil then
-      return nil
+      return nil, "Python loader not set"
    end
 
    -- Load the content into the Lua interpreter.
@@ -326,8 +326,9 @@ local function _lua_reset_env()
 
     -- Clear the sandbox environment, except the "mw" global.  Not clearing it
     -- enables us to cache the module, which provides some speedup.
+    -- "next" function is (re)defined in _sandbox_phase2.lua and we keep it too.
     for k, v in pairs(env) do
-       if k ~= "mw" then
+       if k ~= "mw" and k ~= "next" then
           env[k] = nil
        end
     end
@@ -342,7 +343,7 @@ local function _lua_reset_env()
     env["getmetatable"] = _orig_getmetatable
     env["ipairs"] = _orig_ipairs
     env["math"] = _orig_math
-    env["next"] = _orig_next
+    env["_orig_next"] = _orig_next
     env["os"] = new_os
     env["pairs"] = _orig_pairs
     env["pcall"] = _orig_pcall
