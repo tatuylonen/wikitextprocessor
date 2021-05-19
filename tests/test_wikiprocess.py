@@ -1926,7 +1926,7 @@ return export
 """]])
         ctx.start_page("Tt")
         ret = ctx.expand("{{testtempl2}}")
-        self.assertEqual(ret, "nil")
+        self.assertEqual(ret, "")  # nil
 
     def test_frame_callParserFunction1(self):
         self.scribunto("<br />", """
@@ -1981,7 +1981,7 @@ return export
 """]])
         ctx.start_page("Tt")
         ret = ctx.expand("{{#invoke:testmod|testfn|a|b}}")
-        self.assertEqual(ret, "nil")
+        self.assertEqual(ret, "")  # nil
 
     def test_frame_getArgument4(self):
         ctx = phase1_to_ctx([
@@ -2397,7 +2397,8 @@ return export
         return mw.text.jsonEncode(true)""")
 
     def test_mw_jsondecode1(self):
-        self.scribunto('nil', """
+        # Note: returned nil converted to empty string
+        self.scribunto('', """
         return mw.text.jsonDecode('null')""")
 
     def test_mw_jsondecode2(self):

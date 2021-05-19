@@ -575,7 +575,7 @@ def call_lua_sandbox(ctx, invoke_args, expander, parent, timeout):
     ctx.lua_depth -= 1
     if ok:
         if text is None:
-            text = "nil"
+            text = ""
         text = str(text)
         text = unicodedata.normalize("NFC", text)
         return text
