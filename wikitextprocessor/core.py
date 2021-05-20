@@ -463,17 +463,6 @@ class Wtp(object):
         # itself but is included in transclusion.  Also text outside these tags
         # is included in transclusion.
         text = re.sub(r"(?is)<\s*(/\s*)?includeonly\s*(/\s*)?>", "", text)
-        # Sanity checks for certain unbalanced tags.  However, it
-        # appears some templates intentionally produce these and
-        # intend them to be displayed.  Thus don't warn, and we may
-        # even need to arrange for them to be properly parsed as text.
-        if False:
-           m = re.search(r"(?is)<\s*(/\s*)?noinclude\s*(/\s*)?>", text)
-           if m:
-               self.warning("unbalanced {}".format(m.group(0)))
-           m = re.search(r"(?is)<\s*(/\s*)?onlyinclude\s*(/\s*)?>", text)
-           if m:
-               self.warning("unbalanced {}".format(m.group(0)))
         return text
 
     def add_page(self, model, title, text, transient=False):

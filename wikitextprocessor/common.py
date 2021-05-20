@@ -51,9 +51,11 @@ def _nowiki_sub_fn(m):
 
 def preprocess_text(text):
     """Preprocess the text by handling <nowiki> and comments."""
+    # print("PREPROCESS_TEXT:", text)
     assert isinstance(text, str)
     text = re.sub(r"(?si)<\s*nowiki\s*>(.*?)<\s*/\s*nowiki\s*>",
                   _nowiki_sub_fn, text)
     text = re.sub(r"(?si)<\s*nowiki\s*/\s*>", MAGIC_NOWIKI_CHAR, text)
     text = re.sub(r"(?s)<!\s*--.*?--\s*>", "", text)
+    # print("PREPROCESSED_TEXT:", text)
     return text

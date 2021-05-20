@@ -111,7 +111,7 @@ def lua_loader(ctx, modname):
                 continue
             p = lua_dir + prefix + "/" + path
             if os.path.isfile(p):
-                with open(p, "r") as f:
+                with open(p, "r", encoding="utf-8") as f:
                     data = f.read()
                 break
 
@@ -311,7 +311,7 @@ def initialize_lua(ctx):
     # the Lua loader to our custom loader; we will then use it to load the
     # bigger phase 2 of the sandbox.  This way, most of the sandbox loading
     # will benefit from caching and precompilation (when implemented).
-    lua_sandbox = open(lua_dir + "_sandbox_phase1.lua").read()
+    lua_sandbox = open(lua_dir + "_sandbox_phase1.lua", encoding="utf-8").read()
     set_loader = lua.execute(lua_sandbox)
     # Call the function that sets the Lua loader
     set_loader(lambda x: lua_loader(ctx, x))
