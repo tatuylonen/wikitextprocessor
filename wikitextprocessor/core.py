@@ -1268,15 +1268,18 @@ class Wtp(object):
                 if ret is not None:
                     yield ret
                 cnt += 1
-                if (not self.quiet and
-                    cnt % 1000 == 0 and
-                    time.time() - last_t > 1):
+                #if (not self.quiet and
+                #    cnt % 1000 == 0 and
+                #    time.time() - last_t > 1):
+                if True:
                     print("  ... {}/{} pages ({:.1%}) processed"
                           .format(cnt, len(self.page_seq),
                                   cnt / len(self.page_seq)))
                     sys.stdout.flush()
                     last_t = time.time()
+            print("XXX wikitextprocessor reprocess() closing pool")
             pool.close()
+            print("XXX wikitextprocessor reprocess() joining pool")
             pool.join()
 
     def page_exists(self, title):
