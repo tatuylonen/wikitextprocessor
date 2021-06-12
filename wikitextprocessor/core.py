@@ -52,13 +52,13 @@ def phase2_page_handler(dt):
         data = None
     try:
         ret = _global_page_handler(model, title, data)
-        return True, ret
+        return True, title, ret
     except Exception as e:
         lst = traceback.format_exception(etype=type(e), value=e,
                                          tb=e.__traceback__)
         msg = ("=== EXCEPTION while parsing page \"{}\":\n".format(title) +
                "".join(lst))
-        return False, msg
+        return False, title, msg
 
 
 class Wtp(object):
@@ -1241,11 +1241,15 @@ class Wtp(object):
         _global_page_handler = page_handler
         _global_page_autoload = autoload
 
+        print("wikitextprocessor.reprocess: PAGE_SEQ: {}".format(self.page_seq))
+        sys.stdout.flush()
+
         if self.num_threads == 1:
             # Single-threaded version (without subprocessing).  This is
             # primarily intended for debugging.
             for model, title in self.page_seq:
-                success, ret = phase2_page_handler((model, title))
+                success, t, ret = phase2_page_handler((model, title))
+                assert t == title
                 if not success:
                     print(ret)  # Print error in parent process - do not remove
                     continue
@@ -1260,10 +1264,13 @@ class Wtp(object):
                 pool = multiprocessing.Pool(self.num_threads)
             cnt = 0
             last_t = time.time()
-            for success, ret in pool.imap_unordered(phase2_page_handler,
-                                                    self.page_seq, 64):
+            for success, t, ret in pool.imap_unordered(phase2_page_handler,
+                                                       self.page_seq, 64):
+                print("wikitextprocessor.reprocess: RETURNED: {}".format(t))
+                sys.stdout.flush()
                 if not success:
                     print(ret)  # Print error in parent process - do not remove
+                    sys.stdout.flush()
                     continue
                 if ret is not None:
                     yield ret
