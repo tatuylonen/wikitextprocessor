@@ -9,6 +9,7 @@ import sys
 import html
 import time
 import pickle
+import datetime
 import tempfile
 import traceback
 import collections
@@ -1241,15 +1242,16 @@ class Wtp(object):
         _global_page_handler = page_handler
         _global_page_autoload = autoload
 
-        print("wikitextprocessor.reprocess: PAGE_SEQ: {}".format(self.page_seq))
+        print("wikitextprocessor.reprocess() started at {}"
+              .format(datetime.datetime.utcnow().isoformat()))
         sys.stdout.flush()
 
         if self.num_threads == 1:
             # Single-threaded version (without subprocessing).  This is
             # primarily intended for debugging.
             for model, title in self.page_seq:
-                success, t, ret = phase2_page_handler((model, title))
-                assert t == title
+                success, ret_title, t, ret = phase2_page_handler((model, title))
+                assert ret_title == title
                 if not success:
                     print(ret)  # Print error in parent process - do not remove
                     continue
@@ -1264,9 +1266,13 @@ class Wtp(object):
                 pool = multiprocessing.Pool(self.num_threads)
             cnt = 0
             last_t = time.time()
-            for success, t, ret in pool.imap_unordered(phase2_page_handler,
-                                                       self.page_seq, 64):
-                print("wikitextprocessor.reprocess: RETURNED: {}".format(t))
+            for success, title, t, ret in \
+                pool.imap_unordered(phase2_page_handler, self.page_seq, 64):
+                print("wikitextprocessor.reprocess: RETURNED: {}"
+                      .format(ret_title))
+                if t + 300 < time.time():
+                    print("====== REPROCESS GOT OLD RESULT ({:.1f}s): {}"
+                          .format(time.time() - t, title))
                 sys.stdout.flush()
                 if not success:
                     print(ret)  # Print error in parent process - do not remove
@@ -1284,10 +1290,15 @@ class Wtp(object):
                                   cnt / len(self.page_seq)))
                     sys.stdout.flush()
                     last_t = time.time()
+            print("time now {}".format(datetime.datetime.utcnow().isoformat()))
             print("XXX wikitextprocessor reprocess() closing pool")
             pool.close()
             print("XXX wikitextprocessor reprocess() joining pool")
             pool.join()
+
+        print("wikitextprocessor.reprocess() done at {}"
+              .format(datetime.datetime.utcnow().isoformat()))
+        sys.stdout.flush()
 
     def page_exists(self, title):
         """Returns True if the given page exists, and False if it does not
