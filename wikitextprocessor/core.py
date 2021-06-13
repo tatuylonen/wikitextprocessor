@@ -1270,7 +1270,7 @@ class Wtp(object):
             for success, title, t, ret in \
                 pool.imap_unordered(phase2_page_handler, self.page_seq, 64):
                 print("wikitextprocessor.reprocess: RETURNED: {}"
-                      .format(ret_title))
+                      .format(title))
                 if t + 300 < time.time():
                     print("====== REPROCESS GOT OLD RESULT ({:.1f}s): {}"
                           .format(time.time() - t, title))
