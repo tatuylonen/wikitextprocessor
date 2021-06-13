@@ -45,6 +45,7 @@ def phase2_page_handler(dt):
     ctx = _global_ctx
     autoload = _global_page_autoload
     model, title = dt
+    start_t = time.time()
     ctx.start_page(title)
     if autoload:
         data = ctx.read_by_title(title)
@@ -53,13 +54,13 @@ def phase2_page_handler(dt):
         data = None
     try:
         ret = _global_page_handler(model, title, data)
-        return True, title, ret
+        return True, title, start_t, ret
     except Exception as e:
         lst = traceback.format_exception(etype=type(e), value=e,
                                          tb=e.__traceback__)
         msg = ("=== EXCEPTION while parsing page \"{}\":\n".format(title) +
                "".join(lst))
-        return False, title, msg
+        return False, title, start_t, msg
 
 
 class Wtp(object):
