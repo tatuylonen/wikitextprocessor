@@ -339,7 +339,7 @@ def call_lua_sandbox(ctx, invoke_args, expander, parent, timeout):
     assert timeout is None or isinstance(timeout, (int, float))
 
     # print("{}: CALL_LUA_SANDBOX: {} {}"
-    #  .format(ctx.title, invoke_args, parent))
+    #       .format(ctx.title, invoke_args, parent))
 
     if len(invoke_args) < 2:
         ctx.error("#invoke {}: too few arguments"
@@ -572,6 +572,7 @@ def call_lua_sandbox(ctx, invoke_args, expander, parent, timeout):
     finally:
         while len(ctx.expand_stack) > stack_len:
             ctx.expand_stack.pop()
+    # print("Lua call returned: {}".format(invoke_args))
     ctx.lua_depth -= 1
     if ok:
         if text is None:

@@ -1243,10 +1243,6 @@ class Wtp(object):
         _global_page_handler = page_handler
         _global_page_autoload = autoload
 
-        print("wikitextprocessor.reprocess() started at {}"
-              .format(datetime.datetime.utcnow().isoformat()))
-        sys.stdout.flush()
-
         if self.num_threads == 1:
             # Single-threaded version (without subprocessing).  This is
             # primarily intended for debugging.
@@ -1269,8 +1265,6 @@ class Wtp(object):
             last_t = time.time()
             for success, title, t, ret in \
                 pool.imap_unordered(phase2_page_handler, self.page_seq, 64):
-                print("wikitextprocessor.reprocess: RETURNED: {}"
-                      .format(title))
                 if t + 300 < time.time():
                     print("====== REPROCESS GOT OLD RESULT ({:.1f}s): {}"
                           .format(time.time() - t, title))
@@ -1291,14 +1285,9 @@ class Wtp(object):
                                   cnt / len(self.page_seq)))
                     sys.stdout.flush()
                     last_t = time.time()
-            print("time now {}".format(datetime.datetime.utcnow().isoformat()))
-            print("XXX wikitextprocessor reprocess() closing pool")
             pool.close()
-            print("XXX wikitextprocessor reprocess() joining pool")
             pool.join()
 
-        print("wikitextprocessor.reprocess() done at {}"
-              .format(datetime.datetime.utcnow().isoformat()))
         sys.stdout.flush()
 
     def page_exists(self, title):
