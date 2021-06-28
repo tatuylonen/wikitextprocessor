@@ -612,7 +612,12 @@ def call_lua_sandbox(ctx, invoke_args, expander, parent, timeout):
             #    break
             parts.append(line)
         trace = "\n".join(parts)
-        ctx.error("LUA error in #invoke {} parent {}"
+        if "check deprecated lang param usage" in ctx.expand_stack:
+            ctx.debug("LUA error but likely not bug -- in #invoke {} parent {}"
+                      .format(invoke_args, parent),
+                      trace=trace)
+        else:
+            ctx.error("LUA error in #invoke {} parent {}"
                   .format(invoke_args, parent),
                   trace=trace)
     msg = "Lua execution error"
