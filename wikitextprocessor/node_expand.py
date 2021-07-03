@@ -151,6 +151,8 @@ def to_html(ctx, node, template_fn=None, post_template_fn=None):
     # in to_wikitext() or something similar.
     expanded = ctx.expand(text, template_fn=template_fn,
                           post_template_fn=post_template_fn)
+    # print("TO_HTML: node={!r} text={!r} expanded={!r}"
+    #       .format(node, text, expanded))
     return expanded
 
 

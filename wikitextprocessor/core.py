@@ -838,6 +838,8 @@ class Wtp(object):
             # the Lua environment and store it in self.lua if it does not
             # already exist (it needs to be re-created for each new page).
             ret = call_lua_sandbox(self, invoke_args, expander, parent, timeout)
+            # print("invoke_fn: invoke_args={} parent={} LUA ret={!r}"
+            #       .format(invoke_args, parent, ret))
             return ret
 
         def expand_recurse(coded, parent, templates_to_expand):
@@ -1075,7 +1077,7 @@ class Wtp(object):
                     if template_fn is not None:
                         t = template_fn(urllib.parse.unquote(name), ht)
                         # print("TEMPLATE_FN {}: {} {} -> {}"
-                        #       .format(template_fn, name, ht, repr(t)))
+                        #      .format(template_fn, name, ht, repr(t)))
                     if t is None:
                         if name in self.transient_templates:
                             body = self.transient_templates[name]
@@ -1119,7 +1121,7 @@ class Wtp(object):
                     # If a post_template_fn has been supplied, call it now
                     # to capture or alter the expansion
                     # print("TEMPLATE EXPANDED: {} {} -> {!r}"
-                    #       .format(name, ht, t))
+                    #      .format(name, ht, t))
                     if post_template_fn is not None:
                         t2 = post_template_fn(urllib.parse.unquote(name), ht, t)
                         if t2 is not None:
