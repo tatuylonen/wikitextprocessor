@@ -119,7 +119,7 @@ def switch_fn(ctx, fn_name, args, expander):
         m = re.match(r"(?s)^([^=]*)=(.*)$", arg)
         if not m:
             last = expander(arg).strip()
-            if arg == val:
+            if last == val:
                 match_next = True
             continue
         k, v = m.groups()
