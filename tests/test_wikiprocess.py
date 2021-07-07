@@ -206,29 +206,29 @@ return export
 
     def test_iferror9(self):
         self.parserfn("{{#iferror: {{#expr: 1 + 2 }} | error | correct }}",
-                      "correct")
+                      " correct ")
 
     def test_iferror10(self):
         self.parserfn("{{#iferror: {{#expr: 1 + X }} | error | correct }}",
-                      "error")
+                      " error ")
 
     def test_iferror11(self):
         self.parserfn("{{#iferror: {{#expr: 1 + 2 }} | error }}", "3")
 
     def test_iferror12(self):
-        self.parserfn("{{#iferror: {{#expr: 1 + X }} | error }}", "error")
+        self.parserfn("{{#iferror: {{#expr: 1 + X }} | error }}", " error ")
 
     def test_iferror13(self):
         self.parserfn("{{#iferror: {{#expr: 1 + X }} }}", "")
 
     def test_iferror14(self):
         self.parserfn("{{#iferror: {{#expr: . }} | error | correct }}",
-                      "correct")
+                      " correct ")
 
     def test_iferror15(self):
         self.parserfn('{{#iferror: <strong class="error">a</strong> '
                       '| error | correct }}',
-                      "error")
+                      " error ")
 
     def test_ifexpr1(self):
         self.parserfn("a{{#ifexpr:1+3>2|T|F}}b", "aTb")
