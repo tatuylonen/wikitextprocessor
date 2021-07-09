@@ -183,8 +183,12 @@ function mw_title.makeTitle(namespace, title, fragment, interwiki)
       end
    end
    local root = mw.ustring.gsub(title, "/.*$", "")
-   local parent = mw.ustring.gsub(title, "/[^/]*$", "")
-   local subpage = mw.ustring.gsub(title, "^.*/", "")
+   -- XXX Breaks "A/B" local parent = mw.ustring.gsub(title, "/[^/]*$", "")
+   -- XXX How do we know what is a subpage?  The current kludge works for
+   -- most Wiktionary pages.
+   local parent = mw.ustring.gsub(title, "/translations$", "")
+   -- XXX local subpage = mw.ustring.gsub(title, "^.*/", "")
+   local subpage = mw.ustring.gsub(title, ".*/translations$", "translations")
    local fullName
    if ns.name == "Main" then
       fullName = title
@@ -203,6 +207,17 @@ function mw_title.makeTitle(namespace, title, fragment, interwiki)
    local id = dt.id
    local exists = dt.exists
    local redirectTo = dt.redirectTo
+
+   -- print("===")
+   -- print("title", title)
+   -- print("namespace", ns.id)
+   -- print("nsText", nsText)
+   -- print("text", title)
+   -- print("fullText", withFrag)
+   -- print("rootText", root)
+   -- print("baseText", parent)
+   -- print("subpageText", subpage)
+   -- print("exists", exists)
 
    local t = {
       namespace = ns.id,
