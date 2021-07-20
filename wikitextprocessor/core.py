@@ -343,7 +343,7 @@ class Wtp(object):
             prefix = m.group(1)
             orig = m.group(2)
             args = orig.split("|")
-            self.warning("heuristically added missing }} to template arg {}"
+            self.debug("heuristically added missing }} to template arg {}"
                          .format(args[0].strip()))
             return prefix + self._save_value("A", args, nowiki)
 
@@ -360,7 +360,7 @@ class Wtp(object):
             nowiki = m.group(0).find(MAGIC_NOWIKI_CHAR) >= 0
             prefix = m.group(1)
             args = m.group(2).split("|")
-            self.warning("heuristically added missing }} to template {}"
+            self.debug("heuristically added missing }} to template {}"
                          .format(args[0].strip()))
             return prefix + self._save_value("T", args, nowiki)
 
@@ -880,9 +880,9 @@ class Wtp(object):
                     if kind == "A":
                         # Template argument reference
                         if len(args) > 2:
-                            self.warning("too many args ({}) in argument "
-                                         "reference {!r}"
-                                         .format(len(args), args))
+                            self.debug("too many args ({}) in argument "
+                                       "reference: {!r}"
+                                       .format(len(args), args))
                         self.expand_stack.append("ARG-NAME")
                         k = expand_recurse(expand_args(args[0], argmap),
                                            parent, all_templates).strip()
@@ -1010,8 +1010,7 @@ class Wtp(object):
                     # Check for undefined templates
                     if name not in all_templates:
                         # XXX tons of these in enwiktionary-20201201 ???
-                        #self.warning("undefined template {!r}"
-                        #             .format(tname))
+                        #self.debug("undefined template {!r}.format(tname))
                         parts.append('<strong class="error">Template:{}'
                                      '</strong>'
                                      .format(html.escape(name)))
@@ -1050,8 +1049,9 @@ class Wtp(object):
                             if k.isdigit():
                                 k = int(k)
                                 if k < 1 or k > 1000:
-                                    self.error("invalid argument number {}"
-                                               .format(k))
+                                    self.debug("invalid argument number {} "
+                                               "for template {!r}"
+                                               .format(k, name))
                                     k = 1000
                                 if num <= k:
                                     num = k + 1

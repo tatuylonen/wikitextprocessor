@@ -302,11 +302,11 @@ def _parser_pop(ctx, warn_unclosed):
     # Warn about unclosed syntaxes.
     if warn_unclosed and node.kind in MUST_CLOSE_KINDS:
         if node.kind == NodeKind.HTML:
-            ctx.warning("HTML tag <{}> not properly closed".format(node.args),
+            ctx.debug("HTML tag <{}> not properly closed".format(node.args),
                         trace="started on line {}, detected on line {}"
                         .format(node.loc, ctx.linenum))
         elif node.kind == NodeKind.PARSER_FN:
-            ctx.warning("parser function {!r} not properly closed"
+            ctx.debug("parser function invocation {!r} not properly closed"
                         .format(node.args[0]),
                         trace="started on line {}, detected on line {}"
                         .format(node.loc, ctx.linenum))
@@ -324,9 +324,9 @@ def _parser_pop(ctx, warn_unclosed):
             # them.
             pass
         else:
-            ctx.warning("{} not properly closed".format(node.kind.name),
-                        trace="started on line {}, detected on line {}"
-                        .format(node.loc, ctx.linenum))
+            ctx.debug("{} not properly closed".format(node.kind.name),
+                      trace="started on line {}, detected on line {}"
+                      .format(node.loc, ctx.linenum))
 
     # When popping BOLD and ITALIC nodes, if the node has no children,
     # just remove the node from it's parent's children.  We may otherwise
@@ -442,8 +442,8 @@ def text_fn(ctx, token):
                     continue
             elif node.kind in (NodeKind.BOLD, NodeKind.ITALIC):
                 _parser_merge_str_children(ctx)
-                ctx.warning("{} not properly closed on the same line"
-                            .format(node.kind.name))
+                ctx.debug("{} not properly closed on the same line"
+                          .format(node.kind.name))
                 _parser_pop(ctx, False)
             break
 
@@ -532,7 +532,7 @@ def subtitle_end_fn(ctx, token):
     # Move children of the subtitle node to be its first argument.
     node = ctx.parser_stack[-1]
     if node.kind != kind:
-        ctx.warning("subtitle start and end markers level mismatch")
+        ctx.debug("subtitle start and end markers level mismatch")
     _parser_merge_str_children(ctx)
     node.args.append(node.children)
     node.children = []
@@ -1127,7 +1127,7 @@ def tag_fn(ctx, token):
             if also_end:
                 text_fn(ctx, MAGIC_NOWIKI_CHAR)
                 return
-            ctx.warning("unmatched <nowiki>")
+            ctx.debug("unmatched <nowiki>")
             return text_fn(ctx, token)
 
         # Handle <pre> start tag
@@ -1144,8 +1144,8 @@ def tag_fn(ctx, token):
         # tags that are allowed.
         if name not in ALLOWED_HTML_TAGS:
             if not name.isdigit() and not SILENT_HTML_LIKE:
-                ctx.warning("html tag <{}{}> not allowed in WikiText"
-                            "".format(name, "/" if also_end else ""))
+                ctx.debug("html tag <{}{}> not allowed in WikiText"
+                          "".format(name, "/" if also_end else ""))
             text_fn(ctx, token)
             return
 
@@ -1191,7 +1191,7 @@ def tag_fn(ctx, token):
 
     # We should never see </section>
     if name == "section":
-        ctx.warning("unexpected </section>")
+        ctx.debug("unexpected </section>")
         return
 
     # Check for </pre> end tag
@@ -1200,7 +1200,7 @@ def tag_fn(ctx, token):
         ctx.pre_parse = False
         node = ctx.parser_stack[-1]
         if node.kind != NodeKind.PRE:
-            ctx.warning("unexpected </pre>")
+            ctx.debug("unexpected </pre>")
             return text_fn(ctx, token)
         _parser_pop(ctx, False)
         return
@@ -1212,8 +1212,8 @@ def tag_fn(ctx, token):
     # Give a warning on unsupported HTML tags.  WikiText limits the set of
     # tags that are allowed.
     if name not in ALLOWED_HTML_TAGS and name != "nowiki":
-        ctx.warning("html tag </{}> not allowed in WikiText"
-                    "".format(name))
+        ctx.debug("html tag </{}> not allowed in WikiText"
+                  "".format(name))
 
     # See if we can find the opening tag from the stack
     for i in range(0, len(ctx.parser_stack)):
@@ -1228,7 +1228,7 @@ def tag_fn(ctx, token):
             node.args = name
             _parser_pop(ctx, False)
             return
-        ctx.warning("no corresponding start tag found for {}".format(token))
+        ctx.debug("no corresponding start tag found for {}".format(token))
         text_fn(ctx, token)
         return
 
