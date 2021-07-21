@@ -3140,6 +3140,15 @@ return export
                        timeout=2)
         self.assertLess(time.time() - t, 10)
 
+    def test_link_backforth1(self):
+        ctx = phase1_to_ctx([])
+        ctx.start_page("Tt")
+        v = ("([[w:Jurchen script|Jurchen script]]: , Image: "
+             "[[FIle:Da (Jurchen script).png|25px]])")
+        node = ctx.parse(v)
+        t = ctx.node_to_wikitext(node)
+        self.assertEqual(v, t)
+
 # XXX Test template_fn
 
 # XXX test post_template_fn
