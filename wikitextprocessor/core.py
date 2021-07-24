@@ -225,8 +225,8 @@ class Wtp(object):
             msg += " parsing "  + "/".join(titles)
         if trace:
             msg += "\n" + trace
-        print("{}: {}: {}".format(loc, kind,msg), file=sys.stderr)
-        sys.stderr.flush()
+        print("{}: {}: {}".format(loc, kind,msg))
+        sys.stdout.flush()
 
     def error(self, msg, trace=None):
         """Prints an error message to stdout.  The error is also saved in
@@ -520,9 +520,8 @@ class Wtp(object):
         self.page_seq.append((model, title))
         if not self.quiet and len(self.page_seq) % 10000 == 0:
             print("  ... {} raw pages collected"
-                  .format(len(self.page_seq)),
-                  file=sys.stderr)
-            sys.stderr.flush()
+                  .format(len(self.page_seq)))
+            sys.stdout.flush()
 
         if model == "redirect":
             self.redirects[title] = text
@@ -1270,9 +1269,8 @@ class Wtp(object):
                 pool.imap_unordered(phase2_page_handler, self.page_seq, 64):
                 if t + 300 < time.time():
                     print("====== REPROCESS GOT OLD RESULT ({:.1f}s): {}"
-                          .format(time.time() - t, title),
-                          file=sys.stderr)
-                sys.stderr.flush()
+                          .format(time.time() - t, title))
+                sys.stdout.flush()
                 if not success:
                     # Print error in parent process - do not remove
                     print(ret, file=stderr)
@@ -1287,9 +1285,8 @@ class Wtp(object):
                 if True:
                     print("  ... {}/{} pages ({:.1%}) processed"
                           .format(cnt, len(self.page_seq),
-                                  cnt / len(self.page_seq)),
-                          file=sys.stderr)
-                    sys.stderr.flush()
+                                  cnt / len(self.page_seq)))
+                    sys.stdout.flush()
                     last_t = time.time()
             pool.close()
             pool.join()
