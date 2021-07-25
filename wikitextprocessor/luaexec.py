@@ -578,6 +578,8 @@ def call_lua_sandbox(ctx, invoke_args, expander, parent, timeout):
         ctx.debug("invalid unicode returned from lua by {}: parent {}"
                   .format(invoke_args, parent))
         ok, text = True, ""
+    except lupa._lupa.LuaError as e:
+        ok, text = False, e
     finally:
         while len(ctx.expand_stack) > stack_len:
             ctx.expand_stack.pop()

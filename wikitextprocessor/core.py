@@ -1253,6 +1253,11 @@ class Wtp(object):
                 assert ret_title == title
                 if not success:
                     print(ret)  # Print error in parent process - do not remove
+                    lines = ret.split("\n")
+                    msg = lines[0]
+                    trace = "\n".join(lines[1:])
+                    if msg.find("EXCEPTION") >= 0:
+                        self.error(msg, trace=trace)
                     continue
                 if ret is not None:
                     yield ret
