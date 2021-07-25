@@ -1273,8 +1273,8 @@ class Wtp(object):
                 sys.stdout.flush()
                 if not success:
                     # Print error in parent process - do not remove
-                    print(ret, file=stderr)
-                    sys.stderr.flush()
+                    print(ret)
+                    sys.stdout.flush()
                     continue
                 if ret is not None:
                     yield ret
