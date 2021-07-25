@@ -98,7 +98,7 @@ end
 mw_wikibase.getEntityObject = mw_wikibase.getEntity
 mw_wikibase.label = mw_wikibase.getLabel
 mw_wikibase.description = mw_wikibase.getDescription
-mw_wikibase.sitelink = mw_wikibase.getSiteLink
+mw_wikibase.sitelink = mw_wikibase.getSitelink
 
 -- XXX entity object methods; currently we don't return any entities
 
