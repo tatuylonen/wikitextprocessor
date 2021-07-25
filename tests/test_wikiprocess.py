@@ -3149,6 +3149,9 @@ return export
         t = ctx.node_to_wikitext(node)
         self.assertEqual(v, t)
 
+    def test_mw_wikibase_getEntityUrl1(self):
+        self.scribunto("", """return mw.wikibase.getEntityUrl()""")
+
 # XXX Test template_fn
 
 # XXX test post_template_fn
