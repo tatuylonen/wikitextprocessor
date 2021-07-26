@@ -1499,10 +1499,10 @@ end
 return export
 """]])
         ctx.start_page("Tt")
-        ret = ctx.expand("{{#invoke:testmod|testfn|a|b}}")
+        ret = ctx.expand("{{#invoke:testmod|testfn|a|b|foo=bar}}")
         self.assertEqual(ret, "2")
 
-    def test_invoke4(self):
+    def test_invoke4a(self):
         ctx = phase1_to_ctx([
             ["Scribunto", "Module:testmod", """
 local export = {}
@@ -1512,8 +1512,34 @@ end
 return export
 """]])
         ctx.start_page("Tt")
-        ret = ctx.expand("{{#invoke:testmod|testfn|a|b}}")
+        ret = ctx.expand("{{#invoke:testmod|testfn|a|b|foo=bar}}")
         self.assertEqual(ret, "a")
+
+    def test_invoke4b(self):
+        ctx = phase1_to_ctx([
+            ["Scribunto", "Module:testmod", """
+local export = {}
+function export.testfn(frame)
+  return frame.args["1"]
+end
+return export
+"""]])
+        ctx.start_page("Tt")
+        ret = ctx.expand("{{#invoke:testmod|testfn|a|b|foo=bar}}")
+        self.assertEqual(ret, "a")
+
+    def test_invoke4c(self):
+        ctx = phase1_to_ctx([
+            ["Scribunto", "Module:testmod", """
+local export = {}
+function export.testfn(frame)
+  return frame.args["foo"]
+end
+return export
+"""]])
+        ctx.start_page("Tt")
+        ret = ctx.expand("{{#invoke:testmod|testfn|a|b|foo=bar}}")
+        self.assertEqual(ret, "bar")
 
     def test_invoke5(self):
         ctx = phase1_to_ctx([
