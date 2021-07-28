@@ -293,9 +293,8 @@ function string.gsub(text, pattern, repl)
    --print(string.format("string.gsub %q %q %q", text, pattern, tostring(repl)))
    if type(repl) == "string" then
       repl = _orig_gsub(repl, "%%]", "]")
-      repl = _orig_gsub(repl, "%%.", ".")
-      -- XXX This breaks things:
-      -- repl = _orig_gsub(repl, "%%-", "-")
+      repl = _orig_gsub(repl, "%%%.", ".")
+      repl = _orig_gsub(repl, "%%%-", "-")
    end
    return _orig_gsub(text, pattern, repl)
 end

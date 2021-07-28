@@ -3187,6 +3187,20 @@ return export
     def test_mw_wikibase_getEntityUrl1(self):
         self.scribunto("", """return mw.wikibase.getEntityUrl()""")
 
+    def test_gsub1(self):
+        self.scribunto("f(%d+)accel",
+                       """return string.gsub("f=accel", "=", "(%%d+)");""")
+
+    def test_gsub2(self):
+        # This tests a Lua version compatibility kludge with string.gsub
+        self.scribunto("f]oo",
+                       """return string.gsub("f=oo", "=", "%]");""")
+
+    def test_gsub3(self):
+        # This tests a Lua version compatibility kludge with string.gsub
+        self.scribunto("f-oo",
+                       """return string.gsub("f=oo", "=", "%-");""")
+
 # XXX Test template_fn
 
 # XXX test post_template_fn
