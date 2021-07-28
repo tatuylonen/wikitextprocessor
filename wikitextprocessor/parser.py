@@ -277,13 +277,13 @@ def _parser_merge_str_children(ctx):
             strings.append(x)
         else:
             if strings:
-                s = ctx._finalize_expand("".join(strings), False)
+                s = ctx._finalize_expand("".join(strings))
                 if s:
                     new_children.append(s)
                 strings = []
             new_children.append(x)
     if strings:
-        s = ctx._finalize_expand("".join(strings), False)
+        s = ctx._finalize_expand("".join(strings))
         if s:
             new_children.append(s)
     node.children = new_children
@@ -392,8 +392,10 @@ def text_fn(ctx, token):
     node = ctx.parser_stack[-1]
 
     # Convert certain characters from the token into HTML entities
-    token = re.sub(r"<", "&lt;", token)
-    token = re.sub(r">", "&gt;", token)
+    # XXX this breaks tags inside templates, e.g. <math> in
+    # "conjugacy class"/English examples
+    #token = re.sub(r"<", "&lt;", token)
+    #token = re.sub(r">", "&gt;", token)
 
     # External links [https://...] require some magic.  They only seem to
     # be links if the content looks like a URL."""

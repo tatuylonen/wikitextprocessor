@@ -1432,6 +1432,15 @@ MORE
         ret = ctx.expand('{{foo}}')
         assert ret.find('<strong class="error">too deep recursion') >= 0
 
+    def test_template28(self):
+        # Test | inside <math> in template argument
+        ctx = phase1_to_ctx([
+            ["wikitext", "Template:foo", "a{{{1}}}b"],
+        ])
+        ctx.start_page("Tt")
+        ret = ctx.expand('{{foo|x <math> 1 | 2 </math> y}}')
+        self.assertEqual(ret, "ax <math> 1 | 2 </math> yb")
+
     def test_unbalanced1(self):
         ctx = phase1_to_ctx([])
         ctx.start_page("Tt")

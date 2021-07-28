@@ -330,11 +330,17 @@ class Wtp(object):
         """Encode all templates, template arguments, and parser function calls
         in the text, from innermost to outermost."""
 
+        def vbar_split(v):
+            args = list(m.group(1) for m in re.finditer(
+                r"(?si)\|((<\s*([-a-zA-z0-9]+)\b[^>]*>.*?<\s*/\s*\3\s*>|"
+                r"[^|])*)", "|" + v))
+            return args
+
         def repl_arg(m):
             """Replacement function for template arguments."""
             nowiki = m.group(0).find(MAGIC_NOWIKI_CHAR) >= 0
             orig = m.group(1)
-            args = orig.split("|")
+            args = vbar_split(orig)
             return self._save_value("A", args, nowiki)
 
         def repl_arg_err(m):
@@ -342,7 +348,7 @@ class Wtp(object):
             nowiki = m.group(0).find(MAGIC_NOWIKI_CHAR) >= 0
             prefix = m.group(1)
             orig = m.group(2)
-            args = orig.split("|")
+            args = vbar_split(orig)
             self.debug("heuristically added missing }} to template arg {}"
                          .format(args[0].strip()))
             return prefix + self._save_value("A", args, nowiki)
@@ -351,7 +357,8 @@ class Wtp(object):
             """Replacement function for templates {{name|...}} and parser
             functions."""
             nowiki = m.group(0).find(MAGIC_NOWIKI_CHAR) >= 0
-            args = m.group(1).split("|")
+            v = m.group(1)
+            args = vbar_split(v)
             return self._save_value("T", args, nowiki)
 
         def repl_templ_err(m):
@@ -359,7 +366,8 @@ class Wtp(object):
             functions, with error."""
             nowiki = m.group(0).find(MAGIC_NOWIKI_CHAR) >= 0
             prefix = m.group(1)
-            args = m.group(2).split("|")
+            v = m.group(2)
+            args = vbar_split(v)
             self.debug("heuristically added missing }} to template {}"
                          .format(args[0].strip()))
             return prefix + self._save_value("T", args, nowiki)
@@ -368,7 +376,7 @@ class Wtp(object):
             """Replacement function for links [[...]]."""
             nowiki = m.group(0).find(MAGIC_NOWIKI_CHAR) >= 0
             orig = m.group(1)
-            args = m.group(1).split("|")
+            args = vbar_split(orig)
             return self._save_value("L", args, nowiki)
 
         # As a preprocessing step, remove comments from the text
@@ -412,9 +420,12 @@ class Wtp(object):
                     if text != prev2:
                         continue
                     break
-            # Encode templates
-            text = re.sub(r"(?s)\{" + MAGIC_NOWIKI_CHAR +
-                          r"?\{(([^{}]|\{\|[^{}]*\|\}|\}[^{}]|"
+            # Encode templates.  We have a kludge for paired HTML tags within
+            # template arguments; that does not always work but works
+            # most of the time.
+            text = re.sub(r"(?si)\{" + MAGIC_NOWIKI_CHAR +
+                          r"?\{((<([-a-zA-z0-9]+)\b[^>]*>.*?</\3>|"
+                          r"[^{}]|\{\|[^{}]*\|\}|\}[^{}]|"
                           r"[^{}][{}][^{}])+?)\}" +
                           MAGIC_NOWIKI_CHAR + r"?\}",
                           repl_templ, text)
@@ -1159,10 +1170,10 @@ class Wtp(object):
         expanded = expand_recurse(encoded, parent, templates_to_expand)
 
         # Expand any remaining magic cookies and remove nowiki char
-        expanded = self._finalize_expand(expanded, False)
+        expanded = self._finalize_expand(expanded)
         return expanded
 
-    def _finalize_expand(self, text, unescape):
+    def _finalize_expand(self, text):
         """Expands any remaining magic characters (to their original values)
         and removes nowiki characters."""
 
@@ -1188,15 +1199,9 @@ class Wtp(object):
             if prev == text:
                 break
 
-        # Unescape HTML entities if so requested (we don't do this at the end
-        # of normal expansion, but we do it at the end of parsing)
-        if unescape:
-            text = html.unescape(text)
-            text = re.sub(MAGIC_NOWIKI_CHAR, "", text)
-        else:
-            # Convert the special <nowiki /> character back to <nowiki />.
-            # This is done at the end of normal expansion.
-            text = re.sub(MAGIC_NOWIKI_CHAR, "<nowiki />", text)
+        # Convert the special <nowiki /> character back to <nowiki />.
+        # This is done at the end of normal expansion.
+        text = re.sub(MAGIC_NOWIKI_CHAR, "<nowiki />", text)
         return text
 
     def process(self, path, page_handler, phase1_only=False):
@@ -1378,7 +1383,8 @@ class Wtp(object):
 
     def node_to_wikitext(self, node):
         """Converts the given parse tree node back to Wikitext."""
-        return to_wikitext(node)
+        v = to_wikitext(node)
+        return v
 
     def node_to_html(self, node, template_fn=None, post_template_fn=None):
         """Converts the given parse tree node to HTML."""

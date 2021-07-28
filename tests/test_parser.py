@@ -158,7 +158,7 @@ dasfasddasfdas
 
     def test_nowiki2(self):
         tree = parse("test", "<<nowiki/>foo>")
-        assert tree.children == ["&lt;<nowiki />foo&gt;"]
+        assert tree.children == ["<<nowiki />foo>"]
 
     def test_nowiki3(self):
         tree = parse("test", "&<nowiki/>amp;")
@@ -166,7 +166,7 @@ dasfasddasfdas
 
     def test_nowiki4(self):
         tree, ctx = parse_with_ctx("test", "a</nowiki>b")
-        self.assertEqual(tree.children, ["a&lt;/nowiki&gt;b"])
+        self.assertEqual(tree.children, ["a</nowiki>b"])
         self.assertEqual(len(ctx.debugs), 1)
 
     def test_nowiki5(self):
@@ -304,7 +304,7 @@ dasfasddasfdas
         tree, ctx = parse_with_ctx("test", """<div><span>foo</div></span>""")
         self.assertEqual(len(tree.children), 2)
         a, rest = tree.children
-        self.assertEqual(rest, "&lt;/span&gt;")
+        self.assertEqual(rest, "</span>")
         self.assertEqual(a.kind, NodeKind.HTML)
         self.assertEqual(a.args, "div")
         self.assertEqual(len(a.children), 1)
@@ -352,7 +352,7 @@ dasfasddasfdas
         self.assertEqual(h.args, [["Title"]])
         self.assertEqual(len(h.children), 3)
         x, a, rest = h.children
-        self.assertEqual(rest, "&lt;/div&gt;")
+        self.assertEqual(rest, "</div>")
         self.assertEqual(x, "\n")
         self.assertEqual(a.kind, NodeKind.HTML)
         self.assertEqual(a.args, "ul")
@@ -423,7 +423,7 @@ dasfasddasfdas
         self.assertEqual(ctx.warnings, [])
         self.assertEqual(ctx.debugs, [])
         self.assertEqual(len(tree.children), 1)
-        self.assertEqual(tree.children, ["a&lt;3&gt;b"])
+        self.assertEqual(tree.children, ["a<3>b"])
 
     def test_html15(self):
         tree, ctx = parse_with_ctx("test", "<DIV>foo</DIV>")
@@ -468,7 +468,7 @@ dasfasddasfdas
         tree, ctx = parse_with_ctx("test", "<unknown>foo</unknown>")
         self.assertNotEqual(ctx.debugs, [])
         self.assertEqual(len(tree.children), 1)
-        self.assertEqual(tree.children, ["&lt;unknown&gt;foo&lt;/unknown&gt;"])
+        self.assertEqual(tree.children, ["<unknown>foo</unknown>"])
 
     def test_html_section1(self):
         tree, ctx = parse_with_ctx("test", "a<section begin=foo />b")
@@ -1304,9 +1304,8 @@ def foo(x):
         self.assertEqual(t.children, [])
         self.assertEqual(t.args, [["x"], ["<3"]])
 
-    def test_template16(self):
-        # This example is from Wiktionary: Unsupported titles/Less than three
-        tree, ctx = parse_with_ctx("test", "{{x|<3}}")
+    def test_template17(self):
+        tree, ctx = parse_with_ctx("test", "{{x|3>}}")
         self.assertEqual(ctx.errors, [])
         self.assertEqual(ctx.warnings, [])
         self.assertEqual(ctx.debugs, [])
@@ -1314,7 +1313,7 @@ def foo(x):
         t = tree.children[0]
         self.assertEqual(t.kind, NodeKind.TEMPLATE)
         self.assertEqual(t.children, [])
-        self.assertEqual(t.args, [["x"], ["&lt;3"]])
+        self.assertEqual(t.args, [["x"], ["3>"]])
 
     def test_templatevar1(self):
         tree = parse("test", "{{{foo}}}")
@@ -1772,14 +1771,14 @@ def foo(x):
 
     def test_plain13(self):
         tree = parse("test", "&lt;nowiki />")
-        self.assertEqual(tree.children, ["&lt;nowiki /&gt;"])
+        self.assertEqual(tree.children, ["&lt;nowiki />"])
 
     def test_plain14(self):
         tree, ctx = parse_with_ctx("test", "a < b < c")
         self.assertEqual(ctx.errors, [])
         self.assertEqual(ctx.warnings, [])
         self.assertEqual(ctx.debugs, [])
-        self.assertEqual(tree.children, ["a &lt; b &lt; c"])
+        self.assertEqual(tree.children, ["a < b < c"])
 
     def test_nonsense1(self):
         tree = parse("test", "<pre />")
