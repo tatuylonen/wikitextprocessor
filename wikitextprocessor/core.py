@@ -1275,6 +1275,7 @@ class Wtp(object):
             else:
                 pool = multiprocessing.Pool(self.num_threads)
             cnt = 0
+            start_t = time.time()
             last_t = time.time()
             for success, title, t, ret in \
                 pool.imap_unordered(phase2_page_handler, self.page_seq, 64):
@@ -1290,13 +1291,18 @@ class Wtp(object):
                 if ret is not None:
                     yield ret
                 cnt += 1
-                #if (not self.quiet and
-                #    cnt % 1000 == 0 and
-                #    time.time() - last_t > 1):
-                if True:
-                    print("  ... {}/{} pages ({:.1%}) processed"
+                if (not self.quiet and
+                    # cnt % 1000 == 0 and
+                    time.time() - last_t > 1):
+                    remaining = len(self.page_seq) - cnt
+                    secs = (time.time() - start_t) / cnt * remaining
+                    print("  ... {}/{} pages ({:.1%}) processed, "
+                          "{:02d}:{:02d}:{:02d} remaining"
                           .format(cnt, len(self.page_seq),
-                                  cnt / len(self.page_seq)))
+                                  cnt / len(self.page_seq),
+                                  int(secs / 3600),
+                                  int(secs / 60 % 60),
+                                  int(secs % 60)))
                     sys.stdout.flush()
                     last_t = time.time()
             pool.close()
