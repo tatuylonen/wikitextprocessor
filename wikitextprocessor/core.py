@@ -332,7 +332,7 @@ class Wtp(object):
 
         def vbar_split(v):
             args = list(m.group(1) for m in re.finditer(
-                r"(?si)\|((<\s*([-a-zA-z0-9]+)\b[^>]*>.*?<\s*/\s*\3\s*>|"
+                r"(?si)\|((<\s*([-a-zA-z0-9]+)\b[^>]*>[^][{}]*?<\s*/\s*\3\s*>|"
                 r"[^|])*)", "|" + v))
             return args
 
@@ -424,7 +424,7 @@ class Wtp(object):
             # template arguments; that does not always work but works
             # most of the time.
             text = re.sub(r"(?si)\{" + MAGIC_NOWIKI_CHAR +
-                          r"?\{((<([-a-zA-z0-9]+)\b[^>]*>.*?</\3>|"
+                          r"?\{((<([-a-zA-z0-9]+)\b[^>]*>[^][{}]*?</\3>|"
                           r"[^{}]|\{\|[^{}]*\|\}|\}[^{}]|"
                           r"[^{}][{}][^{}])+?)\}" +
                           MAGIC_NOWIKI_CHAR + r"?\}",
@@ -1085,6 +1085,7 @@ class Wtp(object):
                     # Expand the body, either using ``template_fn`` or using
                     # normal template expansion
                     t = None
+                    # print("EXPANDING TEMPLATE: {} {}".format(name, ht))
                     if template_fn is not None:
                         t = template_fn(urllib.parse.unquote(name), ht)
                         # print("TEMPLATE_FN {}: {} {} -> {}"
@@ -1132,7 +1133,7 @@ class Wtp(object):
                     # If a post_template_fn has been supplied, call it now
                     # to capture or alter the expansion
                     # print("TEMPLATE EXPANDED: {} {} -> {!r}"
-                    #      .format(name, ht, t))
+                    #       .format(name, ht, t))
                     if post_template_fn is not None:
                         t2 = post_template_fn(urllib.parse.unquote(name), ht, t)
                         if t2 is not None:
