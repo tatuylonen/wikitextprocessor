@@ -46,6 +46,10 @@ def phase2_page_handler(dt):
     autoload = _global_page_autoload
     model, title = dt
     start_t = time.time()
+    # XXX This is for debugging which pages hang / are very slow to extract
+    with open("/tmp/wiktextract-{}".format(os.getpid()), "w") as f:
+        f.write(title + "\n")
+
     ctx.start_page(title)
     if autoload:
         data = ctx.read_by_title(title)
