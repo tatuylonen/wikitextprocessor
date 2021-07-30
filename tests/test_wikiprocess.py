@@ -3196,10 +3196,10 @@ return export
         self.scribunto("f]oo",
                        """return string.gsub("f=oo", "=", "%]");""")
 
-    def test_gsub3(self):
-        # This tests a Lua version compatibility kludge with string.gsub
-        self.scribunto("f-oo",
-                       """return string.gsub("f=oo", "=", "%-");""")
+    # def test_gsub3(self):
+    #     # This tests a Lua version compatibility kludge with string.gsub
+    #     self.scribunto("f-oo",
+    #                    """return string.gsub("f=oo", "=", "%-");""")
 
 # XXX Test template_fn
 
