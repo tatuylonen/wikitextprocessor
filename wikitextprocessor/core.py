@@ -439,8 +439,15 @@ class Wtp(object):
             # Encode templates.  We have a kludge for paired HTML tags within
             # template arguments; that does not always work but works
             # most of the time.
+            # XXX this spends expential time on jet/Czech.  FIXME!
+            # text = re.sub(r"(?si)\{" + MAGIC_NOWIKI_CHAR +
+            #               r"?\{((<([-a-zA-z0-9]+)\b[^<>]*>[^][{}<>]*?</\3>|"
+            #               r"[^{}]|\{\|[^{}]*\|\}|\}[^{}]|"
+            #               r"[^{}][{}][^{}])+?)\}" +
+            #               MAGIC_NOWIKI_CHAR + r"?\}",
+            #               repl_templ, text)
             text = re.sub(r"(?si)\{" + MAGIC_NOWIKI_CHAR +
-                          r"?\{((<([-a-zA-z0-9]+)\b[^>]*>[^][{}]*?</\3>|"
+                          r"?\{(("
                           r"[^{}]|\{\|[^{}]*\|\}|\}[^{}]|"
                           r"[^{}][{}][^{}])+?)\}" +
                           MAGIC_NOWIKI_CHAR + r"?\}",
