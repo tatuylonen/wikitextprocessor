@@ -46,25 +46,37 @@ def phase2_page_handler(dt):
     autoload = _global_page_autoload
     model, title = dt
     start_t = time.time()
-    # XXX This is for debugging which pages hang / are very slow to extract
-    with open("/tmp/wiktextract-{}".format(os.getpid()), "w") as f:
-        f.write(title + "\n")
 
-    ctx.start_page(title)
-    if autoload:
-        data = ctx.read_by_title(title)
-        assert isinstance(data, str)
-    else:
-        data = None
+    # XXX Enable this to debug why extraction hangs.  This writes the path
+    # of each file being processed into /tmp/wiktextract-*.  Once a hang
+    # has been observed, these files contain page(s) that hang.  They should
+    # be checked before aborting the process, as an interrupt might delete
+    # them.
+    debug_hangs = True
     try:
-        ret = _global_page_handler(model, title, data)
-        return True, title, start_t, ret
-    except Exception as e:
-        lst = traceback.format_exception(etype=type(e), value=e,
-                                         tb=e.__traceback__)
-        msg = ("=== EXCEPTION while parsing page \"{}\":\n".format(title) +
-               "".join(lst))
-        return False, title, start_t, msg
+        debug_path = "/tmp/wiktextract-{}".format(os.getpid())
+        with open(debug_path, "w") as f:
+            f.write(title + "\n")
+
+        ctx.start_page(title)
+        if autoload:
+            data = ctx.read_by_title(title)
+            assert isinstance(data, str)
+        else:
+            data = None
+        try:
+            ret = _global_page_handler(model, title, data)
+            return True, title, start_t, ret
+        except Exception as e:
+            lst = traceback.format_exception(etype=type(e), value=e,
+                                             tb=e.__traceback__)
+            msg = ("=== EXCEPTION while parsing page \"{}\":\n".format(title) +
+                   "".join(lst))
+            return False, title, start_t, msg
+
+    finally:
+        if debug_hangs:
+            os.remove(debug_path)
 
 
 class Wtp(object):
