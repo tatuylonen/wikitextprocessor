@@ -38,19 +38,14 @@ LANGUAGE_CODE_TO_NAME = { x["code"]: x["name"]
 # Substitutions to perform on Lua code from the dump to convert from
 # Lua 5.1 to current 5.3
 loader_replace_patterns = list((re.compile(src), dst) for src, dst in [
-
-    # XXX which set is correct? 20210730
-    # XXX probably want to re-enable the commented-out set
-    [r"\\\\", r"\092"],
-
-    # [r"\\\\\?", r"%\\092?"],
-    # [r"\\\\\*", r"%\\092*"],
-    # [r"\\\\\-", r"%\\092-"],
-    # [r"\\\\\+", r"%\\092+"],
-    # [r"\\\\\|", r"%\\092|"],
-    # [r"\\\\\[", r"%\\092["],
-    # # [r"'\\\\'", r"'\092'"],  # now covered by the one below
-    # [r"\\\\", r"\\092"],
+    [r"\\\\\?", r"%\\092?"],
+    [r"\\\\\*", r"%\\092*"],
+    [r"\\\\\-", r"%\\092-"],
+    [r"\\\\\+", r"%\\092+"],
+    [r"\\\\\|", r"%\\092|"],
+    [r"\\\\\[", r"%\\092["],
+    # [r"'\\\\'", r"'\092'"],  # now covered by the one below
+    [r"\\\\", r"\\092"],
 
     [r"\\\[", r"%%["],
     [r"\\:", r":"],

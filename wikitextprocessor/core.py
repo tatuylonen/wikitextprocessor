@@ -52,7 +52,7 @@ def phase2_page_handler(dt):
     # has been observed, these files contain page(s) that hang.  They should
     # be checked before aborting the process, as an interrupt might delete
     # them.
-    debug_hangs = True
+    debug_hangs = False
     try:
         debug_path = "/tmp/wiktextract-{}".format(os.getpid())
         with open(debug_path, "w") as f:
