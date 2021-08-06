@@ -86,7 +86,11 @@ def to_wikitext(node):
         parts.append("}}")
     elif kind == NodeKind.URL:
         parts.append("[")
-        parts.append(to_wikitext(node.args))
+        if node.args:
+            parts.append(to_wikitext(node.args[0]))
+            for x in node.args[1:]:
+                parts.append(" ")
+                parts.append(to_wikitext(x))
         parts.append("]")
     elif kind == NodeKind.TABLE:
         parts.append("\n{{| {}\n".format(to_attrs(node)))
