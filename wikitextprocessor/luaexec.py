@@ -38,7 +38,15 @@ LANGUAGE_CODE_TO_NAME = { x["code"]: x["name"]
 # Substitutions to perform on Lua code from the dump to convert from
 # Lua 5.1 to current 5.3
 loader_replace_patterns = list((re.compile(src), dst) for src, dst in [
-    [r"\\\\", r"\092"],
+    [r"\\\\\?", r"%\\092?"],
+    [r"\\\\\*", r"%\\092*"],
+    [r"\\\\\-", r"%\\092-"],
+    [r"\\\\\+", r"%\\092+"],
+    [r"\\\\\|", r"%\\092|"],
+    [r"\\\\\[", r"%\\092["],
+    # [r"'\\\\'", r"'\092'"],  # now covered by the one below
+    [r"\\\\", r"\\092"],
+
     [r"\\\[", r"%%["],
     [r"\\:", r":"],
     [r"\\,", r","],
@@ -342,7 +350,7 @@ def call_lua_sandbox(ctx, invoke_args, expander, parent, timeout):
     #       .format(ctx.title, invoke_args, parent))
 
     if len(invoke_args) < 2:
-        ctx.error("#invoke {}: too few arguments"
+        ctx.debug("#invoke {} with too few arguments"
                   .format(invoke_args))
         return ("{{" + invoke_args[0] + ":" +
                 "|".join(invoke_args[1:]) + "}}")
@@ -410,7 +418,7 @@ def call_lua_sandbox(ctx, invoke_args, expander, parent, timeout):
 
         def extensionTag(frame, *args):
             if len(args) < 1:
-                ctx.error("extensionTag: missing arguments")
+                ctx.debug("lua extensionTag with missing arguments")
                 return ""
             dt = args[0]
             if not isinstance(dt, (str, int, float, type(None))):
@@ -451,7 +459,7 @@ def call_lua_sandbox(ctx, invoke_args, expander, parent, timeout):
 
         def callParserFunction(frame, *args):
             if len(args) < 1:
-                ctx.error("callParserFunction: missing name")
+                ctx.debug("lua callParserFunction missing name")
                 return ""
             name = args[0]
             if not isinstance(name, str):
@@ -473,7 +481,8 @@ def call_lua_sandbox(ctx, invoke_args, expander, parent, timeout):
                         new_args.append(str(v))
             name = ctx._canonicalize_parserfn_name(name)
             if name not in PARSER_FUNCTIONS:
-                ctx.error("frame:callParserFunction(): undefined function {!r}"
+                ctx.debug("lua frame callParserFunction() undefined "
+                          "function {!r}"
                           .format(name))
                 return ""
             return call_parser_function(ctx, name, new_args, lambda x: x)
@@ -488,7 +497,7 @@ def call_lua_sandbox(ctx, invoke_args, expander, parent, timeout):
 
         def preprocess(frame, *args):
             if len(args) < 1:
-                ctx.error("preprocess: missing argument")
+                ctx.debug("lua preprocess missing argument")
                 return ""
             v = args[0]
             if not isinstance(v, str):
@@ -503,11 +512,11 @@ def call_lua_sandbox(ctx, invoke_args, expander, parent, timeout):
 
         def expandTemplate(frame, *args):
             if len(args) < 1:
-                ctx.error("expandTemplate: missing arguments")
+                ctx.debug("lua expandTemplate missing arguments")
                 return ""
             dt = args[0]
             if isinstance(dt, (int, float, str, type(None))):
-                ctx.error("expandTemplate: arguments should be named")
+                ctx.debug("lua expandTemplate arguments should be named")
                 return ""
             title = dt["title"] or ""
             args = dt["args"] or {}
@@ -566,9 +575,11 @@ def call_lua_sandbox(ctx, invoke_args, expander, parent, timeout):
         else:
             ok, text = ret[0], ret[1]
     except UnicodeDecodeError:
-        ctx.error("invalid unicode returned by {} parent {}"
+        ctx.debug("invalid unicode returned from lua by {}: parent {}"
                   .format(invoke_args, parent))
         ok, text = True, ""
+    except lupa._lupa.LuaError as e:
+        ok, text = False, e
     finally:
         while len(ctx.expand_stack) > stack_len:
             ctx.expand_stack.pop()
@@ -593,7 +604,7 @@ def call_lua_sandbox(ctx, invoke_args, expander, parent, timeout):
     msg = re.sub(r".*?:\d+: ", "", text.split("\n")[0])
     if text.find("'debug.error'") >= 0:
         if not msg.startswith("This template is deprecated."):
-            ctx.warning(msg)
+            ctx.debug("lua error -- " + msg)
     elif text.find("Translations must be for attested and approved ") >= 0:
         # Ignore this error - it is an error but a clear error in Wiktionary
         # rather than in the extractor.
@@ -618,8 +629,8 @@ def call_lua_sandbox(ctx, invoke_args, expander, parent, timeout):
                       trace=trace)
         else:
             ctx.error("LUA error in #invoke {} parent {}"
-                  .format(invoke_args, parent),
-                  trace=trace)
+                      .format(invoke_args, parent),
+                      trace=trace)
     msg = "Lua execution error"
     if text.find("Lua timeout error") >= 0:
         msg = "Lua timeout error"

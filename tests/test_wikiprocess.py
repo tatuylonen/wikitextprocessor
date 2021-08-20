@@ -1432,6 +1432,15 @@ MORE
         ret = ctx.expand('{{foo}}')
         assert ret.find('<strong class="error">too deep recursion') >= 0
 
+    def test_template28(self):
+        # Test | inside <math> in template argument
+        ctx = phase1_to_ctx([
+            ["wikitext", "Template:foo", "a{{{1}}}b"],
+        ])
+        ctx.start_page("Tt")
+        ret = ctx.expand('{{foo|x <math> 1 | 2 </math> y}}')
+        self.assertEqual(ret, "ax <math> 1 | 2 </math> yb")
+
     def test_unbalanced1(self):
         ctx = phase1_to_ctx([])
         ctx.start_page("Tt")
@@ -1499,10 +1508,10 @@ end
 return export
 """]])
         ctx.start_page("Tt")
-        ret = ctx.expand("{{#invoke:testmod|testfn|a|b}}")
+        ret = ctx.expand("{{#invoke:testmod|testfn|a|b|foo=bar}}")
         self.assertEqual(ret, "2")
 
-    def test_invoke4(self):
+    def test_invoke4a(self):
         ctx = phase1_to_ctx([
             ["Scribunto", "Module:testmod", """
 local export = {}
@@ -1512,8 +1521,34 @@ end
 return export
 """]])
         ctx.start_page("Tt")
-        ret = ctx.expand("{{#invoke:testmod|testfn|a|b}}")
+        ret = ctx.expand("{{#invoke:testmod|testfn|a|b|foo=bar}}")
         self.assertEqual(ret, "a")
+
+    def test_invoke4b(self):
+        ctx = phase1_to_ctx([
+            ["Scribunto", "Module:testmod", """
+local export = {}
+function export.testfn(frame)
+  return frame.args["1"]
+end
+return export
+"""]])
+        ctx.start_page("Tt")
+        ret = ctx.expand("{{#invoke:testmod|testfn|a|b|foo=bar}}")
+        self.assertEqual(ret, "a")
+
+    def test_invoke4c(self):
+        ctx = phase1_to_ctx([
+            ["Scribunto", "Module:testmod", """
+local export = {}
+function export.testfn(frame)
+  return frame.args["foo"]
+end
+return export
+"""]])
+        ctx.start_page("Tt")
+        ret = ctx.expand("{{#invoke:testmod|testfn|a|b|foo=bar}}")
+        self.assertEqual(ret, "bar")
 
     def test_invoke5(self):
         ctx = phase1_to_ctx([
@@ -3139,6 +3174,32 @@ return export
           return i""",
                        timeout=2)
         self.assertLess(time.time() - t, 10)
+
+    def test_link_backforth1(self):
+        ctx = phase1_to_ctx([])
+        ctx.start_page("Tt")
+        v = ("([[w:Jurchen script|Jurchen script]]: , Image: "
+             "[[FIle:Da (Jurchen script).png|25px]])")
+        node = ctx.parse(v)
+        t = ctx.node_to_wikitext(node)
+        self.assertEqual(v, t)
+
+    def test_mw_wikibase_getEntityUrl1(self):
+        self.scribunto("", """return mw.wikibase.getEntityUrl()""")
+
+    def test_gsub1(self):
+        self.scribunto("f(%d+)accel",
+                       """return string.gsub("f=accel", "=", "(%%d+)");""")
+
+    def test_gsub2(self):
+        # This tests a Lua version compatibility kludge with string.gsub
+        self.scribunto("f]oo",
+                       """return string.gsub("f=oo", "=", "%]");""")
+
+    def test_gsub3(self):
+        # This tests a Lua version compatibility kludge with string.gsub
+        self.scribunto("f-oo",
+                       """return string.gsub("f=oo", "=", "%-");""")
 
 # XXX Test template_fn
 

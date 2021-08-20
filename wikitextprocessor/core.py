@@ -46,21 +46,37 @@ def phase2_page_handler(dt):
     autoload = _global_page_autoload
     model, title = dt
     start_t = time.time()
-    ctx.start_page(title)
-    if autoload:
-        data = ctx.read_by_title(title)
-        assert isinstance(data, str)
-    else:
-        data = None
+
+    # XXX Enable this to debug why extraction hangs.  This writes the path
+    # of each file being processed into /tmp/wiktextract-*.  Once a hang
+    # has been observed, these files contain page(s) that hang.  They should
+    # be checked before aborting the process, as an interrupt might delete
+    # them.
+    debug_hangs = False
     try:
-        ret = _global_page_handler(model, title, data)
-        return True, title, start_t, ret
-    except Exception as e:
-        lst = traceback.format_exception(etype=type(e), value=e,
-                                         tb=e.__traceback__)
-        msg = ("=== EXCEPTION while parsing page \"{}\":\n".format(title) +
-               "".join(lst))
-        return False, title, start_t, msg
+        debug_path = "/tmp/wiktextract-{}".format(os.getpid())
+        with open(debug_path, "w") as f:
+            f.write(title + "\n")
+
+        ctx.start_page(title)
+        if autoload:
+            data = ctx.read_by_title(title)
+            assert isinstance(data, str)
+        else:
+            data = None
+        try:
+            ret = _global_page_handler(model, title, data)
+            return True, title, start_t, ret
+        except Exception as e:
+            lst = traceback.format_exception(etype=type(e), value=e,
+                                             tb=e.__traceback__)
+            msg = ("=== EXCEPTION while parsing page \"{}\":\n".format(title) +
+                   "".join(lst))
+            return False, title, start_t, msg
+
+    finally:
+        if debug_hangs:
+            os.remove(debug_path)
 
 
 class Wtp(object):
@@ -330,11 +346,17 @@ class Wtp(object):
         """Encode all templates, template arguments, and parser function calls
         in the text, from innermost to outermost."""
 
+        def vbar_split(v):
+            args = list(m.group(1) for m in re.finditer(
+                r"(?si)\|((<\s*([-a-zA-z0-9]+)\b[^>]*>[^][{}]*?<\s*/\s*\3\s*>|"
+                r"[^|])*)", "|" + v))
+            return args
+
         def repl_arg(m):
             """Replacement function for template arguments."""
             nowiki = m.group(0).find(MAGIC_NOWIKI_CHAR) >= 0
             orig = m.group(1)
-            args = orig.split("|")
+            args = vbar_split(orig)
             return self._save_value("A", args, nowiki)
 
         def repl_arg_err(m):
@@ -342,8 +364,8 @@ class Wtp(object):
             nowiki = m.group(0).find(MAGIC_NOWIKI_CHAR) >= 0
             prefix = m.group(1)
             orig = m.group(2)
-            args = orig.split("|")
-            self.warning("heuristically added missing }} to template arg {}"
+            args = vbar_split(orig)
+            self.debug("heuristically added missing }} to template arg {}"
                          .format(args[0].strip()))
             return prefix + self._save_value("A", args, nowiki)
 
@@ -351,7 +373,8 @@ class Wtp(object):
             """Replacement function for templates {{name|...}} and parser
             functions."""
             nowiki = m.group(0).find(MAGIC_NOWIKI_CHAR) >= 0
-            args = m.group(1).split("|")
+            v = m.group(1)
+            args = vbar_split(v)
             return self._save_value("T", args, nowiki)
 
         def repl_templ_err(m):
@@ -359,8 +382,9 @@ class Wtp(object):
             functions, with error."""
             nowiki = m.group(0).find(MAGIC_NOWIKI_CHAR) >= 0
             prefix = m.group(1)
-            args = m.group(2).split("|")
-            self.warning("heuristically added missing }} to template {}"
+            v = m.group(2)
+            args = vbar_split(v)
+            self.debug("heuristically added missing }} to template {}"
                          .format(args[0].strip()))
             return prefix + self._save_value("T", args, nowiki)
 
@@ -368,7 +392,7 @@ class Wtp(object):
             """Replacement function for links [[...]]."""
             nowiki = m.group(0).find(MAGIC_NOWIKI_CHAR) >= 0
             orig = m.group(1)
-            args = m.group(1).split("|")
+            args = vbar_split(orig)
             return self._save_value("L", args, nowiki)
 
         # As a preprocessing step, remove comments from the text
@@ -412,9 +436,19 @@ class Wtp(object):
                     if text != prev2:
                         continue
                     break
-            # Encode templates
-            text = re.sub(r"(?s)\{" + MAGIC_NOWIKI_CHAR +
-                          r"?\{(([^{}]|\{\|[^{}]*\|\}|\}[^{}]|"
+            # Encode templates.  We have a kludge for paired HTML tags within
+            # template arguments; that does not always work but works
+            # most of the time.
+            # XXX this spends expential time on jet/Czech.  FIXME!
+            # text = re.sub(r"(?si)\{" + MAGIC_NOWIKI_CHAR +
+            #               r"?\{((<([-a-zA-z0-9]+)\b[^<>]*>[^][{}<>]*?</\3>|"
+            #               r"[^{}]|\{\|[^{}]*\|\}|\}[^{}]|"
+            #               r"[^{}][{}][^{}])+?)\}" +
+            #               MAGIC_NOWIKI_CHAR + r"?\}",
+            #               repl_templ, text)
+            text = re.sub(r"(?si)\{" + MAGIC_NOWIKI_CHAR +
+                          r"?\{(("
+                          r"[^{}]|\{\|[^{}]*\|\}|\}[^{}]|"
                           r"[^{}][{}][^{}])+?)\}" +
                           MAGIC_NOWIKI_CHAR + r"?\}",
                           repl_templ, text)
@@ -880,9 +914,9 @@ class Wtp(object):
                     if kind == "A":
                         # Template argument reference
                         if len(args) > 2:
-                            self.warning("too many args ({}) in argument "
-                                         "reference {!r}"
-                                         .format(len(args), args))
+                            self.debug("too many args ({}) in argument "
+                                       "reference: {!r}"
+                                       .format(len(args), args))
                         self.expand_stack.append("ARG-NAME")
                         k = expand_recurse(expand_args(args[0], argmap),
                                            parent, all_templates).strip()
@@ -1010,8 +1044,7 @@ class Wtp(object):
                     # Check for undefined templates
                     if name not in all_templates:
                         # XXX tons of these in enwiktionary-20201201 ???
-                        #self.warning("undefined template {!r}"
-                        #             .format(tname))
+                        #self.debug("undefined template {!r}.format(tname))
                         parts.append('<strong class="error">Template:{}'
                                      '</strong>'
                                      .format(html.escape(name)))
@@ -1050,8 +1083,9 @@ class Wtp(object):
                             if k.isdigit():
                                 k = int(k)
                                 if k < 1 or k > 1000:
-                                    self.error("invalid argument number {}"
-                                               .format(k))
+                                    self.debug("invalid argument number {} "
+                                               "for template {!r}"
+                                               .format(k, name))
                                     k = 1000
                                 if num <= k:
                                     num = k + 1
@@ -1074,6 +1108,7 @@ class Wtp(object):
                     # Expand the body, either using ``template_fn`` or using
                     # normal template expansion
                     t = None
+                    # print("EXPANDING TEMPLATE: {} {}".format(name, ht))
                     if template_fn is not None:
                         t = template_fn(urllib.parse.unquote(name), ht)
                         # print("TEMPLATE_FN {}: {} {} -> {}"
@@ -1121,7 +1156,7 @@ class Wtp(object):
                     # If a post_template_fn has been supplied, call it now
                     # to capture or alter the expansion
                     # print("TEMPLATE EXPANDED: {} {} -> {!r}"
-                    #      .format(name, ht, t))
+                    #       .format(name, ht, t))
                     if post_template_fn is not None:
                         t2 = post_template_fn(urllib.parse.unquote(name), ht, t)
                         if t2 is not None:
@@ -1159,10 +1194,10 @@ class Wtp(object):
         expanded = expand_recurse(encoded, parent, templates_to_expand)
 
         # Expand any remaining magic cookies and remove nowiki char
-        expanded = self._finalize_expand(expanded, False)
+        expanded = self._finalize_expand(expanded)
         return expanded
 
-    def _finalize_expand(self, text, unescape):
+    def _finalize_expand(self, text):
         """Expands any remaining magic characters (to their original values)
         and removes nowiki characters."""
 
@@ -1188,15 +1223,9 @@ class Wtp(object):
             if prev == text:
                 break
 
-        # Unescape HTML entities if so requested (we don't do this at the end
-        # of normal expansion, but we do it at the end of parsing)
-        if unescape:
-            text = html.unescape(text)
-            text = re.sub(MAGIC_NOWIKI_CHAR, "", text)
-        else:
-            # Convert the special <nowiki /> character back to <nowiki />.
-            # This is done at the end of normal expansion.
-            text = re.sub(MAGIC_NOWIKI_CHAR, "<nowiki />", text)
+        # Convert the special <nowiki /> character back to <nowiki />.
+        # This is done at the end of normal expansion.
+        text = re.sub(MAGIC_NOWIKI_CHAR, "<nowiki />", text)
         return text
 
     def process(self, path, page_handler, phase1_only=False):
@@ -1253,6 +1282,11 @@ class Wtp(object):
                 assert ret_title == title
                 if not success:
                     print(ret)  # Print error in parent process - do not remove
+                    lines = ret.split("\n")
+                    msg = lines[0]
+                    trace = "\n".join(lines[1:])
+                    if msg.find("EXCEPTION") >= 0:
+                        self.error(msg, trace=trace)
                     continue
                 if ret is not None:
                     yield ret
@@ -1264,6 +1298,7 @@ class Wtp(object):
             else:
                 pool = multiprocessing.Pool(self.num_threads)
             cnt = 0
+            start_t = time.time()
             last_t = time.time()
             for success, title, t, ret in \
                 pool.imap_unordered(phase2_page_handler, self.page_seq, 64):
@@ -1272,24 +1307,31 @@ class Wtp(object):
                           .format(time.time() - t, title))
                 sys.stdout.flush()
                 if not success:
-                    print(ret)  # Print error in parent process - do not remove
+                    # Print error in parent process - do not remove
+                    print(ret)
                     sys.stdout.flush()
                     continue
                 if ret is not None:
                     yield ret
                 cnt += 1
-                #if (not self.quiet and
-                #    cnt % 1000 == 0 and
-                #    time.time() - last_t > 1):
-                if True:
-                    print("  ... {}/{} pages ({:.1%}) processed"
+                if (not self.quiet and
+                    # cnt % 1000 == 0 and
+                    time.time() - last_t > 1):
+                    remaining = len(self.page_seq) - cnt
+                    secs = (time.time() - start_t) / cnt * remaining
+                    print("  ... {}/{} pages ({:.1%}) processed, "
+                          "{:02d}:{:02d}:{:02d} remaining"
                           .format(cnt, len(self.page_seq),
-                                  cnt / len(self.page_seq)))
+                                  cnt / len(self.page_seq),
+                                  int(secs / 3600),
+                                  int(secs / 60 % 60),
+                                  int(secs % 60)))
                     sys.stdout.flush()
                     last_t = time.time()
             pool.close()
             pool.join()
 
+        sys.stderr.flush()
         sys.stdout.flush()
 
     def page_exists(self, title):
@@ -1371,7 +1413,8 @@ class Wtp(object):
 
     def node_to_wikitext(self, node):
         """Converts the given parse tree node back to Wikitext."""
-        return to_wikitext(node)
+        v = to_wikitext(node)
+        return v
 
     def node_to_html(self, node, template_fn=None, post_template_fn=None):
         """Converts the given parse tree node to HTML."""

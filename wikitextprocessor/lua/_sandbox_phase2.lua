@@ -29,6 +29,10 @@ _mw_pageTitle = "<unassigned>"
 
 local function frame_args_index(new_args, key)
    -- print("frame_args_index", key)
+   local i = tonumber(key)
+   if i ~= nil then
+      key = i
+   end
    local v = new_args._orig[key]
    if v == nil then return nil end
    if not new_args._preprocessed[key] then
@@ -289,6 +293,8 @@ function string.gsub(text, pattern, repl)
    --print(string.format("string.gsub %q %q %q", text, pattern, tostring(repl)))
    if type(repl) == "string" then
       repl = _orig_gsub(repl, "%%]", "]")
+      repl = _orig_gsub(repl, "%%%.", ".")
+      repl = _orig_gsub(repl, "%%%-", "-")
    end
    return _orig_gsub(text, pattern, repl)
 end

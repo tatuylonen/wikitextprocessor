@@ -32,9 +32,6 @@ def to_attrs(node):
 def to_wikitext(node):
     """Converts a parse tree (or subtree) back to Wikitext."""
     if isinstance(node, str):
-        # XXX can't escape strings here; it causes any HTML in arguments
-        # to become literal for the next parsing round
-        # return html.escape(node)
         return node
     if isinstance(node, (list, tuple)):
         return "".join(map(to_wikitext, node))
