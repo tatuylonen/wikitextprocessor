@@ -1456,7 +1456,7 @@ def process_text(ctx, text):
     certain other structures)."""
     # print("PARSER PROCESS_TEXT:", repr(text))
     for is_token, token in token_iter(ctx, text):
-        print("process_text: token_iter yielded:", is_token, token)
+        # print("process_text: token_iter yielded:", is_token, token)
         node = ctx.parser_stack[-1]
         if not is_token:
             # Process it as normal text.
