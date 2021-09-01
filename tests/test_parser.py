@@ -1393,7 +1393,7 @@ def foo(x):
         self.assertEqual(b.children, [])
 
     def test_table_empty(self):
-        tree = parse("test", "{||}")
+        tree = parse("test", "{| |}")
         self.assertEqual(len(tree.children), 1)
         t = tree.children[0]
         self.assertEqual(t.kind, NodeKind.TABLE)
@@ -1454,6 +1454,18 @@ def foo(x):
         self.assertEqual(bc.kind, NodeKind.TABLE_CELL)
         self.assertEqual(bc.children, ["more\n"])
 
+    def test_table_simple3(self):
+        tree = parse("test", "{|\n\t|Cell\n|}")
+        t = tree.children[0]
+        self.assertEqual(t.kind, NodeKind.TABLE)
+        self.assertEqual(len(t.children), 1)
+        a = t.children[0]
+        self.assertEqual(a.kind, NodeKind.TABLE_ROW)
+        self.assertEqual(len(a.children), 1)
+        b = a.children[0]
+        self.assertEqual(b.kind, NodeKind.TABLE_CELL)
+        self.assertEqual(b.children, ["Cell\n"])
+
     def test_table_hdr1(self):
         tree = parse("test", "{|\n!Header\n|}")
         t = tree.children[0]
@@ -1477,6 +1489,18 @@ def foo(x):
         b = a.children[0]
         self.assertEqual(b.kind, NodeKind.TABLE_HEADER_CELL)
         self.assertEqual(b.children, ["b\n"])
+
+    def test_table_hdr3(self):
+        tree = parse("test", "{|\n\t!Header\n|}")
+        t = tree.children[0]
+        self.assertEqual(t.kind, NodeKind.TABLE)
+        self.assertEqual(len(t.children), 1)
+        a = t.children[0]
+        self.assertEqual(a.kind, NodeKind.TABLE_ROW)
+        self.assertEqual(len(a.children), 1)
+        b = a.children[0]
+        self.assertEqual(b.kind, NodeKind.TABLE_HEADER_CELL)
+        self.assertEqual(b.children, ["Header\n"])
 
     def test_table_complex1(self):
         tree = parse("test",

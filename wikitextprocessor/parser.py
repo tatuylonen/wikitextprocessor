@@ -451,6 +451,9 @@ def text_fn(ctx, token):
 
         # Spaces at the beginning of a line indicate preformatted text
         if token.startswith(" ") or token.startswith("\t"):
+            if ctx.parser_stack[-1].kind in (NodeKind.TABLE,
+                                             NodeKind.TABLE_ROW):
+                return
             if node.kind != NodeKind.PREFORMATTED and not ctx.pre_parse:
                 node = _parser_push(ctx, NodeKind.PREFORMATTED)
 
@@ -875,7 +878,9 @@ def table_cell_fn(ctx, token):
     if not _parser_have(ctx, NodeKind.TABLE):
         return text_fn(ctx, token)
 
-    if token == "|" and not ctx.beginning_of_line:
+    if (token == "|" and
+        not ctx.wsp_beginning_of_line and
+        not ctx.beginning_of_line):
         # This might separate attributes for captions, header cells, and
         # data cells
         _parser_merge_str_children(ctx)
@@ -1272,7 +1277,6 @@ token_re = re.compile(r"(?m)^(={2,6})\s*(([^=]|=[^=])+?)\s*(={2,6})\s*$|"
                       r"'''''|"
                       r"'''|"
                       r"''|"
-                      r"[ \t]+\n*|"
                       r"\n|"
                       r"\[|"
                       r"\]|"
@@ -1281,11 +1285,12 @@ token_re = re.compile(r"(?m)^(={2,6})\s*(([^=]|=[^=])+?)\s*(={2,6})\s*$|"
                       r"\|\+|"
                       r"\|-|"
                       r"!!|"
-                      r"^!|"
+                      r"^[ \t]*!|"
                       r"\|\||"
                       r"\||"
                       r"^----+|"
                       r"^[*:;#]+|"
+                      r"[ \t]+\n*|"
                       r":|"   # sometimes special when not beginning of line
                       r"<<[-a-zA-Z0-9/]*>>|"
                       r"""<\s*[-a-zA-Z0-9]+\s*(\b[-a-zA-Z0-9]+(=("[^<>"]*"|"""
@@ -1451,7 +1456,7 @@ def process_text(ctx, text):
     certain other structures)."""
     # print("PARSER PROCESS_TEXT:", repr(text))
     for is_token, token in token_iter(ctx, text):
-        # print("process_text: token_iter yielded:", is_token, token)
+        print("process_text: token_iter yielded:", is_token, token)
         node = ctx.parser_stack[-1]
         if not is_token:
             # Process it as normal text.
@@ -1486,8 +1491,13 @@ def process_text(ctx, text):
                   ord(token) <= MAGIC_LAST):
                 magic_fn(ctx, token)
             else:
-                text_fn(ctx, token)
+                t2 = token.strip()
+                if t2 in tokenops:
+                    tokenops[t2](ctx, t2)
+                else:
+                    text_fn(ctx, token)
         ctx.linenum += token.count("\n")
+        ctx.wsp_beginning_of_line = ctx.beginning_of_line and token.isspace()
         ctx.beginning_of_line = token[-1] == "\n"
 
 
@@ -1499,6 +1509,7 @@ def parse_encoded(ctx, text):
     node = WikiNode(NodeKind.ROOT, 0)
     node.args.append([ctx.title])
     ctx.beginning_of_line = True
+    ctx.wsp_beginning_of_line = False
     ctx.linenum = 1
     ctx.pre_parse = False
     ctx.parser_stack = [node]

@@ -118,6 +118,7 @@ class Wtp(object):
         "warnings",	 # List of warning messages (cleared for each new page)
         # Data for parsing
         "beginning_of_line", # Parser at beginning of line
+        "wsp_beginning_of_line",  # Parser at beginning of line + whitespace
         "linenum",	 # Current line number
         "pre_parse",	 # XXX is pre-parsing still needed?
         "parser_stack",	 # Parser stack
