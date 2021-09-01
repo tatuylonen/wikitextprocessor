@@ -1394,13 +1394,21 @@ MORE
         ret = ctx.expand("{{testmod|zz}}")
         self.assertEqual(ret, "acfzzgdb")
 
-    def test_template24(self):
+    def test_template24a(self):
         ctx = phase1_to_ctx([
             ["wikitext", "Template:testmod", "a{{{1}}}b"],
         ])
         ctx.start_page("Tt")
         ret = ctx.expand("{{testmod|{{!}}}}")
-        self.assertEqual(ret, "a&vert;b")
+        self.assertEqual(ret, "a|b")
+
+    def test_template24b(self):
+        ctx = phase1_to_ctx([
+            ["wikitext", "Template:testmod", "a{{{1}}}b"],
+        ])
+        ctx.start_page("Tt")
+        ret = ctx.expand("{{testmod|{{!-}}}}")
+        self.assertEqual(ret, "a|-b")
 
     def test_template25(self):
         ctx = phase1_to_ctx([

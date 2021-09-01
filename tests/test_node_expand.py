@@ -1,6 +1,6 @@
 # Tests for WikiText parsing
 #
-# Copyright (c) 2020 Tatu Ylonen.  See file LICENSE and https://ylonen.org
+# Copyright (c) 2020-2021 Tatu Ylonen.  See file LICENSE and https://ylonen.org
 
 import unittest
 from wikitextprocessor import Wtp
@@ -158,11 +158,11 @@ class NodeExpTests(unittest.TestCase):
 
     def test_tablerowcell1(self):
         self.backcvt("{|\n|- a=1\n| cell\n|}",
-                     '\n{| \n\n|- a="1"\n\n| \n cell\n\n|}\n')
+                     '\n{| \n\n|- a="1"\n\n| cell\n\n\n|}\n')
 
     def test_tablerowhdr1(self):
         self.backcvt("{|\n|- a=1\n! cell\n|}",
-                     '\n{| \n\n|- a="1"\n\n! \n cell\n\n|}\n')
+                     '\n{| \n\n|- a="1"\n\n! cell\n\n\n|}\n')
 
     def test_magicword1(self):
         self.backcvt("a\n__TOC__\nb", "a\n\n__TOC__\n\nb")

@@ -100,11 +100,21 @@ def to_wikitext(node):
         parts.append("\n|- {}\n".format(to_attrs(node)))
         parts.append(to_wikitext(node.children))
     elif kind == NodeKind.TABLE_HEADER_CELL:
-        parts.append("\n! {}\n".format(to_attrs(node)))
-        parts.append(to_wikitext(node.children))
+        if node.attrs:
+            parts.append("\n! {} |{}\n"
+                         .format(to_attrs(node),
+                                 to_wikitext(node.children)))
+        else:
+            parts.append("\n!{}\n"
+                         .format(to_wikitext(node.children)))
     elif kind == NodeKind.TABLE_CELL:
-        parts.append("\n| {}\n".format(to_attrs(node)))
-        parts.append(to_wikitext(node.children))
+        if node.attrs:
+            parts.append("\n| {} |{}\n"
+                         .format(to_attrs(node),
+                                 to_wikitext(node.children)))
+        else:
+            parts.append("\n|{}\n"
+                         .format(to_wikitext(node.children)))
     elif kind == NodeKind.MAGIC_WORD:
         parts.append("\n{}\n".format(node.args))
     elif kind == NodeKind.HTML:

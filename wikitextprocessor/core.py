@@ -194,7 +194,8 @@ class Wtp(object):
         self.need_pre_expand = None
         self.cache_file_old = False
         # Add predefined templates
-        self.templates["!"] = "&vert;"
+        self.templates["!"] = "|"
+        self.templates["!-"] = "|-"
         self.templates[self._canonicalize_template_name("((")] = \
             "&lbrace;&lbrace;"  # {{((}}
         self.templates[self._canonicalize_template_name("))")] = \
