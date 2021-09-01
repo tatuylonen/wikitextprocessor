@@ -819,7 +819,9 @@ def table_hdr_cell_fn(ctx, token):
     if ctx.pre_parse:
         return text_fn(ctx, token)
 
-    if token == "!" and not ctx.beginning_of_line:
+    if (token == "!" and
+        not ctx.beginning_of_line and
+        not ctx.wsp_beginning_of_line):
         return text_fn(ctx, token)
 
     close_begline_lists(ctx)

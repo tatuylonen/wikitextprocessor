@@ -1466,6 +1466,18 @@ def foo(x):
         self.assertEqual(b.kind, NodeKind.TABLE_CELL)
         self.assertEqual(b.children, ["Cell\n"])
 
+    def test_table_simple4(self):
+        tree = parse("test", "{|\n\t!Cell\n|}")
+        t = tree.children[0]
+        self.assertEqual(t.kind, NodeKind.TABLE)
+        self.assertEqual(len(t.children), 1)
+        a = t.children[0]
+        self.assertEqual(a.kind, NodeKind.TABLE_ROW)
+        self.assertEqual(len(a.children), 1)
+        b = a.children[0]
+        self.assertEqual(b.kind, NodeKind.TABLE_HEADER_CELL)
+        self.assertEqual(b.children, ["Cell\n"])
+
     def test_table_hdr1(self):
         tree = parse("test", "{|\n!Header\n|}")
         t = tree.children[0]
