@@ -819,16 +819,14 @@ def table_hdr_cell_fn(ctx, token):
     if ctx.pre_parse:
         return text_fn(ctx, token)
 
-    if (token == "!" and
-        not ctx.beginning_of_line and
-        not ctx.wsp_beginning_of_line):
-        return text_fn(ctx, token)
-
     close_begline_lists(ctx)
     table_row_check_attrs(ctx)
     table_check_attrs(ctx)
+
+    # Outside tables, just interpret ! and !! as raw text
     if not _parser_have(ctx, NodeKind.TABLE):
         return text_fn(ctx, token)
+
     while True:
         node = ctx.parser_stack[-1]
         if node.kind == NodeKind.TABLE_ROW:
@@ -846,7 +844,14 @@ def table_hdr_cell_fn(ctx, token):
             else:
                 text_fn(ctx, token)
             return
-        if node.kind == NodeKind.TABLE_CELL:
+        if node.kind in (NodeKind.HTML, NodeKind.TEMPLATE):
+            # Inside nested HTML, interpret ! and !! as normal text
+            return text_fn(ctx, token)
+        if (node.kind == NodeKind.TABLE_CELL and
+            not ctx.beginning_of_line and
+            not ctx.wsp_beginning_of_line):
+            # Inside a cell, ! and !! are normal text unless at the beginning
+            # of a line
             return text_fn(ctx, token)
         _parser_pop(ctx, True)
 
@@ -905,6 +910,9 @@ def table_cell_fn(ctx, token):
             _parser_push(ctx, NodeKind.TABLE_ROW)
             break
         if node.kind == NodeKind.TABLE_CAPTION:
+            return text_fn(ctx, token)
+        if node.kind == NodeKind.HTML:
+            # Inside nested HTML, treat | and || as normal text
             return text_fn(ctx, token)
         _parser_pop(ctx, True)
     _parser_push(ctx, NodeKind.TABLE_CELL)

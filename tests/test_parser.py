@@ -1503,7 +1503,7 @@ def foo(x):
         self.assertEqual(b.children, ["b\n"])
 
     def test_table_hdr3(self):
-        tree = parse("test", "{|\n\t!Header\n|}")
+        tree = parse("test", "{|\n|-\n\t!Header\n|}")
         t = tree.children[0]
         self.assertEqual(t.kind, NodeKind.TABLE)
         self.assertEqual(len(t.children), 1)
@@ -1557,7 +1557,7 @@ def foo(x):
     def test_table_attrs1(self):
         tree, ctx = parse_with_ctx("test", """{| class="table"
 |+ class="caption" |cap!!tion!||text
-!class="h1"|H1!!class="h2"|H2!!class="h3"|H3|x
+! class="h1" |H1!!class="h2"|H2!!class="h3"|H3|x
 |- class="row1"
 |class="cell1"|Orange||class="cell2"|Apple||class="cell3"|more!!
 |- class="row2"
@@ -1611,6 +1611,37 @@ def foo(x):
         self.assertEqual(bb.children, ["Pie"])
         self.assertEqual(bc.kind, NodeKind.TABLE_CELL)
         self.assertEqual(bc.children, ["more!\n"])
+
+    def test_table_attrs2(self):
+        # Also tests empty cell after | after attrs (there was once a bug
+        # in handling it)
+        tree, ctx = parse_with_ctx("test", """{|
+|-
+| style="width=20%" |
+! colspan=2 | Singular
+|}""")
+        self.assertEqual(ctx.errors, [])
+        self.assertEqual(ctx.warnings, [])
+        self.assertEqual(ctx.debugs, [])
+        print(tree)
+        self.assertEqual(len(tree.children), 1)
+        t = tree.children[0]
+        self.assertEqual(t.kind, NodeKind.TABLE)
+        self.assertEqual(t.attrs, {})
+        self.assertEqual(t.args, [])
+        self.assertEqual(len(t.children), 1)
+        r = t.children[0]
+        self.assertEqual(r.kind, NodeKind.TABLE_ROW)
+        self.assertEqual(r.attrs, {})
+        self.assertEqual(r.args, [])
+        self.assertEqual(len(r.children), 2)
+        aa, ab = r.children
+        self.assertEqual(aa.kind, NodeKind.TABLE_CELL)
+        self.assertEqual(aa.attrs.get("style"), "width=20%")
+        self.assertEqual(aa.children, ["\n"])
+        self.assertEqual(ab.kind, NodeKind.TABLE_HEADER_CELL)
+        self.assertEqual(ab.attrs.get("colspan"), "2")
+        self.assertEqual(ab.children, [" Singular\n"])
 
     def test_table_rowhdrs(self):
         tree = parse("test", """{| class="wikitable"
