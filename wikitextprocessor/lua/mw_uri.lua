@@ -1,7 +1,7 @@
 -- Simplified implementation of mw.uri for running WikiMedia Scribunto code
 -- under Python
 --
--- Copyright (c) 2020 Tatu Ylonen.  See file LICENSE and https://ylonen.org
+-- Copyright (c) 2020-2021 Tatu Ylonen.  See file LICENSE and https://ylonen.org
 
 local scribunto_mwuri = require("mw.uri")
 
@@ -233,7 +233,7 @@ function mw_uri.anchorEncode(s)
 end
 
 function mw_uri.localUrl(page, query)
-   local fragment = page:gmatch("#(.*)$", "")() or ""
+   local fragment = page:gmatch("#(.*)$")() or ""
    page = page:gsub("#.*$", "")
    local uri = Uri:new{}
    uri:extend({title=page})
@@ -244,7 +244,7 @@ function mw_uri.localUrl(page, query)
 end
 
 function mw_uri.fullUrl(page, query)
-   local fragment = page:gmatch("#(.*)$", "")() or ""
+   local fragment = page:gmatch("#(.*)$")() or ""
    page = page:gsub("#.*$", "")
    local uri = Uri:new{}
    uri:extend({title=page})
@@ -255,7 +255,7 @@ function mw_uri.fullUrl(page, query)
 end
 
 function mw_uri.canonicalUrl(page, query)
-   local fragment = page:gmatch("#(.*)$", "")() or ""
+   local fragment = page:gmatch("#(.*)$")() or ""
    page = page:gsub("#.*$", "")
    local uri = Uri:new{}
    uri:parse("/wiki/" .. mw.uri.encode(page, "WIKI"))

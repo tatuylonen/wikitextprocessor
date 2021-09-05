@@ -43,6 +43,10 @@ function mw_title_meta.__lt(a, b)
    return a.prefixedText < b.prefixedText
 end
 
+function mw_title_meta.__le(a, b)
+   return a.prefixedText <= b.prefixedText
+end
+
 function mw_title_meta:__tostring()
    return self.prefixedText
 end
