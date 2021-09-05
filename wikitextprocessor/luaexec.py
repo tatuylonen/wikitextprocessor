@@ -63,6 +63,9 @@ loader_replace_patterns = list((re.compile(src), dst) for src, dst in [
     [r"\\\^", r"%^"],
     [r"\\ʺ", r"ʺ"],
     [r"\\s", r"%s"],
+
+    # Workaround kludge for a Lua bug in Lua 5.4 (lupa 1.10)
+    [r"\[(\w+)\s*==\s*true\]", r"[not not \1]"],
 ])
 
 # -- Wikimedia uses an older version of Lua.  Make certain substitutions
