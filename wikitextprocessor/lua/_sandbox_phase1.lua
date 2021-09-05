@@ -185,6 +185,7 @@ local _orig_format = string.format
 local _orig_gsub = string.gsub
 local _orig_insert = table.insert
 local _orig_next = next
+local _orig_tostring = tostring
 
 local _orig_VERSION = _VERSION
 local _orig_assert = assert
@@ -367,8 +368,9 @@ local function _lua_reset_env()
     env["_lua_reset_env"] = _lua_reset_env
     env["_orig_format"] = _orig_format
     env["_orig_gsub"] = _orig_gsub
-    env["_orig_insert"] = _orig_insert
+    env["_orig_tostring"] = _orig_tostring
     env["_orig_next"] = _orig_next
+    env["_orig_insert"] = _orig_insert
     env["_new_loadData"] = new_loadData
     env["_new_loader"] = new_loader
     env["_cached_mod"] = _cached_mod

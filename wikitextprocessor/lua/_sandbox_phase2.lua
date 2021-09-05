@@ -335,4 +335,13 @@ end
 assert(io == nil)
 assert(_G.io == nil)
 
+-- Lua 5.2 tostring(60/20)=="3", Lua 5.3.3 tostring(60/20)=="3.0"
+function tostring(v)
+   if type(v) == "number" and math.abs(v) > 0.5 and
+      math.abs(v - math.floor(v + 0.5)) < 0.000001 then
+      return string.format("%.0f", v)
+   end
+   return _orig_tostring(v)
+end
+
 return { _lua_set_functions, _lua_invoke, _lua_reset_env }
