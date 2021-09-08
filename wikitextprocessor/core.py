@@ -326,7 +326,7 @@ class Wtp(object):
     def _save_value(self, kind, args, nowiki):
         """Saves a value of a particular kind and returns a unique magic
         cookie for it."""
-        assert kind in ("T", "A", "L")  # Template/parserfn, arg, link
+        assert kind in ("T", "A", "L", "E")  # Template/parserfn, arg, link, ext
         assert isinstance(args, (list, tuple))
         assert nowiki in (True, False)
         # print("save_value", kind, args, nowiki)
@@ -397,6 +397,16 @@ class Wtp(object):
             args = vbar_split(orig)
             return self._save_value("L", args, nowiki)
 
+        def repl_extlink(m):
+            """Replacement function for external links [...].  This is also
+            used to replace bracketed sections, such as [...]."""
+            nowiki = m.group(0).find(MAGIC_NOWIKI_CHAR) >= 0
+            orig = m.group(1)
+            # Extlinks usually separate args by spaces, but this should do no
+            # harm here.
+            args = vbar_split(orig)
+            return self._save_value("E", args, nowiki)
+
         # As a preprocessing step, remove comments from the text
         text = re.sub(r"(?s)<!\s*--.*?--\s*>", "", text)
 
@@ -411,10 +421,16 @@ class Wtp(object):
             while True:
                 prev2 = text
                 # Encode links.
-                text = re.sub(r"\[" + MAGIC_NOWIKI_CHAR +
-                              r"?\[(([^][{}]|\[[^][{}]*\])+)\]" +
-                              MAGIC_NOWIKI_CHAR + r"?\]",
-                              repl_link, text)
+                while True:
+                    text = re.sub(r"(?s)\[" + MAGIC_NOWIKI_CHAR +
+                                  r"?\[([^][{}]+)\]" +
+                                  MAGIC_NOWIKI_CHAR + r"?\]",
+                                  repl_link, text)
+                    if text == prev2:
+                        break
+                    prev2 = text
+                # Encode external links.
+                text = re.sub(r"(?s)\[([^][{}<>]+)\]", repl_extlink, text)
                 # Encode template arguments
                 text = re.sub(r"(?s)\{" + MAGIC_NOWIKI_CHAR +
                               r"?\{" + MAGIC_NOWIKI_CHAR +
@@ -438,16 +454,6 @@ class Wtp(object):
                     if text != prev2:
                         continue
                     break
-            # Encode templates.  We have a kludge for paired HTML tags within
-            # template arguments; that does not always work but works
-            # most of the time.
-            # XXX this spends expential time on jet/Czech.  FIXME!
-            # text = re.sub(r"(?si)\{" + MAGIC_NOWIKI_CHAR +
-            #               r"?\{((<([-a-zA-z0-9]+)\b[^<>]*>[^][{}<>]*?</\3>|"
-            #               r"[^{}]|\{\|[^{}]*\|\}|\}[^{}]|"
-            #               r"[^{}][{}][^{}])+?)\}" +
-            #               MAGIC_NOWIKI_CHAR + r"?\}",
-            #               repl_templ, text)
             text = re.sub(r"(?si)\{" + MAGIC_NOWIKI_CHAR +
                           r"?\{(("
                           r"[^{}]|\{\|[^{}]*\|\}|\}[^{}]|"
@@ -466,6 +472,9 @@ class Wtp(object):
                               repl_templ_err, text)
                 if text != prev:
                     continue
+                # Replace remaining brackets and braces by corresponding
+                # character entities
+                # XXX
                 break
             prev = text
         # Replace any remaining braces etc by corresponding character entities
@@ -800,6 +809,12 @@ class Wtp(object):
             return "&lsqb;&lsqb;" + "&vert;".join(args) + "&rsqb;&rsqb;"
         return "[[" + "|".join(args) + "]]"
 
+    def _unexpanded_extlink(self, args, nowiki):
+        """Formats an unexpanded external link."""
+        if nowiki:
+            return "&lsqb;" + "&vert;".join(args) + "&rsqb;"
+        return "[" + "|".join(args) + "]"
+
     def expand(self, text, parent=None, pre_expand=False,
                template_fn=None, post_template_fn=None,
                templates_to_expand=None,
@@ -944,6 +959,12 @@ class Wtp(object):
                         new_args = list(expand_args(x, argmap)
                                         for x in args)
                         parts.append(self._unexpanded_link(new_args, nowiki))
+                        continue
+                    if kind == "E":
+                        # Link to another page
+                        new_args = list(expand_args(x, argmap)
+                                        for x in args)
+                        parts.append(self._unexpanded_extlink(new_args, nowiki))
                         continue
                     self.error("expand_arg: unsupported cookie kind {!r} in {}"
                                .format(kind, m.group(0)))
@@ -1180,6 +1201,17 @@ class Wtp(object):
                                         for x in args)
                         self.expand_stack.pop()
                         parts.append(self._unexpanded_link(new_args, nowiki))
+                elif kind == "E":
+                    if nowiki:
+                        parts.append(self._unexpanded_extlink(args, nowiki))
+                    else:
+                        # Link to an external page
+                        self.expand_stack.append("[extlink]")
+                        new_args = list(expand_recurse(x, parent,
+                                                       templates_to_expand)
+                                        for x in args)
+                        self.expand_stack.pop()
+                        parts.append(self._unexpanded_extlink(new_args, nowiki))
                 else:
                     self.error("expand: unsupported cookie kind {!r} in {}"
                                .format(kind, m.group(0)))
@@ -1212,6 +1244,8 @@ class Wtp(object):
                 return self._unexpanded_arg(args, nowiki)
             if kind == "L":
                 return self._unexpanded_link(args, nowiki)
+            if kind == "E":
+                return self._unexpanded_extlink(args, nowiki)
             self.error("magic_repl: unsupported cookie kind {!r}"
                        .format(kind))
             return ""

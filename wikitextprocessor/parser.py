@@ -711,7 +711,8 @@ def magic_fn(ctx, token):
 
     elif kind == "L":
         if nowiki:
-            process_text(ctx, "&lsqb;&lsqb;" + args[0] + "&rsqb;&rsqb;")
+            process_text(ctx, "&lsqb;&lsqb;" + "&vert;".join(args) +
+                         "&rsqb;&rsqb;")
             return
         # Link to another page
         _parser_push(ctx, NodeKind.LINK)
@@ -730,6 +731,31 @@ def magic_fn(ctx, token):
                 _parser_pop(ctx, False)
                 break
             _parser_pop(ctx, True)
+
+    elif kind == "E":
+        # Link to an external page (or just text in brackets, e.g. [...])
+        if (not nowiki and args and
+            (args[0].find(":") >= 0 or args[0].startswith("//"))):
+            _parser_push(ctx, NodeKind.URL)
+
+            # Process arguments
+            process_text(ctx, args[0])
+            for arg in args[1:]:
+                vbar_fn(ctx, "|")
+                process_text(ctx, arg)
+
+            # Pop until we are back at this level and close the URL node
+            while True:
+                node = ctx.parser_stack[-1]
+                if node.kind == NodeKind.ROOT:
+                    break
+                if node.kind == NodeKind.URL:
+                    _parser_pop(ctx, False)
+                    break
+                _parser_pop(ctx, True)
+        else:
+            process_text(ctx, "[" + "&vert;".join(args) + "]")
+            return
     else:
         self.error("magic_fn: unsupported cookie kind {!r}"
                    .format(kind))

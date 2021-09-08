@@ -400,8 +400,7 @@ def call_lua_sandbox(ctx, invoke_args, expander, parent, timeout):
             frame_args = {}
             num = 1
             for arg in args:
-                m = re.match(r"""^\s*([^<>="']+?)\s*=\s*(.*?)\s*$""",
-                             arg)
+                m = re.match(r"""^(?s)\s*([^<>="']+?)\s*=\s*(.*?)\s*$""", arg)
                 if m:
                     # Have argument name
                     k, arg = m.groups()
