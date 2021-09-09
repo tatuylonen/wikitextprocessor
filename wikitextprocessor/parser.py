@@ -311,7 +311,7 @@ def _parser_pop(ctx, warn_unclosed):
                         trace="started on line {}, detected on line {}"
                         .format(node.loc, ctx.linenum))
         elif node.kind == NodeKind.URL and not node.children:
-            # This can happen at least when [ is inside tempate argument.
+            # This can happen at least when [ is inside template argument.
             ctx.parser_stack.pop()
             node2 = ctx.parser_stack[-1]
             node3 = node2.children.pop()
@@ -401,7 +401,7 @@ def text_fn(ctx, token):
     # be links if the content looks like a URL."""
     if node.kind == NodeKind.URL:
         if not node.args and not node.children:
-            if not re.match(r"^(http|https|mailto):", token):
+            if not re.match(r"^(https?:|mailto:|//)", token):
                 # It does not look like a URL
                 ctx.parser_stack.pop()
                 node2 = ctx.parser_stack[-1]
@@ -625,6 +625,9 @@ def elink_end_fn(ctx, token):
         if node.kind == NodeKind.URL:
             _parser_pop(ctx, False)
             break
+        if node.kind in (NodeKind.TEMPLATE, NodeKind.TEMPLATE_ARG,
+                         NodeKind.LINK, NodeKind.ITALIC, NodeKind.BOLD):
+            return text_fn(ctx, token)
         _parser_pop(ctx, True)
 
 
@@ -744,15 +747,21 @@ def magic_fn(ctx, token):
                 vbar_fn(ctx, "|")
                 process_text(ctx, arg)
 
-            # Pop until we are back at this level and close the URL node
-            while True:
-                node = ctx.parser_stack[-1]
-                if node.kind == NodeKind.ROOT:
-                    break
-                if node.kind == NodeKind.URL:
-                    _parser_pop(ctx, False)
-                    break
-                _parser_pop(ctx, True)
+            # The URL could have been popped if the content does not look like
+            # a URL.
+            if not _parser_have(ctx, NodeKind.URL):
+                # It must have been popped.
+                text_fn(ctx, "]")
+            else:
+                # Pop until we are back at this level and close the URL node
+                while True:
+                    node = ctx.parser_stack[-1]
+                    if node.kind == NodeKind.ROOT:
+                        break
+                    if node.kind == NodeKind.URL:
+                        _parser_pop(ctx, False)
+                        break
+                    _parser_pop(ctx, True)
         else:
             process_text(ctx, "[" + "&vert;".join(args) + "]")
             return
