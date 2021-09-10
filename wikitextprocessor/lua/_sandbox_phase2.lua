@@ -326,15 +326,6 @@ function next(t, k)
    return n(t, k)
 end
 
--- XXX missing built-in modules?
-    -- bit32
-    -- libraryUtil
-    -- luabit
-
--- Make sure we are operating in the restricted environment
-assert(io == nil)
-assert(_G.io == nil)
-
 -- Lua 5.2 tostring(60/20)=="3", Lua 5.3.3 tostring(60/20)=="3.0"
 function tostring(v)
    if type(v) == "number" and math.abs(v) > 0.5 and
@@ -343,5 +334,14 @@ function tostring(v)
    end
    return _orig_tostring(v)
 end
+
+-- XXX missing built-in modules?
+    -- bit32
+    -- libraryUtil
+    -- luabit
+
+-- Make sure we are operating in the restricted environment
+assert(io == nil)
+assert(_G.io == nil)
 
 return { _lua_set_functions, _lua_invoke, _lua_reset_env }

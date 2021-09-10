@@ -224,7 +224,6 @@ local retained_modules = {
    table = true,
    _G = true,
    _sandbox_phase1 = true,
-   _sandbox_phase2 = true,
    -- We also keep some very frequently used modules that we know can be
    -- reused for other calls and pages
    string = true,
@@ -358,7 +357,7 @@ local function _lua_reset_env()
     env["string"] = _orig_string
     env["table"] = _orig_table
     env["tonumber"] = _orig_tonumber
-    env["tostring"] = _orig_tostring
+    -- tostring defined in phase2
     env["type"] = _orig_type
     env["unpack"] = _orig_table.unpack
     env["xpcall"] = _orig_xpcall
