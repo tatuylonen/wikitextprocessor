@@ -2852,6 +2852,11 @@ return export
         local t = mw.title.makeTitle(3, "Test/foo/translations", "Frag")
         return t.subpageText""")
 
+    def test_mw_title31c(self):
+        self.scribunto("foobar", r"""
+        local t = mw.title.makeTitle(3, "Proto-Germanic/foobar", "Frag")
+        return t.subpageText""")
+
     def test_mw_title32(self):
         self.scribunto("False", r"""
         local t = mw.title.makeTitle(3, "Test/foo/bar", "Frag")

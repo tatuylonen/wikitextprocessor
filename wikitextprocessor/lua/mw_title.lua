@@ -193,6 +193,7 @@ function mw_title.makeTitle(namespace, title, fragment, interwiki)
    local parent = mw.ustring.gsub(title, "/translations$", "")
    -- XXX local subpage = mw.ustring.gsub(title, "^.*/", "")
    local subpage = mw.ustring.gsub(title, ".*/translations$", "translations")
+   subpage = mw.ustring.gsub(subpage, "^[^/]*-[^/]*/([^/]*)$", "%1")
    local fullName
    if ns.name == "Main" then
       fullName = title
