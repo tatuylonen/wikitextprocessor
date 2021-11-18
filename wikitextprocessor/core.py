@@ -495,6 +495,9 @@ class Wtp(object):
         # Remove all text inside <noinclude> ... </noinclude>
         text = re.sub(r"(?is)<\s*noinclude\s*>.*?<\s*/\s*noinclude\s*>",
                       "", text)
+        # Handle <noinclude> without matching </noinclude> by removing the
+        # rest of the file
+        text = re.sub(r"(?is)<\s*noinclude\s*>.*", "", text)
         text = re.sub(r"(?is)<\s*noinclude\s*/\s*>", "", text)
         # Apparently unclosed <!-- at the end of a template body is ignored
         text = re.sub(r"(?s)<!\s*--.*", "", text)
