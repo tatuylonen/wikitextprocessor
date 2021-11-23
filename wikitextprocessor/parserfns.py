@@ -1069,6 +1069,7 @@ def time_fn(ctx, fn_name, args, expander):
     lang = expander(args[2]).strip() if len(args) >= 3 else "en"
     loc = expander(args[3]).strip() if len(args) >= 4 else ""
 
+    orig_dt = dt
     dt = re.sub(r"\+", " in ", dt)
     if not dt:
         dt = "now"
@@ -1082,16 +1083,16 @@ def time_fn(ctx, fn_name, args, expander):
             t = datetime.datetime.fromtimestamp(float(dt[1:]))
         except ValueError:
             ctx.warning("bad time syntax in {}: {!r}"
-                        .format(fn_name, dt))
+                        .format(fn_name, orig_dt))
             return ('<strong class="error">Bad time syntax: {}</strong>'
-                    .format(html.escape(dt)))
+                    .format(html.escape(orig_dt)))
     else:
         t = dateparser.parse(dt, settings=settings)
         if t is None:
             ctx.warning("unrecognized time syntax in {}: {!r}"
-                        .format(fn_name, dt))
+                        .format(fn_name, orig_dt))
             return ('<strong class="error">Bad time syntax: {}</strong>'
-                    .format(html.escape(dt)))
+                    .format(html.escape(orig_dt)))
 
     # XXX looks like we should not adjust the time
     #if t.utcoffset():
