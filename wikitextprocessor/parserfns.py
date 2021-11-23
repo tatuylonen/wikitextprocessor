@@ -55,8 +55,8 @@ def if_fn(ctx, fn_name, args, expander):
     arg2 = args[2] if len(args) >= 3 else ""
     v = expander(arg0).strip()
     if v:
-        return expander(arg1)
-    return expander(arg2)
+        return expander(arg1).strip()
+    return expander(arg2).strip()
 
 
 def ifeq_fn(ctx, fn_name, args, expander):
@@ -66,8 +66,8 @@ def ifeq_fn(ctx, fn_name, args, expander):
     arg2 = args[2] if len(args) >= 3 else ""
     arg3 = args[3] if len(args) >= 4 else ""
     if expander(arg0).strip() == expander(arg1).strip():
-        return expander(arg2)
-    return expander(arg3)
+        return expander(arg2).strip()
+    return expander(arg3).strip()
 
 
 def iferror_fn(ctx, fn_name, args, expander):
@@ -78,10 +78,10 @@ def iferror_fn(ctx, fn_name, args, expander):
     if re.search(r'<[^>]*?\sclass="error"', arg0):
         if arg1 is None:
             return ""
-        return expander(arg1)
+        return expander(arg1).strip()
     if arg2 is None:
         return arg0
-    return expander(arg2)
+    return expander(arg2).strip()
 
 
 def ifexpr_fn(ctx, fn_name, args, expander):
@@ -95,8 +95,8 @@ def ifexpr_fn(ctx, fn_name, args, expander):
     except ValueError:
         ret = 0
     if ret:
-        return expander(arg1)
-    return expander(arg2)
+        return expander(arg1).strip()
+    return expander(arg2).strip()
 
 def ifexist_fn(ctx, fn_name, args, expander):
     """Implements #ifexist parser function."""
@@ -105,8 +105,8 @@ def ifexist_fn(ctx, fn_name, args, expander):
     arg2 = args[2] if len(args) >= 3 else ""
     exists = ctx.page_exists(expander(arg0).strip())
     if exists:
-        return expander(arg1)
-    return expander(arg2)
+        return expander(arg1).strip()
+    return expander(arg2).strip()
 
 def switch_fn(ctx, fn_name, args, expander):
     """Implements #switch parser function."""
