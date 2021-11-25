@@ -1847,15 +1847,6 @@ def foo(x):
         self.assertEqual(ctx.debugs, [])
         self.assertEqual(tree.children, ["a < b < c"])
 
-    def test_plain15(self):
-        tree, ctx = parse_with_ctx("test",
-                                   '<div class="NavHead" style="cursor: pointer;"><span class="NavToggle"><a role="button" tabindex="0">show ▼</a></span>Declension of <span class="Latn mention" lang="pl">rasa</span></div>')
-        self.assertEqual(ctx.errors, [])
-        self.assertEqual(ctx.warnings, [])
-        self.assertEqual(ctx.debugs, [])
-        print(tree)
-        assert False
-
     def test_nonsense1(self):
         tree = parse("test", "<pre />")
         t = tree.children[0]
