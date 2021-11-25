@@ -25,6 +25,9 @@
 # parent tag will also silently close them.  Otherwise a missing end tag
 # results in an error message.
 ALLOWED_HTML_TAGS = {
+    "a": {
+        "parents": ["phrasing"],
+        "content": ["flow"]},
     "abbr": {
         "parents": ["phrasing"],
         "content": ["flow"]},
