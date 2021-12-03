@@ -661,6 +661,8 @@ def magic_fn(ctx, token):
     close_begline_lists(ctx)
     # Handle the magic character token
     idx = ord(token) - MAGIC_FIRST
+    if idx >= len(ctx.cookies):
+        return text_fn(ctx, token)
     kind, args, nowiki = ctx.cookies[idx]
     # print("MAGIC_FN:", kind, args, nowiki)
     ctx.beginning_of_line = False

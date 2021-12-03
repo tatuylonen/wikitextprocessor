@@ -1009,6 +1009,9 @@ class Wtp(object):
                 pos = m.end()
                 ch = m.group(0)
                 idx = ord(ch) - MAGIC_FIRST
+                if idx >= len(self.cookies):
+                    parts.append(ch)
+                    continue
                 kind, args, nowiki = self.cookies[idx]
                 assert isinstance(args, tuple)
                 if kind == "T":
@@ -1240,6 +1243,8 @@ class Wtp(object):
 
         def magic_repl(m):
             idx = ord(m.group(0)) - MAGIC_FIRST
+            if idx >= len(self.cookies):
+                return m.group(0)
             kind, args, nowiki = self.cookies[idx]
             if kind == "T":
                 return self._unexpanded_template(args, nowiki)
