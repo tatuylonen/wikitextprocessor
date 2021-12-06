@@ -559,6 +559,22 @@ dasfasddasfdas
         self.assertEqual(b.children, ["bold test"])
         self.assertEqual(c, " b")
 
+    def test_bold2(self):
+        tree, ctx = parse_with_ctx("test", "'''C''''est")
+        self.assertEqual(len(tree.children), 2)
+        a, b = tree.children
+        self.assertEqual(a.kind, NodeKind.BOLD)
+        self.assertEqual(a.children, ["C"])
+        self.assertEqual(b, "'est")
+        t = ctx.node_to_wikitext(tree)
+        self.assertEqual(t, "'''C''''est")
+        def node_handler(node):
+            if node.kind == NodeKind.BOLD:
+                return node.children
+            return None
+        t = ctx.node_to_html(tree, node_handler_fn=node_handler)
+        self.assertEqual(t, "C'est")
+
     def test_bolditalic1(self):
         tree, ctx = parse_with_ctx("test", "a '''''bold italic test''''' b")
         self.assertEqual(ctx.errors, [])

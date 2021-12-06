@@ -1455,17 +1455,21 @@ class Wtp(object):
         root = parse_encoded(self, encoded)  # In parser.py
         return root
 
-    def node_to_wikitext(self, node):
+    def node_to_wikitext(self, node, node_handler_fn=None):
         """Converts the given parse tree node back to Wikitext."""
-        v = to_wikitext(node)
+        v = to_wikitext(node, node_handler_fn=node_handler_fn)
         return v
 
-    def node_to_html(self, node, template_fn=None, post_template_fn=None):
+    def node_to_html(self, node, template_fn=None, post_template_fn=None,
+                     node_handler_fn=None):
         """Converts the given parse tree node to HTML."""
         return to_html(self, node, template_fn=template_fn,
-                       post_template_fn=post_template_fn)
+                       post_template_fn=post_template_fn,
+                       node_handler_fn=node_handler_fn)
 
-    def node_to_text(self, node, template_fn=None, post_template_fn=None):
+    def node_to_text(self, node, template_fn=None, post_template_fn=None,
+                     node_handler_fn=None):
         """Converts the given parse tree node to plain text."""
         return to_text(self, node, template_fn=template_fn,
-                       post_template_fn=post_template_fn)
+                       post_template_fn=post_template_fn,
+                       node_handler_fn=node_handler_fn)
