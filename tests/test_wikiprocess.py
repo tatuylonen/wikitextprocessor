@@ -1449,6 +1449,14 @@ MORE
         ret = ctx.expand('{{foo|x <math> 1 | 2 </math> y}}')
         self.assertEqual(ret, "ax <math> 1 | 2 </math> yb")
 
+    def test_template29(self):
+        ctx = phase1_to_ctx([
+            ["wikitext", "Template:testmod", "a{{{zz foo|}}}b"],
+        ])
+        ctx.start_page("Tt")
+        ret = ctx.expand("{{testmod|1|zz foo=2|bar=3}}")
+        self.assertEqual(ret, "a2b")
+
     def test_unbalanced1(self):
         ctx = phase1_to_ctx([])
         ctx.start_page("Tt")

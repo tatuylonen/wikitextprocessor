@@ -943,6 +943,8 @@ class Wtp(object):
                         self.expand_stack.pop()
                         if k.isdigit():
                             k = int(k)
+                        else:
+                            k = re.sub(r"\s+", " ", k).strip()
                         v = argmap.get(k, None)
                         if v is not None:
                             parts.append(v)
@@ -1100,7 +1102,7 @@ class Wtp(object):
                     num = 1
                     for i in range(1, len(args)):
                         arg = str(args[i])
-                        m = re.match(r"""(?s)^\s*([^][&<>="'\s]+?)\s*="""
+                        m = re.match(r"""(?s)^\s*([^][&<>="']+?)\s*="""
                                      """\s*(.*?)\s*$""",
                                      arg)
                         if m:
@@ -1121,6 +1123,7 @@ class Wtp(object):
                             else:
                                 self.expand_stack.append("ARGNAME")
                                 k = expand_recurse(k, parent, all_templates)
+                                k = re.sub(r"\s+", " ", k).strip()
                                 self.expand_stack.pop()
                         else:
                             k = num
