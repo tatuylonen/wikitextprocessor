@@ -1,7 +1,7 @@
 # Definition of the processing context for Wikitext processing, and code for
 # expanding templates, parser functions, and Lua macros.
 #
-# Copyright (c) 2020-2021 Tatu Ylonen.  See file LICENSE and https://ylonen.org
+# Copyright (c) 2020-2022 Tatu Ylonen.  See file LICENSE and https://ylonen.org
 
 import os
 import re
@@ -52,7 +52,7 @@ def phase2_page_handler(dt):
     # has been observed, these files contain page(s) that hang.  They should
     # be checked before aborting the process, as an interrupt might delete
     # them.
-    debug_hangs = False
+    debug_hangs = True
     try:
         debug_path = "/tmp/wiktextract-{}".format(os.getpid())
         with open(debug_path, "w") as f:
