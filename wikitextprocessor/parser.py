@@ -1,6 +1,6 @@
 # Simple WikiMedia markup (WikiText) syntax parser
 #
-# Copyright (c) 2020-2021 Tatu Ylonen.  See file LICENSE and https://ylonen.org
+# Copyright (c) 2020-2022 Tatu Ylonen.  See file LICENSE and https://ylonen.org
 
 import re
 import enum
@@ -510,7 +510,9 @@ def subtitle_start_fn(ctx, token):
         node = ctx.parser_stack[-1]
         if kind_to_level.get(node.kind, 99) < level:
             break
-        if node.kind == NodeKind.HTML:
+        if node.kind == NodeKind.HTML and node.args not in (
+                "span",
+        ):
             break
         _parser_pop(ctx, True)
 

@@ -1456,6 +1456,7 @@ class Wtp(object):
         # a more traditional parsing of the rest, recursing into encoded parts.
         encoded = self._encode(text)
         root = parse_encoded(self, encoded)  # In parser.py
+        # print("parse tree: {}".format(root))
         return root
 
     def node_to_wikitext(self, node, node_handler_fn=None):
