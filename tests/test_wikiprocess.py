@@ -1,6 +1,6 @@
 # Tests for processing WikiText templates and macros
 #
-# Copyright (c) 2020, 2021 Tatu Ylonen.  See file LICENSE and https://ylonen.org
+# Copyright (c) 2020, 2021, 2022 Tatu Ylonen.  See file LICENSE and https://ylonen.org
 
 import os
 import html
@@ -3091,8 +3091,8 @@ return export
         return string.format("%05d", 4.7)""")
 
     def test_string_format2(self):
-        self.scribunto("00005 % foo 1.1 -6 ", r"""
-        return string.format("%05d %% %s %.1f %-#3d", 4.7, "foo", 1.1, -6)""")
+        self.scribunto("00005 % foo 1.1 -6", r"""
+        return string.format("%05d %% %s %.1f %-d", 4.7, "foo", 1.1, -6)""")
 
     def test_string_format3(self):
         self.scribunto("0005", r"""
