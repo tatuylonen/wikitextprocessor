@@ -2475,7 +2475,7 @@ return export
 
     def test_mw_jsondecode7(self):
         self.scribunto('4.0a', """
-        local x = mw.text.jsonDecode('[4, "a"]')
+        local x = mw.text.jsonDecode('[4.0, "a"]')
         return x[1] .. x[2]""")
 
     def test_mw_jsondecode8(self):
@@ -3092,7 +3092,7 @@ return export
 
     def test_string_format2(self):
         self.scribunto("00005 % foo 1.1 -6", r"""
-        return string.format("%05d %% %s %.1f %-d", 4.7, "foo", 1.1, -6)""")
+        return string.format("%05d %% %s %.1f %#-d", 4.7, "foo", 1.1, -6)""")
 
     def test_string_format3(self):
         self.scribunto("0005", r"""

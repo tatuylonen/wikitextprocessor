@@ -1325,7 +1325,8 @@ class Wtp(object):
             # Single-threaded version (without subprocessing).  This is
             # primarily intended for debugging.
             for model, title in self.page_seq:
-                success, ret_title, t, ret = phase2_page_handler((model, title))
+                success, ret_title, t, ret = phase2_page_handler((model,
+                                                                  title))
                 assert ret_title == title
                 if not success:
                     print(ret)  # Print error in parent process - do not remove
@@ -1348,7 +1349,7 @@ class Wtp(object):
             start_t = time.time()
             last_t = time.time()
             for success, title, t, ret in \
-                pool.imap_unordered(phase2_page_handler, self.page_seq, 64):
+                pool.imap_unordered(phase2_page_handler, self.page_seq):
                 if t + 300 < time.time():
                     print("====== REPROCESS GOT OLD RESULT ({:.1f}s): {}"
                           .format(time.time() - t, title))
