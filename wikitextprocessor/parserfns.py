@@ -1,6 +1,6 @@
 # Definitions for various parser functions supported in WikiText
 #
-# Copyright (c) 2020, 2021 Tatu Ylonen.  See file LICENSE and https://ylonen.org
+# Copyright (c) 2020-2022 Tatu Ylonen.  See file LICENSE and https://ylonen.org
 
 import re
 import html
@@ -10,6 +10,12 @@ import urllib.parse
 import dateparser
 from .wikihtml import ALLOWED_HTML_TAGS
 from .common import preprocess_text
+
+# Suppress some warnings that are out of our control
+import warnings
+warnings.filterwarnings("ignore",
+                        r".*The localize method is no longer necessary.*")
+
 
 # Name of the WikiMedia for which we are generating content
 PROJECT_NAME = "Wiktionary"

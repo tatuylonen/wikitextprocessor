@@ -1,6 +1,6 @@
 -- Sandbox for executing WikiMedia Scribunto Lua code under Python
 --
--- Copyright (c) 2020-2021 Tatu Ylonen.  See file LICENSE and https://ylonen.org
+-- Copyright (c) 2020-2022 Tatu Ylonen.  See file LICENSE and https://ylonen.org
 
 -- Python function for loading a source file or Scribunto Lua module
 local _python_loader = nil
@@ -298,6 +298,9 @@ retained_modules["Module:glossary"] = true
 -- environment.  Please report an issue on github if you find a way to
 -- circumvent the environment restrictions and access outside the sandbox.
 local function _lua_reset_env()
+
+    -- Clear some metatables
+    setmetatable(_G, nil)
 
     -- Flushes stdin buffers.  This is mostly used to make sure debug
     -- buffers are properly output before possible crashes.  This is

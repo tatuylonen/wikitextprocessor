@@ -407,12 +407,11 @@ class Wtp(object):
             args = vbar_split(orig)
             return self._save_value("E", args, nowiki)
 
-        # As a preprocessing step, remove comments from the text
-        text = re.sub(r"(?s)<!\s*--.*?--\s*>", "", text)
-
         # Main loop of encoding.  We encode repeatedly, always the innermost
         # template, argument, or parser function call first.  We also encode
         # links as they affect the interpretation of templates.
+        # As a preprocessing step, remove comments from the text.
+        text = re.sub(r"(?s)<!\s*--.*?--\s*>", "", text)
         while True:
             prev = text
             # Encode template arguments.  We repeat this until there are
@@ -454,9 +453,10 @@ class Wtp(object):
                     if text != prev2:
                         continue
                     break
+            # Replace template invocation
             text = re.sub(r"(?si)\{" + MAGIC_NOWIKI_CHAR +
                           r"?\{(("
-                          r"[^{}]|\{\|[^{}]*\|\}|\}[^{}]|"
+                          r"[^{}]|\{\|[^{}]*\|\}[^{}]|"
                           r"[^{}][{}][^{}])+?)\}" +
                           MAGIC_NOWIKI_CHAR + r"?\}",
                           repl_templ, text)
@@ -1179,6 +1179,8 @@ class Wtp(object):
                         else:
                             new_title = "Template:" + new_title
                         new_parent = (new_title, ht)
+                        # print("expanding template body for {} {}"
+                        #       .format(name, ht))
                         # XXX no real need to expand here, it will expanded on
                         # next iteration anyway (assuming parent unchanged)
                         # Otherwise expand the body
