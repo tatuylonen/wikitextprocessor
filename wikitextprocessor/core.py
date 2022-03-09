@@ -456,8 +456,10 @@ class Wtp(object):
             # Replace template invocation
             text = re.sub(r"(?si)\{" + MAGIC_NOWIKI_CHAR +
                           r"?\{(("
-                          r"[^{}]|\{\|[^{}]*\|\}[^{}]|"
-                          r"[^{}][{}][^{}])+?)\}" +
+                          r"\{\|[^{}]*?\|\}|"
+                          r"\}[^{}]|"
+                          r"[^{}](\{[^{}|])?"
+                          r")+?)\}" +
                           MAGIC_NOWIKI_CHAR + r"?\}",
                           repl_templ, text)
             # We keep looping until there is no change during the iteration
