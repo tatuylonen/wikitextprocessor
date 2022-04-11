@@ -1294,7 +1294,9 @@ class Wtp(object):
         return its results.  This function will return an iterator
         that yields all the results returned by page_handler (in
         arbirary order), except None values will be ignored.  This
-        function is not re-entrant."""
+        function is not re-entrant.  NOTE: THIS FUNCTION RETURNS
+        ITERATOR AND THE RESULT MUST BE ITERATED FOR THIS TO DO
+        SOMETHING."""
         assert isinstance(path, str)
         assert callable(page_handler)
         # Process the dump and copy it to temporary file (Phase 1)
@@ -1315,7 +1317,9 @@ class Wtp(object):
         useful for scanning the cache for just a few pages quickly).  This may
         call page_handler in parallel, and thus page_handler should
         not attempt to save anything between calls and should not
-        modify global data.  This function is not re-entrant."""
+        modify global data.  This function is not re-entrant.
+        NOTE: THIS FUNCTION RETURNS ITERATOR AND THE RESULT MUST BE ITERATED
+        FOR THIS TO DO SOMETHING."""
         assert callable(page_handler)
         assert autoload in (True, False)
         global _global_ctx
