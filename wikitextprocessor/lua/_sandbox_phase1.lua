@@ -122,7 +122,7 @@ local function _lua_set_python_loader(fn)
 end
 
 -- Maximum allowed execution time in Lua code (seconds)
-local _lua_max_time = 40
+local _lua_max_time = 60
 
 -- Max time for the current call to Lua.  This is reset for every call to the
 -- Lua sandbox.
