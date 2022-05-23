@@ -1,7 +1,7 @@
 -- Simplified implementation of mw.text for running WikiMedia Scribunto code
 -- under Python
 --
--- Copyright (c) 2020 Tatu Ylonen.  See file LICENSE and https://ylonen.org
+-- Copyright (c) 2020, 2022 Tatu Ylonen.  See file LICENSE and https://ylonen.org
 
 local mw_text = {
    -- decode (set from Python)

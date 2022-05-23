@@ -1,6 +1,6 @@
 # Some definitions used for both Wikitext expansion and parsing
 #
-# Copyright (c) 2020 Tatu Ylonen.  See file LICENSE and https://ylonen.org
+# Copyright (c) 2020-2022 Tatu Ylonen.  See file LICENSE and https://ylonen.org
 
 import re
 import html
@@ -45,7 +45,9 @@ def _nowiki_sub_fn(m):
     """This function escapes the contents of a <nowiki> ... </nowiki> pair."""
     text = m.group(1)
     text = re.sub(_nowiki_re, _nowiki_repl, text)
-    text = re.sub(r"\s+", " ", text)
+    # XXX this breaks cases that use newlines inside nowiki, e.g.
+    # {{multitrans-nowiki|...}} template (e.g., wolf/English)
+    # text = re.sub(r"\s+", " ", text)
     return text
 
 
@@ -57,5 +59,5 @@ def preprocess_text(text):
                   _nowiki_sub_fn, text)
     text = re.sub(r"(?si)<\s*nowiki\s*/\s*>", MAGIC_NOWIKI_CHAR, text)
     text = re.sub(r"(?s)<!\s*--.*?--\s*>", "", text)
-    # print("PREPROCESSED_TEXT:", text)
+    # print("PREPROCESSED_TEXT:", repr(text))
     return text
