@@ -1,6 +1,6 @@
 # Tests for WikiText parsing
 #
-# Copyright (c) 2020-2021 Tatu Ylonen.  See file LICENSE and https://ylonen.org
+# Copyright (c) 2020-2022 Tatu Ylonen.  See file LICENSE and https://ylonen.org
 
 import unittest
 from wikitextprocessor import Wtp
@@ -151,8 +151,8 @@ dasfasddasfdas
         self.assertEqual(h2a.kind, NodeKind.LEVEL2)
         self.assertEqual(h2b.kind, NodeKind.LEVEL2)
         self.assertEqual(h2a.children,
-                         ["\na &equals;&equals;&equals;Bar"
-                          "&equals;&equals;&equals; b\n"])
+                         ["\na\n&equals;&equals;&equals;Bar"
+                          "&equals;&equals;&equals;\nb\n"])
         self.assertEqual(h2b.args, [["Zappa"]])
         self.assertEqual(h2b.children, ["\nc\n"])
 
@@ -175,11 +175,11 @@ dasfasddasfdas
 
     def test_nowiki6(self):
         tree = parse("test", "a<nowiki>\n</nowiki>b")
-        self.assertEqual(tree.children, ["a b"])
+        self.assertEqual(tree.children, ["a\nb"])
 
     def test_nowiki7(self):
         tree = parse("test", "a<nowiki>\nb</nowiki>c")
-        self.assertEqual(tree.children, ["a bc"])
+        self.assertEqual(tree.children, ["a\nbc"])
 
     def test_nowiki8(self):
         tree = parse("test", "'<nowiki />'Italics' markup'<nowiki/>'")
@@ -1068,7 +1068,7 @@ def foo(x):
         self.assertEqual(tree.children[0], "\n")
         p = tree.children[1]
         self.assertEqual(p.kind, NodeKind.PREFORMATTED)
-        self.assertEqual(p.children, ["  def foo(x)&colon; print(x) "])
+        self.assertEqual(p.children, [" \n def foo(x)&colon;\n   print(x)\n "])
 
     def test_pre1(self):
         tree, ctx = parse_with_ctx(
@@ -1128,7 +1128,7 @@ def foo(x):
     def test_comment3(self):
         tree = parse("test", "fo<nowiki>o<!-- not\nshown-->b</nowiki>ar")
         self.assertEqual(tree.children,
-                         ["foo&lt;&excl;-- not shown--&gt;bar"])
+                         ["foo&lt;&excl;-- not\nshown--&gt;bar"])
 
     def test_magicword1(self):
         tree = parse("test", "a __NOTOC__ b")
