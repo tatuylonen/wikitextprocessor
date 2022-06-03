@@ -1068,7 +1068,7 @@ def foo(x):
         self.assertEqual(tree.children[0], "\n")
         p = tree.children[1]
         self.assertEqual(p.kind, NodeKind.PREFORMATTED)
-        self.assertEqual(p.children, [" \n def foo(x)&colon;\n   print(x)\n "])
+        self.assertEqual(p.children, [" \ndef foo(x)&colon;\n  print(x)\n"])
 
     def test_pre1(self):
         tree, ctx = parse_with_ctx(

@@ -6,7 +6,7 @@ import re
 import enum
 from .parserfns import PARSER_FUNCTIONS
 from .wikihtml import ALLOWED_HTML_TAGS
-from .common import MAGIC_NOWIKI_CHAR, MAGIC_FIRST, MAGIC_LAST
+from .common import MAGIC_NOWIKI_CHAR, MAGIC_FIRST, MAGIC_LAST, nowiki_quote
 
 
 # Set of tags that can be parents of "flow" parents
@@ -65,7 +65,6 @@ MAGIC_WORDS = set([
     "__NOGLOBAL__",
     "__DISAMBIG__",
 ])
-
 
 @enum.unique
 class NodeKind(enum.Enum):
@@ -768,7 +767,10 @@ def magic_fn(ctx, token):
                     _parser_pop(ctx, True)
         else:
             process_text(ctx, "[" + "&vert;".join(args) + "]")
-            return
+    elif kind == "N":  # Nowiki
+        # Replace nowiki by the escaped versions here
+        text = nowiki_quote(args[0])
+        text_fn(ctx, text)
     else:
         self.error("magic_fn: unsupported cookie kind {!r}"
                    .format(kind))

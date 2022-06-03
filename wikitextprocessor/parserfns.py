@@ -9,7 +9,7 @@ import datetime
 import urllib.parse
 import dateparser
 from .wikihtml import ALLOWED_HTML_TAGS
-from .common import preprocess_text
+from .common import nowiki_quote
 
 # Suppress some warnings that are out of our control
 import warnings
@@ -203,7 +203,10 @@ def tag_fn(ctx, fn_name, args, expander):
     else:
         ret = "<{}{}>{}</{}>".format(tag, attrs, content, tag)
     if tag == "nowiki":
-        ret = preprocess_text(ret)
+        if len(args) == 0:
+            ret = MAGIC_NOWIKI_CHAR
+        else:
+            ret = nowiki_quote(content)
     return ret
 
 

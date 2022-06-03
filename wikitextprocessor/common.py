@@ -15,7 +15,7 @@ MAGIC_FIRST = 0x0010203e
 MAGIC_LAST = 0x0010fff0
 MAX_MAGICS = MAGIC_LAST - MAGIC_FIRST + 1
 
-
+# Mappings performed for text inside <nowiki>...</nowiki>
 _nowiki_map = {
     ";": "&semi;",
     "&": "&amp;",
@@ -36,31 +36,10 @@ _nowiki_map = {
 }
 _nowiki_re = re.compile("|".join(re.escape(x) for x in _nowiki_map.keys()))
 
+def nowiki_quote(text):
+    """Quote text inside <nowiki>...</nowiki> by escaping certain characters."""
+    def _nowiki_repl(m):
+        return _nowiki_map[m.group(0)]
 
-def _nowiki_repl(m):
-    return _nowiki_map[m.group(0)]
-
-
-def _nowiki_sub_fn(m):
-    """This function escapes the contents of a <nowiki> ... </nowiki> pair."""
-    prefix = m.group(1)
-    text = m.group(2)
-    if re.search(r"(?s)\n[ \t]*$", prefix):
-        text = re.sub(r"\n", "\n ", text)
     text = re.sub(_nowiki_re, _nowiki_repl, text)
-    # XXX this breaks cases that use newlines inside nowiki, e.g.
-    # {{multitrans-nowiki|...}} template (e.g., wolf/English)
-    # text = re.sub(r"\s+", " ", text)
-    return prefix + text
-
-
-def preprocess_text(text):
-    """Preprocess the text by handling <nowiki> and comments."""
-    # print("PREPROCESS_TEXT:", text)
-    assert isinstance(text, str)
-    text = re.sub(r"(?si)(\s*)<\s*nowiki\s*>(.*?)<\s*/\s*nowiki\s*>",
-                  _nowiki_sub_fn, text)
-    text = re.sub(r"(?si)<\s*nowiki\s*/\s*>", MAGIC_NOWIKI_CHAR, text)
-    text = re.sub(r"(?s)<!\s*--.*?--\s*>", "", text)
-    # print("PREPROCESSED_TEXT:", repr(text))
     return text

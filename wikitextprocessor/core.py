@@ -20,8 +20,7 @@ from .parserfns import (PARSER_FUNCTIONS, call_parser_function, tag_fn)
 from .wikihtml import ALLOWED_HTML_TAGS
 from .luaexec import call_lua_sandbox
 from .parser import parse_encoded, NodeKind
-from .common import (MAGIC_FIRST, MAGIC_LAST, MAX_MAGICS, MAGIC_NOWIKI_CHAR,
-                     preprocess_text)
+from .common import (MAGIC_FIRST, MAGIC_LAST, MAX_MAGICS, MAGIC_NOWIKI_CHAR)
 from .dumpparser import process_dump
 from .node_expand import to_wikitext, to_html, to_text
 
@@ -326,7 +325,12 @@ class Wtp(object):
     def _save_value(self, kind, args, nowiki):
         """Saves a value of a particular kind and returns a unique magic
         cookie for it."""
-        assert kind in ("T", "A", "L", "E")  # Template/parserfn, arg, link, ext
+        assert kind in ("T",  # Template {{ ... }}
+                        "A",  # Template argument {{{ ... }}}
+                        "L",  # link
+                        "E",  # external link
+                        "N",  # nowiki text
+        )
         assert isinstance(args, (list, tuple))
         assert nowiki in (True, False)
         # print("save_value", kind, args, nowiki)
@@ -820,6 +824,24 @@ class Wtp(object):
             return "&lsqb;" + "&vert;".join(args) + "&rsqb;"
         return "[" + "|".join(args) + "]"
 
+    def preprocess_text(self, text):
+        """Preprocess the text by handling <nowiki> and comments."""
+        assert isinstance(text, str)
+        # print("PREPROCESS_TEXT: {!r}".format(text))
+
+        def _nowiki_sub_fn(m):
+            """This function escapes the contents of a <nowiki> ... </nowiki>
+            pair."""
+            text = m.group(1)
+            return self._save_value("N", (text,), False)
+
+        text = re.sub(r"(?si)<\s*nowiki\s*>(.*?)<\s*/\s*nowiki\s*>",
+                      _nowiki_sub_fn, text)
+        text = re.sub(r"(?si)<\s*nowiki\s*/\s*>", MAGIC_NOWIKI_CHAR, text)
+        text = re.sub(r"(?s)<!\s*--.*?--\s*>", "", text)
+        # print("PREPROCESSED_TEXT: {!r}".format(text))
+        return text
+
     def expand(self, text, parent=None, pre_expand=False,
                template_fn=None, post_template_fn=None,
                templates_to_expand=None,
@@ -853,7 +875,7 @@ class Wtp(object):
         assert timeout is None or isinstance(timeout, (int, float))
 
         # Handle <nowiki> in a preprocessing step
-        text = preprocess_text(text)
+        text = self.preprocess_text(text)
 
         # If requesting to pre_expand, then add templates needing pre-expand
         # to those to be expanded (and don't expand everything).
@@ -972,6 +994,9 @@ class Wtp(object):
                         new_args = list(expand_args(x, argmap)
                                         for x in args)
                         parts.append(self._unexpanded_extlink(new_args, nowiki))
+                        continue
+                    if kind == "N":
+                        parts.append(ch)
                         continue
                     self.error("expand_arg: unsupported cookie kind {!r} in {}"
                                .format(kind, m.group(0)))
@@ -1225,6 +1250,8 @@ class Wtp(object):
                                         for x in args)
                         self.expand_stack.pop()
                         parts.append(self._unexpanded_extlink(new_args, nowiki))
+                elif kind == "N":
+                    parts.append(ch)
                 else:
                     self.error("expand: unsupported cookie kind {!r} in {}"
                                .format(kind, m.group(0)))
@@ -1247,6 +1274,7 @@ class Wtp(object):
     def _finalize_expand(self, text):
         """Expands any remaining magic characters (to their original values)
         and removes nowiki characters."""
+        # print("_finalize_expand: {!r}".format(text))
 
         def magic_repl(m):
             idx = ord(m.group(0)) - MAGIC_FIRST
@@ -1261,6 +1289,8 @@ class Wtp(object):
                 return self._unexpanded_link(args, nowiki)
             if kind == "E":
                 return self._unexpanded_extlink(args, nowiki)
+            if kind == "N":
+                return "<nowiki>" + args[0] + "</nowiki>"
             self.error("magic_repl: unsupported cookie kind {!r}"
                        .format(kind))
             return ""
@@ -1439,7 +1469,7 @@ class Wtp(object):
         assert additional_expand is None or isinstance(additional_expand, set)
 
         # Preprocess.  This may also add some MAGIC_NOWIKI_CHARs.
-        text = preprocess_text(text)
+        text = self.preprocess_text(text)
 
         # Expand some or all templates in the text as requested
         if expand_all:

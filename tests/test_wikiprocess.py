@@ -9,7 +9,7 @@ import time
 import datetime
 import unittest
 from wikitextprocessor import Wtp
-from wikitextprocessor.common import preprocess_text, MAGIC_NOWIKI_CHAR
+from wikitextprocessor.common import nowiki_quote, MAGIC_NOWIKI_CHAR
 
 
 def phase1_to_ctx(pages):
@@ -49,26 +49,41 @@ return export
         return ctx
 
     def test_preprocess1(self):
-        ret = preprocess_text("a<!-- foo\n -- bar\n- bar\n--- bar\n -- -->b")
+        ctx = phase1_to_ctx([])
+        ret = ctx.preprocess_text("a<!-- foo\n -- bar\n- bar\n--- bar\n"
+                                  "-- -->b")
         self.assertEqual(ret, "ab")
 
     def test_preprocess2(self):
-        ret = preprocess_text("a<nowiki />b")
+        ctx = phase1_to_ctx([])
+        ret = ctx.preprocess_text("a<nowiki />b")
         self.assertEqual(ret, "a" + MAGIC_NOWIKI_CHAR + "b")
 
     def test_preprocess3(self):
-        ret = preprocess_text("<nowiki />")
+        ctx = phase1_to_ctx([])
+        ret = ctx.preprocess_text("<nowiki />")
         self.assertEqual(ret, MAGIC_NOWIKI_CHAR)
 
     def test_preprocess4(self):
-        ret = preprocess_text("a<nowiki>&amp;</nowiki>b")
-        self.assertEqual(ret, "a&amp;amp&semi;b")
+        ctx = phase1_to_ctx([])
+        s = "a<nowiki>&amp;</nowiki>b"
+        ret = ctx.preprocess_text(s)
+        ret = ctx._finalize_expand(ret)
+        self.assertEqual(ret, s)
 
     def test_preprocess5(self):
-        s = "a;&=<>*#:!|[]{}\"'b"
-        ret = preprocess_text("<nowiki>" + s + "</nowiki>")
-        self.assertNotEqual(ret, s)
-        self.assertEqual(html.unescape(ret), s)
+        s = "<nowiki>a;&=<>*#:!|[]{}\"'b</nowiki>"
+        ctx = phase1_to_ctx([])
+        ret = ctx.preprocess_text(s)
+        ret = ctx._finalize_expand(ret)
+        self.assertEqual(ret, s)
+
+    def test_preprocess6(self):
+        s = " <nowiki>a\nb\nc</nowiki>"
+        ctx = phase1_to_ctx([])
+        ret = ctx.preprocess_text(s)
+        ret = ctx._finalize_expand(ret)
+        self.assertEqual(ret, s)
 
     def test_basic(self):
         self.parserfn("Some text", "Some text")
@@ -348,7 +363,7 @@ MORE
         self.parserfn("{{#tag:nowiki|&amp;}}", "&amp;amp&semi;")
 
     def test_tag8(self):
-        self.parserfn("{{{#tag:nowiki}}{!}}", "{<nowiki />{!}}")
+        self.parserfn("{{{#tag:nowiki}}{!}}", "{{!}}")
 
     def test_fullpagename1(self):
         ctx = phase1_to_ctx([])
