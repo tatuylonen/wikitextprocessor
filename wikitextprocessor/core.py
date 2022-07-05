@@ -67,7 +67,7 @@ def phase2_page_handler(dt):
             ret = _global_page_handler(model, title, data)
             return True, title, start_t, ret
         except Exception as e:
-            lst = traceback.format_exception(etype=type(e), value=e,
+            lst = traceback.format_exception(type(e), value=e,
                                              tb=e.__traceback__)
             msg = ("=== EXCEPTION while parsing page \"{}\":\n".format(title) +
                    "".join(lst))

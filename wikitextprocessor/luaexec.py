@@ -595,7 +595,9 @@ def call_lua_sandbox(ctx, invoke_args, expander, parent, timeout):
         return text
     if isinstance(text, Exception):
         parts = [str(text)]
-        lst = traceback.format_exception(etype=type(text),
+        # traceback.format_exception does not have a named keyvalue etype=
+        # anymore, in latest Python versions it is positional only.
+        lst = traceback.format_exception(type(text),
                                          value=text,
                                          tb=text.__traceback__)
         for x in lst:
