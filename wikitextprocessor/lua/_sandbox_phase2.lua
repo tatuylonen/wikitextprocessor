@@ -1,7 +1,7 @@
 -- Second phase of sandbox for executint WikiMedia Scribunto Lua code under
 -- Python
 --
--- Copyright (c) 2020-2021 Tatu Ylonen.  See file LICENSE and https://ylonen.org
+-- Copyright (c) 2020-2022 Tatu Ylonen.  See file LICENSE and https://ylonen.org
 
 -- Sanity check - ensure that sandbox is working
 assert(new_require == nil)
@@ -294,7 +294,9 @@ function string.gsub(text, pattern, repl)
    if type(repl) == "string" then
       repl = _orig_gsub(repl, "%%]", "]")
       repl = _orig_gsub(repl, "%%%.", ".")
-      repl = _orig_gsub(repl, "%%%-", "-")
+      if pattern ~= "%-" or repl ~= "%%-" then
+         repl = _orig_gsub(repl, "%%%-", "-")
+      end
    end
    return _orig_gsub(text, pattern, repl)
 end
