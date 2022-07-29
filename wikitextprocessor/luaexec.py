@@ -377,6 +377,24 @@ def call_lua_sandbox(ctx, invoke_args, expander, parent, timeout):
     ctx.lua_depth += 1
     lua = ctx.lua
 
+    # Wikipedia uses Lua 5.1, and lupa uses 5.4. Some methods
+    # were removed between now and then, so we need this polyfill:
+    lua.execute(
+"""
+table.maxn = function(tab)
+if type(tab) ~= 'table' then
+    error('table.maxn param #1 tab expect "table", got "' .. type(tab) .. '"', 2)
+end
+local length = 0
+for k in pairs(tab) do
+    if type(k) == 'number' and length < k and math.floor(k) == k then
+    length = k
+    end
+end
+return length
+end
+""")
+
     # Get module and function name
     modname = expander(invoke_args[0]).strip()
     modfn = expander(invoke_args[1]).strip()
