@@ -181,7 +181,7 @@ local function _lua_invoke(mod_name, fn_name, frame, page_title, timeout)
             if not success then
                _mw_frame = saved_frame
                _mw_pageTitle = saved_pageTitle
-               return False, ("\tLoading module failed in #invoke: " ..
+               return false, ("\tLoading module failed in #invoke: " ..
                                  mod1 .. "\n" .. mod)
             end
             _save_mod(mod1, mod)
@@ -197,7 +197,7 @@ local function _lua_invoke(mod_name, fn_name, frame, page_title, timeout)
             if not success then
                _mw_frame = saved_frame
                _mw_pageTitle = saved_pageTitle
-               return False, ("\tLoading module failed in #invoke: " ..
+               return false, ("\tLoading module failed in #invoke: " ..
                                  mod_name .. "\n" .. mod)
             end
             _save_mod(mod_name, mod)
