@@ -22,6 +22,10 @@ local _orig_package = package
 -- data file, and returns its initialization function.  This caches the
 -- initialization function.
 function new_loader(modname)
+   -- this module wreaks havoc on the global namespace
+   if modname == "Module:No globals" then
+      return nil, "Module banned"
+   end
    -- print("lua new_loader: " .. modname)
    -- If the module is in the normal cache (loaded by require), call its
    -- intialization function
