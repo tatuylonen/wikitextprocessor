@@ -977,14 +977,39 @@ def vbar_fn(ctx, token):
 def double_vbar_fn(ctx, token):
     """Handle function for double vertical bar ||.  This is used as a column
     separator in tables.  If it occurs in other contexts, it should be
-    interpreted as two vertical bars."""
+    interpreted as two vertical bars.  It appears that on lines that contain
+    header cells this actually generates a new header cell in MediaWiki, so
+    we'll do the same."""
     node = ctx.parser_stack[-1]
     if node.kind in HAVE_ARGS_KINDS:
         vbar_fn(ctx, "|")
         vbar_fn(ctx, "|")
         return
 
-    table_cell_fn(ctx, token)
+    while True:
+        node = ctx.parser_stack[-1]
+        if node.kind == NodeKind.TABLE_ROW:
+            break
+        if node.kind == NodeKind.TABLE:
+            _parser_push(ctx, NodeKind.TABLE_ROW)
+            break
+        if node.kind == NodeKind.TABLE_CAPTION:
+            return text_fn(ctx, token)
+        if node.kind == NodeKind.HTML:
+            # Inside nested HTML, treat as normal text
+            return text_fn(ctx, token)
+        if node.kind in (NodeKind.TABLE_CELL, NodeKind.TABLE_HEADER_CELL):
+            _parser_pop(ctx, True)
+            continue
+        break
+
+    if (node.kind == NodeKind.TABLE_ROW and
+        len(node.children) > 0 and
+        isinstance(node.children[-1], WikiNode) and
+        node.children[-1].kind == NodeKind.TABLE_HEADER_CELL):
+        table_hdr_cell_fn(ctx, token)
+    else:
+        table_cell_fn(ctx, token)
 
 
 def table_end_fn(ctx, token):

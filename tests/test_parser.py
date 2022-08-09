@@ -1723,6 +1723,23 @@ def foo(x):
         self.assertEqual(cb.kind, NodeKind.TABLE_CELL)
         self.assertEqual(cb.children, [" $1.90\n"])
 
+    def test_table_hdr_vbar_vbar(self):
+        tree = parse("test", """{|
+|-
+! foo || bar
+|}""")
+        print(tree)
+        self.assertEqual(len(tree.children), 1)
+        t = tree.children[0]
+        self.assertEqual(t.kind, NodeKind.TABLE)
+        self.assertEqual(len(t.children), 1)
+        row = t.children[0]
+        self.assertEqual(row.kind, NodeKind.TABLE_ROW)
+        self.assertEqual(len(row.children), 2)
+        a, b = row.children
+        self.assertEqual(a.kind, NodeKind.TABLE_HEADER_CELL)
+        self.assertEqual(b.kind, NodeKind.TABLE_HEADER_CELL)
+
     def test_table_bang1(self):
         # Testing that the single exclamation mark in the middle of a table
         # cell is handled correctly as text.
