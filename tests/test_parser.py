@@ -1740,6 +1740,28 @@ def foo(x):
         self.assertEqual(a.kind, NodeKind.TABLE_HEADER_CELL)
         self.assertEqual(b.kind, NodeKind.TABLE_HEADER_CELL)
 
+    def test_table_hdr2(self):
+        tree, ctx = parse_with_ctx("test",
+                                   "{|\n! Hdr\n||bar\n| |baz\n| zap\n|}")
+        print(tree)
+        self.assertEqual(ctx.errors, [])
+        self.assertEqual(ctx.warnings, [])
+        self.assertEqual(ctx.debugs, [])
+        self.assertEqual(len(tree.children), 1)
+        t = tree.children[0]
+        self.assertEqual(t.kind, NodeKind.TABLE)
+        self.assertEqual(len(t.children), 1)
+        row = t.children[0]
+        self.assertEqual(row.kind, NodeKind.TABLE_ROW)
+        self.assertEqual(len(row.children), 5)
+        for c, kind in zip(row.children,
+                           [NodeKind.TABLE_HEADER_CELL,
+                            NodeKind.TABLE_CELL,
+                            NodeKind.TABLE_CELL,
+                            NodeKind.TABLE_CELL,
+                            NodeKind.TABLE_CELL]):
+            self.assertEqual(c.kind, kind)
+
     def test_table_bang1(self):
         # Testing that the single exclamation mark in the middle of a table
         # cell is handled correctly as text.

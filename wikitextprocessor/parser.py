@@ -975,13 +975,22 @@ def vbar_fn(ctx, token):
 
 
 def double_vbar_fn(ctx, token):
-    """Handle function for double vertical bar ||.  This is used as a column
-    separator in tables.  If it occurs in other contexts, it should be
-    interpreted as two vertical bars.  It appears that on lines that contain
-    header cells this actually generates a new header cell in MediaWiki, so
-    we'll do the same."""
+    """Handle function for double vertical bar ||.  This is used as a
+    column separator in tables.  At the beginning of a line it starts
+    a new column.  If it occurs in other contexts, it should be
+    interpreted as two vertical bars.  It appears that on lines that
+    contain header cells this actually generates a new header cell in
+    MediaWiki, so we'll do the same."""
     node = ctx.parser_stack[-1]
     if node.kind in HAVE_ARGS_KINDS:
+        vbar_fn(ctx, "|")
+        vbar_fn(ctx, "|")
+        return
+
+    # If it is at the beginning of a line, interpret it as starting a new
+    # cell, without any HTML attributes.  We do this by emitting two individual
+    # vbars.
+    if ctx.beginning_of_line:
         vbar_fn(ctx, "|")
         vbar_fn(ctx, "|")
         return

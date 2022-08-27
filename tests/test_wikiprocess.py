@@ -1425,6 +1425,37 @@ MORE
         ret = ctx.expand("{{testmod|{{!-}}}}")
         self.assertEqual(ret, "a|-b")
 
+    def test_template24c(self):
+        ctx = phase1_to_ctx([])
+        ctx.start_page("Tt")
+        ret = ctx.expand("{{#if:true|before{{#if:true|{{!}}|false}}after}}")
+        self.assertEqual(ret, "before|after")
+
+    def test_template24d(self):
+        ctx = phase1_to_ctx([
+            ["wikitext", "Template:t1", "before{{#if:true|{{!}}|false}}after"],
+        ])
+        ctx.start_page("Tt")
+        ret = ctx.expand("{{#if:true|{{t1}}}}")
+        self.assertEqual(ret, "before|after")
+
+    def test_template24e(self):
+        ctx = phase1_to_ctx([
+            ["wikitext", "Template:t1", "before{{#if:true|{{!}}|false}}after"],
+        ])
+        ctx.start_page("Tt")
+        ret = ctx.expand("{|\n||first||{{t1}}||last\n|}")
+        self.assertEqual(ret, "{|\n||first||before|after||last\n|}")
+
+    def test_template24f(self):
+        ctx = phase1_to_ctx([
+            ["wikitext", "Template:row", "||bar\n{{!}} {{!}}baz\n| zap"],
+            ["wikitext", "Template:t1", "{|\n! Hdr\n{{row|foo}}\n|}"],
+        ])
+        ctx.start_page("Tt")
+        ret = ctx.expand("{{t1}}")
+        self.assertEqual(ret, "{|\n! Hdr\n||bar\n| |baz\n| zap\n|}")
+
     def test_template25(self):
         ctx = phase1_to_ctx([
             ["wikitext", "Template:testmod", "a{{{1}}}b"],

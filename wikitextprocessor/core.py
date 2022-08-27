@@ -645,9 +645,11 @@ class Wtp(object):
             if newt == outside:
                 break
             outside = newt
-        # For now, we'll ignore !! and || as well as |
+        # Check if the template contains certain table elements
         m = re.search(r"(?s)(^|\n)(\|\+|\|-|\!)", outside)
-        contains_table_element = m is not None
+        m2 = re.match(r"(?si)\s*(<includeonly>|<!\s*--.*?--\s*>)(\|\||!!)",
+                      outside)
+        contains_table_element = m is not None or m2 is not None
         # if contains_table_element:
         #     print("contains_table_element {!r} at {}"
         #           .format(m.group(0), m.start()))
