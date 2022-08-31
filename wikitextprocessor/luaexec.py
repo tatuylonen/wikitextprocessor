@@ -393,8 +393,11 @@ def call_lua_sandbox(ctx, invoke_args, expander, parent, timeout):
         assert isinstance(args, (list, tuple, dict))
         # Convert args to a dictionary with default value None
         if isinstance(args, dict):
-            args = {k: html.unescape(v) for k, v in args.items()}
-            frame_args = args
+            frame_args = {}
+            for k, arg in args.items():
+                arg = re.sub(r"(?si)<\s*noinclude\s*/\s*>", "", arg)
+                arg = html.unescape(arg)
+                frame_args[k] = arg
         else:
             assert isinstance(args, (list, tuple))
             frame_args = {}
@@ -414,6 +417,12 @@ def call_lua_sandbox(ctx, invoke_args, expander, parent, timeout):
                     # No argument name
                     k = num
                     num += 1
+                # Remove any <noinclude/> tags; they are used to prevent
+                # certain token interpretations in Wiktionary
+                # (e.g., Template:cop-fay-conj-table), whereas Lua code
+                # does not always like them (e.g., remove_links() in
+                # Module:links).
+                arg = re.sub(r"(?si)<\s*noinclude\s*/\s*>", "", arg)
                 arg = html.unescape(arg)
                 frame_args[k] = arg
         frame_args = lua.table_from(frame_args)
@@ -585,7 +594,8 @@ def call_lua_sandbox(ctx, invoke_args, expander, parent, timeout):
     finally:
         while len(ctx.expand_stack) > stack_len:
             ctx.expand_stack.pop()
-    # print("Lua call returned: {}".format(invoke_args))
+    # print("Lua call {} returned: ok={!r} text={!r}"
+    #       .format(invoke_args, ok, text))
     ctx.lua_depth -= 1
     if ok:
         if text is None:

@@ -1503,6 +1503,14 @@ MORE
         ret = ctx.expand("{{testmod|1|zz foo=2|bar=3}}")
         self.assertEqual(ret, "a2b")
 
+    def test_template30(self):
+        ctx = phase1_to_ctx([
+            ["wikitext", "Template:t1", "[<noinclude/>[foo]]"],
+        ])
+        ctx.start_page("Tt")
+        ret = ctx.expand("{{t1}}")
+        self.assertEqual(ret, "[<noinclude/>[foo]]")
+
     def test_unbalanced1(self):
         ctx = phase1_to_ctx([])
         ctx.start_page("Tt")
@@ -3267,6 +3275,11 @@ return export
         # This tests a Lua version compatibility kludge with string.gsub
         self.scribunto("f-oo",
                        """return string.gsub("f=oo", "=", "%-");""")
+
+    def test_gsub4(self):
+        self.scribunto("fOOf[[]]",
+                       """a = {}; a["o"] = "O";
+	               return mw.ustring.gsub("foof[[]]", ".", a);""")
 
 # XXX Test template_fn
 

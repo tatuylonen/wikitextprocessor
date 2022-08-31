@@ -1222,6 +1222,13 @@ def tag_fn(ctx, token):
             ctx.debug("unmatched <nowiki>")
             return text_fn(ctx, token)
 
+        # Ignore <noinclude/> tags.  They are sometimes used to prevent
+        # parsing of wikitext constructions in the normal way.  Here we
+        # throw them away; they should already have done their job.
+        if name == "noinclude" and also_end:
+            # print("IGNORING NOINCLUDE/")
+            return
+
         # Handle <pre> start tag
         if name == "pre":
             node = _parser_push(ctx, NodeKind.PRE)

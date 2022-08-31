@@ -1,6 +1,6 @@
 # WikiMedia dump file parser for Wiktionary, Wikipedia, and other projects.
 #
-# Copyright (c) 2018-2021 Tatu Ylonen.  See file LICENSE and https://ylonen.org
+# Copyright (c) 2018-2022 Tatu Ylonen.  See file LICENSE and https://ylonen.org
 
 import re
 import sys
@@ -202,15 +202,13 @@ def process_input(path, page_cb):
     return lst
 
 
-def process_dump(ctx, path, page_handler):
+def process_dump(ctx, path):
     """Parses a WikiMedia dump file ``path`` (which should point to a
-    "<project>-<date>-pages-articles.xml.bz2" file.  This calls
-    ``page_handler(title, page)`` for each raw page.  This implements
+    "<project>-<date>-pages-articles.xml.bz2" file.  This implements
     the first phase of processing a dump - copying it to a temporary
     file with some preprocessing.  The Wtp.reprocess() must then be
     called to actually process the data."""
     assert isinstance(path, str)
-    assert callable(page_handler)
 
     def phase1_page_handler(model, title, text):
         """Handler for pages in Phase 1, for extracting special pages and saving

@@ -381,6 +381,7 @@ class Wtp(object):
             nowiki = m.group(0).find(MAGIC_NOWIKI_CHAR) >= 0
             v = m.group(1)
             args = vbar_split(v)
+            # print("REPL_TEMPL: args={}".format(args))
             return self._save_value("T", args, nowiki)
 
         def repl_templ_err(m):
@@ -399,6 +400,7 @@ class Wtp(object):
             nowiki = m.group(0).find(MAGIC_NOWIKI_CHAR) >= 0
             orig = m.group(1)
             args = vbar_split(orig)
+            # print("REPL_LINK: orig={!r}".format(orig))
             return self._save_value("L", args, nowiki)
 
         def repl_extlink(m):
@@ -406,9 +408,7 @@ class Wtp(object):
             used to replace bracketed sections, such as [...]."""
             nowiki = m.group(0).find(MAGIC_NOWIKI_CHAR) >= 0
             orig = m.group(1)
-            # Extlinks usually separate args by spaces, but this should do no
-            # harm here.
-            args = vbar_split(orig)
+            args = [orig]
             return self._save_value("E", args, nowiki)
 
         # Main loop of encoding.  We encode repeatedly, always the innermost
@@ -426,14 +426,14 @@ class Wtp(object):
                 # Encode links.
                 while True:
                     text = re.sub(r"(?s)\[" + MAGIC_NOWIKI_CHAR +
-                                  r"?\[([^][{}]+)\]" +
+                                  r"?\[([^][{}<>]+)\]" +
                                   MAGIC_NOWIKI_CHAR + r"?\]",
                                   repl_link, text)
                     if text == prev2:
                         break
                     prev2 = text
                 # Encode external links.
-                text = re.sub(r"(?s)\[([^][{}<>]+)\]", repl_extlink, text)
+                text = re.sub(r"(?s)\[([^][{}<>|]+)\]", repl_extlink, text)
                 # Encode template arguments
                 text = re.sub(r"(?s)\{" + MAGIC_NOWIKI_CHAR +
                               r"?\{" + MAGIC_NOWIKI_CHAR +
@@ -502,9 +502,10 @@ class Wtp(object):
         text = re.sub(r"(?is)<\s*noinclude\s*>.*?<\s*/\s*noinclude\s*>",
                       "", text)
         # Handle <noinclude> without matching </noinclude> by removing the
-        # rest of the file
+        # rest of the file.  <noinclude/> is handled specially elsewhere, as
+        # it appears to be used as a kludge to prevent normal interpretation
+        # of e.g. [[ ... ]] by placing it between the brackets.
         text = re.sub(r"(?is)<\s*noinclude\s*>.*", "", text)
-        text = re.sub(r"(?is)<\s*noinclude\s*/\s*>", "", text)
         # Apparently unclosed <!-- at the end of a template body is ignored
         text = re.sub(r"(?s)<!\s*--.*", "", text)
         # <onlyinclude> tags, if present, include the only text that will be
@@ -928,6 +929,7 @@ class Wtp(object):
             assert isinstance(coded, str)
             assert isinstance(parent, (tuple, type(None)))
             assert isinstance(templates_to_expand, (set, dict))
+            # print("expand_recurse coded={!r}".format(coded))
 
             def expand_args(coded, argmap):
                 assert isinstance(coded, str)
@@ -1318,22 +1320,22 @@ class Wtp(object):
         works in two phases - in the first phase this calls
         ctx.collect_specials() for each page to collect raw pages,
         especially templates and Lua modules.  Then this goes over the
-        articles a second time, calling page_handler for each page
-        (this automatically calls ctx.start_page(title) for each page
-        before calling page_handler).  The page_handler will be called
-        in parallel using the multiprocessing package, and thus it
-        cannot save data in ``ctx`` or global variables.  It can only
-        return its results.  This function will return an iterator
-        that yields all the results returned by page_handler (in
-        arbirary order), except None values will be ignored.  This
+        articles a second time ("phase 2"), calling page_handler for
+        each page (this automatically calls ctx.start_page(title) for
+        each page before calling page_handler).  The page_handler will
+        be called in parallel using the multiprocessing package, and
+        thus it cannot save data in ``ctx`` or global variables.  It
+        can only return its results.  This function will return an
+        iterator that yields all the results returned by page_handler
+        (in arbirary order), except None values will be ignored.  This
         function is not re-entrant.  NOTE: THIS FUNCTION RETURNS
         ITERATOR AND THE RESULT MUST BE ITERATED FOR THIS TO DO
         SOMETHING."""
         assert isinstance(path, str)
-        assert callable(page_handler)
+        assert page_handler is None or callable(page_handler)
         # Process the dump and copy it to temporary file (Phase 1)
-        process_dump(self, path, page_handler)
-        if phase1_only:
+        process_dump(self, path)
+        if phase1_only or page_handler is None:
             return []
 
         # Reprocess all the pages that we captured in Phase 1

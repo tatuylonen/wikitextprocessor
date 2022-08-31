@@ -1,6 +1,6 @@
 # Expanding parse tree nodes to Wikitext or HTML or plain text
 #
-# Copyright (c) 2020-2021 Tatu Ylonen.  See file LICENSE and https://ylonen.org
+# Copyright (c) 2020-2022 Tatu Ylonen.  See file LICENSE and https://ylonen.org
 
 import re
 import html
@@ -40,6 +40,11 @@ def to_wikitext(node, node_handler_fn=None):
 
     def recurse(node):
         if isinstance(node, str):
+            # Certain constructs needs to be protected so that they don't get
+            # parsed when we convert back and forth between wikitext and parsed
+            # representations.
+            node = re.sub(r"(?si)\[\[", "[<noinclude/>[", node)
+            node = re.sub(r"(?si)\]\]", "]<noinclude/>]", node)
             return node
         if isinstance(node, (list, tuple)):
             return "".join(map(recurse, node))
