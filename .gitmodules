@@ -1,0 +1,3 @@
+[submodule "wikitextprocessor/lua/mediawiki-extensions-Scribunto"]
+	path = wikitextprocessor/lua/mediawiki-extensions-Scribunto
+	url = git@github.com:wikimedia/mediawiki-extensions-Scribunto.git
