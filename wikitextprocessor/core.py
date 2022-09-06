@@ -593,6 +593,9 @@ class Wtp(object):
         body = self._template_to_body(title, text)
         assert isinstance(body, str)
         self.templates[name] = body
+        # Chinese Wiktionary capitalizes the first letter of template name
+        # in template pages but uses lower case in word pages
+        self.templates[name.lower()] = body
 
     def _analyze_template(self, name, body):
         """Analyzes a template body and returns a set of the canonicalized
