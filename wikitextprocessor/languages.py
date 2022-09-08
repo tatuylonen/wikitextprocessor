@@ -13,8 +13,8 @@ ALL_LANGUAGES = json.loads("""
             "Qafar"
         ],
         "code": "aa",
-        "family_code": "cus",
-        "family_name": "Cushitic",
+        "family_code": "cus-eas",
+        "family_name": "East Cushitic",
         "has_diacr": true,
         "language_url": "https://en.wiktionary.org/wiki/Category:Afar_language",
         "name": "Afar",
@@ -107,6 +107,7 @@ ALL_LANGUAGES = json.loads("""
         "family_code": "sem-arb",
         "family_name": "Arabic",
         "has_diacr": true,
+        "has_sort": true,
         "language_url": "https://en.wiktionary.org/wiki/Category:Arabic_language",
         "name": "Arabic",
         "other_names": [],
@@ -451,7 +452,8 @@ ALL_LANGUAGES = json.loads("""
         "name": "Dhivehi",
         "other_names": [],
         "scripts": [
-            "Thaa"
+            "Thaa",
+            "Diak"
         ],
         "wikidata": "Q32656"
     },
@@ -483,6 +485,7 @@ ALL_LANGUAGES = json.loads("""
         "code": "el",
         "family_code": "grk",
         "family_name": "Hellenic",
+        "has_diacr": true,
         "has_sort": true,
         "language_url": "https://en.wiktionary.org/wiki/Category:Greek_language",
         "name": "Greek",
@@ -712,6 +715,9 @@ ALL_LANGUAGES = json.loads("""
         "wikidata": "Q9307"
     },
     {
+        "aliases": [
+            "Guarani"
+        ],
         "code": "gn",
         "family_code": "tup-gua",
         "family_name": "Tupi-Guarani",
@@ -1137,7 +1143,7 @@ ALL_LANGUAGES = json.loads("""
         ],
         "code": "ko",
         "family_code": "qfa-kor",
-        "family_name": "Korean",
+        "family_name": "Koreanic",
         "has_diacr": true,
         "language_url": "https://en.wiktionary.org/wiki/Category:Korean_language",
         "name": "Korean",
@@ -1212,11 +1218,13 @@ ALL_LANGUAGES = json.loads("""
         "family_code": "itc",
         "family_name": "Italic",
         "has_diacr": true,
+        "has_sort": true,
         "language_url": "https://en.wiktionary.org/wiki/Category:Latin_language",
         "name": "Latin",
         "other_names": [],
         "scripts": [
-            "Latn"
+            "Latn",
+            "Ital"
         ],
         "wikidata": "Q397"
     },
@@ -1411,6 +1419,7 @@ ALL_LANGUAGES = json.loads("""
         "code": "mr",
         "family_code": "inc-sou",
         "family_name": "Southern Indo-Aryan",
+        "has_diacr": true,
         "language_url": "https://en.wiktionary.org/wiki/Category:Marathi_language",
         "name": "Marathi",
         "other_names": [],
@@ -1646,8 +1655,8 @@ ALL_LANGUAGES = json.loads("""
     },
     {
         "code": "om",
-        "family_code": "cus",
-        "family_name": "Cushitic",
+        "family_code": "cus-eas",
+        "family_name": "East Cushitic",
         "language_url": "https://en.wiktionary.org/wiki/Category:Oromo_language",
         "name": "Oromo",
         "other_names": [],
@@ -1860,6 +1869,7 @@ ALL_LANGUAGES = json.loads("""
             "Mlym",
             "Modi",
             "Mymr",
+            "Nand",
             "Newa",
             "Orya",
             "Saur",
@@ -2012,8 +2022,8 @@ ALL_LANGUAGES = json.loads("""
     },
     {
         "code": "so",
-        "family_code": "cus",
-        "family_name": "Cushitic",
+        "family_code": "cus-eas",
+        "family_name": "East Cushitic",
         "has_diacr": true,
         "language_url": "https://en.wiktionary.org/wiki/Category:Somali_language",
         "name": "Somali",
@@ -2649,8 +2659,8 @@ ALL_LANGUAGES = json.loads("""
     },
     {
         "code": "aap",
-        "family_code": "sai-car",
-        "family_name": "Cariban",
+        "family_code": "sai-pek",
+        "family_name": "Pekodian",
         "language_url": "https://en.wiktionary.org/wiki/Category:Par%C3%A1_Ar%C3%A1ra_language",
         "name": "Par\u00e1 Ar\u00e1ra",
         "other_names": [
@@ -2678,8 +2688,8 @@ ALL_LANGUAGES = json.loads("""
     },
     {
         "code": "aas",
-        "family_code": "cus",
-        "family_name": "Cushitic",
+        "family_code": "cus-sou",
+        "family_name": "South Cushitic",
         "language_url": "https://en.wiktionary.org/wiki/Category:Aasax_language",
         "name": "Aasax",
         "other_names": [
@@ -2844,6 +2854,7 @@ ALL_LANGUAGES = json.loads("""
         "code": "abh",
         "family_code": "sem-arb",
         "family_name": "Arabic",
+        "has_diacr": true,
         "language_url": "https://en.wiktionary.org/wiki/Category:Tajiki_Arabic_language",
         "name": "Tajiki Arabic",
         "other_names": [],
@@ -2955,6 +2966,7 @@ ALL_LANGUAGES = json.loads("""
         "code": "abq",
         "family_code": "cau-abz",
         "family_name": "Abkhaz-Abaza",
+        "has_diacr": true,
         "language_url": "https://en.wiktionary.org/wiki/Category:Abaza_language",
         "name": "Abaza",
         "other_names": [],
@@ -3212,8 +3224,7 @@ ALL_LANGUAGES = json.loads("""
         "name": "Achang",
         "other_names": [
             "Xiandao",
-            "Ngochang",
-            "Ngachang"
+            "Chintaw"
         ],
         "scripts": [
             "Latn"
@@ -3316,10 +3327,12 @@ ALL_LANGUAGES = json.loads("""
         "code": "acy",
         "family_code": "sem-arb",
         "family_name": "Arabic",
+        "has_diacr": true,
         "language_url": "https://en.wiktionary.org/wiki/Category:Cypriot_Arabic_language",
         "name": "Cypriot Arabic",
         "other_names": [],
         "scripts": [
+            "Latn",
             "Arab"
         ],
         "wikidata": "Q56416"
@@ -3537,13 +3550,11 @@ ALL_LANGUAGES = json.loads("""
         "code": "ads",
         "family_code": "sgn",
         "family_name": "sign",
-        "language_url": "https://en.wiktionary.org/wiki/Category:Adamorobe_Sign_Language",
         "name": "Adamorobe Sign Language",
         "other_names": [],
         "scripts": [
             "Latn"
-        ],
-        "wikidata": "Q27709"
+        ]
     },
     {
         "code": "adt",
@@ -3935,14 +3946,19 @@ ALL_LANGUAGES = json.loads("""
         "wikidata": "Q3400829"
     },
     {
+        "aliases": [
+            "Efutu"
+        ],
         "code": "afu",
         "family_code": "alv-gng",
         "family_name": "Guang",
+        "language_url": "https://en.wiktionary.org/wiki/Category:Awutu_language",
         "name": "Awutu",
         "other_names": [],
         "scripts": [
             "Latn"
-        ]
+        ],
+        "wikidata": "Q34847"
     },
     {
         "code": "afz",
@@ -4256,13 +4272,11 @@ ALL_LANGUAGES = json.loads("""
         "code": "aha",
         "family_code": "alv-ctn",
         "family_name": "Central Tano",
-        "language_url": "https://en.wiktionary.org/wiki/Category:Ahanta_language",
         "name": "Ahanta",
         "other_names": [],
         "scripts": [
             "Latn"
-        ],
-        "wikidata": "Q34729"
+        ]
     },
     {
         "code": "ahb",
@@ -4278,8 +4292,8 @@ ALL_LANGUAGES = json.loads("""
     },
     {
         "code": "ahg",
-        "family_code": "cus",
-        "family_name": "Cushitic",
+        "family_code": "cus-cen",
+        "family_name": "Central Cushitic",
         "language_url": "https://en.wiktionary.org/wiki/Category:Qimant_language",
         "name": "Qimant",
         "other_names": [],
@@ -4818,8 +4832,8 @@ ALL_LANGUAGES = json.loads("""
     },
     {
         "code": "ake",
-        "family_code": "sai-car",
-        "family_name": "Cariban",
+        "family_code": "sai-pem",
+        "family_name": "Pemongan",
         "language_url": "https://en.wiktionary.org/wiki/Category:Akawaio_language",
         "name": "Akawaio",
         "other_names": [],
@@ -4932,13 +4946,15 @@ ALL_LANGUAGES = json.loads("""
     },
     {
         "code": "ako",
-        "family_code": "sai-car",
-        "family_name": "Cariban",
+        "family_code": "sai-tar",
+        "family_name": "Taranoan",
+        "language_url": "https://en.wiktionary.org/wiki/Category:Akurio_language",
         "name": "Akurio",
         "other_names": [],
         "scripts": [
             "Latn"
-        ]
+        ],
+        "wikidata": "Q56650"
     },
     {
         "code": "akp",
@@ -5139,13 +5155,11 @@ ALL_LANGUAGES = json.loads("""
         "code": "alf",
         "family_code": "nic-ben",
         "family_name": "Bendi",
-        "language_url": "https://en.wiktionary.org/wiki/Category:Alege_language",
         "name": "Alege",
         "other_names": [],
         "scripts": [
             "Latn"
-        ],
-        "wikidata": "Q34815"
+        ]
     },
     {
         "code": "alh",
@@ -5298,8 +5312,8 @@ ALL_LANGUAGES = json.loads("""
     },
     {
         "code": "alw",
-        "family_code": "cus",
-        "family_name": "Cushitic",
+        "family_code": "cus-hec",
+        "family_name": "Highland East Cushitic",
         "language_url": "https://en.wiktionary.org/wiki/Category:Alaba_language",
         "name": "Alaba",
         "other_names": [
@@ -6026,8 +6040,8 @@ ALL_LANGUAGES = json.loads("""
     },
     {
         "code": "aoc",
-        "family_code": "sai-car",
-        "family_name": "Cariban",
+        "family_code": "sai-pem",
+        "family_name": "Pemongan",
         "language_url": "https://en.wiktionary.org/wiki/Category:Pemon_language",
         "name": "Pemon",
         "other_names": [
@@ -6544,8 +6558,8 @@ ALL_LANGUAGES = json.loads("""
             "Apalai"
         ],
         "code": "apy",
-        "family_code": "sai-car",
-        "family_name": "Cariban",
+        "family_code": "sai-gui",
+        "family_name": "Guianan",
         "language_url": "https://en.wiktionary.org/wiki/Category:Apala%C3%AD_language",
         "name": "Apala\u00ed",
         "other_names": [],
@@ -6890,8 +6904,8 @@ ALL_LANGUAGES = json.loads("""
     },
     {
         "code": "arv",
-        "family_code": "cus",
-        "family_name": "Cushitic",
+        "family_code": "cus-eas",
+        "family_name": "East Cushitic",
         "language_url": "https://en.wiktionary.org/wiki/Category:Arbore_language",
         "name": "Arbore",
         "other_names": [],
@@ -6932,6 +6946,7 @@ ALL_LANGUAGES = json.loads("""
         "family_code": "sem-arb",
         "family_name": "Arabic",
         "has_diacr": true,
+        "has_sort": true,
         "language_url": "https://en.wiktionary.org/wiki/Category:Moroccan_Arabic_language",
         "name": "Moroccan Arabic",
         "other_names": [],
@@ -7131,11 +7146,9 @@ ALL_LANGUAGES = json.loads("""
         "code": "asp",
         "family_code": "sgn",
         "family_name": "sign",
-        "language_url": "https://en.wiktionary.org/wiki/Category:Algerian_Sign_Language",
         "name": "Algerian Sign Language",
         "other_names": [],
-        "scripts": [],
-        "wikidata": "Q3135421"
+        "scripts": []
     },
     {
         "code": "asq",
@@ -7828,6 +7841,7 @@ ALL_LANGUAGES = json.loads("""
         "code": "auz",
         "family_code": "sem-arb",
         "family_name": "Arabic",
+        "has_diacr": true,
         "language_url": "https://en.wiktionary.org/wiki/Category:Uzbeki_Arabic_language",
         "name": "Uzbeki Arabic",
         "other_names": [],
@@ -8090,8 +8104,8 @@ ALL_LANGUAGES = json.loads("""
     },
     {
         "code": "awn",
-        "family_code": "cus",
-        "family_name": "Cushitic",
+        "family_code": "cus-cen",
+        "family_name": "Central Cushitic",
         "language_url": "https://en.wiktionary.org/wiki/Category:Awngi_language",
         "name": "Awngi",
         "other_names": [],
@@ -8544,13 +8558,15 @@ ALL_LANGUAGES = json.loads("""
         "code": "azm",
         "family_code": "omq",
         "family_name": "Oto-Manguean",
+        "language_url": "https://en.wiktionary.org/wiki/Category:Ipalapa_Amuzgo_language",
         "name": "Ipalapa Amuzgo",
         "other_names": [
             "Lower Eastern Amuzgo"
         ],
         "scripts": [
             "Latn"
-        ]
+        ],
+        "wikidata": "Q12633013"
     },
     {
         "code": "azn",
@@ -8838,11 +8854,13 @@ ALL_LANGUAGES = json.loads("""
         "code": "bba",
         "family_code": "alv-sav",
         "family_name": "Savanna",
+        "language_url": "https://en.wiktionary.org/wiki/Category:Baatonum_language",
         "name": "Baatonum",
         "other_names": [],
         "scripts": [
             "Latn"
-        ]
+        ],
+        "wikidata": "Q34889"
     },
     {
         "code": "bbb",
@@ -9690,8 +9708,8 @@ ALL_LANGUAGES = json.loads("""
     },
     {
         "code": "bds",
-        "family_code": "cus",
-        "family_name": "Cushitic",
+        "family_code": "cus-sou",
+        "family_name": "South Cushitic",
         "language_url": "https://en.wiktionary.org/wiki/Category:Burunge_language",
         "name": "Burunge",
         "other_names": [],
@@ -10516,11 +10534,13 @@ ALL_LANGUAGES = json.loads("""
         "code": "bgq",
         "family_code": "inc-wes",
         "family_name": "Western Indo-Aryan",
+        "language_url": "https://en.wiktionary.org/wiki/Category:Bagri_language",
         "name": "Bagri",
         "other_names": [],
         "scripts": [
             "Deva"
-        ]
+        ],
+        "wikidata": "Q2426319"
     },
     {
         "code": "bgr",
@@ -10687,9 +10707,11 @@ ALL_LANGUAGES = json.loads("""
         "code": "bhe",
         "family_code": "inc-wes",
         "family_name": "Western Indo-Aryan",
+        "language_url": "https://en.wiktionary.org/wiki/Category:Bhaya_language",
         "name": "Bhaya",
         "other_names": [],
-        "scripts": []
+        "scripts": [],
+        "wikidata": "Q8841168"
     },
     {
         "code": "bhf",
@@ -10850,11 +10872,13 @@ ALL_LANGUAGES = json.loads("""
         "code": "bht",
         "family_code": "him",
         "family_name": "Western Pahari",
+        "language_url": "https://en.wiktionary.org/wiki/Category:Bhattiyali_language",
         "name": "Bhattiyali",
         "other_names": [],
         "scripts": [
             "Deva"
-        ]
+        ],
+        "wikidata": "Q4901452"
     },
     {
         "code": "bhu",
@@ -11055,6 +11079,8 @@ ALL_LANGUAGES = json.loads("""
         "code": "bin",
         "family_code": "alv-eeo",
         "family_name": "Edo-Esan-Ora",
+        "has_diacr": true,
+        "has_sort": true,
         "language_url": "https://en.wiktionary.org/wiki/Category:Edo_language",
         "name": "Edo",
         "other_names": [
@@ -11308,8 +11334,8 @@ ALL_LANGUAGES = json.loads("""
     },
     {
         "code": "bji",
-        "family_code": "cus",
-        "family_name": "Cushitic",
+        "family_code": "cus-hec",
+        "family_name": "Highland East Cushitic",
         "language_url": "https://en.wiktionary.org/wiki/Category:Burji_language",
         "name": "Burji",
         "other_names": [],
@@ -11677,8 +11703,8 @@ ALL_LANGUAGES = json.loads("""
     },
     {
         "code": "bkq",
-        "family_code": "sai-car",
-        "family_name": "Cariban",
+        "family_code": "sai-pek",
+        "family_name": "Pekodian",
         "language_url": "https://en.wiktionary.org/wiki/Category:Bakair%C3%AD_language",
         "name": "Bakair\u00ed",
         "other_names": [],
@@ -11703,11 +11729,13 @@ ALL_LANGUAGES = json.loads("""
         "code": "bks",
         "family_code": "phi",
         "family_name": "Philippine",
+        "language_url": "https://en.wiktionary.org/wiki/Category:Masbate_Sorsogon_language",
         "name": "Masbate Sorsogon",
         "other_names": [],
         "scripts": [
             "Latn"
-        ]
+        ],
+        "wikidata": "Q16113356"
     },
     {
         "code": "bkt",
@@ -12498,8 +12526,8 @@ ALL_LANGUAGES = json.loads("""
     },
     {
         "code": "bnl",
-        "family_code": "cus",
-        "family_name": "Cushitic",
+        "family_code": "cus-eas",
+        "family_name": "East Cushitic",
         "language_url": "https://en.wiktionary.org/wiki/Category:Boon_language",
         "name": "Boon",
         "other_names": [],
@@ -12674,8 +12702,8 @@ ALL_LANGUAGES = json.loads("""
     },
     {
         "code": "bob",
-        "family_code": "cus",
-        "family_name": "Cushitic",
+        "family_code": "cus-eas",
+        "family_name": "East Cushitic",
         "language_url": "https://en.wiktionary.org/wiki/Category:Aweer_language",
         "name": "Aweer",
         "other_names": [],
@@ -13238,9 +13266,11 @@ ALL_LANGUAGES = json.loads("""
         "code": "bqh",
         "family_code": "sit-qia",
         "family_name": "Qiangic",
+        "language_url": "https://en.wiktionary.org/wiki/Category:Baima_language",
         "name": "Baima",
         "other_names": [],
-        "scripts": []
+        "scripts": [],
+        "wikidata": "Q674990"
     },
     {
         "code": "bqi",
@@ -14000,8 +14030,8 @@ ALL_LANGUAGES = json.loads("""
     },
     {
         "code": "bsw",
-        "family_code": "cus",
-        "family_name": "Cushitic",
+        "family_code": "cus-eas",
+        "family_name": "East Cushitic",
         "language_url": "https://en.wiktionary.org/wiki/Category:Baiso_language",
         "name": "Baiso",
         "other_names": [],
@@ -14256,11 +14286,13 @@ ALL_LANGUAGES = json.loads("""
         "code": "btv",
         "family_code": "inc-dar",
         "family_name": "Dardic",
+        "language_url": "https://en.wiktionary.org/wiki/Category:Bateri_language",
         "name": "Bateri",
         "other_names": [],
         "scripts": [
             "Deva"
-        ]
+        ],
+        "wikidata": "Q3812564"
     },
     {
         "code": "btw",
@@ -15242,8 +15274,8 @@ ALL_LANGUAGES = json.loads("""
     },
     {
         "code": "bxe",
-        "family_code": "cus",
-        "family_name": "Cushitic",
+        "family_code": "",
+        "family_name": "",
         "language_url": "https://en.wiktionary.org/wiki/Category:Ongota_language",
         "name": "Ongota",
         "other_names": [
@@ -15583,8 +15615,8 @@ ALL_LANGUAGES = json.loads("""
     },
     {
         "code": "byn",
-        "family_code": "cus",
-        "family_name": "Cushitic",
+        "family_code": "cus-cen",
+        "family_name": "Central Cushitic",
         "language_url": "https://en.wiktionary.org/wiki/Category:Blin_language",
         "name": "Blin",
         "other_names": [],
@@ -16219,8 +16251,8 @@ ALL_LANGUAGES = json.loads("""
     },
     {
         "code": "car",
-        "family_code": "sai-car",
-        "family_name": "Cariban",
+        "family_code": "sai-gui",
+        "family_name": "Guianan",
         "language_url": "https://en.wiktionary.org/wiki/Category:Galibi_Carib_language",
         "name": "Galibi Carib",
         "other_names": [
@@ -16294,8 +16326,8 @@ ALL_LANGUAGES = json.loads("""
     },
     {
         "code": "cay",
-        "family_code": "iro",
-        "family_name": "Iroquoian",
+        "family_code": "iro-nor",
+        "family_name": "North Iroquoian",
         "language_url": "https://en.wiktionary.org/wiki/Category:Cayuga_language",
         "name": "Cayuga",
         "other_names": [],
@@ -16342,8 +16374,8 @@ ALL_LANGUAGES = json.loads("""
     },
     {
         "code": "cbd",
-        "family_code": "sai-car",
-        "family_name": "Cariban",
+        "family_code": "sai-tar",
+        "family_name": "Taranoan",
         "language_url": "https://en.wiktionary.org/wiki/Category:Carijona_language",
         "name": "Carijona",
         "other_names": [
@@ -16853,6 +16885,7 @@ ALL_LANGUAGES = json.loads("""
         "code": "ceb",
         "family_code": "phi",
         "family_name": "Philippine",
+        "has_diacr": true,
         "language_url": "https://en.wiktionary.org/wiki/Category:Cebuano_language",
         "name": "Cebuano",
         "other_names": [],
@@ -17345,7 +17378,6 @@ ALL_LANGUAGES = json.loads("""
         "code": "cim",
         "family_code": "gmw",
         "family_name": "West Germanic",
-        "has_diacr": true,
         "has_sort": true,
         "language_url": "https://en.wiktionary.org/wiki/Category:Cimbrian_language",
         "name": "Cimbrian",
@@ -17397,8 +17429,8 @@ ALL_LANGUAGES = json.loads("""
     },
     {
         "code": "ciy",
-        "family_code": "sai-car",
-        "family_name": "Cariban",
+        "family_code": "sai-ven",
+        "family_name": "Venezuelan Cariban",
         "language_url": "https://en.wiktionary.org/wiki/Category:Chaima_language",
         "name": "Chaima",
         "other_names": [],
@@ -17415,7 +17447,9 @@ ALL_LANGUAGES = json.loads("""
         "name": "Western Cham",
         "other_names": [],
         "scripts": [
-            "Arab"
+            "Latn",
+            "Arab",
+            "Khmr"
         ],
         "wikidata": "Q12645578"
     },
@@ -17475,8 +17509,8 @@ ALL_LANGUAGES = json.loads("""
         "name": "Eastern Cham",
         "other_names": [],
         "scripts": [
-            "Cham",
-            "Latn"
+            "Latn",
+            "Cham"
         ],
         "wikidata": "Q2948019"
     },
@@ -17572,14 +17606,19 @@ ALL_LANGUAGES = json.loads("""
         "wikidata": "Q36811"
     },
     {
+        "aliases": [
+            "Sak"
+        ],
         "code": "ckh",
         "family_code": "sit-luu",
         "family_name": "Luish",
+        "language_url": "https://en.wiktionary.org/wiki/Category:Chak_language",
         "name": "Chak",
         "other_names": [],
         "scripts": [
             "Latn"
-        ]
+        ],
+        "wikidata": "Q12628870"
     },
     {
         "code": "ckl",
@@ -18200,14 +18239,19 @@ ALL_LANGUAGES = json.loads("""
         "wikidata": "Q12642603"
     },
     {
+        "aliases": [
+            "Cocos Malay"
+        ],
         "code": "coa",
         "family_code": "crp",
         "family_name": "creole or pidgin",
+        "language_url": "https://en.wiktionary.org/wiki/Category:Cocos_Islands_Malay_language",
         "name": "Cocos Islands Malay",
         "other_names": [],
         "scripts": [
             "Latn"
-        ]
+        ],
+        "wikidata": "Q3441699"
     },
     {
         "code": "cob",
@@ -18523,12 +18567,13 @@ ALL_LANGUAGES = json.loads("""
         "code": "cpg",
         "family_code": "grk",
         "family_name": "Hellenic",
+        "has_diacr": true,
         "has_sort": true,
         "language_url": "https://en.wiktionary.org/wiki/Category:Cappadocian_Greek_language",
         "name": "Cappadocian Greek",
         "other_names": [],
         "scripts": [
-            "polytonic",
+            "Grek",
             "fa-Arab"
         ],
         "wikidata": "Q853414"
@@ -19085,11 +19130,9 @@ ALL_LANGUAGES = json.loads("""
         "code": "csq",
         "family_code": "sgn",
         "family_name": "sign",
-        "language_url": "https://en.wiktionary.org/wiki/Category:Croatian_Sign_Language",
         "name": "Croatian Sign Language",
         "other_names": [],
-        "scripts": [],
-        "wikidata": "Q3507506"
+        "scripts": []
     },
     {
         "code": "csr",
@@ -20017,18 +20060,20 @@ ALL_LANGUAGES = json.loads("""
         "code": "daz",
         "family_code": "ngf",
         "family_name": "Trans-New Guinea",
+        "language_url": "https://en.wiktionary.org/wiki/Category:Dao_language",
         "name": "Dao",
         "other_names": [],
         "scripts": [
             "Latn"
-        ]
+        ],
+        "wikidata": "Q5221513"
     },
     {
         "code": "dba",
         "family_code": "qfa-iso",
         "family_name": "isolate",
-        "language_url": "https://en.wiktionary.org/wiki/Category:Bangi_Me_language",
-        "name": "Bangi Me",
+        "language_url": "https://en.wiktionary.org/wiki/Category:Bangime_language",
+        "name": "Bangime",
         "other_names": [],
         "scripts": [
             "Latn"
@@ -20189,8 +20234,8 @@ ALL_LANGUAGES = json.loads("""
     },
     {
         "code": "dbr",
-        "family_code": "cus",
-        "family_name": "Cushitic",
+        "family_code": "cus-eas",
+        "family_name": "East Cushitic",
         "language_url": "https://en.wiktionary.org/wiki/Category:Dabarre_language",
         "name": "Dabarre",
         "other_names": [],
@@ -20465,9 +20510,11 @@ ALL_LANGUAGES = json.loads("""
         "code": "deh",
         "family_code": "ira-swi",
         "family_name": "Southwestern Iranian",
+        "language_url": "https://en.wiktionary.org/wiki/Category:Dehwari_language",
         "name": "Dehwari",
         "other_names": [],
-        "scripts": []
+        "scripts": [],
+        "wikidata": "Q5704314"
     },
     {
         "code": "dei",
@@ -20682,16 +20729,19 @@ ALL_LANGUAGES = json.loads("""
         "code": "dgn",
         "family_code": "aus-yng",
         "family_name": "Yangmanic",
+        "language_url": "https://en.wiktionary.org/wiki/Category:Dagoman_language",
         "name": "Dagoman",
         "other_names": [],
         "scripts": [
             "Latn"
-        ]
+        ],
+        "wikidata": "Q10465931"
     },
     {
         "code": "dgo",
         "family_code": "him",
         "family_name": "Western Pahari",
+        "language_url": "https://en.wiktionary.org/wiki/Category:Hindi_Dogri_language",
         "name": "Hindi Dogri",
         "other_names": [],
         "scripts": [
@@ -21517,11 +21567,13 @@ ALL_LANGUAGES = json.loads("""
         "code": "dmg",
         "family_code": "poz-san",
         "family_name": "Sabahan",
+        "language_url": "https://en.wiktionary.org/wiki/Category:Upper_Kinabatangan_language",
         "name": "Upper Kinabatangan",
         "other_names": [],
         "scripts": [
             "Latn"
-        ]
+        ],
+        "wikidata": "Q16109975"
     },
     {
         "code": "dmk",
@@ -21782,9 +21834,11 @@ ALL_LANGUAGES = json.loads("""
         "code": "dnv",
         "family_code": "tbq-brm",
         "family_name": "Burmish",
+        "language_url": "https://en.wiktionary.org/wiki/Category:Danu_language",
         "name": "Danu",
         "other_names": [],
-        "scripts": []
+        "scripts": [],
+        "wikidata": "Q5221251"
     },
     {
         "code": "dnw",
@@ -22023,8 +22077,8 @@ ALL_LANGUAGES = json.loads("""
     },
     {
         "code": "dox",
-        "family_code": "cus",
-        "family_name": "Cushitic",
+        "family_code": "cus-eas",
+        "family_name": "East Cushitic",
         "language_url": "https://en.wiktionary.org/wiki/Category:Bussa_language",
         "name": "Bussa",
         "other_names": [],
@@ -22178,8 +22232,8 @@ ALL_LANGUAGES = json.loads("""
     },
     {
         "code": "drs",
-        "family_code": "cus",
-        "family_name": "Cushitic",
+        "family_code": "cus-hec",
+        "family_name": "Highland East Cushitic",
         "language_url": "https://en.wiktionary.org/wiki/Category:Gedeo_language",
         "name": "Gedeo",
         "other_names": [],
@@ -22237,8 +22291,8 @@ ALL_LANGUAGES = json.loads("""
     },
     {
         "code": "dsh",
-        "family_code": "cus",
-        "family_name": "Cushitic",
+        "family_code": "cus-eas",
+        "family_name": "East Cushitic",
         "language_url": "https://en.wiktionary.org/wiki/Category:Daasanach_language",
         "name": "Daasanach",
         "other_names": [],
@@ -22586,13 +22640,11 @@ ALL_LANGUAGES = json.loads("""
         "code": "dul",
         "family_code": "phi",
         "family_name": "Philippine",
-        "language_url": "https://en.wiktionary.org/wiki/Category:Alabat_Island_Agta_language",
         "name": "Alabat Island Agta",
         "other_names": [],
         "scripts": [
             "Latn"
-        ],
-        "wikidata": "Q3399709"
+        ]
     },
     {
         "code": "dum",
@@ -22888,6 +22940,7 @@ ALL_LANGUAGES = json.loads("""
         "code": "dyi",
         "family_code": "alv-tdj",
         "family_name": "Tagwana-Djimini",
+        "language_url": "https://en.wiktionary.org/wiki/Category:Djimini_language",
         "name": "Djimini",
         "other_names": [
             "Djimini Senoufo",
@@ -22896,7 +22949,8 @@ ALL_LANGUAGES = json.loads("""
         ],
         "scripts": [
             "Latn"
-        ]
+        ],
+        "wikidata": "Q35336"
     },
     {
         "code": "dym",
@@ -23370,11 +23424,13 @@ ALL_LANGUAGES = json.loads("""
         "code": "eky",
         "family_code": "kar",
         "family_name": "Karen",
+        "language_url": "https://en.wiktionary.org/wiki/Category:Eastern_Kayah_language",
         "name": "Eastern Kayah",
         "other_names": [],
         "scripts": [
             "Kali"
-        ]
+        ],
+        "wikidata": "Q25559417"
     },
     {
         "code": "ele",
@@ -23432,8 +23488,8 @@ ALL_LANGUAGES = json.loads("""
     },
     {
         "code": "elo",
-        "family_code": "cus",
-        "family_name": "Cushitic",
+        "family_code": "cus-eas",
+        "family_name": "East Cushitic",
         "language_url": "https://en.wiktionary.org/wiki/Category:El_Molo_language",
         "name": "El Molo",
         "other_names": [],
@@ -24053,11 +24109,9 @@ ALL_LANGUAGES = json.loads("""
         "code": "esl",
         "family_code": "sgn",
         "family_name": "sign",
-        "language_url": "https://en.wiktionary.org/wiki/Category:Egyptian_Sign_Language",
         "name": "Egyptian Sign Language",
         "other_names": [],
-        "scripts": [],
-        "wikidata": "Q5348443"
+        "scripts": []
     },
     {
         "code": "esm",
@@ -24317,7 +24371,9 @@ ALL_LANGUAGES = json.loads("""
         "has_diacr": true,
         "language_url": "https://en.wiktionary.org/wiki/Category:Evenki_language",
         "name": "Evenki",
-        "other_names": [],
+        "other_names": [
+            "Tungus"
+        ],
         "scripts": [
             "Cyrl"
         ],
@@ -24714,6 +24770,9 @@ ALL_LANGUAGES = json.loads("""
         ]
     },
     {
+        "aliases": [
+            "Tornedalen Finnish"
+        ],
         "code": "fit",
         "family_code": "fiu-fin",
         "family_name": "Finnic",
@@ -24995,11 +25054,13 @@ ALL_LANGUAGES = json.loads("""
         "code": "frd",
         "family_code": "poz",
         "family_name": "Malayo-Polynesian",
+        "language_url": "https://en.wiktionary.org/wiki/Category:Fordata_language",
         "name": "Fordata",
         "other_names": [],
         "scripts": [
             "Latn"
-        ]
+        ],
+        "wikidata": "Q5468035"
     },
     {
         "code": "frm",
@@ -25069,11 +25130,13 @@ ALL_LANGUAGES = json.loads("""
         "code": "frt",
         "family_code": "poz-vnc",
         "family_name": "North-Central Vanuatu",
+        "language_url": "https://en.wiktionary.org/wiki/Category:Fortsenal_language",
         "name": "Fortsenal",
         "other_names": [],
         "scripts": [
             "Latn"
-        ]
+        ],
+        "wikidata": "Q2666835"
     },
     {
         "code": "fse",
@@ -25375,8 +25438,8 @@ ALL_LANGUAGES = json.loads("""
     },
     {
         "code": "gak",
-        "family_code": "paa-wpa",
-        "family_name": "West Papuan",
+        "family_code": "paa-nha",
+        "family_name": "North Halmahera",
         "language_url": "https://en.wiktionary.org/wiki/Category:Gamkonora_language",
         "name": "Gamkonora",
         "other_names": [],
@@ -25617,8 +25680,8 @@ ALL_LANGUAGES = json.loads("""
     },
     {
         "code": "gbi",
-        "family_code": "paa-wpa",
-        "family_name": "West Papuan",
+        "family_code": "paa-nha",
+        "family_name": "North Halmahera",
         "language_url": "https://en.wiktionary.org/wiki/Category:Galela_language",
         "name": "Galela",
         "other_names": [],
@@ -26049,8 +26112,8 @@ ALL_LANGUAGES = json.loads("""
     },
     {
         "code": "gdl",
-        "family_code": "cus",
-        "family_name": "Cushitic",
+        "family_code": "cus-eas",
+        "family_name": "East Cushitic",
         "language_url": "https://en.wiktionary.org/wiki/Category:Dirasha_language",
         "name": "Dirasha",
         "other_names": [],
@@ -26160,9 +26223,11 @@ ALL_LANGUAGES = json.loads("""
         "code": "gdx",
         "family_code": "inc-wes",
         "family_name": "Western Indo-Aryan",
+        "language_url": "https://en.wiktionary.org/wiki/Category:Godwari_language",
         "name": "Godwari",
         "other_names": [],
-        "scripts": []
+        "scripts": [],
+        "wikidata": "Q3540922"
     },
     {
         "code": "gea",
@@ -26356,8 +26421,8 @@ ALL_LANGUAGES = json.loads("""
     },
     {
         "code": "gex",
-        "family_code": "cus",
-        "family_name": "Cushitic",
+        "family_code": "cus-eas",
+        "family_name": "East Cushitic",
         "language_url": "https://en.wiktionary.org/wiki/Category:Garre_language",
         "name": "Garre",
         "other_names": [],
@@ -26457,11 +26522,13 @@ ALL_LANGUAGES = json.loads("""
         "code": "ggg",
         "family_code": "inc-wes",
         "family_name": "Western Indo-Aryan",
+        "language_url": "https://en.wiktionary.org/wiki/Category:Gurgula_language",
         "name": "Gurgula",
         "other_names": [],
         "scripts": [
             "Arab"
-        ]
+        ],
+        "wikidata": "Q5620032"
     },
     {
         "code": "ggk",
@@ -26607,9 +26674,11 @@ ALL_LANGUAGES = json.loads("""
         "code": "ghr",
         "family_code": "inc-hiw",
         "family_name": "Western Hindi",
+        "language_url": "https://en.wiktionary.org/wiki/Category:Ghera_language",
         "name": "Ghera",
         "other_names": [],
-        "scripts": []
+        "scripts": [],
+        "wikidata": "Q22808992"
     },
     {
         "code": "ghs",
@@ -26683,11 +26752,13 @@ ALL_LANGUAGES = json.loads("""
         "code": "gig",
         "family_code": "inc-wes",
         "family_name": "Western Indo-Aryan",
+        "language_url": "https://en.wiktionary.org/wiki/Category:Goaria_language",
         "name": "Goaria",
         "other_names": [],
         "scripts": [
             "Arab"
-        ]
+        ],
+        "wikidata": "Q33269"
     },
     {
         "code": "gih",
@@ -26863,9 +26934,11 @@ ALL_LANGUAGES = json.loads("""
         "code": "gjk",
         "family_code": "inc-wes",
         "family_name": "Western Indo-Aryan",
+        "language_url": "https://en.wiktionary.org/wiki/Category:Kachi_Koli_language",
         "name": "Kachi Koli",
         "other_names": [],
-        "scripts": []
+        "scripts": [],
+        "wikidata": "Q12953646"
     },
     {
         "code": "gjm",
@@ -26893,9 +26966,16 @@ ALL_LANGUAGES = json.loads("""
         "code": "gju",
         "family_code": "inc-wes",
         "family_name": "Western Indo-Aryan",
+        "has_diacr": true,
+        "language_url": "https://en.wiktionary.org/wiki/Category:Gojri_language",
         "name": "Gojri",
         "other_names": [],
-        "scripts": []
+        "scripts": [
+            "ur-Arab",
+            "Deva",
+            "Takr"
+        ],
+        "wikidata": "Q3241731"
     },
     {
         "code": "gka",
@@ -27613,9 +27693,19 @@ ALL_LANGUAGES = json.loads("""
         "wikidata": "Q3441180"
     },
     {
+        "code": "gov",
+        "family_code": "dmn",
+        "family_name": "Mande",
+        "name": "Goo",
+        "other_names": [],
+        "scripts": [
+            "Latn"
+        ]
+    },
+    {
         "code": "gow",
-        "family_code": "cus",
-        "family_name": "Cushitic",
+        "family_code": "cus-sou",
+        "family_name": "South Cushitic",
         "language_url": "https://en.wiktionary.org/wiki/Category:Gorowa_language",
         "name": "Gorowa",
         "other_names": [],
@@ -27751,6 +27841,9 @@ ALL_LANGUAGES = json.loads("""
         "wikidata": "Q35257"
     },
     {
+        "aliases": [
+            "Classical Greek"
+        ],
         "code": "grc",
         "family_code": "grk",
         "family_name": "Hellenic",
@@ -28405,6 +28498,7 @@ ALL_LANGUAGES = json.loads("""
         "code": "guw",
         "family_code": "alv-gbe",
         "family_name": "Gbe",
+        "has_diacr": true,
         "language_url": "https://en.wiktionary.org/wiki/Category:Gun_language",
         "name": "Gun",
         "other_names": [
@@ -28644,8 +28738,8 @@ ALL_LANGUAGES = json.loads("""
     },
     {
         "code": "gwd",
-        "family_code": "cus",
-        "family_name": "Cushitic",
+        "family_code": "cus-eas",
+        "family_name": "East Cushitic",
         "language_url": "https://en.wiktionary.org/wiki/Category:Gawwada_language",
         "name": "Gawwada",
         "other_names": [],
@@ -28668,9 +28762,11 @@ ALL_LANGUAGES = json.loads("""
         "code": "gwf",
         "family_code": "inc-dar",
         "family_name": "Dardic",
+        "language_url": "https://en.wiktionary.org/wiki/Category:Gowro_language",
         "name": "Gowro",
         "other_names": [],
-        "scripts": []
+        "scripts": [],
+        "wikidata": "Q3812403"
     },
     {
         "code": "gwg",
@@ -28874,11 +28970,13 @@ ALL_LANGUAGES = json.loads("""
         "code": "gyi",
         "family_code": "bnt-mnj",
         "family_name": "Makaa-Njem",
+        "language_url": "https://en.wiktionary.org/wiki/Category:Gyele_language",
         "name": "Gyele",
         "other_names": [],
         "scripts": [
             "Latn"
-        ]
+        ],
+        "wikidata": "Q35434"
     },
     {
         "code": "gyl",
@@ -29290,8 +29388,8 @@ ALL_LANGUAGES = json.loads("""
     },
     {
         "code": "hdy",
-        "family_code": "cus",
-        "family_name": "Cushitic",
+        "family_code": "cus-eas",
+        "family_name": "East Cushitic",
         "language_url": "https://en.wiktionary.org/wiki/Category:Hadiyya_language",
         "name": "Hadiyya",
         "other_names": [],
@@ -29482,9 +29580,11 @@ ALL_LANGUAGES = json.loads("""
         "code": "hii",
         "family_code": "him",
         "family_name": "Western Pahari",
+        "language_url": "https://en.wiktionary.org/wiki/Category:Hinduri_language",
         "name": "Hinduri",
         "other_names": [],
-        "scripts": []
+        "scripts": [],
+        "wikidata": "Q5766763"
     },
     {
         "code": "hij",
@@ -29570,8 +29670,8 @@ ALL_LANGUAGES = json.loads("""
     },
     {
         "code": "hix",
-        "family_code": "sai-car",
-        "family_name": "Cariban",
+        "family_code": "sai-prk",
+        "family_name": "Parukotoan",
         "language_url": "https://en.wiktionary.org/wiki/Category:Hixkaryana_language",
         "name": "Hixkaryana",
         "other_names": [
@@ -29689,22 +29789,28 @@ ALL_LANGUAGES = json.loads("""
         "code": "hlt",
         "family_code": "tbq-kuk",
         "family_name": "Kukish",
+        "language_url": "https://en.wiktionary.org/wiki/Category:Nga_La_language",
         "name": "Nga La",
         "other_names": [
             "Matu Chin",
             "Matu"
         ],
-        "scripts": []
+        "scripts": [],
+        "wikidata": "Q12952942"
     },
     {
         "code": "hma",
         "family_code": "hmn",
         "family_name": "Hmong",
+        "language_url": "https://en.wiktionary.org/wiki/Category:Southern_Mashan_Hmong_language",
         "name": "Southern Mashan Hmong",
         "other_names": [
             "Southern Mashan Miao"
         ],
-        "scripts": []
+        "scripts": [
+            "Latn"
+        ],
+        "wikidata": "Q12953560"
     },
     {
         "code": "hmb",
@@ -29806,7 +29912,7 @@ ALL_LANGUAGES = json.loads("""
     {
         "code": "hmk",
         "family_code": "qfa-kor",
-        "family_name": "Korean",
+        "family_name": "Koreanic",
         "language_url": "https://en.wiktionary.org/wiki/Category:Maek_language",
         "name": "Maek",
         "other_names": [
@@ -30538,11 +30644,13 @@ ALL_LANGUAGES = json.loads("""
         "code": "htu",
         "family_code": "poz-cma",
         "family_name": "Central Maluku",
+        "language_url": "https://en.wiktionary.org/wiki/Category:Hitu_language",
         "name": "Hitu",
         "other_names": [],
         "scripts": [
             "Latn"
-        ]
+        ],
+        "wikidata": "Q5872700"
     },
     {
         "code": "hub",
@@ -31059,8 +31167,8 @@ ALL_LANGUAGES = json.loads("""
     },
     {
         "code": "ibu",
-        "family_code": "paa-wpa",
-        "family_name": "West Papuan",
+        "family_code": "paa-nha",
+        "family_name": "North Halmahera",
         "language_url": "https://en.wiktionary.org/wiki/Category:Ibu_language",
         "name": "Ibu",
         "other_names": [],
@@ -31321,23 +31429,27 @@ ALL_LANGUAGES = json.loads("""
         "code": "igb",
         "family_code": "alv-nup",
         "family_name": "Nupoid",
+        "language_url": "https://en.wiktionary.org/wiki/Category:Ebira_language",
         "name": "Ebira",
         "other_names": [
             "Igbira"
         ],
         "scripts": [
             "Latn"
-        ]
+        ],
+        "wikidata": "Q35363"
     },
     {
         "code": "ige",
         "family_code": "alv-ido",
         "family_name": "Idomoid",
+        "language_url": "https://en.wiktionary.org/wiki/Category:Igede_language",
         "name": "Igede",
         "other_names": [],
         "scripts": [
             "Latn"
-        ]
+        ],
+        "wikidata": "Q35420"
     },
     {
         "code": "igg",
@@ -31353,10 +31465,14 @@ ALL_LANGUAGES = json.loads("""
         "code": "igl",
         "family_code": "alv-yor",
         "family_name": "Yoruboid",
+        "has_diacr": true,
+        "has_sort": true,
         "language_url": "https://en.wiktionary.org/wiki/Category:Igala_language",
         "name": "Igala",
         "other_names": [],
-        "scripts": [],
+        "scripts": [
+            "Latn"
+        ],
         "wikidata": "Q35513"
     },
     {
@@ -32080,8 +32196,8 @@ ALL_LANGUAGES = json.loads("""
     },
     {
         "code": "irh",
-        "family_code": "poz",
-        "family_name": "Malayo-Polynesian",
+        "family_code": "poz-cet",
+        "family_name": "Central-Eastern Malayo-Polynesian",
         "language_url": "https://en.wiktionary.org/wiki/Category:Irarutu_language",
         "name": "Irarutu",
         "other_names": [],
@@ -32104,8 +32220,8 @@ ALL_LANGUAGES = json.loads("""
     },
     {
         "code": "irk",
-        "family_code": "cus",
-        "family_name": "Cushitic",
+        "family_code": "cus-sou",
+        "family_name": "South Cushitic",
         "language_url": "https://en.wiktionary.org/wiki/Category:Iraqw_language",
         "name": "Iraqw",
         "other_names": [],
@@ -32289,11 +32405,13 @@ ALL_LANGUAGES = json.loads("""
         "code": "iso",
         "family_code": "alv-swd",
         "family_name": "Southwestern Edoid",
+        "language_url": "https://en.wiktionary.org/wiki/Category:Isoko_language",
         "name": "Isoko",
         "other_names": [],
         "scripts": [
             "Latn"
-        ]
+        ],
+        "wikidata": "Q35414"
     },
     {
         "code": "isr",
@@ -32901,9 +33019,11 @@ ALL_LANGUAGES = json.loads("""
         "code": "jat",
         "family_code": "inc-pan",
         "family_name": "Punjabi-Lahnda",
+        "language_url": "https://en.wiktionary.org/wiki/Category:Jakati_language",
         "name": "Jakati",
         "other_names": [],
-        "scripts": []
+        "scripts": [],
+        "wikidata": "Q4159744"
     },
     {
         "code": "jau",
@@ -32919,11 +33039,13 @@ ALL_LANGUAGES = json.loads("""
         "code": "jax",
         "family_code": "poz-mly",
         "family_name": "Malayic",
+        "language_url": "https://en.wiktionary.org/wiki/Category:Jambi_Malay_language",
         "name": "Jambi Malay",
         "other_names": [],
         "scripts": [
             "Latn"
-        ]
+        ],
+        "wikidata": "Q3915769"
     },
     {
         "code": "jay",
@@ -33076,9 +33198,11 @@ ALL_LANGUAGES = json.loads("""
         "code": "jda",
         "family_code": "sit-las",
         "family_name": "Lahuli-Spiti",
+        "language_url": "https://en.wiktionary.org/wiki/Category:Jad_language",
         "name": "Jad",
         "other_names": [],
-        "scripts": []
+        "scripts": [],
+        "wikidata": "Q12633440"
     },
     {
         "code": "jdg",
@@ -33336,12 +33460,14 @@ ALL_LANGUAGES = json.loads("""
     },
     {
         "code": "jii",
-        "family_code": "cus",
-        "family_name": "Cushitic",
+        "family_code": "cus-eas",
+        "family_name": "East Cushitic",
         "language_url": "https://en.wiktionary.org/wiki/Category:Jiiddu_language",
         "name": "Jiiddu",
         "other_names": [],
-        "scripts": [],
+        "scripts": [
+            "Latn"
+        ],
         "wikidata": "Q56769"
     },
     {
@@ -33385,9 +33511,15 @@ ALL_LANGUAGES = json.loads("""
         "code": "jiq",
         "family_code": "sit-rgy",
         "family_name": "Rgyalrongic",
-        "language_url": "https://en.wiktionary.org/wiki/Category:Guanyinqiao_language",
-        "name": "Guanyinqiao",
-        "other_names": [],
+        "language_url": "https://en.wiktionary.org/wiki/Category:Khroskyabs_language",
+        "name": "Khroskyabs",
+        "other_names": [
+            "Guanyinqiao",
+            "Yelong",
+            "Wobzi",
+            "Khrosgyabs",
+            "Lavrung"
+        ],
         "scripts": [],
         "wikidata": "Q3118757"
     },
@@ -33434,7 +33566,7 @@ ALL_LANGUAGES = json.loads("""
     {
         "code": "jje",
         "family_code": "qfa-kor",
-        "family_name": "Korean",
+        "family_name": "Koreanic",
         "language_url": "https://en.wiktionary.org/wiki/Category:Jeju_language",
         "name": "Jeju",
         "other_names": [
@@ -33633,11 +33765,15 @@ ALL_LANGUAGES = json.loads("""
     },
     {
         "code": "jnd",
-        "family_code": "",
-        "family_name": "",
+        "family_code": "inc-wes",
+        "family_name": "Western Indo-Aryan",
+        "language_url": "https://en.wiktionary.org/wiki/Category:Jandavra_language",
         "name": "Jandavra",
         "other_names": [],
-        "scripts": []
+        "scripts": [
+            "Arab"
+        ],
+        "wikidata": "Q6150941"
     },
     {
         "code": "jng",
@@ -33795,13 +33931,15 @@ ALL_LANGUAGES = json.loads("""
     },
     {
         "code": "jru",
-        "family_code": "sai-car",
-        "family_name": "Cariban",
+        "family_code": "sai-yuk",
+        "family_name": "Yukpan",
+        "language_url": "https://en.wiktionary.org/wiki/Category:Japrer%C3%ADa_language",
         "name": "Japrer\u00eda",
         "other_names": [],
         "scripts": [
             "Latn"
-        ]
+        ],
+        "wikidata": "Q3441409"
     },
     {
         "code": "jsl",
@@ -33871,11 +34009,13 @@ ALL_LANGUAGES = json.loads("""
         "code": "jui",
         "family_code": "aus-pam",
         "family_name": "Pama-Nyungan",
+        "language_url": "https://en.wiktionary.org/wiki/Category:Ngadjuri_language",
         "name": "Ngadjuri",
         "other_names": [],
         "scripts": [
             "Latn"
-        ]
+        ],
+        "wikidata": "Q16897028"
     },
     {
         "code": "juk",
@@ -34096,9 +34236,11 @@ ALL_LANGUAGES = json.loads("""
         "code": "kae",
         "family_code": "map",
         "family_name": "Austronesian",
+        "language_url": "https://en.wiktionary.org/wiki/Category:Ketangalan_language",
         "name": "Ketangalan",
         "other_names": [],
-        "scripts": []
+        "scripts": [],
+        "wikidata": "Q2779411"
     },
     {
         "code": "kaf",
@@ -34248,8 +34390,8 @@ ALL_LANGUAGES = json.loads("""
     },
     {
         "code": "kax",
-        "family_code": "",
-        "family_name": "",
+        "family_code": "paa-nha",
+        "family_name": "North Halmahera",
         "name": "Kao",
         "other_names": [],
         "scripts": []
@@ -34280,8 +34422,8 @@ ALL_LANGUAGES = json.loads("""
     },
     {
         "code": "kbb",
-        "family_code": "sai-car",
-        "family_name": "Cariban",
+        "family_code": "sai-prk",
+        "family_name": "Parukotoan",
         "language_url": "https://en.wiktionary.org/wiki/Category:Kaxuyana_language",
         "name": "Kaxuyana",
         "other_names": [
@@ -34501,9 +34643,11 @@ ALL_LANGUAGES = json.loads("""
         "code": "kbu",
         "family_code": "inc-wes",
         "family_name": "Western Indo-Aryan",
+        "language_url": "https://en.wiktionary.org/wiki/Category:Kabutra_language",
         "name": "Kabutra",
         "other_names": [],
-        "scripts": []
+        "scripts": [],
+        "wikidata": "Q10966761"
     },
     {
         "code": "kbv",
@@ -35181,11 +35325,13 @@ ALL_LANGUAGES = json.loads("""
         "code": "ken",
         "family_code": "nic-mam",
         "family_name": "Mamfe",
+        "language_url": "https://en.wiktionary.org/wiki/Category:Kenyang_language",
         "name": "Kenyang",
         "other_names": [],
         "scripts": [
             "Latn"
-        ]
+        ],
+        "wikidata": "Q35650"
     },
     {
         "code": "keo",
@@ -36251,9 +36397,13 @@ ALL_LANGUAGES = json.loads("""
         "code": "kix",
         "family_code": "sit-kch",
         "family_name": "Konyak-Chang",
+        "language_url": "https://en.wiktionary.org/wiki/Category:Khiamniungan_Naga_language",
         "name": "Khiamniungan Naga",
         "other_names": [],
-        "scripts": []
+        "scripts": [
+            "Latn"
+        ],
+        "wikidata": "Q6401546"
     },
     {
         "code": "kiy",
@@ -36757,11 +36907,15 @@ ALL_LANGUAGES = json.loads("""
     },
     {
         "code": "kkv",
-        "family_code": "",
-        "family_name": "",
+        "family_code": "poz-msa",
+        "family_name": "Malayo-Sumbawan",
+        "language_url": "https://en.wiktionary.org/wiki/Category:Kangean_language",
         "name": "Kangean",
         "other_names": [],
-        "scripts": []
+        "scripts": [
+            "Latn"
+        ],
+        "wikidata": "Q2071325"
     },
     {
         "code": "kkw",
@@ -36775,9 +36929,11 @@ ALL_LANGUAGES = json.loads("""
         "code": "kkx",
         "family_code": "poz-brw",
         "family_name": "West Barito",
+        "language_url": "https://en.wiktionary.org/wiki/Category:Kohin_language",
         "name": "Kohin",
         "other_names": [],
-        "scripts": []
+        "scripts": [],
+        "wikidata": "Q6425997"
     },
     {
         "code": "kky",
@@ -37660,9 +37816,11 @@ ALL_LANGUAGES = json.loads("""
         "code": "kod",
         "family_code": "",
         "family_name": "",
+        "language_url": "https://en.wiktionary.org/wiki/Category:Kodi_language",
         "name": "Kodi",
         "other_names": [],
-        "scripts": []
+        "scripts": [],
+        "wikidata": "Q4577633"
     },
     {
         "code": "koe",
@@ -37731,6 +37889,7 @@ ALL_LANGUAGES = json.loads("""
         "code": "kok",
         "family_code": "inc-sou",
         "family_name": "Southern Indo-Aryan",
+        "has_diacr": true,
         "language_url": "https://en.wiktionary.org/wiki/Category:Konkani_language",
         "name": "Konkani",
         "other_names": [],
@@ -38598,7 +38757,10 @@ ALL_LANGUAGES = json.loads("""
             "Kryc",
             "Kryz"
         ],
-        "scripts": [],
+        "scripts": [
+            "Latn",
+            "Cyrl"
+        ],
         "wikidata": "Q35861"
     },
     {
@@ -38863,12 +39025,14 @@ ALL_LANGUAGES = json.loads("""
     },
     {
         "code": "ktb",
-        "family_code": "cus",
-        "family_name": "Cushitic",
+        "family_code": "cus-hec",
+        "family_name": "Highland East Cushitic",
         "language_url": "https://en.wiktionary.org/wiki/Category:Kambaata_language",
         "name": "Kambaata",
         "other_names": [],
-        "scripts": [],
+        "scripts": [
+            "Latn"
+        ],
         "wikidata": "Q35664"
     },
     {
@@ -39068,9 +39232,11 @@ ALL_LANGUAGES = json.loads("""
         "code": "ktv",
         "family_code": "mkh-kat",
         "family_name": "Katuic",
+        "language_url": "https://en.wiktionary.org/wiki/Category:Eastern_Katu_language",
         "name": "Eastern Katu",
         "other_names": [],
-        "scripts": []
+        "scripts": [],
+        "wikidata": "Q22808951"
     },
     {
         "code": "ktw",
@@ -39215,8 +39381,8 @@ ALL_LANGUAGES = json.loads("""
     },
     {
         "code": "kui",
-        "family_code": "sai-car",
-        "family_name": "Cariban",
+        "family_code": "sai-kui",
+        "family_name": "Kuikuroan",
         "language_url": "https://en.wiktionary.org/wiki/Category:Kuik%C3%BAro_language",
         "name": "Kuik\u00faro",
         "other_names": [
@@ -39352,11 +39518,13 @@ ALL_LANGUAGES = json.loads("""
         "code": "kuv",
         "family_code": "poz-cma",
         "family_name": "Central Maluku",
+        "language_url": "https://en.wiktionary.org/wiki/Category:Kur_language",
         "name": "Kur",
         "other_names": [],
         "scripts": [
             "Latn"
-        ]
+        ],
+        "wikidata": "Q12635082"
     },
     {
         "code": "kuw",
@@ -39410,9 +39578,11 @@ ALL_LANGUAGES = json.loads("""
         "code": "kvb",
         "family_code": "poz-mly",
         "family_name": "Malayic",
+        "language_url": "https://en.wiktionary.org/wiki/Category:Kubu_language",
         "name": "Kubu",
         "other_names": [],
-        "scripts": []
+        "scripts": [],
+        "wikidata": "Q6441341"
     },
     {
         "code": "kvc",
@@ -39602,9 +39772,11 @@ ALL_LANGUAGES = json.loads("""
         "code": "kvx",
         "family_code": "inc-wes",
         "family_name": "Western Indo-Aryan",
+        "language_url": "https://en.wiktionary.org/wiki/Category:Parkari_Koli_language",
         "name": "Parkari Koli",
         "other_names": [],
-        "scripts": []
+        "scripts": [],
+        "wikidata": "Q3244176"
     },
     {
         "code": "kvy",
@@ -39892,8 +40064,8 @@ ALL_LANGUAGES = json.loads("""
     },
     {
         "code": "kxc",
-        "family_code": "cus",
-        "family_name": "Cushitic",
+        "family_code": "cus-eas",
+        "family_name": "East Cushitic",
         "language_url": "https://en.wiktionary.org/wiki/Category:Khonso_language",
         "name": "Khonso",
         "other_names": [],
@@ -40027,9 +40199,11 @@ ALL_LANGUAGES = json.loads("""
         "code": "kxp",
         "family_code": "inc-wes",
         "family_name": "Western Indo-Aryan",
+        "language_url": "https://en.wiktionary.org/wiki/Category:Wadiyara_Koli_language",
         "name": "Wadiyara Koli",
         "other_names": [],
-        "scripts": []
+        "scripts": [],
+        "wikidata": "Q12953645"
     },
     {
         "code": "kxq",
@@ -40228,7 +40402,9 @@ ALL_LANGUAGES = json.loads("""
         "language_url": "https://en.wiktionary.org/wiki/Category:Karao_language",
         "name": "Karao",
         "other_names": [],
-        "scripts": [],
+        "scripts": [
+            "Latn"
+        ],
         "wikidata": "Q3192950"
     },
     {
@@ -40397,9 +40573,11 @@ ALL_LANGUAGES = json.loads("""
         "code": "kza",
         "family_code": "alv-krb",
         "family_name": "Karaboro",
+        "language_url": "https://en.wiktionary.org/wiki/Category:Western_Karaboro_language",
         "name": "Western Karaboro",
         "other_names": [],
-        "scripts": []
+        "scripts": [],
+        "wikidata": "Q36601"
     },
     {
         "code": "kzb",
@@ -40894,8 +41072,8 @@ ALL_LANGUAGES = json.loads("""
     },
     {
         "code": "lau",
-        "family_code": "",
-        "family_name": "",
+        "family_code": "paa-nha",
+        "family_name": "North Halmahera",
         "name": "Laba",
         "other_names": [],
         "scripts": []
@@ -40995,9 +41173,11 @@ ALL_LANGUAGES = json.loads("""
         "code": "lbf",
         "family_code": "sit-whm",
         "family_name": "West Himalayish",
+        "language_url": "https://en.wiktionary.org/wiki/Category:Tinani_language",
         "name": "Tinani",
         "other_names": [],
-        "scripts": []
+        "scripts": [],
+        "wikidata": "Q784502"
     },
     {
         "code": "lbg",
@@ -41050,9 +41230,11 @@ ALL_LANGUAGES = json.loads("""
         "code": "lbl",
         "family_code": "phi",
         "family_name": "Philippine",
+        "language_url": "https://en.wiktionary.org/wiki/Category:Libon_Bikol_language",
         "name": "Libon Bikol",
         "other_names": [],
-        "scripts": []
+        "scripts": [],
+        "wikidata": "Q18664462"
     },
     {
         "code": "lbm",
@@ -41650,9 +41832,11 @@ ALL_LANGUAGES = json.loads("""
         "code": "les",
         "family_code": "csu-mle",
         "family_name": "Mangbutu-Lese",
+        "language_url": "https://en.wiktionary.org/wiki/Category:Lese_language",
         "name": "Lese",
         "other_names": [],
-        "scripts": []
+        "scripts": [],
+        "wikidata": "Q11033939"
     },
     {
         "code": "let",
@@ -41989,9 +42173,11 @@ ALL_LANGUAGES = json.loads("""
         "code": "lhl",
         "family_code": "",
         "family_name": "",
+        "language_url": "https://en.wiktionary.org/wiki/Category:Lahul_Lohar_language",
         "name": "Lahul Lohar",
         "other_names": [],
-        "scripts": []
+        "scripts": [],
+        "wikidata": "Q12953672"
     },
     {
         "code": "lhn",
@@ -42049,9 +42235,11 @@ ALL_LANGUAGES = json.loads("""
         "code": "lia",
         "family_code": "alv-lim",
         "family_name": "Limba",
+        "language_url": "https://en.wiktionary.org/wiki/Category:West-Central_Limba_language",
         "name": "West-Central Limba",
         "other_names": [],
-        "scripts": []
+        "scripts": [],
+        "wikidata": "Q32867815"
     },
     {
         "code": "lib",
@@ -42205,8 +42393,8 @@ ALL_LANGUAGES = json.loads("""
     },
     {
         "code": "liq",
-        "family_code": "cus",
-        "family_name": "Cushitic",
+        "family_code": "cus-hec",
+        "family_name": "Highland East Cushitic",
         "language_url": "https://en.wiktionary.org/wiki/Category:Libido_language",
         "name": "Libido",
         "other_names": [],
@@ -43079,8 +43267,8 @@ ALL_LANGUAGES = json.loads("""
     },
     {
         "code": "loa",
-        "family_code": "paa",
-        "family_name": "Papuan",
+        "family_code": "paa-nha",
+        "family_name": "North Halmahera",
         "language_url": "https://en.wiktionary.org/wiki/Category:Loloda_language",
         "name": "Loloda",
         "other_names": [],
@@ -43367,13 +43555,15 @@ ALL_LANGUAGES = json.loads("""
         "code": "lpo",
         "family_code": "tbq-lol",
         "family_name": "Loloish",
+        "language_url": "https://en.wiktionary.org/wiki/Category:Lipo_language",
         "name": "Lipo",
         "other_names": [
             "Eastern Lisu"
         ],
         "scripts": [
             "Plrd"
-        ]
+        ],
+        "wikidata": "Q56921"
     },
     {
         "code": "lpx",
@@ -43407,8 +43597,8 @@ ALL_LANGUAGES = json.loads("""
     },
     {
         "code": "lre",
-        "family_code": "iro",
-        "family_name": "Iroquoian",
+        "family_code": "iro-nor",
+        "family_name": "North Iroquoian",
         "language_url": "https://en.wiktionary.org/wiki/Category:Laurentian_language",
         "name": "Laurentian",
         "other_names": [
@@ -43439,11 +43629,13 @@ ALL_LANGUAGES = json.loads("""
         "code": "lrk",
         "family_code": "",
         "family_name": "",
+        "language_url": "https://en.wiktionary.org/wiki/Category:Loarki_language",
         "name": "Loarki",
         "other_names": [
             "Gade Lohar"
         ],
-        "scripts": []
+        "scripts": [],
+        "wikidata": "Q6663513"
     },
     {
         "code": "lrl",
@@ -44149,7 +44341,9 @@ ALL_LANGUAGES = json.loads("""
         "family_code": "aav-pkl",
         "family_name": "Pnar-Khasi-Lyngngam",
         "name": "Lyngngam",
-        "other_names": [],
+        "other_names": [
+            "Lyngam"
+        ],
         "scripts": []
     },
     {
@@ -44438,11 +44632,13 @@ ALL_LANGUAGES = json.loads("""
         "code": "mba",
         "family_code": "mno",
         "family_name": "Manobo",
+        "language_url": "https://en.wiktionary.org/wiki/Category:Higaonon_language",
         "name": "Higaonon",
         "other_names": [],
         "scripts": [
             "Latn"
-        ]
+        ],
+        "wikidata": "Q5753411"
     },
     {
         "code": "mbb",
@@ -44458,8 +44654,8 @@ ALL_LANGUAGES = json.loads("""
     },
     {
         "code": "mbc",
-        "family_code": "sai-car",
-        "family_name": "Cariban",
+        "family_code": "sai-pem",
+        "family_name": "Pemongan",
         "language_url": "https://en.wiktionary.org/wiki/Category:Macushi_language",
         "name": "Macushi",
         "other_names": [
@@ -44799,8 +44995,8 @@ ALL_LANGUAGES = json.loads("""
     },
     {
         "code": "mcg",
-        "family_code": "sai-car",
-        "family_name": "Cariban",
+        "family_code": "sai-map",
+        "family_name": "Mapoyan",
         "language_url": "https://en.wiktionary.org/wiki/Category:Mapoyo_language",
         "name": "Mapoyo",
         "other_names": [],
@@ -45414,9 +45610,14 @@ ALL_LANGUAGES = json.loads("""
         "family_name": "Malayic",
         "language_url": "https://en.wiktionary.org/wiki/Category:Kedah_Malay_language",
         "name": "Kedah Malay",
-        "other_names": [],
+        "other_names": [
+            "Syburi Malay",
+            "Satun Malay"
+        ],
         "scripts": [
-            "Latn"
+            "Latn",
+            "ms-Arab",
+            "Thai"
         ],
         "wikidata": "Q4925684"
     },
@@ -45551,9 +45752,8 @@ ALL_LANGUAGES = json.loads("""
         "name": "Pattani Malay",
         "other_names": [],
         "scripts": [
-            "Latn",
-            "Thai",
-            "Arab"
+            "ms-Arab",
+            "Thai"
         ],
         "wikidata": "Q1199751"
     },
@@ -46695,18 +46895,6 @@ ALL_LANGUAGES = json.loads("""
         "scripts": []
     },
     {
-        "code": "mjg",
-        "family_code": "xgn",
-        "family_name": "Mongolic",
-        "language_url": "https://en.wiktionary.org/wiki/Category:Monguor_language",
-        "name": "Monguor",
-        "other_names": [],
-        "scripts": [
-            "Latn"
-        ],
-        "wikidata": "Q34214"
-    },
-    {
         "code": "mji",
         "family_code": "hmx-mie",
         "family_name": "Mien",
@@ -47287,9 +47475,11 @@ ALL_LANGUAGES = json.loads("""
         "code": "mlq",
         "family_code": "dmn-wmn",
         "family_name": "West Manding",
+        "language_url": "https://en.wiktionary.org/wiki/Category:Western_Maninkakan_language",
         "name": "Western Maninkakan",
         "other_names": [],
-        "scripts": []
+        "scripts": [],
+        "wikidata": "Q11028033"
     },
     {
         "code": "mlr",
@@ -47548,9 +47738,11 @@ ALL_LANGUAGES = json.loads("""
         "code": "mmr",
         "family_code": "hmn",
         "family_name": "Hmong",
+        "language_url": "https://en.wiktionary.org/wiki/Category:Western_Xiangxi_Miao_language",
         "name": "Western Xiangxi Miao",
         "other_names": [],
-        "scripts": []
+        "scripts": [],
+        "wikidata": "Q3307901"
     },
     {
         "code": "mmt",
@@ -48007,8 +48199,8 @@ ALL_LANGUAGES = json.loads("""
     },
     {
         "code": "moh",
-        "family_code": "iro",
-        "family_name": "Iroquoian",
+        "family_code": "iro-nor",
+        "family_name": "North Iroquoian",
         "language_url": "https://en.wiktionary.org/wiki/Category:Mohawk_language",
         "name": "Mohawk",
         "other_names": [],
@@ -48621,8 +48813,8 @@ ALL_LANGUAGES = json.loads("""
     },
     {
         "code": "mqo",
-        "family_code": "paa-wpa",
-        "family_name": "West Papuan",
+        "family_code": "paa-nha",
+        "family_name": "North Halmahera",
         "language_url": "https://en.wiktionary.org/wiki/Category:Modole_language",
         "name": "Modole",
         "other_names": [],
@@ -48659,8 +48851,8 @@ ALL_LANGUAGES = json.loads("""
     },
     {
         "code": "mqs",
-        "family_code": "paa-wpa",
-        "family_name": "West Papuan",
+        "family_code": "paa-nha",
+        "family_name": "North Halmahera",
         "language_url": "https://en.wiktionary.org/wiki/Category:West_Makian_language",
         "name": "West Makian",
         "other_names": [],
@@ -48679,9 +48871,11 @@ ALL_LANGUAGES = json.loads("""
         "code": "mqu",
         "family_code": "sdv-bri",
         "family_name": "Bari",
+        "language_url": "https://en.wiktionary.org/wiki/Category:Mandari_language",
         "name": "Mandari",
         "other_names": [],
-        "scripts": []
+        "scripts": [],
+        "wikidata": "Q3285426"
     },
     {
         "code": "mqv",
@@ -49544,8 +49738,8 @@ ALL_LANGUAGES = json.loads("""
     },
     {
         "code": "mtw",
-        "family_code": "",
-        "family_name": "",
+        "family_code": "phi",
+        "family_name": "Philippine",
         "name": "Magahat",
         "other_names": [],
         "scripts": []
@@ -49710,7 +49904,9 @@ ALL_LANGUAGES = json.loads("""
         "language_url": "https://en.wiktionary.org/wiki/Category:Malvi_language",
         "name": "Malvi",
         "other_names": [],
-        "scripts": [],
+        "scripts": [
+            "Deva"
+        ],
         "wikidata": "Q33413"
     },
     {
@@ -49757,8 +49953,8 @@ ALL_LANGUAGES = json.loads("""
     },
     {
         "code": "muu",
-        "family_code": "cus",
-        "family_name": "Cushitic",
+        "family_code": "cus-eas",
+        "family_name": "East Cushitic",
         "language_url": "https://en.wiktionary.org/wiki/Category:Yaaku_language",
         "name": "Yaaku",
         "other_names": [],
@@ -50823,11 +51019,9 @@ ALL_LANGUAGES = json.loads("""
         "code": "mzg",
         "family_code": "sgn",
         "family_name": "sign",
-        "language_url": "https://en.wiktionary.org/wiki/Category:Monastic_Sign_Language",
         "name": "Monastic Sign Language",
         "other_names": [],
-        "scripts": [],
-        "wikidata": "Q3217333"
+        "scripts": []
     },
     {
         "code": "mzh",
@@ -50906,13 +51100,15 @@ ALL_LANGUAGES = json.loads("""
     },
     {
         "code": "mzo",
-        "family_code": "sai-car",
-        "family_name": "Cariban",
+        "family_code": "sai-kui",
+        "family_name": "Kuikuroan",
+        "language_url": "https://en.wiktionary.org/wiki/Category:Matipuhy_language",
         "name": "Matipuhy",
         "other_names": [],
         "scripts": [
             "Latn"
-        ]
+        ],
+        "wikidata": "Q6787588"
     },
     {
         "code": "mzp",
@@ -51169,10 +51365,7 @@ ALL_LANGUAGES = json.loads("""
         "language_url": "https://en.wiktionary.org/wiki/Category:Min_Nan_language",
         "name": "Min Nan",
         "other_names": [
-            "Hokkien",
-            "Taiwanese",
-            "Amoy",
-            "Xiamenese"
+            "Taiwanese"
         ],
         "scripts": [
             "Hani",
@@ -51249,11 +51442,13 @@ ALL_LANGUAGES = json.loads("""
         "code": "nat",
         "family_code": "nic-kmk",
         "family_name": "Kamuku",
+        "language_url": "https://en.wiktionary.org/wiki/Category:Hungworo_language",
         "name": "Hungworo",
         "other_names": [],
         "scripts": [
             "Latn"
-        ]
+        ],
+        "wikidata": "Q3914395"
     },
     {
         "code": "naw",
@@ -52238,9 +52433,11 @@ ALL_LANGUAGES = json.loads("""
         "code": "nes",
         "family_code": "sit-las",
         "family_name": "Lahuli-Spiti",
+        "language_url": "https://en.wiktionary.org/wiki/Category:Bhoti_Kinnauri_language",
         "name": "Bhoti Kinnauri",
         "other_names": [],
-        "scripts": []
+        "scripts": [],
+        "wikidata": "Q21179921"
     },
     {
         "code": "net",
@@ -52824,6 +53021,7 @@ ALL_LANGUAGES = json.loads("""
         "code": "nhp",
         "family_code": "azc-nah",
         "family_name": "Nahuan",
+        "language_url": "https://en.wiktionary.org/wiki/Category:Pajapan_Nahuatl_language",
         "name": "Pajapan Nahuatl",
         "other_names": [
             "Isthmus-Pajapan Nahuatl",
@@ -52831,7 +53029,8 @@ ALL_LANGUAGES = json.loads("""
         ],
         "scripts": [
             "Latn"
-        ]
+        ],
+        "wikidata": "Q12953760"
     },
     {
         "code": "nhq",
@@ -52936,11 +53135,13 @@ ALL_LANGUAGES = json.loads("""
         "code": "nhz",
         "family_code": "azc-nah",
         "family_name": "Nahuan",
+        "language_url": "https://en.wiktionary.org/wiki/Category:Santa_Mar%C3%ADa_La_Alta_Nahuatl_language",
         "name": "Santa Mar\u00eda La Alta Nahuatl",
         "other_names": [],
         "scripts": [
             "Latn"
-        ]
+        ],
+        "wikidata": "Q15705753"
     },
     {
         "code": "nia",
@@ -53268,9 +53469,11 @@ ALL_LANGUAGES = json.loads("""
         "code": "njn",
         "family_code": "sit-zem",
         "family_name": "Zeme",
+        "language_url": "https://en.wiktionary.org/wiki/Category:Liangmai_Naga_language",
         "name": "Liangmai Naga",
         "other_names": [],
-        "scripts": []
+        "scripts": [],
+        "wikidata": "Q14194500"
     },
     {
         "code": "njo",
@@ -53315,11 +53518,13 @@ ALL_LANGUAGES = json.loads("""
     },
     {
         "code": "nju",
-        "family_code": "",
-        "family_name": "",
+        "family_code": "aus-pam",
+        "family_name": "Pama-Nyungan",
+        "language_url": "https://en.wiktionary.org/wiki/Category:Ngadjunmaya_language",
         "name": "Ngadjunmaya",
         "other_names": [],
-        "scripts": []
+        "scripts": [],
+        "wikidata": "Q7021846"
     },
     {
         "code": "njx",
@@ -53682,13 +53887,15 @@ ALL_LANGUAGES = json.loads("""
         "code": "nlm",
         "family_code": "inc-dar",
         "family_name": "Dardic",
+        "language_url": "https://en.wiktionary.org/wiki/Category:Mankiyali_language",
         "name": "Mankiyali",
         "other_names": [
             "Tarawara",
             "Tarawari",
             "Trawara"
         ],
-        "scripts": []
+        "scripts": [],
+        "wikidata": "Q47522426"
     },
     {
         "code": "nlo",
@@ -54450,11 +54657,13 @@ ALL_LANGUAGES = json.loads("""
         "code": "noq",
         "family_code": "bnt-yak",
         "family_name": "Yaka",
+        "language_url": "https://en.wiktionary.org/wiki/Category:Ngongo_language",
         "name": "Ngongo",
         "other_names": [],
         "scripts": [
             "Latn"
-        ]
+        ],
+        "wikidata": "Q11057478"
     },
     {
         "code": "nos",
@@ -55060,9 +55269,13 @@ ALL_LANGUAGES = json.loads("""
         "code": "nst",
         "family_code": "sit-tno",
         "family_name": "Tangsa-Nocte",
+        "language_url": "https://en.wiktionary.org/wiki/Category:Tangsa_language",
         "name": "Tangsa",
         "other_names": [],
-        "scripts": []
+        "scripts": [
+            "Latn"
+        ],
+        "wikidata": "Q56350"
     },
     {
         "code": "nsu",
@@ -55249,8 +55462,8 @@ ALL_LANGUAGES = json.loads("""
     },
     {
         "code": "ntw",
-        "family_code": "iro",
-        "family_name": "Iroquoian",
+        "family_code": "iro-nor",
+        "family_name": "North Iroquoian",
         "language_url": "https://en.wiktionary.org/wiki/Category:Nottoway_language",
         "name": "Nottoway",
         "other_names": [],
@@ -55273,9 +55486,11 @@ ALL_LANGUAGES = json.loads("""
         "code": "nty",
         "family_code": "sit-mnz",
         "family_name": "Mondzish",
+        "language_url": "https://en.wiktionary.org/wiki/Category:Mantsi_language",
         "name": "Mantsi",
         "other_names": [],
-        "scripts": []
+        "scripts": [],
+        "wikidata": "Q56878"
     },
     {
         "code": "nua",
@@ -55424,14 +55639,18 @@ ALL_LANGUAGES = json.loads("""
         "code": "nuo",
         "family_code": "mkh-vie",
         "family_name": "Vietic",
+        "language_url": "https://en.wiktionary.org/wiki/Category:Ngu%C3%B4n_language",
         "name": "Ngu\u00f4n",
         "other_names": [],
-        "scripts": []
+        "scripts": [],
+        "wikidata": "Q3915785"
     },
     {
         "code": "nup",
         "family_code": "alv-ngb",
         "family_name": "Nupe-Gbagyi",
+        "has_diacr": true,
+        "has_sort": true,
         "language_url": "https://en.wiktionary.org/wiki/Category:Nupe_language",
         "name": "Nupe",
         "other_names": [
@@ -55481,7 +55700,10 @@ ALL_LANGUAGES = json.loads("""
         "language_url": "https://en.wiktionary.org/wiki/Category:Nung_language",
         "name": "Nung",
         "other_names": [],
-        "scripts": [],
+        "scripts": [
+            "Latn",
+            "Hani"
+        ],
         "wikidata": "Q72695"
     },
     {
@@ -55669,8 +55891,8 @@ ALL_LANGUAGES = json.loads("""
     },
     {
         "code": "nwy",
-        "family_code": "iro",
-        "family_name": "Iroquoian",
+        "family_code": "iro-nor",
+        "family_name": "North Iroquoian",
         "language_url": "https://en.wiktionary.org/wiki/Category:Nottoway-Meherrin_language",
         "name": "Nottoway-Meherrin",
         "other_names": [],
@@ -56386,11 +56608,13 @@ ALL_LANGUAGES = json.loads("""
         "code": "odk",
         "family_code": "inc-wes",
         "family_name": "Western Indo-Aryan",
+        "language_url": "https://en.wiktionary.org/wiki/Category:Od_language",
         "name": "Od",
         "other_names": [],
         "scripts": [
             "Arab"
-        ]
+        ],
+        "wikidata": "Q7077191"
     },
     {
         "code": "odt",
@@ -56559,21 +56783,25 @@ ALL_LANGUAGES = json.loads("""
         "code": "ojb",
         "family_code": "alg",
         "family_name": "Algonquian",
+        "language_url": "https://en.wiktionary.org/wiki/Category:Northwestern_Ojibwa_language",
         "name": "Northwestern Ojibwa",
         "other_names": [],
         "scripts": [
             "Latn"
-        ]
+        ],
+        "wikidata": "Q7060356"
     },
     {
         "code": "ojc",
         "family_code": "alg",
         "family_name": "Algonquian",
+        "language_url": "https://en.wiktionary.org/wiki/Category:Central_Ojibwa_language",
         "name": "Central Ojibwa",
         "other_names": [],
         "scripts": [
             "Latn"
-        ]
+        ],
+        "wikidata": "Q5061548"
     },
     {
         "code": "ojg",
@@ -56603,11 +56831,13 @@ ALL_LANGUAGES = json.loads("""
         "code": "ojs",
         "family_code": "alg",
         "family_name": "Algonquian",
+        "language_url": "https://en.wiktionary.org/wiki/Category:Severn_Ojibwa_language",
         "name": "Severn Ojibwa",
         "other_names": [],
         "scripts": [
             "Latn"
-        ]
+        ],
+        "wikidata": "Q56494"
     },
     {
         "code": "ojv",
@@ -56760,7 +56990,7 @@ ALL_LANGUAGES = json.loads("""
     {
         "code": "okm",
         "family_code": "qfa-kor",
-        "family_name": "Korean",
+        "family_name": "Koreanic",
         "has_diacr": true,
         "language_url": "https://en.wiktionary.org/wiki/Category:Middle_Korean_language",
         "name": "Middle Korean",
@@ -56788,7 +57018,7 @@ ALL_LANGUAGES = json.loads("""
     {
         "code": "oko",
         "family_code": "qfa-kor",
-        "family_name": "Korean",
+        "family_name": "Koreanic",
         "language_url": "https://en.wiktionary.org/wiki/Category:Old_Korean_language",
         "name": "Old Korean",
         "other_names": [],
@@ -56833,11 +57063,13 @@ ALL_LANGUAGES = json.loads("""
         "code": "okv",
         "family_code": "ngf",
         "family_name": "Trans-New Guinea",
+        "language_url": "https://en.wiktionary.org/wiki/Category:Orokaiva_language",
         "name": "Orokaiva",
         "other_names": [],
         "scripts": [
             "Latn"
-        ]
+        ],
+        "wikidata": "Q7103752"
     },
     {
         "code": "okx",
@@ -56851,6 +57083,19 @@ ALL_LANGUAGES = json.loads("""
         "scripts": [
             "Latn"
         ]
+    },
+    {
+        "code": "okz",
+        "family_code": "mkh-kmr",
+        "family_name": "Khmeric",
+        "language_url": "https://en.wiktionary.org/wiki/Category:Old_Khmer_language",
+        "name": "Old Khmer",
+        "other_names": [],
+        "scripts": [
+            "Latinx",
+            "Khmr"
+        ],
+        "wikidata": "Q9205"
     },
     {
         "code": "old",
@@ -57056,7 +57301,9 @@ ALL_LANGUAGES = json.loads("""
         "language_url": "https://en.wiktionary.org/wiki/Category:Old_Manipuri_language",
         "name": "Old Manipuri",
         "other_names": [],
-        "scripts": []
+        "scripts": [
+            "Mtei"
+        ]
     },
     {
         "code": "omr",
@@ -57143,8 +57390,8 @@ ALL_LANGUAGES = json.loads("""
     },
     {
         "code": "one",
-        "family_code": "iro",
-        "family_name": "Iroquoian",
+        "family_code": "iro-nor",
+        "family_name": "North Iroquoian",
         "language_url": "https://en.wiktionary.org/wiki/Category:Oneida_language",
         "name": "Oneida",
         "other_names": [],
@@ -57211,8 +57458,8 @@ ALL_LANGUAGES = json.loads("""
     },
     {
         "code": "ono",
-        "family_code": "iro",
-        "family_name": "Iroquoian",
+        "family_code": "iro-nor",
+        "family_name": "North Iroquoian",
         "language_url": "https://en.wiktionary.org/wiki/Category:Onondaga_language",
         "name": "Onondaga",
         "other_names": [],
@@ -57593,11 +57840,26 @@ ALL_LANGUAGES = json.loads("""
         "code": "osi",
         "family_code": "poz-sus",
         "family_name": "Sunda-Sulawesi",
+        "language_url": "https://en.wiktionary.org/wiki/Category:Osing_language",
         "name": "Osing",
         "other_names": [],
         "scripts": [
             "Latn"
-        ]
+        ],
+        "wikidata": "Q2701322"
+    },
+    {
+        "code": "osn",
+        "family_code": "poz-msa",
+        "family_name": "Malayo-Sumbawan",
+        "language_url": "https://en.wiktionary.org/wiki/Category:Old_Sundanese_language",
+        "name": "Old Sundanese",
+        "other_names": [],
+        "scripts": [
+            "Latn",
+            "Sund"
+        ],
+        "wikidata": "Q56197074"
     },
     {
         "code": "oso",
@@ -58054,11 +58316,13 @@ ALL_LANGUAGES = json.loads("""
         "code": "pag",
         "family_code": "phi",
         "family_name": "Philippine",
+        "has_diacr": true,
         "language_url": "https://en.wiktionary.org/wiki/Category:Pangasinan_language",
         "name": "Pangasinan",
         "other_names": [],
         "scripts": [
-            "Latn"
+            "Latn",
+            "Tglg"
         ],
         "wikidata": "Q33879"
     },
@@ -58301,21 +58565,25 @@ ALL_LANGUAGES = json.loads("""
         "code": "pbb",
         "family_code": "",
         "family_name": "",
+        "language_url": "https://en.wiktionary.org/wiki/Category:P%C3%A1ez_language",
         "name": "P\u00e1ez",
         "other_names": [],
         "scripts": [
             "Latn"
-        ]
+        ],
+        "wikidata": "Q33677"
     },
     {
         "code": "pbc",
-        "family_code": "sai-car",
-        "family_name": "Cariban",
+        "family_code": "sai-pem",
+        "family_name": "Pemongan",
+        "language_url": "https://en.wiktionary.org/wiki/Category:Patamona_language",
         "name": "Patamona",
         "other_names": [],
         "scripts": [
             "Latn"
-        ]
+        ],
+        "wikidata": "Q3915921"
     },
     {
         "code": "pbe",
@@ -58351,8 +58619,8 @@ ALL_LANGUAGES = json.loads("""
     },
     {
         "code": "pbh",
-        "family_code": "sai-car",
-        "family_name": "Cariban",
+        "family_code": "sai-ven",
+        "family_name": "Venezuelan Cariban",
         "language_url": "https://en.wiktionary.org/wiki/Category:Panare_language",
         "name": "Panare",
         "other_names": [],
@@ -58472,6 +58740,7 @@ ALL_LANGUAGES = json.loads("""
         "code": "pby",
         "family_code": "paa-asa",
         "family_name": "Arai-Samaia",
+        "language_url": "https://en.wiktionary.org/wiki/Category:Pyu_language",
         "name": "Pyu",
         "other_names": [
             "Papuan Pyu",
@@ -58480,7 +58749,8 @@ ALL_LANGUAGES = json.loads("""
         ],
         "scripts": [
             "Latn"
-        ]
+        ],
+        "wikidata": "Q2567925"
     },
     {
         "code": "pca",
@@ -58732,11 +59002,13 @@ ALL_LANGUAGES = json.loads("""
     },
     {
         "code": "pdu",
-        "family_code": "",
-        "family_name": "",
+        "family_code": "kar",
+        "family_name": "Karen",
+        "language_url": "https://en.wiktionary.org/wiki/Category:Kayan_language",
         "name": "Kayan",
         "other_names": [],
-        "scripts": []
+        "scripts": [],
+        "wikidata": "Q7123283"
     },
     {
         "code": "pea",
@@ -58833,11 +59105,13 @@ ALL_LANGUAGES = json.loads("""
         "code": "pej",
         "family_code": "nai-pom",
         "family_name": "Pomoan",
+        "language_url": "https://en.wiktionary.org/wiki/Category:Northern_Pomo_language",
         "name": "Northern Pomo",
         "other_names": [],
         "scripts": [
             "Latn"
-        ]
+        ],
+        "wikidata": "Q3396021"
     },
     {
         "code": "pek",
@@ -58898,21 +59172,25 @@ ALL_LANGUAGES = json.loads("""
         "code": "peq",
         "family_code": "nai-pom",
         "family_name": "Pomoan",
+        "language_url": "https://en.wiktionary.org/wiki/Category:Southern_Pomo_language",
         "name": "Southern Pomo",
         "other_names": [],
         "scripts": [
             "Latn"
-        ]
+        ],
+        "wikidata": "Q3396023"
     },
     {
         "code": "pev",
-        "family_code": "sai-car",
-        "family_name": "Cariban",
+        "family_code": "sai-map",
+        "family_name": "Mapoyan",
+        "language_url": "https://en.wiktionary.org/wiki/Category:P%C3%A9mono_language",
         "name": "P\u00e9mono",
         "other_names": [],
         "scripts": [
             "Latn"
-        ]
+        ],
+        "wikidata": "Q3439012"
     },
     {
         "code": "pex",
@@ -59073,8 +59351,8 @@ ALL_LANGUAGES = json.loads("""
     },
     {
         "code": "pgu",
-        "family_code": "paa-wpa",
-        "family_name": "West Papuan",
+        "family_code": "paa-nha",
+        "family_name": "North Halmahera",
         "language_url": "https://en.wiktionary.org/wiki/Category:Pagu_language",
         "name": "Pagu",
         "other_names": [],
@@ -59156,7 +59434,10 @@ ALL_LANGUAGES = json.loads("""
             "Phalulo",
             "Ashreti"
         ],
-        "scripts": [],
+        "scripts": [
+            "Latn",
+            "ur-Arab"
+        ],
         "wikidata": "Q2449549"
     },
     {
@@ -59563,12 +59844,13 @@ ALL_LANGUAGES = json.loads("""
     {
         "code": "pkc",
         "family_code": "qfa-kor",
-        "family_name": "Korean",
+        "family_name": "Koreanic",
         "language_url": "https://en.wiktionary.org/wiki/Category:Baekje_language",
         "name": "Baekje",
         "other_names": [],
         "scripts": [
-            "Hani"
+            "Hani",
+            "Kana"
         ],
         "wikidata": "Q4841264"
     },
@@ -59752,9 +60034,11 @@ ALL_LANGUAGES = json.loads("""
         "code": "pll",
         "family_code": "mkh-pal",
         "family_name": "Palaungic",
+        "language_url": "https://en.wiktionary.org/wiki/Category:Shwe_Palaung_language",
         "name": "Shwe Palaung",
         "other_names": [],
-        "scripts": []
+        "scripts": [],
+        "wikidata": "Q27941664"
     },
     {
         "code": "pln",
@@ -59806,11 +60090,13 @@ ALL_LANGUAGES = json.loads("""
         "code": "pls",
         "family_code": "omq-pop",
         "family_name": "Popolocan",
+        "language_url": "https://en.wiktionary.org/wiki/Category:San_Marcos_Tlalcoyalco_Popoloca_language",
         "name": "San Marcos Tlalcoyalco Popoloca",
         "other_names": [],
         "scripts": [
             "Latn"
-        ]
+        ],
+        "wikidata": "Q12641692"
     },
     {
         "code": "plu",
@@ -60308,6 +60594,7 @@ ALL_LANGUAGES = json.loads("""
         "code": "pnt",
         "family_code": "grk",
         "family_name": "Hellenic",
+        "has_diacr": true,
         "has_sort": true,
         "language_url": "https://en.wiktionary.org/wiki/Category:Pontic_Greek_language",
         "name": "Pontic Greek",
@@ -60325,11 +60612,13 @@ ALL_LANGUAGES = json.loads("""
         "code": "pnu",
         "family_code": "hmn",
         "family_name": "Hmong",
+        "language_url": "https://en.wiktionary.org/wiki/Category:Jiongnai_Bunu_language",
         "name": "Jiongnai Bunu",
         "other_names": [
             "Kiong Nai"
         ],
-        "scripts": []
+        "scripts": [],
+        "wikidata": "Q56325"
     },
     {
         "code": "pnv",
@@ -60808,7 +61097,6 @@ ALL_LANGUAGES = json.loads("""
         "code": "prg",
         "family_code": "bat",
         "family_name": "Baltic",
-        "has_diacr": true,
         "language_url": "https://en.wiktionary.org/wiki/Category:Old_Prussian_language",
         "name": "Old Prussian",
         "other_names": [
@@ -61394,9 +61682,11 @@ ALL_LANGUAGES = json.loads("""
         "code": "puo",
         "family_code": "mkh",
         "family_name": "Mon-Khmer",
+        "language_url": "https://en.wiktionary.org/wiki/Category:Puoc_language",
         "name": "Puoc",
         "other_names": [],
-        "scripts": []
+        "scripts": [],
+        "wikidata": "Q6440803"
     },
     {
         "code": "pup",
@@ -61672,11 +61962,13 @@ ALL_LANGUAGES = json.loads("""
         "code": "pyx",
         "family_code": "sit",
         "family_name": "Sino-Tibetan",
+        "language_url": "https://en.wiktionary.org/wiki/Category:Tircul_language",
         "name": "Tircul",
         "other_names": [
             "Pyu"
         ],
-        "scripts": []
+        "scripts": [],
+        "wikidata": "Q36259"
     },
     {
         "code": "pyy",
@@ -61688,6 +61980,16 @@ ALL_LANGUAGES = json.loads("""
             "Phen"
         ],
         "scripts": []
+    },
+    {
+        "code": "pzh",
+        "family_code": "map",
+        "family_name": "Austronesian",
+        "name": "Pazeh",
+        "other_names": [],
+        "scripts": [
+            "Latn"
+        ]
     },
     {
         "code": "pzn",
@@ -62237,9 +62539,11 @@ ALL_LANGUAGES = json.loads("""
         "code": "rbl",
         "family_code": "phi",
         "family_name": "Philippine",
+        "language_url": "https://en.wiktionary.org/wiki/Category:Miraya_Bikol_language",
         "name": "Miraya Bikol",
         "other_names": [],
-        "scripts": []
+        "scripts": [],
+        "wikidata": "Q18664557"
     },
     {
         "code": "rcf",
@@ -62338,8 +62642,8 @@ ALL_LANGUAGES = json.loads("""
     },
     {
         "code": "rel",
-        "family_code": "cus",
-        "family_name": "Cushitic",
+        "family_code": "cus-eas",
+        "family_name": "East Cushitic",
         "language_url": "https://en.wiktionary.org/wiki/Category:Rendille_language",
         "name": "Rendille",
         "other_names": [],
@@ -62483,8 +62787,8 @@ ALL_LANGUAGES = json.loads("""
         "name": "Rohingya",
         "other_names": [],
         "scripts": [
-            "Arab",
             "Rohg",
+            "Arab",
             "Mymr",
             "Latn",
             "Beng"
@@ -63011,9 +63315,11 @@ ALL_LANGUAGES = json.loads("""
         "code": "rnp",
         "family_code": "sit-whm",
         "family_name": "West Himalayish",
+        "language_url": "https://en.wiktionary.org/wiki/Category:Rongpo_language",
         "name": "Rongpo",
         "other_names": [],
-        "scripts": []
+        "scripts": [],
+        "wikidata": "Q7365672"
     },
     {
         "code": "rnw",
@@ -63642,8 +63948,8 @@ ALL_LANGUAGES = json.loads("""
     },
     {
         "code": "saj",
-        "family_code": "paa",
-        "family_name": "Papuan",
+        "family_code": "paa-nha",
+        "family_name": "North Halmahera",
         "language_url": "https://en.wiktionary.org/wiki/Category:Sahu_language",
         "name": "Sahu",
         "other_names": [],
@@ -63683,11 +63989,13 @@ ALL_LANGUAGES = json.loads("""
         "code": "sao",
         "family_code": "paa-tkw",
         "family_name": "Tor-Kwerba",
+        "language_url": "https://en.wiktionary.org/wiki/Category:Sause_language",
         "name": "Sause",
         "other_names": [],
         "scripts": [
             "Latn"
-        ]
+        ],
+        "wikidata": "Q4409155"
     },
     {
         "code": "saq",
@@ -63958,6 +64266,7 @@ ALL_LANGUAGES = json.loads("""
         "code": "sbn",
         "family_code": "inc-nwe",
         "family_name": "Northwestern Indo-Aryan",
+        "language_url": "https://en.wiktionary.org/wiki/Category:Sindhi_Bhil_language",
         "name": "Sindhi Bhil",
         "other_names": [],
         "scripts": [
@@ -63965,7 +64274,8 @@ ALL_LANGUAGES = json.loads("""
             "Deva",
             "Sind",
             "Guru"
-        ]
+        ],
+        "wikidata": "Q25559289"
     },
     {
         "code": "sbo",
@@ -64123,9 +64433,11 @@ ALL_LANGUAGES = json.loads("""
         "code": "scg",
         "family_code": "day",
         "family_name": "Land Dayak",
+        "language_url": "https://en.wiktionary.org/wiki/Category:Sanggau_language",
         "name": "Sanggau",
         "other_names": [],
-        "scripts": []
+        "scripts": [],
+        "wikidata": "Q12473466"
     },
     {
         "code": "sch",
@@ -64501,8 +64813,8 @@ ALL_LANGUAGES = json.loads("""
     },
     {
         "code": "see",
-        "family_code": "iro",
-        "family_name": "Iroquoian",
+        "family_code": "iro-nor",
+        "family_name": "North Iroquoian",
         "language_url": "https://en.wiktionary.org/wiki/Category:Seneca_language",
         "name": "Seneca",
         "other_names": [],
@@ -64515,9 +64827,11 @@ ALL_LANGUAGES = json.loads("""
         "code": "sef",
         "family_code": "alv-snr",
         "family_name": "Senari",
+        "language_url": "https://en.wiktionary.org/wiki/Category:Cebaara_Senoufo_language",
         "name": "Cebaara Senoufo",
         "other_names": [],
-        "scripts": []
+        "scripts": [],
+        "wikidata": "Q10975121"
     },
     {
         "code": "seg",
@@ -64993,9 +65307,11 @@ ALL_LANGUAGES = json.loads("""
         "code": "shd",
         "family_code": "inc-dar",
         "family_name": "Dardic",
+        "language_url": "https://en.wiktionary.org/wiki/Category:Kundal_Shahi_language",
         "name": "Kundal Shahi",
         "other_names": [],
-        "scripts": []
+        "scripts": [],
+        "wikidata": "Q6444265"
     },
     {
         "code": "she",
@@ -65046,6 +65362,7 @@ ALL_LANGUAGES = json.loads("""
         "code": "shi",
         "family_code": "ber",
         "family_name": "Berber",
+        "has_sort": true,
         "language_url": "https://en.wiktionary.org/wiki/Category:Tashelhit_language",
         "name": "Tashelhit",
         "other_names": [
@@ -65245,7 +65562,11 @@ ALL_LANGUAGES = json.loads("""
             "Shawiya Berber",
             "Chaou\u00efa"
         ],
-        "scripts": [],
+        "scripts": [
+            "Tfng",
+            "Arab",
+            "Latn"
+        ],
         "wikidata": "Q33274"
     },
     {
@@ -65285,8 +65606,8 @@ ALL_LANGUAGES = json.loads("""
             "Sidaama"
         ],
         "code": "sid",
-        "family_code": "cus",
-        "family_name": "Cushitic",
+        "family_code": "cus-hec",
+        "family_name": "Highland East Cushitic",
         "language_url": "https://en.wiktionary.org/wiki/Category:Sidamo_language",
         "name": "Sidamo",
         "other_names": [],
@@ -65352,13 +65673,15 @@ ALL_LANGUAGES = json.loads("""
     },
     {
         "code": "sik",
-        "family_code": "sai-car",
-        "family_name": "Cariban",
+        "family_code": "sai-prk",
+        "family_name": "Parukotoan",
+        "language_url": "https://en.wiktionary.org/wiki/Category:Sikiana_language",
         "name": "Sikiana",
         "other_names": [],
         "scripts": [
             "Latn"
-        ]
+        ],
+        "wikidata": "Q3443734"
     },
     {
         "code": "sil",
@@ -65861,7 +66184,7 @@ ALL_LANGUAGES = json.loads("""
             "Seraiki"
         ],
         "scripts": [
-            "ur-Arab",
+            "pa-Arab",
             "Mult",
             "Deva"
         ],
@@ -66051,13 +66374,15 @@ ALL_LANGUAGES = json.loads("""
     },
     {
         "code": "slj",
-        "family_code": "sai-car",
-        "family_name": "Cariban",
+        "family_code": "sai-prk",
+        "family_name": "Parukotoan",
+        "language_url": "https://en.wiktionary.org/wiki/Category:Salum%C3%A1_language",
         "name": "Salum\u00e1",
         "other_names": [],
         "scripts": [
             "Latn"
-        ]
+        ],
+        "wikidata": "Q7406296"
     },
     {
         "code": "sll",
@@ -67089,9 +67414,11 @@ ALL_LANGUAGES = json.loads("""
         "code": "spr",
         "family_code": "poz-cma",
         "family_name": "Central Maluku",
+        "language_url": "https://en.wiktionary.org/wiki/Category:Saparua_language",
         "name": "Saparua",
         "other_names": [],
-        "scripts": []
+        "scripts": [],
+        "wikidata": "Q7420921"
     },
     {
         "code": "sps",
@@ -67107,9 +67434,11 @@ ALL_LANGUAGES = json.loads("""
         "code": "spt",
         "family_code": "sit-las",
         "family_name": "Lahuli-Spiti",
+        "language_url": "https://en.wiktionary.org/wiki/Category:Spiti_Bhoti_language",
         "name": "Spiti Bhoti",
         "other_names": [],
-        "scripts": []
+        "scripts": [],
+        "wikidata": "Q22080879"
     },
     {
         "code": "spu",
@@ -67186,11 +67515,9 @@ ALL_LANGUAGES = json.loads("""
         "code": "sqk",
         "family_code": "sgn",
         "family_name": "sign",
-        "language_url": "https://en.wiktionary.org/wiki/Category:Albanian_Sign_Language",
         "name": "Albanian Sign Language",
         "other_names": [],
-        "scripts": [],
-        "wikidata": "Q4709168"
+        "scripts": []
     },
     {
         "code": "sqm",
@@ -67204,8 +67531,8 @@ ALL_LANGUAGES = json.loads("""
     },
     {
         "code": "sqn",
-        "family_code": "iro",
-        "family_name": "Iroquoian",
+        "family_code": "iro-nor",
+        "family_name": "North Iroquoian",
         "language_url": "https://en.wiktionary.org/wiki/Category:Susquehannock_language",
         "name": "Susquehannock",
         "other_names": [],
@@ -67468,17 +67795,21 @@ ALL_LANGUAGES = json.loads("""
         "code": "srv",
         "family_code": "phi",
         "family_name": "Philippine",
+        "language_url": "https://en.wiktionary.org/wiki/Category:Waray_Sorsogon_language",
         "name": "Waray Sorsogon",
         "other_names": [],
-        "scripts": []
+        "scripts": [],
+        "wikidata": "Q18755610"
     },
     {
         "code": "srw",
         "family_code": "poz-cet",
         "family_name": "Central-Eastern Malayo-Polynesian",
+        "language_url": "https://en.wiktionary.org/wiki/Category:Serua_language",
         "name": "Serua",
         "other_names": [],
-        "scripts": []
+        "scripts": [],
+        "wikidata": "Q14916905"
     },
     {
         "code": "srx",
@@ -67749,8 +68080,8 @@ ALL_LANGUAGES = json.loads("""
     },
     {
         "code": "ssy",
-        "family_code": "cus",
-        "family_name": "Cushitic",
+        "family_code": "cus-eas",
+        "family_name": "East Cushitic",
         "has_diacr": true,
         "language_url": "https://en.wiktionary.org/wiki/Category:Saho_language",
         "name": "Saho",
@@ -68179,7 +68510,6 @@ ALL_LANGUAGES = json.loads("""
         "code": "sva",
         "family_code": "ccs",
         "family_name": "Kartvelian",
-        "has_diacr": true,
         "language_url": "https://en.wiktionary.org/wiki/Category:Svan_language",
         "name": "Svan",
         "other_names": [],
@@ -68412,9 +68742,11 @@ ALL_LANGUAGES = json.loads("""
         "code": "sws",
         "family_code": "poz-cet",
         "family_name": "Central-Eastern Malayo-Polynesian",
+        "language_url": "https://en.wiktionary.org/wiki/Category:Seluwasan_language",
         "name": "Seluwasan",
         "other_names": [],
-        "scripts": []
+        "scripts": [],
+        "wikidata": "Q7448845"
     },
     {
         "code": "swt",
@@ -69347,13 +69679,15 @@ ALL_LANGUAGES = json.loads("""
         "code": "tbt",
         "family_code": "bnt-shh",
         "family_name": "Shi-Havu",
+        "language_url": "https://en.wiktionary.org/wiki/Category:Kitembo_language",
         "name": "Kitembo",
         "other_names": [
             "Tembo"
         ],
         "scripts": [
             "Latn"
-        ]
+        ],
+        "wikidata": "Q13123561"
     },
     {
         "code": "tbu",
@@ -69403,8 +69737,8 @@ ALL_LANGUAGES = json.loads("""
     },
     {
         "code": "tby",
-        "family_code": "paa-wpa",
-        "family_name": "West Papuan",
+        "family_code": "paa-nha",
+        "family_name": "North Halmahera",
         "language_url": "https://en.wiktionary.org/wiki/Category:Tabaru_language",
         "name": "Tabaru",
         "other_names": [],
@@ -69645,6 +69979,7 @@ ALL_LANGUAGES = json.loads("""
         "name": "Tulu",
         "other_names": [],
         "scripts": [
+            "Mlym",
             "Knda"
         ],
         "wikidata": "Q34251"
@@ -69693,6 +70028,7 @@ ALL_LANGUAGES = json.loads("""
         "code": "tdd",
         "family_code": "tai-swe",
         "family_name": "Southwestern Tai",
+        "has_diacr": true,
         "language_url": "https://en.wiktionary.org/wiki/Category:Tai_N%C3%BCa_language",
         "name": "Tai N\u00fca",
         "other_names": [],
@@ -69846,6 +70182,7 @@ ALL_LANGUAGES = json.loads("""
         "code": "tdt",
         "family_code": "crp",
         "family_name": "creole or pidgin",
+        "language_url": "https://en.wiktionary.org/wiki/Category:Tetun_Dili_language",
         "name": "Tetun Dili",
         "other_names": [
             "Tetum Dili",
@@ -69856,7 +70193,8 @@ ALL_LANGUAGES = json.loads("""
         ],
         "scripts": [
             "Latn"
-        ]
+        ],
+        "wikidata": "Q12643484"
     },
     {
         "code": "tdu",
@@ -70061,9 +70399,11 @@ ALL_LANGUAGES = json.loads("""
         "code": "tes",
         "family_code": "poz",
         "family_name": "Malayo-Polynesian",
+        "language_url": "https://en.wiktionary.org/wiki/Category:Tengger_language",
         "name": "Tengger",
         "other_names": [],
-        "scripts": []
+        "scripts": [],
+        "wikidata": "Q12473479"
     },
     {
         "code": "tet",
@@ -70195,8 +70535,8 @@ ALL_LANGUAGES = json.loads("""
     },
     {
         "code": "tft",
-        "family_code": "paa-wpa",
-        "family_name": "West Papuan",
+        "family_code": "paa-nha",
+        "family_name": "North Halmahera",
         "language_url": "https://en.wiktionary.org/wiki/Category:Ternate_language",
         "name": "Ternate",
         "other_names": [],
@@ -70218,9 +70558,11 @@ ALL_LANGUAGES = json.loads("""
         "code": "tgb",
         "family_code": "poz-san",
         "family_name": "Sabahan",
+        "language_url": "https://en.wiktionary.org/wiki/Category:Tobilung_language",
         "name": "Tobilung",
         "other_names": [],
-        "scripts": []
+        "scripts": [],
+        "wikidata": "Q12953913"
     },
     {
         "code": "tgc",
@@ -70660,7 +71002,9 @@ ALL_LANGUAGES = json.loads("""
         "language_url": "https://en.wiktionary.org/wiki/Category:Tindi_language",
         "name": "Tindi",
         "other_names": [],
-        "scripts": [],
+        "scripts": [
+            "Cyrl"
+        ],
         "wikidata": "Q36860"
     },
     {
@@ -71005,11 +71349,13 @@ ALL_LANGUAGES = json.loads("""
         "code": "tks",
         "family_code": "xme-ttc",
         "family_name": "Tatic",
+        "language_url": "https://en.wiktionary.org/wiki/Category:Ramandi_language",
         "name": "Ramandi",
         "other_names": [
             "Takestani"
         ],
-        "scripts": []
+        "scripts": [],
+        "wikidata": "Q25261947"
     },
     {
         "code": "tkt",
@@ -71082,8 +71428,8 @@ ALL_LANGUAGES = json.loads("""
     },
     {
         "code": "tlb",
-        "family_code": "paa-wpa",
-        "family_name": "West Papuan",
+        "family_code": "paa-nha",
+        "family_name": "North Halmahera",
         "language_url": "https://en.wiktionary.org/wiki/Category:Tobelo_language",
         "name": "Tobelo",
         "other_names": [],
@@ -71108,9 +71454,11 @@ ALL_LANGUAGES = json.loads("""
         "code": "tld",
         "family_code": "phi",
         "family_name": "Philippine",
+        "language_url": "https://en.wiktionary.org/wiki/Category:Talaud_language",
         "name": "Talaud",
         "other_names": [],
-        "scripts": []
+        "scripts": [],
+        "wikidata": "Q7678964"
     },
     {
         "code": "tlf",
@@ -71520,8 +71868,8 @@ ALL_LANGUAGES = json.loads("""
     },
     {
         "code": "tmz",
-        "family_code": "sai-car",
-        "family_name": "Cariban",
+        "family_code": "sai-ven",
+        "family_name": "Venezuelan Cariban",
         "language_url": "https://en.wiktionary.org/wiki/Category:Tamanaku_language",
         "name": "Tamanaku",
         "other_names": [],
@@ -71612,9 +71960,11 @@ ALL_LANGUAGES = json.loads("""
         "code": "tnk",
         "family_code": "poz-oce",
         "family_name": "Oceanic",
+        "language_url": "https://en.wiktionary.org/wiki/Category:Kwamera_language",
         "name": "Kwamera",
         "other_names": [],
-        "scripts": []
+        "scripts": [],
+        "wikidata": "Q3200806"
     },
     {
         "code": "tnl",
@@ -71865,6 +72215,18 @@ ALL_LANGUAGES = json.loads("""
         "wikidata": "Q36762"
     },
     {
+        "code": "tok",
+        "family_code": "art",
+        "family_name": "constructed",
+        "language_url": "https://en.wiktionary.org/wiki/Category:Toki_Pona_language",
+        "name": "Toki Pona",
+        "other_names": [],
+        "scripts": [
+            "Latn"
+        ],
+        "wikidata": "Q36846"
+    },
+    {
         "code": "tol",
         "family_code": "ath-pco",
         "family_name": "Pacific Coast Athabaskan",
@@ -71945,9 +72307,11 @@ ALL_LANGUAGES = json.loads("""
         "code": "tou",
         "family_code": "mkh-vie",
         "family_name": "Vietic",
+        "language_url": "https://en.wiktionary.org/wiki/Category:Tho_language",
         "name": "Tho",
         "other_names": [],
-        "scripts": []
+        "scripts": [],
+        "wikidata": "Q22694631"
     },
     {
         "code": "tov",
@@ -72168,9 +72532,11 @@ ALL_LANGUAGES = json.loads("""
         "code": "tpv",
         "family_code": "poz-mic",
         "family_name": "Micronesian",
+        "language_url": "https://en.wiktionary.org/wiki/Category:Tanapag_language",
         "name": "Tanapag",
         "other_names": [],
-        "scripts": []
+        "scripts": [],
+        "wikidata": "Q3397371"
     },
     {
         "code": "tpw",
@@ -72278,8 +72644,8 @@ ALL_LANGUAGES = json.loads("""
     },
     {
         "code": "tqq",
-        "family_code": "cus",
-        "family_name": "Cushitic",
+        "family_code": "cus-eas",
+        "family_name": "East Cushitic",
         "language_url": "https://en.wiktionary.org/wiki/Category:Tunni_language",
         "name": "Tunni",
         "other_names": [],
@@ -72402,8 +72768,8 @@ ALL_LANGUAGES = json.loads("""
     },
     {
         "code": "tri",
-        "family_code": "sai-car",
-        "family_name": "Cariban",
+        "family_code": "sai-tar",
+        "family_name": "Taranoan",
         "language_url": "https://en.wiktionary.org/wiki/Category:Tri%C3%B3_language",
         "name": "Tri\u00f3",
         "other_names": [
@@ -72611,8 +72977,8 @@ ALL_LANGUAGES = json.loads("""
     },
     {
         "code": "tsb",
-        "family_code": "cus",
-        "family_name": "Cushitic",
+        "family_code": "cus-eas",
+        "family_name": "East Cushitic",
         "language_url": "https://en.wiktionary.org/wiki/Category:Tsamai_language",
         "name": "Tsamai",
         "other_names": [],
@@ -72631,6 +72997,7 @@ ALL_LANGUAGES = json.loads("""
         "code": "tsd",
         "family_code": "grk",
         "family_name": "Hellenic",
+        "has_diacr": true,
         "has_sort": true,
         "language_url": "https://en.wiktionary.org/wiki/Category:Tsakonian_language",
         "name": "Tsakonian",
@@ -72744,7 +73111,9 @@ ALL_LANGUAGES = json.loads("""
         "language_url": "https://en.wiktionary.org/wiki/Category:Thai_Sign_Language",
         "name": "Thai Sign Language",
         "other_names": [],
-        "scripts": [],
+        "scripts": [
+            "Sgnw"
+        ],
         "wikidata": "Q7709156"
     },
     {
@@ -73156,8 +73525,8 @@ ALL_LANGUAGES = json.loads("""
     },
     {
         "code": "tuj",
-        "family_code": "",
-        "family_name": "",
+        "family_code": "paa-nha",
+        "family_name": "North Halmahera",
         "name": "Tugutil",
         "other_names": [],
         "scripts": []
@@ -73220,8 +73589,8 @@ ALL_LANGUAGES = json.loads("""
     },
     {
         "code": "tus",
-        "family_code": "iro",
-        "family_name": "Iroquoian",
+        "family_code": "iro-nor",
+        "family_name": "North Iroquoian",
         "language_url": "https://en.wiktionary.org/wiki/Category:Tuscarora_language",
         "name": "Tuscarora",
         "other_names": [],
@@ -73362,12 +73731,15 @@ ALL_LANGUAGES = json.loads("""
     },
     {
         "code": "tvo",
-        "family_code": "paa-wpa",
-        "family_name": "West Papuan",
+        "family_code": "paa-nha",
+        "family_name": "North Halmahera",
         "language_url": "https://en.wiktionary.org/wiki/Category:Tidore_language",
         "name": "Tidore",
         "other_names": [],
-        "scripts": [],
+        "scripts": [
+            "Latn",
+            "Arab"
+        ],
         "wikidata": "Q3528199"
     },
     {
@@ -73608,9 +73980,11 @@ ALL_LANGUAGES = json.loads("""
         "code": "txa",
         "family_code": "poz-san",
         "family_name": "Sabahan",
+        "language_url": "https://en.wiktionary.org/wiki/Category:Tombonuo_language",
         "name": "Tombonuo",
         "other_names": [],
-        "scripts": []
+        "scripts": [],
+        "wikidata": "Q7818692"
     },
     {
         "code": "txb",
@@ -73669,19 +74043,22 @@ ALL_LANGUAGES = json.loads("""
         "name": "Thracian",
         "other_names": [],
         "scripts": [
+            "Latn",
             "Grek"
         ],
         "wikidata": "Q36793"
     },
     {
         "code": "txi",
-        "family_code": "sai-car",
-        "family_name": "Cariban",
+        "family_code": "sai-pek",
+        "family_name": "Pekodian",
+        "language_url": "https://en.wiktionary.org/wiki/Category:Ikpeng_language",
         "name": "Ikpeng",
         "other_names": [],
         "scripts": [
             "Latn"
-        ]
+        ],
+        "wikidata": "Q9344891"
     },
     {
         "code": "txj",
@@ -73938,7 +74315,8 @@ ALL_LANGUAGES = json.loads("""
         "name": "T\u00e0y",
         "other_names": [],
         "scripts": [
-            "Latn"
+            "Latn",
+            "Hani"
         ],
         "wikidata": "Q2511476"
     },
@@ -74477,11 +74855,14 @@ ALL_LANGUAGES = json.loads("""
         "wikidata": "Q5509187"
     },
     {
+        "aliases": [
+            "Ulukwumi"
+        ],
         "code": "ulb",
         "family_code": "alv-yor",
         "family_name": "Yoruboid",
-        "language_url": "https://en.wiktionary.org/wiki/Category:Ulukwumi_language",
-        "name": "Ulukwumi",
+        "language_url": "https://en.wiktionary.org/wiki/Category:Olukumi_language",
+        "name": "Olukumi",
         "other_names": [],
         "scripts": [],
         "wikidata": "Q36722"
@@ -74593,11 +74974,13 @@ ALL_LANGUAGES = json.loads("""
         "code": "uma",
         "family_code": "nai-shp",
         "family_name": "Sahaptian",
+        "language_url": "https://en.wiktionary.org/wiki/Category:Umatilla_language",
         "name": "Umatilla",
         "other_names": [],
         "scripts": [
             "Latn"
-        ]
+        ],
+        "wikidata": "Q12953952"
     },
     {
         "code": "umb",
@@ -74875,6 +75258,16 @@ ALL_LANGUAGES = json.loads("""
         "family_code": "alv-edo",
         "family_name": "Edoid",
         "name": "Uokha",
+        "other_names": [],
+        "scripts": [
+            "Latn"
+        ]
+    },
+    {
+        "code": "uon",
+        "family_code": "map",
+        "family_name": "Austronesian",
+        "name": "Kulon",
         "other_names": [],
         "scripts": [
             "Latn"
@@ -75160,11 +75553,13 @@ ALL_LANGUAGES = json.loads("""
     },
     {
         "code": "ush",
-        "family_code": "",
-        "family_name": "",
+        "family_code": "inc-dar",
+        "family_name": "Dardic",
+        "language_url": "https://en.wiktionary.org/wiki/Category:Ushojo_language",
         "name": "Ushojo",
         "other_names": [],
-        "scripts": []
+        "scripts": [],
+        "wikidata": "Q3540446"
     },
     {
         "code": "usi",
@@ -75436,12 +75831,20 @@ ALL_LANGUAGES = json.loads("""
         "scripts": []
     },
     {
+        "aliases": [
+            "Varhadi-Nagpuri"
+        ],
         "code": "vah",
         "family_code": "inc-sou",
         "family_name": "Southern Indo-Aryan",
-        "name": "Varhadi-Nagpuri",
+        "language_url": "https://en.wiktionary.org/wiki/Category:Varhadi_language",
+        "name": "Varhadi",
         "other_names": [],
-        "scripts": []
+        "scripts": [
+            "Deva",
+            "Modi"
+        ],
+        "wikidata": "Q155645"
     },
     {
         "code": "vai",
@@ -76524,8 +76927,8 @@ ALL_LANGUAGES = json.loads("""
     },
     {
         "code": "waw",
-        "family_code": "sai-car",
-        "family_name": "Cariban",
+        "family_code": "sai-prk",
+        "family_name": "Parukotoan",
         "language_url": "https://en.wiktionary.org/wiki/Category:Waiwai_language",
         "name": "Waiwai",
         "other_names": [
@@ -76555,8 +76958,8 @@ ALL_LANGUAGES = json.loads("""
     },
     {
         "code": "way",
-        "family_code": "sai-car",
-        "family_name": "Cariban",
+        "family_code": "sai-gui",
+        "family_name": "Guianan",
         "language_url": "https://en.wiktionary.org/wiki/Category:Wayana_language",
         "name": "Wayana",
         "other_names": [],
@@ -76643,8 +77046,8 @@ ALL_LANGUAGES = json.loads("""
     },
     {
         "code": "wbj",
-        "family_code": "cus",
-        "family_name": "Cushitic",
+        "family_code": "cus-sou",
+        "family_name": "South Cushitic",
         "language_url": "https://en.wiktionary.org/wiki/Category:Alagwa_language",
         "name": "Alagwa",
         "other_names": [],
@@ -76810,6 +77213,18 @@ ALL_LANGUAGES = json.loads("""
         "wikidata": "Q7959489"
     },
     {
+        "code": "wdt",
+        "family_code": "iro-nor",
+        "family_name": "North Iroquoian",
+        "language_url": "https://en.wiktionary.org/wiki/Category:Wendat_language",
+        "name": "Wendat",
+        "other_names": [],
+        "scripts": [
+            "Latn"
+        ],
+        "wikidata": "Q3567223"
+    },
+    {
         "code": "wdu",
         "family_code": "",
         "family_name": "",
@@ -76902,6 +77317,7 @@ ALL_LANGUAGES = json.loads("""
         "code": "wes",
         "family_code": "crp",
         "family_name": "creole or pidgin",
+        "language_url": "https://en.wiktionary.org/wiki/Category:Cameroon_Pidgin_language",
         "name": "Cameroon Pidgin",
         "other_names": [
             "Cameroonian Pidgin English",
@@ -76910,7 +77326,8 @@ ALL_LANGUAGES = json.loads("""
         ],
         "scripts": [
             "Latn"
-        ]
+        ],
+        "wikidata": "Q35541"
     },
     {
         "code": "wet",
@@ -77247,8 +77664,8 @@ ALL_LANGUAGES = json.loads("""
     },
     {
         "code": "wka",
-        "family_code": "cus",
-        "family_name": "Cushitic",
+        "family_code": "cus-sou",
+        "family_name": "South Cushitic",
         "language_url": "https://en.wiktionary.org/wiki/Category:Kw%27adza_language",
         "name": "Kw'adza",
         "other_names": [],
@@ -77356,11 +77773,13 @@ ALL_LANGUAGES = json.loads("""
     },
     {
         "code": "wli",
-        "family_code": "",
-        "family_name": "",
+        "family_code": "paa-nha",
+        "family_name": "North Halmahera",
+        "language_url": "https://en.wiktionary.org/wiki/Category:Waioli_language",
         "name": "Waioli",
         "other_names": [],
-        "scripts": []
+        "scripts": [],
+        "wikidata": "Q7960241"
     },
     {
         "code": "wlk",
@@ -77813,9 +78232,11 @@ ALL_LANGUAGES = json.loads("""
         "code": "wob",
         "family_code": "kro-wee",
         "family_name": "Wee",
+        "language_url": "https://en.wiktionary.org/wiki/Category:W%C3%A8_Northern_language",
         "name": "W\u00e8 Northern",
         "other_names": [],
-        "scripts": []
+        "scripts": [],
+        "wikidata": "Q3915363"
     },
     {
         "code": "woc",
@@ -78223,9 +78644,11 @@ ALL_LANGUAGES = json.loads("""
         "code": "wss",
         "family_code": "alv-ctn",
         "family_name": "Central Tano",
+        "language_url": "https://en.wiktionary.org/wiki/Category:Wasa_language",
         "name": "Wasa",
         "other_names": [],
-        "scripts": []
+        "scripts": [],
+        "wikidata": "Q36914"
     },
     {
         "code": "wsu",
@@ -78489,11 +78912,15 @@ ALL_LANGUAGES = json.loads("""
     },
     {
         "code": "wxa",
-        "family_code": "",
-        "family_name": "",
+        "family_code": "zhx",
+        "family_name": "Sinitic",
+        "language_url": "https://en.wiktionary.org/wiki/Category:Waxianghua_language",
         "name": "Waxianghua",
         "other_names": [],
-        "scripts": []
+        "scripts": [
+            "Hani"
+        ],
+        "wikidata": "Q2252191"
     },
     {
         "code": "wxw",
@@ -78505,8 +78932,8 @@ ALL_LANGUAGES = json.loads("""
     },
     {
         "code": "wya",
-        "family_code": "iro",
-        "family_name": "Iroquoian",
+        "family_code": "iro-nor",
+        "family_name": "North Iroquoian",
         "language_url": "https://en.wiktionary.org/wiki/Category:Wyandot_language",
         "name": "Wyandot",
         "other_names": [],
@@ -78615,9 +79042,11 @@ ALL_LANGUAGES = json.loads("""
         "code": "wyy",
         "family_code": "poz-occ",
         "family_name": "Central-Eastern Oceanic",
+        "language_url": "https://en.wiktionary.org/wiki/Category:Western_Fijian_language",
         "name": "Western Fijian",
         "other_names": [],
-        "scripts": []
+        "scripts": [],
+        "wikidata": "Q3062751"
     },
     {
         "code": "xaa",
@@ -78763,8 +79192,8 @@ ALL_LANGUAGES = json.loads("""
     },
     {
         "code": "xan",
-        "family_code": "cus",
-        "family_name": "Cushitic",
+        "family_code": "cus-cen",
+        "family_name": "Central Cushitic",
         "language_url": "https://en.wiktionary.org/wiki/Category:Xamtanga_language",
         "name": "Xamtanga",
         "other_names": [],
@@ -79170,7 +79599,9 @@ ALL_LANGUAGES = json.loads("""
             "Chuvantsy",
             "Chuvansky"
         ],
-        "scripts": [],
+        "scripts": [
+            "Cyrl"
+        ],
         "wikidata": "Q3516641"
     },
     {
@@ -79524,8 +79955,8 @@ ALL_LANGUAGES = json.loads("""
     },
     {
         "code": "xhd",
-        "family_code": "",
-        "family_name": "",
+        "family_code": "sem-osa",
+        "family_name": "Old South Arabian",
         "language_url": "https://en.wiktionary.org/wiki/Category:Hadrami_language",
         "name": "Hadrami",
         "other_names": [],
@@ -79545,6 +79976,19 @@ ALL_LANGUAGES = json.loads("""
         ],
         "scripts": [],
         "wikidata": "Q2614111"
+    },
+    {
+        "code": "xhm",
+        "family_code": "mkh-kmr",
+        "family_name": "Khmeric",
+        "language_url": "https://en.wiktionary.org/wiki/Category:Middle_Khmer_language",
+        "name": "Middle Khmer",
+        "other_names": [],
+        "scripts": [
+            "Latinx",
+            "Khmr"
+        ],
+        "wikidata": "Q25226861"
     },
     {
         "code": "xhr",
@@ -79688,11 +80132,15 @@ ALL_LANGUAGES = json.loads("""
     },
     {
         "code": "xka",
-        "family_code": "",
-        "family_name": "",
+        "family_code": "inc-dar",
+        "family_name": "Dardic",
+        "language_url": "https://en.wiktionary.org/wiki/Category:Kalkoti_language",
         "name": "Kalkoti",
         "other_names": [],
-        "scripts": []
+        "scripts": [
+            "xka-Arab"
+        ],
+        "wikidata": "Q3877551"
     },
     {
         "code": "xkb",
@@ -79754,9 +80202,11 @@ ALL_LANGUAGES = json.loads("""
         "code": "xkg",
         "family_code": "dmn-wmn",
         "family_name": "West Manding",
+        "language_url": "https://en.wiktionary.org/wiki/Category:Kagoro_language",
         "name": "Kagoro",
         "other_names": [],
-        "scripts": []
+        "scripts": [],
+        "wikidata": "Q11159524"
     },
     {
         "code": "xki",
@@ -80362,11 +80812,13 @@ ALL_LANGUAGES = json.loads("""
     },
     {
         "code": "xni",
-        "family_code": "",
-        "family_name": "",
+        "family_code": "aus-yuk",
+        "family_name": "Yuin-Kuric",
+        "language_url": "https://en.wiktionary.org/wiki/Category:Ngarigu_language",
         "name": "Ngarigu",
         "other_names": [],
-        "scripts": []
+        "scripts": [],
+        "wikidata": "Q7022072"
     },
     {
         "code": "xnk",
@@ -80404,9 +80856,11 @@ ALL_LANGUAGES = json.loads("""
         "code": "xns",
         "family_code": "sit-whm",
         "family_name": "West Himalayish",
+        "language_url": "https://en.wiktionary.org/wiki/Category:Kanashi_language",
         "name": "Kanashi",
         "other_names": [],
-        "scripts": []
+        "scripts": [],
+        "wikidata": "Q6360672"
     },
     {
         "code": "xnt",
@@ -80846,7 +81300,7 @@ ALL_LANGUAGES = json.loads("""
     {
         "code": "xpy",
         "family_code": "qfa-kor",
-        "family_name": "Korean",
+        "family_name": "Koreanic",
         "language_url": "https://en.wiktionary.org/wiki/Category:Buyeo_language",
         "name": "Buyeo",
         "other_names": [],
@@ -80859,6 +81313,7 @@ ALL_LANGUAGES = json.loads("""
         "code": "xpz",
         "family_code": "",
         "family_name": "",
+        "language_url": "https://en.wiktionary.org/wiki/Category:Bruny_Island_language",
         "name": "Bruny Island",
         "other_names": [
             "Bruny Island Tasmanian",
@@ -80867,12 +81322,14 @@ ALL_LANGUAGES = json.loads("""
         ],
         "scripts": [
             "Latn"
-        ]
+        ],
+        "wikidata": "Q4979601"
     },
     {
         "code": "xqa",
         "family_code": "trk-kar",
         "family_name": "Karluk",
+        "has_diacr": true,
         "language_url": "https://en.wiktionary.org/wiki/Category:Karakhanid_language",
         "name": "Karakhanid",
         "other_names": [],
@@ -80906,9 +81363,11 @@ ALL_LANGUAGES = json.loads("""
         "code": "xrb",
         "family_code": "alv-krb",
         "family_name": "Karaboro",
+        "language_url": "https://en.wiktionary.org/wiki/Category:Eastern_Karaboro_language",
         "name": "Eastern Karaboro",
         "other_names": [],
-        "scripts": []
+        "scripts": [],
+        "wikidata": "Q35716"
     },
     {
         "code": "xrd",
@@ -81452,11 +81911,9 @@ ALL_LANGUAGES = json.loads("""
         "code": "xua",
         "family_code": "dra",
         "family_name": "Dravidian",
-        "language_url": "https://en.wiktionary.org/wiki/Category:Alu_Kurumba_language",
         "name": "Alu Kurumba",
         "other_names": [],
-        "scripts": [],
-        "wikidata": "Q12952679"
+        "scripts": []
     },
     {
         "code": "xub",
@@ -82134,8 +82591,8 @@ ALL_LANGUAGES = json.loads("""
     },
     {
         "code": "yar",
-        "family_code": "sai-car",
-        "family_name": "Cariban",
+        "family_code": "sai-map",
+        "family_name": "Mapoyan",
         "language_url": "https://en.wiktionary.org/wiki/Category:Yabarana_language",
         "name": "Yabarana",
         "other_names": [],
@@ -82399,8 +82856,7 @@ ALL_LANGUAGES = json.loads("""
         "language_url": "https://en.wiktionary.org/wiki/Category:Yanda_language",
         "name": "Yanda",
         "other_names": [],
-        "scripts": [],
-        "wikidata": "Q8048316"
+        "scripts": []
     },
     {
         "code": "yde",
@@ -83207,8 +83663,8 @@ ALL_LANGUAGES = json.loads("""
     },
     {
         "code": "ymm",
-        "family_code": "cus",
-        "family_name": "Cushitic",
+        "family_code": "cus-eas",
+        "family_name": "East Cushitic",
         "language_url": "https://en.wiktionary.org/wiki/Category:Maay_language",
         "name": "Maay",
         "other_names": [],
@@ -83366,12 +83822,20 @@ ALL_LANGUAGES = json.loads("""
         "wikidata": "Q56419"
     },
     {
+        "aliases": [
+            "Tai Yong"
+        ],
         "code": "yno",
         "family_code": "tai-swe",
         "family_name": "Southwestern Tai",
+        "language_url": "https://en.wiktionary.org/wiki/Category:Yong_language",
         "name": "Yong",
         "other_names": [],
-        "scripts": []
+        "scripts": [
+            "Lana",
+            "Thai"
+        ],
+        "wikidata": "Q8054978"
     },
     {
         "code": "yns",
@@ -83984,8 +84448,8 @@ ALL_LANGUAGES = json.loads("""
     },
     {
         "code": "yup",
-        "family_code": "sai-car",
-        "family_name": "Cariban",
+        "family_code": "sai-yuk",
+        "family_name": "Yukpan",
         "language_url": "https://en.wiktionary.org/wiki/Category:Yukpa_language",
         "name": "Yukpa",
         "other_names": [],
@@ -84920,17 +85384,19 @@ ALL_LANGUAGES = json.loads("""
         "code": "zkb",
         "family_code": "syd",
         "family_name": "Samoyedic",
+        "language_url": "https://en.wiktionary.org/wiki/Category:Koibal_language",
         "name": "Koibal",
         "other_names": [],
         "scripts": [
             "Latn",
             "Cyrl"
-        ]
+        ],
+        "wikidata": "Q949259"
     },
     {
         "code": "zkg",
         "family_code": "qfa-kor",
-        "family_name": "Korean",
+        "family_name": "Koreanic",
         "language_url": "https://en.wiktionary.org/wiki/Category:Goguryeo_language",
         "name": "Goguryeo",
         "other_names": [],
@@ -85785,7 +86251,7 @@ ALL_LANGUAGES = json.loads("""
         ],
         "code": "zra",
         "family_code": "qfa-kor",
-        "family_name": "Korean",
+        "family_name": "Koreanic",
         "language_url": "https://en.wiktionary.org/wiki/Category:Kaya_language",
         "name": "Kaya",
         "other_names": [],
@@ -86347,6 +86813,17 @@ ALL_LANGUAGES = json.loads("""
         ]
     },
     {
+        "code": "alv-ido-pro",
+        "family_code": "alv-ido",
+        "family_name": "Idomoid",
+        "language_url": "https://en.wiktionary.org/wiki/Category:Proto-Idomoid_language",
+        "name": "Proto-Idomoid",
+        "other_names": [],
+        "scripts": [
+            "Latn"
+        ]
+    },
+    {
         "code": "alv-igb-pro",
         "family_code": "alv-igb",
         "family_name": "Igboid",
@@ -86569,18 +87046,6 @@ ALL_LANGUAGES = json.loads("""
         "scripts": [
             "Latn"
         ]
-    },
-    {
-        "code": "art-top",
-        "family_code": "art",
-        "family_name": "constructed",
-        "language_url": "https://en.wiktionary.org/wiki/Category:Toki_Pona_language",
-        "name": "Toki Pona",
-        "other_names": [],
-        "scripts": [
-            "Latn"
-        ],
-        "wikidata": "Q36846"
     },
     {
         "code": "art-una",
@@ -87364,6 +87829,17 @@ ALL_LANGUAGES = json.loads("""
         ]
     },
     {
+        "code": "bnt-bwa",
+        "family_code": "bnt-tek",
+        "family_name": "Teke",
+        "language_url": "https://en.wiktionary.org/wiki/Category:Bwala_language",
+        "name": "Bwala",
+        "other_names": [],
+        "scripts": [
+            "Latn"
+        ]
+    },
+    {
         "code": "bnt-cmw",
         "family_code": "bnt-swh",
         "family_name": "Swahili",
@@ -87503,6 +87979,7 @@ ALL_LANGUAGES = json.loads("""
         "code": "bnt-sts-pro",
         "family_code": "bnt-sts",
         "family_name": "Sotho-Tswana",
+        "language_url": "https://en.wiktionary.org/wiki/Category:Proto-Sotho-Tswana_language",
         "name": "Proto-Sotho-Tswana",
         "other_names": [],
         "scripts": [
@@ -88032,8 +88509,8 @@ ALL_LANGUAGES = json.loads("""
     },
     {
         "code": "cus-ash",
-        "family_code": "cus",
-        "family_name": "Cushitic",
+        "family_code": "cus-eas",
+        "family_name": "East Cushitic",
         "language_url": "https://en.wiktionary.org/wiki/Category:Ashraaf_language",
         "name": "Ashraaf",
         "other_names": [
@@ -88044,6 +88521,17 @@ ALL_LANGUAGES = json.loads("""
             "Latn"
         ],
         "wikidata": "Q4805855"
+    },
+    {
+        "code": "cus-hec-pro",
+        "family_code": "cus-hec",
+        "family_name": "Highland East Cushitic",
+        "language_url": "https://en.wiktionary.org/wiki/Category:Proto-Highland_East_Cushitic_language",
+        "name": "Proto-Highland East Cushitic",
+        "other_names": [],
+        "scripts": [
+            "Latinx"
+        ]
     },
     {
         "code": "cus-pro",
@@ -88405,6 +88893,18 @@ ALL_LANGUAGES = json.loads("""
         "wikidata": "Q768017"
     },
     {
+        "code": "gmw-bgh",
+        "family_code": "gmw",
+        "family_name": "West Germanic",
+        "language_url": "https://en.wiktionary.org/wiki/Category:Bergish_language",
+        "name": "Bergish",
+        "other_names": [],
+        "scripts": [
+            "Latn"
+        ],
+        "wikidata": "Q329030"
+    },
+    {
         "code": "gmw-cfr",
         "family_code": "gmw",
         "family_name": "West Germanic",
@@ -88597,13 +89097,16 @@ ALL_LANGUAGES = json.loads("""
         "family_code": "grk",
         "family_name": "Hellenic",
         "has_diacr": true,
+        "has_sort": true,
+        "language_url": "https://en.wiktionary.org/wiki/Category:Mariupol_Greek_language",
         "name": "Mariupol Greek",
         "other_names": [],
         "scripts": [
             "Cyrl",
             "Latn",
             "Grek"
-        ]
+        ],
+        "wikidata": "Q4400023"
     },
     {
         "aliases": [
@@ -88721,19 +89224,6 @@ ALL_LANGUAGES = json.loads("""
         "family_name": "Central Indo-Aryan",
         "name": "Proto-Central Indo-Aryan",
         "other_names": [],
-        "scripts": [
-            "Latinx"
-        ]
-    },
-    {
-        "code": "inc-dar-pro",
-        "family_code": "inc-dar",
-        "family_name": "Dardic",
-        "language_url": "https://en.wiktionary.org/wiki/Category:Proto-Dardic_language",
-        "name": "Proto-Dardic",
-        "other_names": [
-            "Proto-Rigvedic"
-        ],
         "scripts": [
             "Latinx"
         ]
@@ -88929,6 +89419,7 @@ ALL_LANGUAGES = json.loads("""
         "code": "inc-pra",
         "family_code": "inc-mid",
         "family_name": "Middle Indo-Aryan",
+        "has_diacr": true,
         "language_url": "https://en.wiktionary.org/wiki/Category:Prakrit_language",
         "name": "Prakrit",
         "other_names": [],
@@ -89195,8 +89686,8 @@ ALL_LANGUAGES = json.loads("""
     },
     {
         "code": "iro-ere",
-        "family_code": "iro",
-        "family_name": "Iroquoian",
+        "family_code": "iro-nor",
+        "family_name": "North Iroquoian",
         "language_url": "https://en.wiktionary.org/wiki/Category:Erie_language",
         "name": "Erie",
         "other_names": [],
@@ -89207,8 +89698,8 @@ ALL_LANGUAGES = json.loads("""
     },
     {
         "code": "iro-min",
-        "family_code": "iro",
-        "family_name": "Iroquoian",
+        "family_code": "iro-nor",
+        "family_name": "North Iroquoian",
         "language_url": "https://en.wiktionary.org/wiki/Category:Mingo_language",
         "name": "Mingo",
         "other_names": [],
@@ -89216,6 +89707,17 @@ ALL_LANGUAGES = json.loads("""
             "Latn"
         ],
         "wikidata": "Q128531"
+    },
+    {
+        "code": "iro-nor-pro",
+        "family_code": "iro-nor",
+        "family_name": "North Iroquoian",
+        "language_url": "https://en.wiktionary.org/wiki/Category:Proto-North_Iroquoian_language",
+        "name": "Proto-North Iroquoian",
+        "other_names": [],
+        "scripts": [
+            "Latinx"
+        ]
     },
     {
         "code": "iro-pro",
@@ -89228,20 +89730,6 @@ ALL_LANGUAGES = json.loads("""
             "Latinx"
         ],
         "wikidata": "Q7251852"
-    },
-    {
-        "code": "itc-ola",
-        "family_code": "itc",
-        "family_name": "Italic",
-        "has_diacr": true,
-        "language_url": "https://en.wiktionary.org/wiki/Category:Old_Latin_language",
-        "name": "Old Latin",
-        "other_names": [],
-        "scripts": [
-            "Latn",
-            "Ital"
-        ],
-        "wikidata": "Q12289"
     },
     {
         "code": "itc-pro",
@@ -89317,6 +89805,19 @@ ALL_LANGUAGES = json.loads("""
             "Latn"
         ],
         "wikidata": "Q32904"
+    },
+    {
+        "code": "ko-ear",
+        "family_code": "qfa-kor",
+        "family_name": "Koreanic",
+        "has_diacr": true,
+        "language_url": "https://en.wiktionary.org/wiki/Category:Early_Modern_Korean_language",
+        "name": "Early Modern Korean",
+        "other_names": [],
+        "scripts": [
+            "Kore"
+        ],
+        "wikidata": "Q756014"
     },
     {
         "code": "kro-pro",
@@ -89433,19 +89934,6 @@ ALL_LANGUAGES = json.loads("""
         "wikidata": "Q55630684"
     },
     {
-        "code": "mkh-mkm",
-        "family_code": "mkh-kmr",
-        "family_name": "Khmeric",
-        "language_url": "https://en.wiktionary.org/wiki/Category:Middle_Khmer_language",
-        "name": "Middle Khmer",
-        "other_names": [],
-        "scripts": [
-            "Latinx",
-            "Khmr"
-        ],
-        "wikidata": "Q25226861"
-    },
-    {
         "code": "mkh-mmn",
         "family_code": "mkh-mnc",
         "family_name": "Monic",
@@ -89480,19 +89968,6 @@ ALL_LANGUAGES = json.loads("""
             "Hani"
         ],
         "wikidata": "Q9199"
-    },
-    {
-        "code": "mkh-okm",
-        "family_code": "mkh-kmr",
-        "family_name": "Khmeric",
-        "language_url": "https://en.wiktionary.org/wiki/Category:Old_Khmer_language",
-        "name": "Old Khmer",
-        "other_names": [],
-        "scripts": [
-            "Latinx",
-            "Khmr"
-        ],
-        "wikidata": "Q9205"
     },
     {
         "code": "mkh-pal-pro",
@@ -90705,6 +91180,17 @@ ALL_LANGUAGES = json.loads("""
         ]
     },
     {
+        "code": "paa-nha-pro",
+        "family_code": "paa-nha",
+        "family_name": "North Halmahera",
+        "language_url": "https://en.wiktionary.org/wiki/Category:Proto-North_Halmahera_language",
+        "name": "Proto-North Halmahera",
+        "other_names": [],
+        "scripts": [
+            "Latn"
+        ]
+    },
+    {
         "code": "paa-nun",
         "family_code": "paa",
         "family_name": "Papuan",
@@ -91061,9 +91547,9 @@ ALL_LANGUAGES = json.loads("""
     {
         "code": "qfa-kor-pro",
         "family_code": "qfa-kor",
-        "family_name": "Korean",
-        "language_url": "https://en.wiktionary.org/wiki/Category:Proto-Korean_language",
-        "name": "Proto-Korean",
+        "family_name": "Koreanic",
+        "language_url": "https://en.wiktionary.org/wiki/Category:Proto-Koreanic_language",
+        "name": "Proto-Koreanic",
         "other_names": [],
         "scripts": [
             "Latinx"
@@ -91608,6 +92094,17 @@ ALL_LANGUAGES = json.loads("""
         "wikidata": "Q2937753"
     },
     {
+        "code": "sai-car-pro",
+        "family_code": "sai-car",
+        "family_name": "Cariban",
+        "language_url": "https://en.wiktionary.org/wiki/Category:Proto-Cariban_language",
+        "name": "Proto-Cariban",
+        "other_names": [],
+        "scripts": [
+            "Latinx"
+        ]
+    },
+    {
         "code": "sai-cat",
         "family_code": "sai-ctc",
         "family_name": "Catacaoan",
@@ -91739,14 +92236,19 @@ ALL_LANGUAGES = json.loads("""
         "wikidata": "Q5104704"
     },
     {
+        "aliases": [
+            "Ca\u00f1ar"
+        ],
         "code": "sai-cnr",
         "family_code": "",
         "family_name": "",
+        "language_url": "https://en.wiktionary.org/wiki/Category:Ca%C3%B1ari_language",
         "name": "Ca\u00f1ari",
         "other_names": [],
         "scripts": [
             "Latn"
-        ]
+        ],
+        "wikidata": "Q5055572"
     },
     {
         "code": "sai-coe",
@@ -92323,8 +92825,8 @@ ALL_LANGUAGES = json.loads("""
     },
     {
         "code": "sai-pur",
-        "family_code": "sai-car",
-        "family_name": "Cariban",
+        "family_code": "sai-pem",
+        "family_name": "Pemongan",
         "language_url": "https://en.wiktionary.org/wiki/Category:Purukot%C3%B3_language",
         "name": "Purukot\u00f3",
         "other_names": [],
@@ -92546,6 +93048,17 @@ ALL_LANGUAGES = json.loads("""
         ]
     },
     {
+        "code": "sai-tar-pro",
+        "family_code": "sai-tar",
+        "family_name": "Taranoan",
+        "language_url": "https://en.wiktionary.org/wiki/Category:Proto-Taranoan_language",
+        "name": "Proto-Taranoan",
+        "other_names": [],
+        "scripts": [
+            "Latinx"
+        ]
+    },
+    {
         "code": "sai-teu",
         "family_code": "",
         "family_name": "",
@@ -92680,8 +93193,8 @@ ALL_LANGUAGES = json.loads("""
     },
     {
         "code": "sai-yao",
-        "family_code": "sai-car",
-        "family_name": "Cariban",
+        "family_code": "sai-ven",
+        "family_name": "Venezuelan Cariban",
         "language_url": "https://en.wiktionary.org/wiki/Category:Yao_(South_America)_language",
         "name": "Yao (South America)",
         "other_names": [],
@@ -92690,14 +93203,19 @@ ALL_LANGUAGES = json.loads("""
         ]
     },
     {
+        "aliases": [
+            "Yaruma"
+        ],
         "code": "sai-yar",
-        "family_code": "sai-car",
-        "family_name": "Cariban",
+        "family_code": "sai-pek",
+        "family_name": "Pekodian",
+        "language_url": "https://en.wiktionary.org/wiki/Category:Yarum%C3%A1_language",
         "name": "Yarum\u00e1",
         "other_names": [],
         "scripts": [
             "Latn"
-        ]
+        ],
+        "wikidata": "Q3505859"
     },
     {
         "aliases": [
@@ -92844,9 +93362,6 @@ ALL_LANGUAGES = json.loads("""
         "wikidata": "Q35941"
     },
     {
-        "aliases": [
-            "Cheha"
-        ],
         "code": "sem-cha",
         "family_code": "sem-eth",
         "family_name": "Ethiopian Semitic",
@@ -92931,7 +93446,10 @@ ALL_LANGUAGES = json.loads("""
         "name": "Muher",
         "other_names": [
             "Muher Gurage",
-            "Muxar"
+            "Muxar",
+            "Mux\u0259r",
+            "Muh\u0259r",
+            "Mu\u1e2b\u0259r"
         ],
         "scripts": [
             "Latn"
@@ -93474,6 +93992,19 @@ ALL_LANGUAGES = json.loads("""
         "wikidata": "Q7251855"
     },
     {
+        "code": "tbq-ngo",
+        "family_code": "tbq-brm",
+        "family_name": "Burmish",
+        "language_url": "https://en.wiktionary.org/wiki/Category:Ngochang_language",
+        "name": "Ngochang",
+        "other_names": [
+            "Ngachang"
+        ],
+        "scripts": [
+            "Latn"
+        ]
+    },
+    {
         "code": "tbq-plg",
         "family_code": "tbq-lob",
         "family_name": "Lolo-Burmese",
@@ -93560,6 +94091,18 @@ ALL_LANGUAGES = json.loads("""
             "Latinx"
         ],
         "wikidata": "Q10354700"
+    },
+    {
+        "code": "tuw-kkl",
+        "family_code": "tuw",
+        "family_name": "Tungusic",
+        "language_url": "https://en.wiktionary.org/wiki/Category:Kyakala_language",
+        "name": "Kyakala",
+        "other_names": [],
+        "scripts": [
+            "Latn",
+            "Hani"
+        ]
     },
     {
         "code": "tuw-pro",
@@ -93651,7 +94194,9 @@ ALL_LANGUAGES = json.loads("""
         "language_url": "https://en.wiktionary.org/wiki/Category:Philistine_language",
         "name": "Philistine",
         "other_names": [],
-        "scripts": [],
+        "scripts": [
+            "Phnx"
+        ],
         "wikidata": "Q2230924"
     },
     {
@@ -93737,8 +94282,8 @@ ALL_LANGUAGES = json.loads("""
     },
     {
         "code": "xgn-mgl",
-        "family_code": "xgn",
-        "family_name": "Mongolic",
+        "family_code": "mjg",
+        "family_name": "Monguor",
         "language_url": "https://en.wiktionary.org/wiki/Category:Mongghul_language",
         "name": "Mongghul",
         "other_names": [],
@@ -93749,8 +94294,8 @@ ALL_LANGUAGES = json.loads("""
     },
     {
         "code": "xgn-mgr",
-        "family_code": "xgn",
-        "family_name": "Mongolic",
+        "family_code": "mjg",
+        "family_name": "Monguor",
         "language_url": "https://en.wiktionary.org/wiki/Category:Mangghuer_language",
         "name": "Mangghuer",
         "other_names": [],
@@ -93900,6 +94445,7 @@ ALL_LANGUAGES = json.loads("""
         "code": "xme-taf",
         "family_code": "xme",
         "family_name": "Median",
+        "language_url": "https://en.wiktionary.org/wiki/Category:Tafreshi_language",
         "name": "Tafreshi",
         "other_names": [],
         "scripts": [
@@ -94054,6 +94600,19 @@ ALL_LANGUAGES = json.loads("""
         "wikidata": "Q162013"
     },
     {
+        "code": "zle-ort",
+        "family_code": "zle",
+        "family_name": "East Slavic",
+        "has_diacr": true,
+        "language_url": "https://en.wiktionary.org/wiki/Category:Old_Ruthenian_language",
+        "name": "Old Ruthenian",
+        "other_names": [],
+        "scripts": [
+            "Cyrs"
+        ],
+        "wikidata": "Q13211"
+    },
+    {
         "code": "zlw-ocs",
         "family_code": "zlw",
         "family_name": "West Slavic",
@@ -94081,16 +94640,19 @@ ALL_LANGUAGES = json.loads("""
         "code": "zlw-pom",
         "family_code": "zlw-lch",
         "family_name": "Lechitic",
+        "language_url": "https://en.wiktionary.org/wiki/Category:Pomeranian_language",
         "name": "Pomeranian",
         "other_names": [],
         "scripts": [
             "Latn"
-        ]
+        ],
+        "wikidata": "Q149588"
     },
     {
         "code": "zlw-slv",
         "family_code": "zlw-lch",
         "family_name": "Lechitic",
+        "has_diacr": true,
         "language_url": "https://en.wiktionary.org/wiki/Category:Slovincian_language",
         "name": "Slovincian",
         "other_names": [],
@@ -94636,6 +95198,15 @@ ALL_FAMILIES = json.loads("""
         "parent_name": "",
         "url": "https://en.wiktionary.org/wiki/Category:Austronesian_languages",
         "wikidata": "Q49228"
+    },
+    {
+        "code": "mjg",
+        "name": "Monguor",
+        "other_names": [],
+        "parent_code": "xgn",
+        "parent_name": "Mongolic",
+        "url": "https://en.wiktionary.org/wiki/Category:Monguor_languages",
+        "wikidata": "Q34214"
     },
     {
         "code": "mkh",
@@ -95403,6 +95974,15 @@ ALL_FAMILIES = json.loads("""
         "url": "https://en.wiktionary.org/wiki/Category:Kissi_languages"
     },
     {
+        "code": "alv-krb",
+        "name": "Karaboro",
+        "other_names": [],
+        "parent_code": "alv-snf",
+        "parent_name": "Senufo",
+        "url": "https://en.wiktionary.org/wiki/Category:Karaboro_languages",
+        "wikidata": "Q4213541"
+    },
+    {
         "code": "alv-ktg",
         "name": "Ka-Togo",
         "other_names": [],
@@ -95624,6 +96204,15 @@ ALL_FAMILIES = json.loads("""
         "wikidata": "Q1708753"
     },
     {
+        "code": "alv-snr",
+        "name": "Senari",
+        "other_names": [],
+        "parent_code": "alv-snf",
+        "parent_name": "Senufo",
+        "url": "https://en.wiktionary.org/wiki/Category:Senari_languages",
+        "wikidata": "Q4416084"
+    },
+    {
         "code": "alv-swd",
         "name": "Southwestern Edoid",
         "other_names": [],
@@ -95639,6 +96228,15 @@ ALL_FAMILIES = json.loads("""
         "parent_name": "Talodi-Heiban",
         "url": "https://en.wiktionary.org/wiki/Category:Talodi_languages",
         "wikidata": "Q12643302"
+    },
+    {
+        "code": "alv-tdj",
+        "name": "Tagwana-Djimini",
+        "other_names": [],
+        "parent_code": "alv-snf",
+        "parent_name": "Senufo",
+        "url": "https://en.wiktionary.org/wiki/Category:Tagwana-Djimini_languages",
+        "wikidata": "Q7675362"
     },
     {
         "code": "alv-ten",
@@ -96407,6 +97005,15 @@ ALL_FAMILIES = json.loads("""
         "wikidata": "Q31147471"
     },
     {
+        "code": "bnt-mnj",
+        "name": "Makaa-Njem",
+        "other_names": [],
+        "parent_code": "bnt-pob",
+        "parent_name": "Pomo-Bomwali",
+        "url": "https://en.wiktionary.org/wiki/Category:Makaa-Njem_languages",
+        "wikidata": "Q1603899"
+    },
+    {
         "code": "bnt-mon",
         "name": "Mongo",
         "other_names": [],
@@ -96509,6 +97116,14 @@ ALL_FAMILIES = json.loads("""
         "url": "https://en.wiktionary.org/wiki/Category:Pare_languages"
     },
     {
+        "code": "bnt-pob",
+        "name": "Pomo-Bomwali",
+        "other_names": [],
+        "parent_code": "bnt",
+        "parent_name": "Bantu",
+        "url": "https://en.wiktionary.org/wiki/Category:Pomo-Bomwali_languages"
+    },
+    {
         "code": "bnt-ruk",
         "name": "Rukwa",
         "other_names": [],
@@ -96584,6 +97199,14 @@ ALL_FAMILIES = json.loads("""
         "parent_code": "bnt-ncb",
         "parent_name": "Northeast Coast Bantu",
         "url": "https://en.wiktionary.org/wiki/Category:Seuta_languages"
+    },
+    {
+        "code": "bnt-shh",
+        "name": "Shi-Havu",
+        "other_names": [],
+        "parent_code": "bnt-glb",
+        "parent_name": "Great Lakes Bantu",
+        "url": "https://en.wiktionary.org/wiki/Category:Shi-Havu_languages"
     },
     {
         "code": "bnt-sho",
@@ -97018,6 +97641,42 @@ ALL_FAMILIES = json.loads("""
         "parent_name": "Bongo-Bagirmi",
         "url": "https://en.wiktionary.org/wiki/Category:Sara_languages",
         "wikidata": "Q2036691"
+    },
+    {
+        "code": "cus-cen",
+        "name": "Central Cushitic",
+        "other_names": [],
+        "parent_code": "cus",
+        "parent_name": "Cushitic",
+        "url": "https://en.wiktionary.org/wiki/Category:Central_Cushitic_languages",
+        "wikidata": "Q56569"
+    },
+    {
+        "code": "cus-eas",
+        "name": "East Cushitic",
+        "other_names": [],
+        "parent_code": "cus",
+        "parent_name": "Cushitic",
+        "url": "https://en.wiktionary.org/wiki/Category:East_Cushitic_languages",
+        "wikidata": "Q56568"
+    },
+    {
+        "code": "cus-hec",
+        "name": "Highland East Cushitic",
+        "other_names": [],
+        "parent_code": "cus-eas",
+        "parent_name": "East Cushitic",
+        "url": "https://en.wiktionary.org/wiki/Category:Highland_East_Cushitic_languages",
+        "wikidata": "Q56524"
+    },
+    {
+        "code": "cus-sou",
+        "name": "South Cushitic",
+        "other_names": [],
+        "parent_code": "cus",
+        "parent_name": "Cushitic",
+        "url": "https://en.wiktionary.org/wiki/Category:South_Cushitic_languages",
+        "wikidata": "Q56525"
     },
     {
         "code": "dmn-bbu",
@@ -97641,6 +98300,14 @@ ALL_FAMILIES = json.loads("""
         "url": "https://en.wiktionary.org/wiki/Category:Zaza-Gorani_languages"
     },
     {
+        "code": "iro-nor",
+        "name": "North Iroquoian",
+        "other_names": [],
+        "parent_code": "iro",
+        "parent_name": "Iroquoian",
+        "url": "https://en.wiktionary.org/wiki/Category:North_Iroquoian_languages"
+    },
+    {
         "code": "jpx-ryu",
         "name": "Ryukyuan",
         "other_names": [],
@@ -97733,6 +98400,14 @@ ALL_FAMILIES = json.loads("""
         "parent_name": "Western Kru",
         "url": "https://en.wiktionary.org/wiki/Category:Grebo_languages",
         "wikidata": "Q5601537"
+    },
+    {
+        "code": "kro-wee",
+        "name": "Wee",
+        "other_names": [],
+        "parent_code": "kro-wkr",
+        "parent_name": "Western Kru",
+        "url": "https://en.wiktionary.org/wiki/Category:Wee_languages"
     },
     {
         "code": "kro-wkr",
@@ -99366,6 +100041,14 @@ ALL_FAMILIES = json.loads("""
         "wikidata": "Q749496"
     },
     {
+        "code": "paa-nha",
+        "name": "North Halmahera",
+        "other_names": [],
+        "parent_code": "paa-wpa",
+        "parent_name": "West Papuan",
+        "url": "https://en.wiktionary.org/wiki/Category:North_Halmahera_languages"
+    },
+    {
         "code": "paa-nim",
         "name": "Nimboran",
         "other_names": [],
@@ -99918,11 +100601,11 @@ ALL_FAMILIES = json.loads("""
     },
     {
         "code": "qfa-kor",
-        "name": "Korean",
+        "name": "Koreanic",
         "other_names": [],
         "parent_code": "",
         "parent_name": "",
-        "url": "https://en.wiktionary.org/wiki/Category:Korean_languages",
+        "url": "https://en.wiktionary.org/wiki/Category:Koreanic_languages",
         "wikidata": "Q11263525"
     },
     {
@@ -100252,6 +100935,14 @@ ALL_FAMILIES = json.loads("""
         "wikidata": "Q944056"
     },
     {
+        "code": "sai-gui",
+        "name": "Guianan",
+        "other_names": [],
+        "parent_code": "sai-car",
+        "parent_name": "Cariban",
+        "url": "https://en.wiktionary.org/wiki/Category:Guianan_languages"
+    },
+    {
         "aliases": [
             "Har\u00e1kmbet"
         ],
@@ -100330,6 +101021,23 @@ ALL_FAMILIES = json.loads("""
         "parent_name": "Har\u00e1kmbut-Katukinan",
         "url": "https://en.wiktionary.org/wiki/Category:Katukinan_languages",
         "wikidata": "Q2636000"
+    },
+    {
+        "code": "sai-kui",
+        "name": "Kuikuroan",
+        "other_names": [],
+        "parent_code": "sai-car",
+        "parent_name": "Cariban",
+        "url": "https://en.wiktionary.org/wiki/Category:Kuikuroan_languages"
+    },
+    {
+        "code": "sai-map",
+        "name": "Mapoyan",
+        "other_names": [],
+        "parent_code": "sai-ven",
+        "parent_name": "Venezuelan Cariban",
+        "url": "https://en.wiktionary.org/wiki/Category:Mapoyan_languages",
+        "wikidata": "Q61096301"
     },
     {
         "code": "sai-mas",
@@ -100443,6 +101151,35 @@ ALL_FAMILIES = json.loads("""
         "wikidata": "Q2475746"
     },
     {
+        "code": "sai-pek",
+        "name": "Pekodian",
+        "other_names": [],
+        "parent_code": "sai-car",
+        "parent_name": "Cariban",
+        "url": "https://en.wiktionary.org/wiki/Category:Pekodian_languages",
+        "wikidata": "Q107451736"
+    },
+    {
+        "code": "sai-pem",
+        "name": "Pemongan",
+        "other_names": [],
+        "parent_code": "sai-ven",
+        "parent_name": "Venezuelan Cariban",
+        "url": "https://en.wiktionary.org/wiki/Category:Pemongan_languages"
+    },
+    {
+        "aliases": [
+            "Parukoto"
+        ],
+        "code": "sai-prk",
+        "name": "Parukotoan",
+        "other_names": [],
+        "parent_code": "sai-car",
+        "parent_name": "Cariban",
+        "url": "https://en.wiktionary.org/wiki/Category:Parukotoan_languages",
+        "wikidata": "Q107451482"
+    },
+    {
         "code": "sai-sje",
         "name": "Southern J\u00ea",
         "other_names": [],
@@ -100459,6 +101196,15 @@ ALL_FAMILIES = json.loads("""
         "parent_name": "Pano-Tacanan",
         "url": "https://en.wiktionary.org/wiki/Category:Tacanan_languages",
         "wikidata": "Q3113762"
+    },
+    {
+        "code": "sai-tar",
+        "name": "Taranoan",
+        "other_names": [],
+        "parent_code": "sai-gui",
+        "parent_name": "Guianan",
+        "url": "https://en.wiktionary.org/wiki/Category:Taranoan_languages",
+        "wikidata": "Q105097814"
     },
     {
         "code": "sai-tuc",
@@ -100491,6 +101237,14 @@ ALL_FAMILIES = json.loads("""
         "wikidata": "Q2475488"
     },
     {
+        "code": "sai-ven",
+        "name": "Venezuelan Cariban",
+        "other_names": [],
+        "parent_code": "sai-car",
+        "parent_name": "Cariban",
+        "url": "https://en.wiktionary.org/wiki/Category:Venezuelan_Cariban_languages"
+    },
+    {
         "code": "sai-wic",
         "name": "Wich\u00ed",
         "other_names": [],
@@ -100515,6 +101269,14 @@ ALL_FAMILIES = json.loads("""
         "parent_code": "",
         "parent_name": "",
         "url": "https://en.wiktionary.org/wiki/Category:Yanomami_languages"
+    },
+    {
+        "code": "sai-yuk",
+        "name": "Yukpan",
+        "other_names": [],
+        "parent_code": "sai-car",
+        "parent_name": "Cariban",
+        "url": "https://en.wiktionary.org/wiki/Category:Yukpan_languages"
     },
     {
         "aliases": [
