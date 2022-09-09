@@ -106,6 +106,10 @@ def lua_loader(ctx, modname):
             data = None
         else:
             data = ctx.read_by_title(modname)
+            # Chinese Wikipedia capitalizes the first letter of module name
+            if data is None:
+                # can't use str.capitalize(), it'll cause error for "Module:Cmn-pron-Sichuan"
+                data = ctx.read_by_title("Module:" + modname[7].upper() + modname[8:])
     else:
         # Try to load it from a file
         path = modname
