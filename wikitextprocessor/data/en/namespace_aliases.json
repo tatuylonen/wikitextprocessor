@@ -1,0 +1,12 @@
+{
+  "Wiktionary": ["WT"],
+  "File": ["Image"],
+  "File talk": ["Image talk"],
+  "Template": ["T"],
+  "Category": ["CAT"],
+  "Appendix": ["AP"],
+  "Thesaurus": ["WS", "Wikisaurus"],
+  "Thesaurus talk": ["Wikisaurus talk"],
+  "Reconstruction": ["RC"],
+  "Module": ["MOD"]
+}
