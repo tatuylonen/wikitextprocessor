@@ -168,6 +168,11 @@ class Wtp(object):
         # Some predefined templates
         self.need_pre_expand = None
 
+        self.data_folder = Path(__file__).parent.joinpath(f"data/{lang_code}")
+        self.init_namespace_texts()
+        self.namespaces = {}
+        init_namespaces(self)
+
         # Open cache file if it exists; otherwise create new cache file or
         # temporary file and reset saved pages.
         self.tmp_file = None
@@ -191,11 +196,6 @@ class Wtp(object):
             self._reset_pages()
         self.tmp_ofs = 0
         self.buf_ofs = 0
-
-        self.data_folder = Path(__file__).parent.joinpath(f"data/{lang_code}")
-        self.init_namespace_texts()
-        self.namespaces = {}
-        init_namespaces(self)
 
     def init_namespace_texts(self):
         with self.data_folder.joinpath("namespaces.json").open(encoding="utf-8") as f:
