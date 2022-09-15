@@ -324,10 +324,13 @@ def initialize_lua(ctx):
         raise AttributeError("access denied")
 
     lua = LuaRuntime(unpack_returned_tuples=True,
+                     register_eval=False,
                      attribute_filter=filter_attribute_access)
     ctx.lua = lua
-    lua.execute("NAMESPACE_TEXTS = python.eval('ctx.NAMESPACE_TEXTS')")
-    lua.execute("NAMESPACE_ALIASES = python.eval('ctx.NAMESPACE_ALIASES')")
+    set_namespace_texts = lua.eval("function(v) NAMESPACE_TEXTS = v end")
+    set_namespace_aliases = lua.eval("function(v) NAMESPACE_ALIASES = v end")
+    set_namespace_texts(ctx.NAMESPACE_TEXTS)
+    set_namespace_aliases(ctx.NAMESPACE_ALIASES)
 
     # Load Lua sandbox Phase 1.  This is a very minimal file that only sets
     # the Lua loader to our custom loader; we will then use it to load the
@@ -657,7 +660,7 @@ def call_lua_sandbox(ctx, invoke_args, expander, parent, timeout):
                       .format(invoke_args, parent),
                       trace=trace)
     msg = "Lua execution error"
-    if text.find("Lua timeout error") >= 0:
+    if "Lua timeout error" in text:
         msg = "Lua timeout error"
     return ('<strong class="error">{} in Module:{} function {}'
             '</strong>'.format(msg, html.escape(modname), html.escape(modfn)))
