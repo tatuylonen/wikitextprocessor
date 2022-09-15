@@ -8,6 +8,7 @@ import math
 import time
 import datetime
 import unittest
+import platform
 from wikitextprocessor import Wtp
 from wikitextprocessor.common import nowiki_quote, MAGIC_NOWIKI_CHAR
 
@@ -755,7 +756,7 @@ MORE
         self.parserfn("{{#expr|sin(30*pi/180)}}", "0.49999999999999994")
 
     def test_expr29(self):
-        self.parserfn("{{#expr|cos.1}}", "0.9950041652780258") # 0.9950041652780257 on macOS
+        self.parserfn("{{#expr|cos.1}}", "0.9950041652780257" if platform.system() == "Darwin" else "0.9950041652780258")
 
     def test_expr30(self):
         self.parserfn("{{#expr|tan.1}}", "0.10033467208545055")

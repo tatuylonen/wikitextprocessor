@@ -1,7 +1,8 @@
-import sys
 import unittest
 import collections
 from wikitextprocessor import Wtp
+import platform
+
 
 def page_cb(model, title, text):
     # Note: this may be called in a separate thread and thus cannot
@@ -10,6 +11,7 @@ def page_cb(model, title, text):
     if model == "redirect":
         return title, text
     return title, None
+
 
 class LongTests(unittest.TestCase):
 
@@ -35,8 +37,10 @@ class LongTests(unittest.TestCase):
     def test_long_singlethread(self):
         self.runonce(1)
 
+    @unittest.skipIf(platform.system() in ["Darwin", "Windows"], "Multiprocess only works on Linux")
     def test_long_twothread(self):
         self.runonce(2)
 
+    @unittest.skipIf(platform.system() in ["Darwin", "Windows"], "Multiprocess only works on Linux")
     def test_long_multiprocessing(self):
         self.runonce(None)
