@@ -3146,7 +3146,7 @@ return export
 
     def test_string_format2(self):
         self.scribunto("00005 % foo 1.1 -6", r"""
-        return string.format("%05d %% %s %.1f %#-d", 4.7, "foo", 1.1, -6)""")
+        return string.format("%05d %% %s %.1f %d", 4.7, "foo", 1.1, -6)""")
 
     def test_string_format3(self):
         self.scribunto("0005", r"""
