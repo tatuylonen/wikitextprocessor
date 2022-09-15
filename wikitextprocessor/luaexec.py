@@ -329,14 +329,18 @@ def initialize_lua(ctx):
     ctx.lua = lua
     set_namespace_texts = lua.eval("function(v) NAMESPACE_TEXTS = v end")
     set_namespace_aliases = lua.eval("function(v) NAMESPACE_ALIASES = v end")
-    set_namespace_texts(ctx.NAMESPACE_TEXTS)
-    set_namespace_aliases(ctx.NAMESPACE_ALIASES)
+    set_namespace_texts(lua.table_from(ctx.NAMESPACE_TEXTS))
+    lua_aliases = ctx.NAMESPACE_ALIASES.copy()
+    for k, v in lua_aliases.items():
+        lua_aliases[k] = lua.table_from(v)
+    set_namespace_aliases(lua.table_from(lua_aliases))
 
     # Load Lua sandbox Phase 1.  This is a very minimal file that only sets
     # the Lua loader to our custom loader; we will then use it to load the
     # bigger phase 2 of the sandbox.  This way, most of the sandbox loading
     # will benefit from caching and precompilation (when implemented).
-    lua_sandbox = open(lua_dir + "_sandbox_phase1.lua", encoding="utf-8").read()
+    with open(lua_dir + "_sandbox_phase1.lua", encoding="utf-8") as f:
+        lua_sandbox = f.read()
     set_loader = lua.execute(lua_sandbox)
     # Call the function that sets the Lua loader
     set_loader(lambda x: lua_loader(ctx, x))
