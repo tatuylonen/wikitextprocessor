@@ -81,7 +81,7 @@ def phase2_page_handler(dt):
             os.remove(debug_path)
 
 
-class Wtp(object):
+class Wtp:
     """Context used for processing wikitext and for expanding templates,
     parser functions and Lua macros.  The indended usage pattern is to
     initialize this context once (this holds template and module definitions),
@@ -316,8 +316,8 @@ class Wtp(object):
         uppercase and replacing underscores by spaces and sequences of
         whitespace by a single whitespace."""
         assert isinstance(name, str)
-        if name.lower().startswith("template:"):
-            name = name[9:]
+        if name.lower().startswith(self.NAMESPACE_TEXTS["Template"].lower() + ":"):
+            name = name[len(self.NAMESPACE_TEXTS["Template"]) + 1:]
         name = re.sub(r"_", " ", name)
         name = re.sub(r"\s+", " ", name)
         name = re.sub(r"\(", "%28", name)
@@ -563,7 +563,7 @@ class Wtp(object):
 
         if transient:
             self.transient_pages[title] = (title, model, text)
-            if (title.startswith("Template:") and
+            if (title.startswith(self.NAMESPACE_TEXTS["Template"] + ":") and
                 not title.endswith("/documentation") and
                 not title.endswith("/testcases")):
                 name = self._canonicalize_template_name(title)
@@ -600,7 +600,7 @@ class Wtp(object):
         if model == "redirect":
             self.redirects[title] = text
             return
-        if not title.startswith("Template:"):
+        if not title.startswith(self.NAMESPACE_TEXTS["Template"] + ":"):
             return
         if title.endswith("/documentation"):
             return
@@ -760,10 +760,10 @@ class Wtp(object):
 
         # Copy template definitions to redirects to them
         for k, v in self.redirects.items():
-            if not k.startswith("Template:"):
+            if not k.startswith(self.NAMESPACE_TEXTS["Template"] + ":"):
                 # print("Unhandled redirect src", k)
                 continue
-            if not v.startswith("Template:"):
+            if not v.startswith(self.NAMESPACE_TEXTS["Template"] + ":"):
                 # print("Unhandled redirect dst", v)
                 continue
             k = self._canonicalize_template_name(k)
@@ -1218,19 +1218,11 @@ class Wtp(object):
                         # Expand the body using the calling template/page as
                         # the parent frame for any parserfn calls
                         new_title = tname.strip()
-                        for prefix in ("Media", "Special", "Main", "Talk",
-                                       "User",
-                                       "User_talk", "Project", "Project_talk",
-                                       "File", "Image", "File_talk",
-                                       "MediaWiki", "MediaWiki_talk",
-                                       "Template", "Template_talk",
-                                       "Help", "Help_talk", "Category",
-                                       "Category_talk", "Module",
-                                       "Module_talk"):
+                        for prefix in self.NAMESPACE_TEXTS:
                             if tname.startswith(prefix + ":"):
                                 break
                         else:
-                            new_title = "Template:" + new_title
+                            new_title = self.NAMESPACE_TEXTS["Template"] + ":" + new_title
                         new_parent = (new_title, ht)
                         # print("expanding template body for {} {}"
                         #       .format(name, ht))
@@ -1450,7 +1442,7 @@ class Wtp(object):
         """Returns True if the given page exists, and False if it does not
         exist."""
         assert isinstance(title, str)
-        if title.startswith("Main:"):
+        if title.startswith(self.NAMESPACE_TEXTS["Main"] + ":"):
             title = title[5:]
         # XXX should we canonicalize title?
         if title in self.transient_pages:
@@ -1461,7 +1453,7 @@ class Wtp(object):
         """Reads the contents of the page.  Returns None if the page does
         not exist."""
         assert isinstance(title, str)
-        if title.startswith("Main:"):
+        if title.startswith(self.NAMESPACE_TEXTS["Main"] + ":"):
             title = title[5:]
         # XXX should we canonicalize title?
         if title in self.transient_pages:

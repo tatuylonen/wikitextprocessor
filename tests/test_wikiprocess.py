@@ -490,7 +490,7 @@ MORE
         ctx = phase1_to_ctx([])
         ctx.start_page("Help:Tt")
         ret = ctx.expand("{{TALKPAGENAME}}")
-        self.assertEqual(ret, "Help_talk:Tt")
+        self.assertEqual(ret, "Help talk:Tt")
 
     def test_talkpagename2(self):
         ctx = phase1_to_ctx([])
@@ -1185,13 +1185,13 @@ MORE
         ctx = phase1_to_ctx([])
         ctx.start_page("Reconstruction:Tt")
         ret = ctx.expand("{{TALKSPACE}}")
-        self.assertEqual(ret, "Reconstruction_talk")
+        self.assertEqual(ret, "Reconstruction talk")
 
-    def test_subjectspace3(self):
+    def test_talkspace3(self):
         ctx = phase1_to_ctx([])
         ctx.start_page("Tt")
         ret = ctx.expand("{{TALKSPACE:Reconstruction:foo}}")
-        self.assertEqual(ret, "Reconstruction_talk")
+        self.assertEqual(ret, "Reconstruction talk")
 
     def test_localurl1(self):
         ctx = phase1_to_ctx([])

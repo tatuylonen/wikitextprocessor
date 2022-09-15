@@ -273,12 +273,12 @@ def talkpagename_fn(ctx, fn_name, args, expander):
     """Implements the TALKPAGENAME magic word."""
     ofs = ctx.title.find(":")
     if ofs < 0:
-        return "Talk:" + ctx.title
+        return ctx.NAMESPACE_TEXTS["Talk"] + ":" + ctx.title
     if ofs >= 0:
         prefix = ctx.title[:ofs]
         if prefix not in ctx.NAMESPACE_TEXTS:
-            return "Talk:" + ctx.title
-        return prefix + "_talk:" + ctx.title[ofs + 1:]
+            return ctx.NAMESPACE_TEXTS["Talk"] + ":" + ctx.title
+        return ctx.NAMESPACE_TEXTS[prefix + " talk"] + ":" + ctx.title[ofs + 1:]
 
 
 def namespacenumber_fn(ctx, fn_name, args, expander):
@@ -318,8 +318,8 @@ def talkspace_fn(ctx, fn_name, args, expander):
     t = expander(args[0]) if args else ctx.title
     for prefix in ctx.NAMESPACE_TEXTS:
         if t.startswith(prefix + ":"):
-            return prefix + "_talk"
-    return "Talk"
+            return ctx.NAMESPACE_TEXTS[prefix + " talk"]
+    return ctx.NAMESPACE_TEXTS["Talk"]
 
 
 def server_fn(ctx, fn_name, args, expander):
@@ -566,7 +566,7 @@ def anchorencode_fn(ctx, fn_name, args, expander):
     return anchor
 
 
-class Namespace(object):
+class Namespace:
     __slots__ = (
         "aliases",
         "canonicalName",
