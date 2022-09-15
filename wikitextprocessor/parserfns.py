@@ -9,44 +9,16 @@ import datetime
 import urllib.parse
 import dateparser
 from .wikihtml import ALLOWED_HTML_TAGS
-from .common import nowiki_quote
+from .common import nowiki_quote, MAGIC_NOWIKI_CHAR
 
 # Suppress some warnings that are out of our control
 import warnings
 warnings.filterwarnings("ignore",
                         r".*The localize method is no longer necessary.*")
 
-
-# Name of the WikiMedia for which we are generating content
-PROJECT_NAME = "Wiktionary"
-
 # The host to which generated URLs will point
 SERVER_NAME = "dummy.host"
 
-namespace_prefixes = set([
-    "Appendix",
-    "Category",
-    "Citations",
-    "Concordance",
-    "File",
-    "Help",
-    "Image",
-    "Index",
-    "Media",
-    "MediaWiki",
-    "Module",
-    "Project",
-    "Reconstruction",
-    "Rhymes",
-    "Sign gloss",
-    "Summary",
-    "Talk",
-    "Template",
-    "Thesaurus",
-    "Thread",
-    "User",
-    "Wiktionary",
-])
 
 def capitalizeFirstOnly(s):
     if s:
@@ -104,6 +76,7 @@ def ifexpr_fn(ctx, fn_name, args, expander):
         return expander(arg1).strip()
     return expander(arg2).strip()
 
+
 def ifexist_fn(ctx, fn_name, args, expander):
     """Implements #ifexist parser function."""
     arg0 = args[0] if args else ""
@@ -113,6 +86,7 @@ def ifexist_fn(ctx, fn_name, args, expander):
     if exists:
         return expander(arg1).strip()
     return expander(arg2).strip()
+
 
 def switch_fn(ctx, fn_name, args, expander):
     """Implements #switch parser function."""
@@ -302,7 +276,7 @@ def talkpagename_fn(ctx, fn_name, args, expander):
         return "Talk:" + ctx.title
     if ofs >= 0:
         prefix = ctx.title[:ofs]
-        if prefix not in namespace_prefixes:
+        if prefix not in ctx.NAMESPACE_TEXTS:
             return "Talk:" + ctx.title
         return prefix + "_talk:" + ctx.title[ofs + 1:]
 
@@ -323,7 +297,7 @@ def namespace_fn(ctx, fn_name, args, expander):
     if ofs >= 0:
         ns = capitalizeFirstOnly(t[:ofs])
         if ns == "Project":
-            return PROJECT_NAME
+            return ctx.NAMESPACE_TEXTS["Project"]
         return ns
     return ""
 
@@ -332,7 +306,7 @@ def subjectspace_fn(ctx, fn_name, args, expander):
     """Implements the SUBJECTSPACE magic word/parser function.  This
     implementation is very minimal."""
     t = expander(args[0]) if args else ctx.title
-    for prefix in namespace_prefixes:
+    for prefix in ctx.NAMESPACE_TEXTS:
         if t.startswith(prefix + ":"):
             return prefix
     return ""
@@ -342,7 +316,7 @@ def talkspace_fn(ctx, fn_name, args, expander):
     """Implements the TALKSPACE magic word/parser function.  This
     implementation is very minimal."""
     t = expander(args[0]) if args else ctx.title
-    for prefix in namespace_prefixes:
+    for prefix in ctx.NAMESPACE_TEXTS:
         if t.startswith(prefix + ":"):
             return prefix + "_talk"
     return "Talk"
@@ -427,11 +401,13 @@ def displaytitle_fn(ctx, fn_name, args, expander):
     # setting page title
     return ""
 
+
 def defaultsort_fn(ctx, fn_nae, args, expander):
     """Implements the DEFAULTSORT magic word/parser function."""
     # XXX apparently this should set the title by which this page is
     # sorted in category listings
     return ""
+
 
 def lc_fn(ctx, fn_name, args, expander):
     """Implements the lc parser function (lowercase)."""
@@ -631,72 +607,119 @@ class Namespace(object):
         self.subject = subject
         self.talk = talk
 
-# These duplicate definitions in lua/mw_site.lua
-media_ns = Namespace(id=-2, name="Media", isSubject=True)
-special_ns = Namespace(id=-1, name="Special", isSubject=True)
-main_ns = Namespace(id=0, name="Main", isContent=True, isSubject=True)
-talk_ns = Namespace(id=1, name="Talk", isTalk=True, subject=main_ns)
-user_ns = Namespace(id=2, name="User", isSubject=True)
-user_talk_ns = Namespace(id=3, name="User_talk", isTalk=True,
-                         subject=user_ns)
-project_ns = Namespace(id=4, name="Project", isSubject=True)
-project_talk_ns = Namespace(id=5, name="Project_talk", isTalk=True,
-                            subject=project_ns)
-image_ns = Namespace(id=6, name="File", aliases=["Image"],
-                     isSubject=True)
-image_talk_ns = Namespace(id=7, name="File_talk",
-                          aliases=["Image_talk"],
-                          isTalk=True, subject=image_ns)
-mediawiki_ns = Namespace(id=8, name="MediaWiki", isSubject=True)
-mediawiki_talk_ns = Namespace(id=9, name="MediaWiki_talk",
-                              isTalk=True, subject=mediawiki_ns)
-template_ns = Namespace(id=10, name="Template", isSubject=True)
-template_talk_ns = Namespace(id=11, name="Template_talk", isTalk=True,
-                             subject=template_ns)
-help_ns = Namespace(id=12, name="Help", isSubject=True)
-help_talk_ns = Namespace(id=13, name="Help_talk", isTalk=True,
-                         subject=help_ns)
-category_ns = Namespace(id=14, name="Category", isSubject=True)
-category_talk_ns = Namespace(id=15, name="Category_talk", isTalk=True,
-                             subject=category_ns)
-module_ns = Namespace(id=828, name="Module", isIncludable=True,
-                      isSubject=True)
-module_talk_ns = Namespace(id=829, name="Module_talk", isTalk=True,
-                           subject=module_ns)
-main_ns.talk = talk_ns
-user_ns.talk = user_talk_ns
-project_ns.talk = project_talk_ns
-mediawiki_ns.talk = mediawiki_talk_ns
-template_ns.talk = template_talk_ns
-help_ns.talk = help_talk_ns
-category_ns.talk = category_talk_ns
-module_ns.talk = module_talk_ns
-
-namespaces = {}
 
 def add_ns(t, ns):
-   t[ns.id] = ns
+    t[ns.id] = ns
 
-add_ns(namespaces, media_ns)
-add_ns(namespaces, special_ns)
-add_ns(namespaces, main_ns)
-add_ns(namespaces, talk_ns)
-add_ns(namespaces, user_ns)
-add_ns(namespaces, user_talk_ns)
-add_ns(namespaces, project_ns)
-add_ns(namespaces, project_talk_ns)
-add_ns(namespaces, image_ns)
-add_ns(namespaces, image_talk_ns)
-add_ns(namespaces, mediawiki_ns)
-add_ns(namespaces, mediawiki_talk_ns)
-add_ns(namespaces, template_ns)
-add_ns(namespaces, template_talk_ns)
-add_ns(namespaces, help_ns)
-add_ns(namespaces, help_talk_ns)
-add_ns(namespaces, category_ns)
-add_ns(namespaces, category_talk_ns)
-add_ns(namespaces, module_ns)
-add_ns(namespaces, module_talk_ns)
+
+def init_namespaces(ctx):
+    # These duplicate definitions in lua/mw_site.lua
+    media_ns = Namespace(id=-2, name=ctx.NAMESPACE_TEXTS["Media"], isSubject=True)
+    special_ns = Namespace(id=-1, name=ctx.NAMESPACE_TEXTS["Special"], isSubject=True)
+    main_ns = Namespace(id=0, name=ctx.NAMESPACE_TEXTS["Main"], isContent=True, isSubject=True)
+    talk_ns = Namespace(id=1, name=ctx.NAMESPACE_TEXTS["Talk"], isTalk=True, subject=main_ns)
+    user_ns = Namespace(id=2, name=ctx.NAMESPACE_TEXTS["User"], isSubject=True)
+    user_talk_ns = Namespace(id=3, name=ctx.NAMESPACE_TEXTS["User talk"], isTalk=True, subject=user_ns)
+    project_ns = Namespace(id=4, name=ctx.NAMESPACE_TEXTS["Project"], isSubject=True, aliases=ctx.NAMESPACE_ALIASES[ctx.NAMESPACE_TEXTS["Project"]])
+    project_talk_ns = Namespace(id=5, name=ctx.NAMESPACE_TEXTS["Project talk"], isTalk=True,  subject=project_ns)
+    file_ns = Namespace(id=6, name=ctx.NAMESPACE_TEXTS["File"], aliases=ctx.NAMESPACE_ALIASES["File"], isSubject=True)
+    file_talk_ns = Namespace(id=7, name=ctx.NAMESPACE_TEXTS["File talk"], aliases=ctx.NAMESPACE_ALIASES["File talk"], isTalk=True, subject=file_ns)
+    mediawiki_ns = Namespace(id=8, name=ctx.NAMESPACE_TEXTS["MediaWiki"], isSubject=True)
+    mediawiki_talk_ns = Namespace(id=9, name=ctx.NAMESPACE_TEXTS["MediaWiki talk"], isTalk=True, subject=mediawiki_ns)
+    template_ns = Namespace(id=10, name=ctx.NAMESPACE_TEXTS["Template"], isSubject=True, aliases=ctx.NAMESPACE_ALIASES["Template"])
+    template_talk_ns = Namespace(id=11, name=ctx.NAMESPACE_TEXTS["Template talk"], isTalk=True, subject=template_ns)
+    help_ns = Namespace(id=12, name=ctx.NAMESPACE_TEXTS["Help"], isSubject=True)
+    help_talk_ns = Namespace(id=13, name=ctx.NAMESPACE_TEXTS["Help talk"], isTalk=True, subject=help_ns)
+    category_ns = Namespace(id=14, name=ctx.NAMESPACE_TEXTS["Category"], isSubject=True, aliases=ctx.NAMESPACE_ALIASES["Category"])
+    category_talk_ns = Namespace(id=15, name=ctx.NAMESPACE_TEXTS["Category talk"], isTalk=True, subject=category_ns)
+    thread_ns = Namespace(id=90, name=ctx.NAMESPACE_TEXTS["Thread"], isSubject=True)
+    thread_talk_ns = Namespace(id=91, name=ctx.NAMESPACE_TEXTS["Thread talk"], isTalk=True, subject=thread_ns)
+    summary_ns = Namespace(id=92, name=ctx.NAMESPACE_TEXTS["Summary"], isSubject=True)
+    summary_talk_ns = Namespace(id=93, name=ctx.NAMESPACE_TEXTS["Summary talk"], isTalk=True, subject=summary_ns)
+    appendix_ns = Namespace(id=100, name=ctx.NAMESPACE_TEXTS["Appendix"], isSubject=True)
+    appendix_talk_ns = Namespace(id=101, name=ctx.NAMESPACE_TEXTS["Appendix talk"], isTalk=True, subject=appendix_ns)
+    concordance_ns = Namespace(id=102, name=ctx.NAMESPACE_TEXTS["Concordance"], isSubject=True)
+    concordance_talk_ns = Namespace(id=103, name=ctx.NAMESPACE_TEXTS["Concordance talk"], isTalk=True, subject=concordance_ns)
+    index_ns = Namespace(id=104, name=ctx.NAMESPACE_TEXTS["Index"], isSubject=True)
+    index_talk_ns = Namespace(id=105, name=ctx.NAMESPACE_TEXTS["Index talk"], isTalk=True, subject=index_ns)
+    rhymes_ns = Namespace(id=106, name=ctx.NAMESPACE_TEXTS["Rhymes"], isSubject=True)
+    rhymes_talk_ns = Namespace(id=107, name=ctx.NAMESPACE_TEXTS["Rhymes talk"], isTalk=True, subject=rhymes_ns)
+    transwiki_ns = Namespace(id=108, name=ctx.NAMESPACE_TEXTS["Transwiki"], isSubject=True)
+    transwiki_talk_ns = Namespace(id=109, name=ctx.NAMESPACE_TEXTS["Transwiki talk"], isTalk=True, subject=transwiki_ns)
+    thesaurus_ns = Namespace(id=110, name=ctx.NAMESPACE_TEXTS["Thesaurus"], isSubject=True)
+    thesaurus_talk_ns = Namespace(id=111, name=ctx.NAMESPACE_TEXTS["Thesaurus talk"], isTalk=True, subject=thesaurus_ns)
+    citations_ns = Namespace(id=114, name=ctx.NAMESPACE_TEXTS["Citations"], isSubject=True)
+    citations_talk_ns = Namespace(id=115, name=ctx.NAMESPACE_TEXTS["Citations talk"], isTalk=True, subject=citations_ns)
+    sign_gloss_ns = Namespace(id=116, name=ctx.NAMESPACE_TEXTS["Sign gloss"], isSubject=True)
+    sign_gloss_talk_ns = Namespace(id=117, name=ctx.NAMESPACE_TEXTS["Sign gloss talk"], isTalk=True, subject=sign_gloss_ns)
+    reconstruction_ns = Namespace(id=118, name=ctx.NAMESPACE_TEXTS["Reconstruction"], isSubject=True)
+    reconstruction_talk_ns = Namespace(id=119, name=ctx.NAMESPACE_TEXTS["Reconstruction talk"], isTalk=True, subject=reconstruction_ns)
+    module_ns = Namespace(id=828, name=ctx.NAMESPACE_TEXTS["Module"], isIncludable=True, aliases=ctx.NAMESPACE_ALIASES["Module"], isSubject=True)
+    module_talk_ns = Namespace(id=829, name=ctx.NAMESPACE_TEXTS["Module talk"], isTalk=True, subject=module_ns)
+
+    main_ns.talk = talk_ns
+    user_ns.talk = user_talk_ns
+    project_ns.talk = project_talk_ns
+    file_ns.talk = file_talk_ns
+    mediawiki_ns.talk = mediawiki_talk_ns
+    template_ns.talk = template_talk_ns
+    help_ns.talk = help_talk_ns
+    category_ns.talk = category_talk_ns
+    thread_ns.talk = thread_talk_ns
+    summary_ns.talk = summary_talk_ns
+    appendix_ns.talk = appendix_talk_ns
+    concordance_ns.talk = concordance_talk_ns
+    index_ns.talk = index_talk_ns
+    rhymes_ns.talk = rhymes_talk_ns
+    transwiki_ns.talk = transwiki_talk_ns
+    thesaurus_ns.talk = thesaurus_talk_ns
+    citations_ns.talk = citations_talk_ns
+    sign_gloss_ns.talk = sign_gloss_talk_ns
+    reconstruction_ns.talk = reconstruction_talk_ns
+    module_ns.talk = module_talk_ns
+
+    add_ns(ctx.namespaces, media_ns)
+    add_ns(ctx.namespaces, special_ns)
+    add_ns(ctx.namespaces, main_ns)
+    add_ns(ctx.namespaces, talk_ns)
+    add_ns(ctx.namespaces, user_ns)
+    add_ns(ctx.namespaces, user_talk_ns)
+    add_ns(ctx.namespaces, project_ns)
+    add_ns(ctx.namespaces, project_talk_ns)
+    add_ns(ctx.namespaces, file_ns)
+    add_ns(ctx.namespaces, file_talk_ns)
+    add_ns(ctx.namespaces, mediawiki_ns)
+    add_ns(ctx.namespaces, mediawiki_talk_ns)
+    add_ns(ctx.namespaces, template_ns)
+    add_ns(ctx.namespaces, template_talk_ns)
+    add_ns(ctx.namespaces, help_ns)
+    add_ns(ctx.namespaces, help_talk_ns)
+    add_ns(ctx.namespaces, category_ns)
+    add_ns(ctx.namespaces, category_talk_ns)
+    add_ns(ctx.namespaces, thread_ns)
+    add_ns(ctx.namespaces, thread_talk_ns)
+    add_ns(ctx.namespaces, summary_ns)
+    add_ns(ctx.namespaces, summary_talk_ns)
+    add_ns(ctx.namespaces, appendix_ns)
+    add_ns(ctx.namespaces, appendix_talk_ns)
+    add_ns(ctx.namespaces, concordance_ns)
+    add_ns(ctx.namespaces, concordance_talk_ns)
+    add_ns(ctx.namespaces, index_ns)
+    add_ns(ctx.namespaces, index_talk_ns)
+    add_ns(ctx.namespaces, rhymes_ns)
+    add_ns(ctx.namespaces, rhymes_talk_ns)
+    add_ns(ctx.namespaces, transwiki_ns)
+    add_ns(ctx.namespaces, transwiki_talk_ns)
+    add_ns(ctx.namespaces, thesaurus_ns)
+    add_ns(ctx.namespaces, thesaurus_talk_ns)
+    add_ns(ctx.namespaces, citations_ns)
+    add_ns(ctx.namespaces, citations_talk_ns)
+    add_ns(ctx.namespaces, sign_gloss_ns)
+    add_ns(ctx.namespaces, sign_gloss_talk_ns)
+    add_ns(ctx.namespaces, reconstruction_ns)
+    add_ns(ctx.namespaces, reconstruction_talk_ns)
+    add_ns(ctx.namespaces, module_ns)
+    add_ns(ctx.namespaces, module_talk_ns)
 
 
 def ns_fn(ctx, fn_name, args, expander):
@@ -704,9 +727,9 @@ def ns_fn(ctx, fn_name, args, expander):
     t = expander(args[0]).strip().upper() if args else ""
     if t and t.isdigit():
         t = int(t)
-        ns = namespaces.get(t)
+        ns = ctx.namespaces.get(t)
     else:
-        for ns in namespaces.values():
+        for ns in ctx.namespaces.values():
             # print("checking", ns.name)
             if ns.name and t == ns.name.upper():
                 break
@@ -774,6 +797,7 @@ unary_fns = {
     "atan": math.atan,
 }
 
+
 def binary_e_fn(x, y):
     if isinstance(x, int) and isinstance(y, int):
         if y >= 0:
@@ -788,6 +812,7 @@ def binary_e_fn(x, y):
                 return x * math.pow(10, y)
         return x
     return x * math.pow(10, y)
+
 
 binary_e_fns = {
     "e": binary_e_fn,
@@ -830,6 +855,7 @@ binary_and_fns = {
 binary_or_fns = {
     "or": lambda x, y: 1 if x or y else 0,
 }
+
 
 def expr_fn(ctx, fn_name, args, expander):
     """Implements the #titleparts parser function."""
@@ -1062,7 +1088,7 @@ time_fmt_map = {
     "0": lambda ctx, t: t.strftime("%z")[:5],
     "P": lambda ctx, t: t.strftime("%z")[:3] + ":" + t.strftime("%z")[3:5],
     "T": "%Z",
-    "Z": lambda ctx, t: 0 if t.utcoffset() == None else t.utcoffset().seconds,
+    "Z": lambda ctx, t: 0 if t.utcoffset() is None else t.utcoffset().seconds,
     "t": month_num_days,
     "c": lambda ctx, t: t.isoformat(),
     "r": lambda ctx, t: t.strftime("%a, %d %b %Y %H:%M:%S {}").format(
@@ -1083,7 +1109,7 @@ def time_fn(ctx, fn_name, args, expander):
     if not dt:
         dt = "now"
 
-    settings = { "RETURN_AS_TIMEZONE_AWARE": True}
+    settings = {"RETURN_AS_TIMEZONE_AWARE": True}
     if loc in ("", "0"):
         dt += " UTC"
 

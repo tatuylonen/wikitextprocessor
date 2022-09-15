@@ -9,14 +9,16 @@ import sys
 import html
 import time
 import pickle
-import datetime
 import tempfile
 import traceback
 import collections
 import urllib.parse
 import html.entities
 import multiprocessing
-from .parserfns import (PARSER_FUNCTIONS, call_parser_function, tag_fn)
+import json
+from pathlib import Path
+
+from .parserfns import PARSER_FUNCTIONS, call_parser_function, init_namespaces
 from .wikihtml import ALLOWED_HTML_TAGS
 from .luaexec import call_lua_sandbox
 from .parser import parse_encoded, NodeKind
@@ -34,6 +36,7 @@ PAIRED_HTML_TAGS = set(k for k, v in ALLOWED_HTML_TAGS.items()
 _global_ctx = None
 _global_page_handler = None
 _global_page_autoload = True
+
 
 def phase2_page_handler(dt):
     """Helper function for calling the Phase2 page handler (see
@@ -124,8 +127,13 @@ class Wtp(object):
         "section",	 # Section within page, for error messages
         "subsection",    # Subsection within page, for error messages
         "suppress_special",  # XXX never set to True???
+        "data_folder",
+        "NAMESPACE_TEXTS",
+        "NAMESPACE_ALIASES",
+        "namespaces"
     )
-    def __init__(self, num_threads=None, cache_file=None, quiet=False):
+
+    def __init__(self, num_threads=None, cache_file=None, quiet=False, lang_code="en"):
         assert num_threads is None or isinstance(num_threads, int)
         assert cache_file is None or isinstance(cache_file, str)
         assert quiet in (True, False)
@@ -183,6 +191,17 @@ class Wtp(object):
             self._reset_pages()
         self.tmp_ofs = 0
         self.buf_ofs = 0
+
+        self.data_folder = Path(__file__).parent.joinpath(f"data/{lang_code}")
+        self.init_namespace_texts()
+        self.namespaces = {}
+        init_namespaces(self)
+
+    def init_namespace_texts(self):
+        with self.data_folder.joinpath("namespaces.json").open(encoding="utf-8") as f:
+            self.NAMESPACE_TEXTS = json.load(f)
+        with self.data_folder.joinpath("namespace_aliases.json").open(encoding="utf-8") as f:
+            self.NAMESPACE_ALIASES = json.load(f)
 
     def _reset_pages(self):
         """Resets any stored pages and gets ready to receive more pages."""

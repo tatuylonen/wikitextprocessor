@@ -3,7 +3,6 @@
 # Copyright (c) 2020-2022 Tatu Ylonen.  See file LICENSE and https://ylonen.org
 
 import re
-import html
 
 
 # Character range used for marking magic sequences.  This package

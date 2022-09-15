@@ -246,46 +246,46 @@ retained_modules["libraryUtil"] = true
 -- Some Wiktionary modules that we know to be safe.  These really should
 -- come from elsewhere.  These are loaded very frequently, so keeping them
 -- cached speeds up things.
-retained_modules["Module:languages"] = true
-retained_modules["Module:languages/templates"] = true
-retained_modules["Module:language-like"] = true
-retained_modules["Module:wikimedia languages"] = true
-retained_modules["Module:families"] = true
-retained_modules["Module:scripts"] = true
-retained_modules["Module:links"] = true
-retained_modules["Module:links/templates"] = true
-retained_modules["Module:utilities"] = true
-retained_modules["Module:utils"] = true
-retained_modules["Module:debug"] = true
-retained_modules["Module:palindromes"] = true
-retained_modules["Module:table"] = true
-retained_modules["Module:IPA"] = true
-retained_modules["Module:IPA/templates"] = true
-retained_modules["Module:IPA/tracking"] = true
-retained_modules["Module:script utilities"] = true
-retained_modules["Module:string"] = true
-retained_modules["Module:string utilities"] = true
-retained_modules["Module:syllables"] = true
-retained_modules["Module:parameters"] = true
-retained_modules["Module:translations"] = true
-retained_modules["Module:gender and number"] = true
-retained_modules["Module:qualifier"] = true
-retained_modules["Module:accent qualifier"] = true
-retained_modules["Module:ugly hacks"] = true
-retained_modules["Module:redlink category"] = true
-retained_modules["Module:etymology"] = true
-retained_modules["Module:etymology/templates"] = true
-retained_modules["Module:italics"] = true
-retained_modules["Module:usex"] = true
-retained_modules["Module:usex/templates"] = true
-retained_modules["Module:number-utilities"] = true
-retained_modules["Module:check isxn"] = true
-retained_modules["Module:rhymes"] = true
-retained_modules["Module:labels"] = true
-retained_modules["Module:TemplateStyles"] = true
-retained_modules["Module:columns"] = true
-retained_modules["Module:collation"] = true
-retained_modules["Module:glossary"] = true
+retained_modules[NAMESPACE_TEXTS["Module"] .. ":languages"] = true
+retained_modules[NAMESPACE_TEXTS["Module"] .. ":languages/templates"] = true
+retained_modules[NAMESPACE_TEXTS["Module"] .. ":language-like"] = true
+retained_modules[NAMESPACE_TEXTS["Module"] .. ":wikimedia languages"] = true
+retained_modules[NAMESPACE_TEXTS["Module"] .. ":families"] = true
+retained_modules[NAMESPACE_TEXTS["Module"] .. ":scripts"] = true
+retained_modules[NAMESPACE_TEXTS["Module"] .. ":links"] = true
+retained_modules[NAMESPACE_TEXTS["Module"] .. ":links/templates"] = true
+retained_modules[NAMESPACE_TEXTS["Module"] .. ":utilities"] = true
+retained_modules[NAMESPACE_TEXTS["Module"] .. ":utils"] = true
+retained_modules[NAMESPACE_TEXTS["Module"] .. ":debug"] = true
+retained_modules[NAMESPACE_TEXTS["Module"] .. ":palindromes"] = true
+retained_modules[NAMESPACE_TEXTS["Module"] .. ":table"] = true
+retained_modules[NAMESPACE_TEXTS["Module"] .. ":IPA"] = true
+retained_modules[NAMESPACE_TEXTS["Module"] .. ":IPA/templates"] = true
+retained_modules[NAMESPACE_TEXTS["Module"] .. ":IPA/tracking"] = true
+retained_modules[NAMESPACE_TEXTS["Module"] .. ":script utilities"] = true
+retained_modules[NAMESPACE_TEXTS["Module"] .. ":string"] = true
+retained_modules[NAMESPACE_TEXTS["Module"] .. ":string utilities"] = true
+retained_modules[NAMESPACE_TEXTS["Module"] .. ":syllables"] = true
+retained_modules[NAMESPACE_TEXTS["Module"] .. ":parameters"] = true
+retained_modules[NAMESPACE_TEXTS["Module"] .. ":translations"] = true
+retained_modules[NAMESPACE_TEXTS["Module"] .. ":gender and number"] = true
+retained_modules[NAMESPACE_TEXTS["Module"] .. ":qualifier"] = true
+retained_modules[NAMESPACE_TEXTS["Module"] .. ":accent qualifier"] = true
+retained_modules[NAMESPACE_TEXTS["Module"] .. ":ugly hacks"] = true
+retained_modules[NAMESPACE_TEXTS["Module"] .. ":redlink category"] = true
+retained_modules[NAMESPACE_TEXTS["Module"] .. ":etymology"] = true
+retained_modules[NAMESPACE_TEXTS["Module"] .. ":etymology/templates"] = true
+retained_modules[NAMESPACE_TEXTS["Module"] .. ":italics"] = true
+retained_modules[NAMESPACE_TEXTS["Module"] .. ":usex"] = true
+retained_modules[NAMESPACE_TEXTS["Module"] .. ":usex/templates"] = true
+retained_modules[NAMESPACE_TEXTS["Module"] .. ":number-utilities"] = true
+retained_modules[NAMESPACE_TEXTS["Module"] .. ":check isxn"] = true
+retained_modules[NAMESPACE_TEXTS["Module"] .. ":rhymes"] = true
+retained_modules[NAMESPACE_TEXTS["Module"] .. ":labels"] = true
+retained_modules[NAMESPACE_TEXTS["Module"] .. ":TemplateStyles"] = true
+retained_modules[NAMESPACE_TEXTS["Module"] .. ":columns"] = true
+retained_modules[NAMESPACE_TEXTS["Module"] .. ":collation"] = true
+retained_modules[NAMESPACE_TEXTS["Module"] .. ":glossary"] = true
 
 -- Note: the following are examples that cannot be retained:
 --   Module:headword (saves page title)
@@ -330,8 +330,9 @@ local function _lua_reset_env()
     -- Clear the sandbox environment, except the "mw" global.  Not clearing it
     -- enables us to cache the module, which provides some speedup.
     -- "next" function is (re)defined in _sandbox_phase2.lua and we keep it too.
+    -- also keep the namespace texts
     for k, v in pairs(env) do
-       if k ~= "mw" and k ~= "next" then
+       if k ~= "mw" and k ~= "next" and k ~= "NAMESPACE_TEXTS" and k ~= "NAMESPACE_ALIASES" then
           env[k] = nil
        end
     end
@@ -377,6 +378,9 @@ local function _lua_reset_env()
     env["_new_loader"] = new_loader
     env["_cached_mod"] = _cached_mod
     env["_save_mod"] = _save_mod
+    -- namespace
+    env["NAMESPACE_TEXTS"] = NAMESPACE_TEXTS
+    env["NAMESPACE_ALIASES"] = NAMESPACE_ALIASES
     return env
 end
 
