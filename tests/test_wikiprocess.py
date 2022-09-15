@@ -755,7 +755,7 @@ MORE
         self.parserfn("{{#expr|sin(30*pi/180)}}", "0.49999999999999994")
 
     def test_expr29(self):
-        self.parserfn("{{#expr|cos.1}}", "0.9950041652780257")
+        self.parserfn("{{#expr|cos.1}}", "0.9950041652780258") # 0.9950041652780257 on macOS
 
     def test_expr30(self):
         self.parserfn("{{#expr|tan.1}}", "0.10033467208545055")

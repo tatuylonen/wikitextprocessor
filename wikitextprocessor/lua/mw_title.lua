@@ -150,8 +150,19 @@ function mw_title.makeTitle(namespace, title, fragment, interwiki)
    if title:sub(1, 1) == " " or title:sub(-1) == " " then return nil end
    if title:find("  ") then return nil end
    if title:find("~~~~") then return nil end
-   local prefixes = {"Talk:", "WP:", "WT:", "Project:", "Image:",
-                     "Media:", "Special:"}
+   local prefixes = {
+     NAMESPACE_TEXTS["Talk"] .. ":",
+     NAMESPACE_TEXTS["Project"] .. ":",
+     NAMESPACE_TEXTS["Media"] .. ":",
+     NAMESPACE_TEXTS["File"] .. ":",
+     NAMESPACE_TEXTS["Special"] .. ":",
+   }
+   for v in ipairs(NAMESPACE_ALIASES[NAMESPACE_TEXTS["Project"]]) do
+    table.insert(prefixes, v .. ":")
+   end
+   for v in ipairs(NAMESPACE_ALIASES["File"]) do
+    table.insert(prefixes, v .. ":")
+   end
    -- XXX other disallowed prefixes, see
    -- https://www.mediawiki.org/wiki/Special:Interwiki
    for i, prefix in ipairs(prefixes) do
@@ -159,7 +170,7 @@ function mw_title.makeTitle(namespace, title, fragment, interwiki)
    end
    -- XXX there are also other disallowed titles, see
    -- https://www.mediawiki.org/wiki/Manual:Page_title
-   if not namespace or namespace == "" then namespace = "Main" end
+   if not namespace or namespace == "" then namespace = NAMESPACE_TEXTS["Main"] end
    local ns = mw.site.findNamespace(namespace)
    if not ns then
       return nil
@@ -195,7 +206,7 @@ function mw_title.makeTitle(namespace, title, fragment, interwiki)
    local subpage = mw.ustring.gsub(title, ".*/translations$", "translations")
    subpage = mw.ustring.gsub(subpage, "^[^/]*-[^/]*/([^/]*)$", "%1")
    local fullName
-   if ns.name == "Main" then
+   if ns.name == NAMESPACE_TEXTS["Main"] then
       fullName = title
    else
       fullName = ns.name .. ":" .. title
@@ -229,7 +240,7 @@ function mw_title.makeTitle(namespace, title, fragment, interwiki)
       id = id,
       interwiki = interwiki or "",
       fragment = fragment,
-      nsText = ns.name ~= "Main" and ns.name or "",
+      nsText = ns.name ~= NAMESPACE_TEXTS["Main"] and ns.name or "",
       subjectNsText = (ns.subject or ns).name,
       text = title,
       prefixedText = ns.name .. ":" .. title,
@@ -244,7 +255,7 @@ function mw_title.makeTitle(namespace, title, fragment, interwiki)
       isExternal = interwiki ~= nil,  -- ???
       isLocal = interwiki == nil,   -- ???
       isRedirect = redirectTo ~= nil,
-      isSpecialPage = ns.name == "Special",
+      isSpecialPage = ns.name == NAMESPACE_TEXTS["Special"],
       isSubpage = title ~= base,
       isTalkPage = ns.isTalk,
       _redirectTarget = redirectTo,
@@ -259,7 +270,7 @@ function mw_title.new(text, namespace)
       error("XXX mw.title.new with id not yet implemented")
    end
    assert(type(text) == "string")
-   if not namespace then namespace = "Main" end
+   if not namespace then namespace = NAMESPACE_TEXTS["Main"] end
    local idx = mw.ustring.find(text, ":")
    if idx ~= nil then
       local ns1 = mw.ustring.sub(text, 1, idx - 1)
