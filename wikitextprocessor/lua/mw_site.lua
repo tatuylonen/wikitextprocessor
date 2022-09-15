@@ -10,6 +10,8 @@ local Namespace = {
    defaultContentModel = "wikitext",
    aliases = {},
    associated = {},
+   isSubject = false,
+   isTalk = false,
 }
 Namespace.__index = Namespace
 

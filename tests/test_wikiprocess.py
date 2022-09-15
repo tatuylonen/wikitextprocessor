@@ -755,7 +755,7 @@ MORE
         self.parserfn("{{#expr|sin(30*pi/180)}}", "0.49999999999999994")
 
     def test_expr29(self):
-        self.parserfn("{{#expr|cos.1}}", "0.9950041652780258")
+        self.parserfn("{{#expr|cos.1}}", "0.9950041652780257")
 
     def test_expr30(self):
         self.parserfn("{{#expr|tan.1}}", "0.10033467208545055")
@@ -2875,17 +2875,17 @@ return export
         return t.text""")
 
     def test_mw_title27(self):
-        self.scribunto("User_talk:Test", r"""
+        self.scribunto("User talk:Test", r"""
         local t = mw.title.makeTitle(3, "Test", "Frag")
         return t.prefixedText""")
 
     def test_mw_title27(self):
-        self.scribunto("User_talk:Test", r"""
+        self.scribunto("User talk:Test", r"""
         local t = mw.title.makeTitle(3, "Test", "Frag")
         return t.prefixedText""")
 
     def test_mw_title28(self):
-        self.scribunto("User_talk:Test#Frag", r"""
+        self.scribunto("User talk:Test#Frag", r"""
         local t = mw.title.makeTitle(3, "Test", "Frag")
         return t.fullText""")
 
@@ -2996,7 +2996,7 @@ return export
 
     def test_mw_title45(self):
         self.scribunto("True", r"""
-        local t = mw.title.makeTitle("User_talk", "Test/foo/bar", "Frag")
+        local t = mw.title.makeTitle("User talk", "Test/foo/bar", "Frag")
         return t:hasSubjectNamespace("User")""")
 
     def test_mw_title46(self):

@@ -246,8 +246,7 @@ function mw_title.makeTitle(namespace, title, fragment, interwiki)
       isRedirect = redirectTo ~= nil,
       isSpecialPage = ns.name == "Special",
       isSubpage = title ~= base,
-      isTalkPage = (ns.name == "Talk" or
-                       mw.ustring.find(ns.name, "_talk") ~= nil),
+      isTalkPage = ns.isTalk,
       _redirectTarget = redirectTo,
    }
    setmetatable(t, mw_title_meta)
