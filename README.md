@@ -115,9 +115,6 @@ Most of the functionality is hidden behind the ``Wtp`` object.
 ``WikiNode`` objects are used for representing the parse
 tree that is returned by the ``Wtp.parse()`` function.  ``NodeKind``
 is an enumeration type used to encode the type of a ``WikiNode``.
-Additionally, ``ALL_LANGUAGES`` is exported and is a list that
-describes all languages (language codes, names, and other data) used
-in Wiktionary.
 
 ### class Wtp
 
