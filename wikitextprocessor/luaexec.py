@@ -14,7 +14,6 @@ import pkg_resources
 import lupa
 from lupa import LuaRuntime
 from .parserfns import PARSER_FUNCTIONS, call_parser_function, tag_fn
-from .languages import ALL_LANGUAGES
 
 # List of search paths for Lua libraries.
 builtin_lua_search_paths = [
@@ -29,11 +28,6 @@ lua_dir = pkg_resources.resource_filename("wikitextprocessor", "lua/")
 if not lua_dir.endswith("/"):
     lua_dir += "/"
 #print("lua_dir", lua_dir)
-
-# Mapping from language code code to language name.
-LANGUAGE_CODE_TO_NAME = { x["code"]: x["name"]
-                          for x in ALL_LANGUAGES
-                          if x.get("code") and x.get("name") }
 
 # Substitutions to perform on Lua code from the dump to convert from
 # Lua 5.1 to current 5.3
@@ -284,12 +278,10 @@ def get_page_content(ctx, title):
     return data
 
 
-def fetch_language_name(code):
+def fetch_language_name(ctx, code):
     """This function is called from Lua code as part of the mw.language
     implementation.  This maps a language code to its name."""
-    if code in LANGUAGE_CODE_TO_NAME:
-        return LANGUAGE_CODE_TO_NAME[code]
-    return None
+    return ctx.LANGUAGES_BY_CODE.get(code)
 
 
 def fetch_language_names(ctx, include):
@@ -297,9 +289,9 @@ def fetch_language_names(ctx, include):
     implementation.  This returns a list of known language names."""
     include = str(include)
     if include == "all":
-        ret = LANGUAGE_CODE_TO_NAME
+        ret = ctx.LANGUAGES_BY_CODE
     else:
-        ret = {"en": "English"}
+        ret = {"en": ctx.LANGUAGES_BY_CODE["en"]}
     return ctx.lua.table_from(ret)
 
 
@@ -312,7 +304,7 @@ def call_set_functions(ctx, set_functions):
                   mw_text_jsondecode(ctx, x, *rest),
                   lambda x: get_page_info(ctx, x),
                   lambda x: get_page_content(ctx, x),
-                  fetch_language_name,
+                  lambda x: fetch_language_name(ctx, x),
                   lambda x: fetch_language_names(ctx, x))
 
 
