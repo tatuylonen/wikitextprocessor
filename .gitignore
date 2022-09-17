@@ -5,3 +5,4 @@ wikitextprocessor.egg-info
 .coverage*
 htmlcov
 temp*
+*.csv

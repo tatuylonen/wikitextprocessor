@@ -1,23 +1,26 @@
-import requests
 import json
 import sys
 from pathlib import Path
+
+import requests
 
 
 def get_namespace_data(lang_code, siprop):
     # https://www.mediawiki.org/wiki/API:Siteinfo
     # https://www.mediawiki.org/wiki/Manual:Namespace
     # https://www.mediawiki.org/wiki/Help:Namespaces
-    r = requests.get(f"https://{lang_code}.wiktionary.org/w/api.php?action=query&formatversion=2&meta=siteinfo&siprop={siprop}&format=json")
+    params = {
+        "action": "query",
+        "format": "json",
+        "meta": "siteinfo",
+        "siprop": siprop,
+        "formatversion": "2",
+    }
+    r = requests.get(f"https://{lang_code}.wiktionary.org/w/api.php", params=params)
     return r.json()
 
 
-SAVED_KEYS = {
-    "id",
-    "name",
-    "content",
-    "canonical"
-}
+SAVED_KEYS = {"id", "name", "content", "canonical"}
 
 
 def main():
