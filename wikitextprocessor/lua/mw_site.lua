@@ -12,6 +12,9 @@ local Namespace = {
    associated = {},
    isSubject = false,
    isTalk = false,
+   isContent = false,
+   talk = nil,
+   subject = nil
 }
 Namespace.__index = Namespace
 
@@ -20,177 +23,54 @@ function Namespace:new(obj)
    setmetatable(obj, self)
    obj.canonicalName = obj.name
    obj.displayName = obj.name
-   obj.hasSubpages = obj.name == NAMESPACE_TEXTS["Main"] or obj.name == NAMESPACE_TEXTS["Module"]
+   obj.hasSubpages = obj.name == "Main" or obj.name == NAMESPACE_DATA.Module.name
    return obj
 end
 
 -- These duplicate definitions in wikiparserfns.py
-local media_ns = Namespace:new{id=-2, name=NAMESPACE_TEXTS["Media"], isSubject=true}
-local special_ns = Namespace:new{id=-1, name=NAMESPACE_TEXTS["Special"], isSubject=true}
-local main_ns = Namespace:new{id=0, name=NAMESPACE_TEXTS["Main"], isContent=true, isSubject=true}
-local talk_ns = Namespace:new{id=1, name=NAMESPACE_TEXTS["Talk"], isTalk=true, subject=main_ns}
-local user_ns = Namespace:new{id=2, name=NAMESPACE_TEXTS["User"], isSubject=true}
-local user_talk_ns = Namespace:new{id=3, name=NAMESPACE_TEXTS["User talk"], isTalk=true, subject=user_ns}
-local project_ns = Namespace:new{id=4, name=NAMESPACE_TEXTS["Project"], isSubject=true, aliases=NAMESPACE_ALIASES[NAMESPACE_TEXTS["Project"]]}
-local project_talk_ns = Namespace:new{id=5, name=NAMESPACE_TEXTS["Project talk"], isTalk=true, subject=project_ns}
-local file_ns = Namespace:new{id=6, name=NAMESPACE_TEXTS["File"], aliases=NAMESPACE_ALIASES["File"], isSubject=true}
-local file_talk_ns = Namespace:new{id=7, name=NAMESPACE_TEXTS["File talk"], aliases=NAMESPACE_ALIASES["File talk"], isTalk=true, subject=file_ns}
-local mediawiki_ns = Namespace:new{id=8, name=NAMESPACE_TEXTS["MediaWiki"], isSubject=true}
-local mediawiki_talk_ns = Namespace:new{id=9, name=NAMESPACE_TEXTS["MediaWiki talk"],
-                                        isTalk=true, subject=mediawiki_ns}
-local template_ns = Namespace:new{id=10, name=NAMESPACE_TEXTS["Template"], isSubject=true, aliases=NAMESPACE_ALIASES["Template"]}
-local template_talk_ns = Namespace:new{id=11, name=NAMESPACE_TEXTS["Template talk"], isTalk=true, subject=template_ns}
-local help_ns = Namespace:new{id=12, name=NAMESPACE_TEXTS["Help"], isSubject=true}
-local help_talk_ns = Namespace:new{id=13, name=NAMESPACE_TEXTS["Help talk"], isTalk=true, subject=help_ns}
-local category_ns = Namespace:new{id=14, name=NAMESPACE_TEXTS["Category"], isSubject=true, aliases=NAMESPACE_ALIASES["Category"]}
-local category_talk_ns = Namespace:new{id=15, name=NAMESPACE_TEXTS["Category talk"], isTalk=true, subject=category_ns}
-local thread_ns = Namespace:new{id=90, name=NAMESPACE_TEXTS["Thread"], isSubject=true}
-local thread_talk_ns = Namespace:new{id=91, name=NAMESPACE_TEXTS["Thread talk"], isTalk=true, subject=thread_ns}
-local summary_ns = Namespace:new{id=92, name=NAMESPACE_TEXTS["Summary"], isSubject=true}
-local summary_talk_ns = Namespace:new{id=93, name=NAMESPACE_TEXTS["Summary talk"], isTalk=true, subject=summary_ns}
-local appendix_ns = Namespace:new{id=100, name=NAMESPACE_TEXTS["Appendix"], isSubject=true, aliases=NAMESPACE_ALIASES["Appendix"]}
-local appendix_talk_ns = Namespace:new{id=101, name=NAMESPACE_TEXTS["Appendix talk"], isTalk=true, subject=appendix_ns}
-local concordance_ns = Namespace:new{id=102, name=NAMESPACE_TEXTS["Concordance"], isSubject=true}
-local concordance_talk_ns = Namespace:new{id=103, name=NAMESPACE_TEXTS["Concordance talk"], isTalk=true, subject=concordance_ns}
-local index_ns = Namespace:new{id=104, name=NAMESPACE_TEXTS["Index"], isSubject=true}
-local index_talk_ns = Namespace:new{id=105, name=NAMESPACE_TEXTS["Index talk"], isTalk=true, subject=index_ns}
-local rhymes_ns = Namespace:new{id=106, name=NAMESPACE_TEXTS["Rhymes"], isSubject=true}
-local rhymes_talk_ns = Namespace:new{id=107, name=NAMESPACE_TEXTS["Rhymes talk"], isTalk=true, subject=rhymes_ns}
-local transwiki_ns = Namespace:new{id=108, name=NAMESPACE_TEXTS["Transwiki"], isSubject=true}
-local transwiki_talk_ns = Namespace:new{id=109, name=NAMESPACE_TEXTS["Transwiki talk"], isTalk=true, subject=transwiki_ns}
-local thesaurus_ns = Namespace:new{id=110, name=NAMESPACE_TEXTS["Thesaurus"], isSubject=true, aliases=NAMESPACE_ALIASES["Thesaurus"]}
-local thesaurus_talk_ns = Namespace:new{id=111, name=NAMESPACE_TEXTS["Thesaurus talk"], isTalk=true, subject=thesaurus_ns, aliases=NAMESPACE_ALIASES["Thesaurus talk"]}
-local citations_ns = Namespace:new{id=114, name=NAMESPACE_TEXTS["Citations"], isSubject=true}
-local citations_talk_ns = Namespace:new{id=115, name=NAMESPACE_TEXTS["Citations talk"], isTalk=true, subject=citations_ns}
-local sign_gloss_ns = Namespace:new{id=116, name=NAMESPACE_TEXTS["Sign gloss"], isSubject=true}
-local sign_gloss_talk_ns = Namespace:new{id=117, name=NAMESPACE_TEXTS["Sign gloss talk"], isTalk=true, subject=sign_gloss_ns}
-local reconstruction_ns = Namespace:new{id=118, name=NAMESPACE_TEXTS["Reconstruction"], isSubject=true, aliases=NAMESPACE_ALIASES["Reconstruction"]}
-local reconstruction_talk_ns = Namespace:new{id=119, name=NAMESPACE_TEXTS["Reconstruction talk"], isTalk=true, subject=reconstruction_ns}
-local module_ns = Namespace:new{id=828, name=NAMESPACE_TEXTS["Module"], isIncludable=true, isSubject=true, aliases=NAMESPACE_ALIASES["Module"]}
-local module_talk_ns = Namespace:new{id=829, name=NAMESPACE_TEXTS["Module talk"], isTalk=true, subject=module_ns}
+local mw_site_namespaces = {}
+local mw_site_contentNamespaces = {}
+local mw_site_subjectNamespaces = {}
+local mw_site_talkNamespaces = {}
 
-main_ns.talk = talk_ns
-user_ns.talk = user_talk_ns
-project_ns.talk = project_talk_ns
-file_ns.talk = file_talk_ns
-mediawiki_ns.talk = mediawiki_talk_ns
-template_ns.talk = template_talk_ns
-help_ns.talk = help_talk_ns
-category_ns.talk = category_talk_ns
-thread_ns.talk = thread_talk_ns
-summary_ns.talk = summary_talk_ns
-appendix_ns.talk = appendix_talk_ns
-concordance_ns.talk = concordance_talk_ns
-index_ns.talk = index_talk_ns
-rhymes_ns.talk = rhymes_talk_ns
-transwiki_ns.talk = transwiki_talk_ns
-thesaurus_ns.talk = thesaurus_talk_ns
-citations_ns.talk = citations_talk_ns
-sign_gloss_ns.talk = sign_gloss_talk_ns
-reconstruction_ns.talk = reconstruction_talk_ns
-module_ns.talk = module_talk_ns
+for ns_canonical_name in pairs(NAMESPACE_DATA) do
+  local ns_data = NAMESPACE_DATA[ns_canonical_name]
+  local ns = Namespace:new{
+    id=ns_data.id,
+    name=ns_data.name,
+    isSubject=ns_data.issubject,
+    isContent=ns_data.content,
+    isTalk=ns_data.istalk,
+    aliases=ns_data.aliases
+  }
+  mw_site_namespaces[ns_data.id] = ns
+  mw_site_namespaces[ns_data.name] = ns
 
-local function add_ns(t, ns)
-   assert(ns.name ~= nil)
-   assert(ns.id ~= nil)
-   t[ns.id] = ns
-   t[ns.name] = ns
+  if ns_data.content then
+    mw_site_contentNamespaces[ns_data.id] = ns
+    mw_site_contentNamespaces[ns_data.name] = ns
+  end
+  if ns_data.issubject then
+    mw_site_subjectNamespaces[ns_data.id] = ns
+    mw_site_subjectNamespaces[ns_data.name] = ns
+  end
+  if ns_data.istalk then
+    mw_site_talkNamespaces[ns_data.id] = ns
+    mw_site_talkNamespaces[ns_data.name] = ns
+  end
 end
 
-local mw_site_namespaces = {}
-add_ns(mw_site_namespaces, media_ns)
-add_ns(mw_site_namespaces, special_ns)
-add_ns(mw_site_namespaces, main_ns)
-add_ns(mw_site_namespaces, talk_ns)
-add_ns(mw_site_namespaces, user_ns)
-add_ns(mw_site_namespaces, user_talk_ns)
-add_ns(mw_site_namespaces, project_ns)
-add_ns(mw_site_namespaces, project_talk_ns)
-add_ns(mw_site_namespaces, file_ns)
-add_ns(mw_site_namespaces, file_talk_ns)
-add_ns(mw_site_namespaces, mediawiki_ns)
-add_ns(mw_site_namespaces, mediawiki_talk_ns)
-add_ns(mw_site_namespaces, template_ns)
-add_ns(mw_site_namespaces, template_talk_ns)
-add_ns(mw_site_namespaces, help_ns)
-add_ns(mw_site_namespaces, help_talk_ns)
-add_ns(mw_site_namespaces, category_ns)
-add_ns(mw_site_namespaces, category_talk_ns)
-add_ns(mw_site_namespaces, thread_ns)
-add_ns(mw_site_namespaces, thread_talk_ns)
-add_ns(mw_site_namespaces, summary_ns)
-add_ns(mw_site_namespaces, summary_talk_ns)
-add_ns(mw_site_namespaces, appendix_ns)
-add_ns(mw_site_namespaces, appendix_talk_ns)
-add_ns(mw_site_namespaces, concordance_ns)
-add_ns(mw_site_namespaces, concordance_talk_ns)
-add_ns(mw_site_namespaces, rhymes_ns)
-add_ns(mw_site_namespaces, rhymes_talk_ns)
-add_ns(mw_site_namespaces, transwiki_ns)
-add_ns(mw_site_namespaces, transwiki_talk_ns)
-add_ns(mw_site_namespaces, thesaurus_ns)
-add_ns(mw_site_namespaces, thesaurus_talk_ns)
-add_ns(mw_site_namespaces, citations_ns)
-add_ns(mw_site_namespaces, citations_talk_ns)
-add_ns(mw_site_namespaces, sign_gloss_ns)
-add_ns(mw_site_namespaces, sign_gloss_talk_ns)
-add_ns(mw_site_namespaces, reconstruction_ns)
-add_ns(mw_site_namespaces, reconstruction_talk_ns)
-add_ns(mw_site_namespaces, module_ns)
-add_ns(mw_site_namespaces, module_talk_ns)
+for ns_id in pairs(mw_site_namespaces) do
+  if type(ns_id) == "number" then
+    if mw_site_namespaces[ns_id].isSubject and ns_id >= 0 then
+      mw_site_namespaces[ns_id].talk = mw_site_namespaces[ns_id + 1]
+    end
+    if mw_site_namespaces[ns_id].isTalk then
+      mw_site_namespaces[ns_id].subject = mw_site_namespaces[ns_id - 1]
+    end
+  end
+end
 
-local mw_site_contentNamespaces = {}
-add_ns(mw_site_contentNamespaces, main_ns)
-add_ns(mw_site_contentNamespaces, appendix_ns)
-add_ns(mw_site_contentNamespaces, thesaurus_ns)
-add_ns(mw_site_contentNamespaces, reconstruction_ns)
-
-local mw_site_subjectNamespaces = {}
-add_ns(mw_site_subjectNamespaces, media_ns)
-add_ns(mw_site_subjectNamespaces, special_ns)
-add_ns(mw_site_subjectNamespaces, main_ns)
-add_ns(mw_site_subjectNamespaces, user_ns)
-add_ns(mw_site_subjectNamespaces, project_ns)
-add_ns(mw_site_subjectNamespaces, file_ns)
-add_ns(mw_site_subjectNamespaces, mediawiki_ns)
-add_ns(mw_site_subjectNamespaces, template_ns)
-add_ns(mw_site_subjectNamespaces, help_ns)
-add_ns(mw_site_subjectNamespaces, category_ns)
-add_ns(mw_site_subjectNamespaces, thread_ns)
-add_ns(mw_site_subjectNamespaces, summary_ns)
-add_ns(mw_site_subjectNamespaces, appendix_ns)
-add_ns(mw_site_subjectNamespaces, thesaurus_ns)
-add_ns(mw_site_subjectNamespaces, concordance_ns)
-add_ns(mw_site_subjectNamespaces, index_ns)
-add_ns(mw_site_subjectNamespaces, rhymes_ns)
-add_ns(mw_site_subjectNamespaces, transwiki_ns)
-add_ns(mw_site_subjectNamespaces, thesaurus_ns)
-add_ns(mw_site_subjectNamespaces, citations_ns)
-add_ns(mw_site_subjectNamespaces, sign_gloss_ns)
-add_ns(mw_site_subjectNamespaces, reconstruction_ns)
-add_ns(mw_site_subjectNamespaces, module_ns)
-
-local mw_site_talkNamespaces = {}
-add_ns(mw_site_talkNamespaces, talk_ns)
-add_ns(mw_site_talkNamespaces, user_talk_ns)
-add_ns(mw_site_talkNamespaces, project_talk_ns)
-add_ns(mw_site_talkNamespaces, file_talk_ns)
-add_ns(mw_site_talkNamespaces, mediawiki_talk_ns)
-add_ns(mw_site_talkNamespaces, template_talk_ns)
-add_ns(mw_site_talkNamespaces, help_talk_ns)
-add_ns(mw_site_talkNamespaces, category_talk_ns)
-add_ns(mw_site_talkNamespaces, thread_talk_ns)
-add_ns(mw_site_talkNamespaces, summary_talk_ns)
-add_ns(mw_site_talkNamespaces, appendix_talk_ns)
-add_ns(mw_site_talkNamespaces, concordance_talk_ns)
-add_ns(mw_site_talkNamespaces, index_talk_ns)
-add_ns(mw_site_talkNamespaces, rhymes_talk_ns)
-add_ns(mw_site_talkNamespaces, transwiki_talk_ns)
-add_ns(mw_site_talkNamespaces, thesaurus_talk_ns)
-add_ns(mw_site_talkNamespaces, citations_talk_ns)
-add_ns(mw_site_talkNamespaces, sign_gloss_talk_ns)
-add_ns(mw_site_talkNamespaces, reconstruction_talk_ns)
-add_ns(mw_site_talkNamespaces, module_talk_ns)
 
 local function mw_site_index(x, ns)
    return mw.site.findNamespace(ns)

@@ -89,12 +89,13 @@ def lua_loader(ctx, modname):
     # print("LUA_LOADER IN PYTHON:", modname)
     assert isinstance(modname, str)
     modname = modname.strip()
-    if modname.startswith(ctx.NAMESPACE_TEXTS["Module"] + ":"):
+    local_module_ns_name = ctx.NAMESPACE_DATA["Module"]["name"]
+    if modname.startswith(local_module_ns_name + ":"):
         # Canonicalize the name
         modname = ctx._canonicalize_template_name(modname)
 
         # First try to load it as a module
-        if modname.startswith(ctx.NAMESPACE_TEXTS["Module"] + ":_"):
+        if modname.startswith(local_module_ns_name + ":_"):
             # Module names starting with _ are considered internal and cannot be
             # loaded from the dump file for security reasons.  This is to ensure
             # that the sandbox always gets loaded from a local file.
@@ -102,10 +103,10 @@ def lua_loader(ctx, modname):
         else:
             data = ctx.read_by_title(modname)
             # Chinese Wikipedia capitalizes the first letter of module name
+            # can't use str.capitalize(), it'll cause error for "Module:Cmn-pron-Sichuan"
             if data is None:
-                # can't use str.capitalize(), it'll cause error for "Module:Cmn-pron-Sichuan"
-                module_len = len(ctx.NAMESPACE_TEXTS["Module"])
-                data = ctx.read_by_title(ctx.NAMESPACE_TEXTS["Module"] + ":" + modname[module_len + 1].upper() + modname[module_len + 2:])
+                module_name_len = len(local_module_ns_name)
+                data = ctx.read_by_title(local_module_ns_name + ":" + modname[module_name_len + 1].upper() + modname[module_name_len + 2:])
     else:
         # Try to load it from a file
         path = modname
@@ -319,13 +320,14 @@ def initialize_lua(ctx):
                      register_eval=False,
                      attribute_filter=filter_attribute_access)
     ctx.lua = lua
-    set_namespace_texts = lua.eval("function(v) NAMESPACE_TEXTS = v end")
-    set_namespace_aliases = lua.eval("function(v) NAMESPACE_ALIASES = v end")
-    set_namespace_texts(lua.table_from(ctx.NAMESPACE_TEXTS))
-    lua_aliases = ctx.NAMESPACE_ALIASES.copy()
-    for k, v in lua_aliases.items():
-        lua_aliases[k] = lua.table_from(v)
-    set_namespace_aliases(lua.table_from(lua_aliases))
+    set_namespace_data = lua.eval("function(v) NAMESPACE_DATA = v end")
+    lua_namespace_data = ctx.NAMESPACE_DATA.copy()
+    for ns_name, ns_data in lua_namespace_data.items():
+        for k, v in ns_data.items():
+            if isinstance(v, list):
+                lua_namespace_data[ns_name][k] = lua.table_from(v)
+        lua_namespace_data[ns_name] = lua.table_from(lua_namespace_data[ns_name])
+    set_namespace_data(lua.table_from(lua_namespace_data))
 
     # Load Lua sandbox Phase 1.  This is a very minimal file that only sets
     # the Lua loader to our custom loader; we will then use it to load the

@@ -171,8 +171,9 @@ local function _lua_invoke(mod_name, fn_name, frame, page_title, timeout)
    -- loading the module, as the module could refer to, e.g., page title
    -- during loading.
    local mod, success
-   if string.sub(mod_name, 1, string.len(NAMESPACE_TEXTS["Module"]) + 1) ~= NAMESPACE_TEXTS["Module"] .. ":" then
-      local mod1 = NAMESPACE_TEXTS["Module"] .. ":" .. mod_name
+   local module_ns_name = NAMESPACE_DATA.Module.name
+   if string.sub(mod_name, 1, #module_ns_name + 1) ~= module_ns_name .. ":" then
+      local mod1 = module_ns_name .. ":" .. mod_name
       mod = _cached_mod(mod1)
       if not mod then
          local initfn, msg = _new_loader(mod1)

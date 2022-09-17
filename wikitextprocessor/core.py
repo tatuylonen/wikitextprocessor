@@ -128,8 +128,7 @@ class Wtp:
         "subsection",    # Subsection within page, for error messages
         "suppress_special",  # XXX never set to True???
         "data_folder",
-        "NAMESPACE_TEXTS",
-        "NAMESPACE_ALIASES",
+        "NAMESPACE_DATA",
         "namespaces",
         "LANGUAGES_BY_CODE",
         "LANGUAGES_BY_NAME"
@@ -171,7 +170,7 @@ class Wtp:
         self.need_pre_expand = None
 
         self.data_folder = Path(__file__).parent.joinpath(f"data/{lang_code}")
-        self.init_namespace_texts()
+        self.init_namespace_data()
         self.namespaces = {}
         init_namespaces(self)
         self.init_languages()
@@ -200,11 +199,9 @@ class Wtp:
         self.tmp_ofs = 0
         self.buf_ofs = 0
 
-    def init_namespace_texts(self):
+    def init_namespace_data(self):
         with self.data_folder.joinpath("namespaces.json").open(encoding="utf-8") as f:
-            self.NAMESPACE_TEXTS = json.load(f)
-        with self.data_folder.joinpath("namespace_aliases.json").open(encoding="utf-8") as f:
-            self.NAMESPACE_ALIASES = json.load(f)
+            self.NAMESPACE_DATA = json.load(f)
 
     def init_languages(self):
         with self.data_folder.joinpath("languages.json").open(encoding="utf-8") as f:
@@ -327,8 +324,8 @@ class Wtp:
         uppercase and replacing underscores by spaces and sequences of
         whitespace by a single whitespace."""
         assert isinstance(name, str)
-        if name.lower().startswith(self.NAMESPACE_TEXTS["Template"].lower() + ":"):
-            name = name[len(self.NAMESPACE_TEXTS["Template"]) + 1:]
+        if name.lower().startswith(self.NAMESPACE_DATA["Template"]["name"].lower() + ":"):
+            name = name[len(self.NAMESPACE_DATA["Template"]["name"]) + 1:]
         name = re.sub(r"_", " ", name)
         name = re.sub(r"\s+", " ", name)
         name = re.sub(r"\(", "%28", name)
@@ -574,7 +571,7 @@ class Wtp:
 
         if transient:
             self.transient_pages[title] = (title, model, text)
-            if (title.startswith(self.NAMESPACE_TEXTS["Template"] + ":") and
+            if (title.startswith(self.NAMESPACE_DATA["Template"]["name"] + ":") and
                 not title.endswith("/documentation") and
                 not title.endswith("/testcases")):
                 name = self._canonicalize_template_name(title)
@@ -611,7 +608,7 @@ class Wtp:
         if model == "redirect":
             self.redirects[title] = text
             return
-        if not title.startswith(self.NAMESPACE_TEXTS["Template"] + ":"):
+        if not title.startswith(self.NAMESPACE_DATA["Template"]["name"] + ":"):
             return
         if title.endswith("/documentation"):
             return
@@ -771,10 +768,10 @@ class Wtp:
 
         # Copy template definitions to redirects to them
         for k, v in self.redirects.items():
-            if not k.startswith(self.NAMESPACE_TEXTS["Template"] + ":"):
+            if not k.startswith(self.NAMESPACE_DATA["Template"]["name"] + ":"):
                 # print("Unhandled redirect src", k)
                 continue
-            if not v.startswith(self.NAMESPACE_TEXTS["Template"] + ":"):
+            if not v.startswith(self.NAMESPACE_DATA["Template"]["name"] + ":"):
                 # print("Unhandled redirect dst", v)
                 continue
             k = self._canonicalize_template_name(k)
@@ -1229,11 +1226,11 @@ class Wtp:
                         # Expand the body using the calling template/page as
                         # the parent frame for any parserfn calls
                         new_title = tname.strip()
-                        for prefix in self.NAMESPACE_TEXTS:
+                        for prefix in self.NAMESPACE_DATA:
                             if tname.startswith(prefix + ":"):
                                 break
                         else:
-                            new_title = self.NAMESPACE_TEXTS["Template"] + ":" + new_title
+                            new_title = self.NAMESPACE_DATA["Template"]["name"] + ":" + new_title
                         new_parent = (new_title, ht)
                         # print("expanding template body for {} {}"
                         #       .format(name, ht))
@@ -1453,7 +1450,7 @@ class Wtp:
         """Returns True if the given page exists, and False if it does not
         exist."""
         assert isinstance(title, str)
-        if title.startswith(self.NAMESPACE_TEXTS["Main"] + ":"):
+        if title.startswith("Main:"):
             title = title[5:]
         # XXX should we canonicalize title?
         if title in self.transient_pages:
@@ -1464,7 +1461,7 @@ class Wtp:
         """Reads the contents of the page.  Returns None if the page does
         not exist."""
         assert isinstance(title, str)
-        if title.startswith(self.NAMESPACE_TEXTS["Main"] + ":"):
+        if title.startswith("Main:"):
             title = title[5:]
         # XXX should we canonicalize title?
         if title in self.transient_pages:
