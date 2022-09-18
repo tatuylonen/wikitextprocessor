@@ -1,3 +1,4 @@
+import argparse
 import csv
 import json
 import sys
@@ -6,7 +7,7 @@ from pathlib import Path
 import requests
 
 
-def download_lang_csv(lang_code: str, csv_path: Path) -> None:
+def download_lang_csv(domain: str, csv_path: Path) -> None:
     # https://www.mediawiki.org/wiki/API:Expandtemplates
     # https://en.wiktionary.org/wiki/Module:list_of_languages,_csv_format
     params = {
@@ -16,7 +17,7 @@ def download_lang_csv(lang_code: str, csv_path: Path) -> None:
         "prop": "wikitext",
         "formatversion": "2",
     }
-    r = requests.get(f"https://{lang_code}.wiktionary.org/w/api.php", params=params)
+    r = requests.get(f"https://{domain}/w/api.php", params=params)
     data = r.json()
     csv_text = (
         data["expandtemplates"]["wikitext"]
@@ -27,10 +28,10 @@ def download_lang_csv(lang_code: str, csv_path: Path) -> None:
         f.write(csv_text)
 
 
-def parse_csv(wiki_lang_code: str) -> dict[str, list[str]]:
+def parse_csv(domain: str, wiki_lang_code: str) -> dict[str, list[str]]:
     csv_path = Path(f"{wiki_lang_code}_languages.csv")
     if not csv_path.exists():
-        download_lang_csv(wiki_lang_code, csv_path)
+        download_lang_csv(domain, csv_path)
 
     lang_data = {}
     with csv_path.open(newline="", encoding="utf-8") as csvfile:
@@ -41,16 +42,22 @@ def parse_csv(wiki_lang_code: str) -> dict[str, list[str]]:
             other_names = row[-2].split(",") if row[-2] else []
             lang_data[lang_code] = [canonical_name] + other_names
 
-    with open(
-        f"wikitextprocessor/data/{wiki_lang_code}/languages.json", "w", encoding="utf-8"
-    ) as f:
+    data_folder = Path(f"wikitextprocessor/data/{wiki_lang_code}")
+    if not data_folder.exists():
+        data_folder.mkdir()
+    with data_folder.joinpath("languages.json").open("w", encoding="utf-8") as f:
         json.dump(lang_data, f, indent=2, ensure_ascii=False)
 
 
 def main():
-    lang_code = sys.argv[1]
-    if lang_code in ["en", "zh"]:
-        parse_csv(lang_code)
+    parser = argparse.ArgumentParser()
+    parser.add_argument(
+        "domain", help="MediaWiki domain, for example: en.wiktionary.org"
+    )
+    parser.add_argument("lang_code", help="MediaWiki language code")
+    args = parser.parse_args()
+    if args.lang_code in ["en", "zh"]:
+        parse_csv(args.domain, args.lang_code)
     else:
         pass
 

@@ -1,3 +1,4 @@
+import argparse
 import json
 import sys
 from pathlib import Path
@@ -5,7 +6,7 @@ from pathlib import Path
 import requests
 
 
-def get_namespace_data(lang_code, siprop):
+def get_namespace_data(domain, siprop):
     # https://www.mediawiki.org/wiki/API:Siteinfo
     # https://www.mediawiki.org/wiki/Manual:Namespace
     # https://www.mediawiki.org/wiki/Help:Namespaces
@@ -16,7 +17,7 @@ def get_namespace_data(lang_code, siprop):
         "siprop": siprop,
         "formatversion": "2",
     }
-    r = requests.get(f"https://{lang_code}.wiktionary.org/w/api.php", params=params)
+    r = requests.get(f"https://{domain}/w/api.php", params=params)
     return r.json()
 
 
@@ -30,8 +31,14 @@ def main():
     For example, the French Wiktionary API returns "Annexe" as Appendix
     namespace's canonical name.
     """
-    lang_code = sys.argv[1]
-    namespaces = get_namespace_data(lang_code, "namespaces")
+    parser = argparse.ArgumentParser()
+    parser.add_argument(
+        "domain", help="MediaWiki domain, for example: en.wiktionary.org"
+    )
+    parser.add_argument("lang_code", help="MediaWiki language code")
+    args = parser.parse_args()
+
+    namespaces = get_namespace_data(args.domain, "namespaces")
     json_dict = {}
     for _, data in namespaces["query"]["namespaces"].items():
         for k in data:
@@ -51,13 +58,13 @@ def main():
             del data["canonical"]
         json_dict[canonical_name] = data
 
-    namespacealiases = get_namespace_data(lang_code, "namespacealiases")
+    namespacealiases = get_namespace_data(args.domain, "namespacealiases")
     for data in namespacealiases["query"]["namespacealiases"]:
         for ns_name, ns_data in json_dict.items():
             if ns_data["id"] == data["id"] and data["alias"] != ns_data["name"]:
                 ns_data["aliases"].append(data["alias"])
 
-    data_folder = Path(f"wikitextprocessor/data/{lang_code}")
+    data_folder = Path(f"wikitextprocessor/data/{args.lang_code}")
     if not data_folder.exists():
         data_folder.mkdir()
     with data_folder.joinpath("namespaces.json").open("w", encoding="utf-8") as f:
