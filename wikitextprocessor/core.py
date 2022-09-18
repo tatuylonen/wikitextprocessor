@@ -131,7 +131,8 @@ class Wtp:
         "NAMESPACE_DATA",
         "namespaces",
         "LANGUAGES_BY_CODE",
-        "LANGUAGES_BY_NAME"
+        "LANGUAGES_BY_NAME",
+        "lang_code"
     )
 
     def __init__(self, num_threads=None, cache_file=None, quiet=False, lang_code="en"):
@@ -169,6 +170,7 @@ class Wtp:
         # Some predefined templates
         self.need_pre_expand = None
 
+        self.lang_code = lang_code
         self.data_folder = Path(__file__).parent.joinpath(f"data/{lang_code}")
         self.init_namespace_data()
         self.namespaces = {}
@@ -622,7 +624,10 @@ class Wtp:
         self.templates[name] = body
         # Chinese Wiktionary capitalizes the first letter of template name
         # in template pages but uses lower case in word pages
-        self.templates[name.lower()] = body
+        if self.lang_code == "zh":
+            lower_case_name = name[0].lower() + name[1:]
+            if lower_case_name not in self.templates:
+                self.templates[lower_case_name] = body
 
     def _analyze_template(self, name, body):
         """Analyzes a template body and returns a set of the canonicalized
