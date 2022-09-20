@@ -1338,6 +1338,9 @@ class Wtp:
         # Convert the special <nowiki /> character back to <nowiki />.
         # This is done at the end of normal expansion.
         text = re.sub(MAGIC_NOWIKI_CHAR, "<nowiki />", text)
+
+        # Remove LanguageConverter markups: https://www.mediawiki.org/wiki/Writing_systems/Syntax
+        text = text.replace("-{", "").replace("}-", "")
         return text
 
     def process(self, path, page_handler, phase1_only=False):
