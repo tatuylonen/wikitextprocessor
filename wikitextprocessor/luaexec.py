@@ -3,6 +3,7 @@
 #
 # Copyright (c) Tatu Ylonen.  See file LICENSE and https://ylonen.org
 
+import copy
 import os
 import re
 import html
@@ -321,7 +322,7 @@ def initialize_lua(ctx):
                      attribute_filter=filter_attribute_access)
     ctx.lua = lua
     set_namespace_data = lua.eval("function(v) NAMESPACE_DATA = v end")
-    lua_namespace_data = ctx.NAMESPACE_DATA.copy()
+    lua_namespace_data = copy.deepcopy(ctx.NAMESPACE_DATA)
     for ns_name, ns_data in lua_namespace_data.items():
         for k, v in ns_data.items():
             if isinstance(v, list):
