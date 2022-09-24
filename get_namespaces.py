@@ -41,7 +41,7 @@ def main():
     namespaces = get_namespace_data(args.domain, "namespaces")
     json_dict = {}
     for _, data in namespaces["query"]["namespaces"].items():
-        for k in data:
+        for k in data.copy():
             if k not in SAVED_KEYS:
                 del data[k]
         data["aliases"] = []
