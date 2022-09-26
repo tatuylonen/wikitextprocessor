@@ -2,10 +2,8 @@
 #
 # Copyright (c) 2020-2021 Tatu Ylonen.  See LICENSE and https://ylonen.org
 
-import os
 from setuptools import setup
 
-os.system("git submodule update --init --recursive")
 
 with open("README.md", "r") as f:
     long_description = f.read()

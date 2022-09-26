@@ -131,11 +131,10 @@ class Wtp:
         "NAMESPACE_DATA",
         "namespaces",
         "LANGUAGES_BY_CODE",
-        "LANGUAGES_BY_NAME",
         "lang_code"
     )
 
-    def __init__(self, num_threads=None, cache_file=None, quiet=False, lang_code="en"):
+    def __init__(self, num_threads=None, cache_file=None, quiet=False, lang_code="en", languages_by_code = {}):
         assert num_threads is None or isinstance(num_threads, int)
         assert cache_file is None or isinstance(cache_file, str)
         assert quiet in (True, False)
@@ -175,7 +174,7 @@ class Wtp:
         self.init_namespace_data()
         self.namespaces = {}
         init_namespaces(self)
-        self.init_languages()
+        self.LANGUAGES_BY_CODE = languages_by_code
 
         # Open cache file if it exists; otherwise create new cache file or
         # temporary file and reset saved pages.
@@ -204,14 +203,6 @@ class Wtp:
     def init_namespace_data(self):
         with self.data_folder.joinpath("namespaces.json").open(encoding="utf-8") as f:
             self.NAMESPACE_DATA = json.load(f)
-
-    def init_languages(self):
-        with self.data_folder.joinpath("languages.json").open(encoding="utf-8") as f:
-            self.LANGUAGES_BY_CODE = json.load(f)
-        self.LANGUAGES_BY_NAME = {}
-        for lang_code, lang_names in self.LANGUAGES_BY_CODE.items():
-            for lang_name in lang_names:
-                self.LANGUAGES_BY_NAME[lang_name] = lang_code
 
     def _reset_pages(self):
         """Resets any stored pages and gets ready to receive more pages."""
