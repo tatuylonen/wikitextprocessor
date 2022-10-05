@@ -17,11 +17,13 @@ def parse_with_ctx(title, text, **kwargs):
     print("parse_with_ctx: root", type(root), root)
     return root, ctx
 
+
 def parse(title, text, **kwargs):
     root, ctx = parse_with_ctx(title, text, **kwargs)
     assert isinstance(root, WikiNode)
     assert isinstance(ctx, Wtp)
     return root
+
 
 class ParserTests(unittest.TestCase):
 
@@ -1740,7 +1742,7 @@ def foo(x):
         self.assertEqual(a.kind, NodeKind.TABLE_HEADER_CELL)
         self.assertEqual(b.kind, NodeKind.TABLE_HEADER_CELL)
 
-    def test_table_hdr2(self):
+    def test_table_hdr4(self):
         tree, ctx = parse_with_ctx("test",
                                    "{|\n! Hdr\n||bar\n| |baz\n| zap\n|}")
         print(tree)

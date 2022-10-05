@@ -9,44 +9,16 @@ import datetime
 import urllib.parse
 import dateparser
 from .wikihtml import ALLOWED_HTML_TAGS
-from .common import nowiki_quote
+from .common import nowiki_quote, MAGIC_NOWIKI_CHAR
 
 # Suppress some warnings that are out of our control
 import warnings
 warnings.filterwarnings("ignore",
                         r".*The localize method is no longer necessary.*")
 
-
-# Name of the WikiMedia for which we are generating content
-PROJECT_NAME = "Wiktionary"
-
 # The host to which generated URLs will point
 SERVER_NAME = "dummy.host"
 
-namespace_prefixes = set([
-    "Appendix",
-    "Category",
-    "Citations",
-    "Concordance",
-    "File",
-    "Help",
-    "Image",
-    "Index",
-    "Media",
-    "MediaWiki",
-    "Module",
-    "Project",
-    "Reconstruction",
-    "Rhymes",
-    "Sign gloss",
-    "Summary",
-    "Talk",
-    "Template",
-    "Thesaurus",
-    "Thread",
-    "User",
-    "Wiktionary",
-])
 
 def capitalizeFirstOnly(s):
     if s:
@@ -104,6 +76,7 @@ def ifexpr_fn(ctx, fn_name, args, expander):
         return expander(arg1).strip()
     return expander(arg2).strip()
 
+
 def ifexist_fn(ctx, fn_name, args, expander):
     """Implements #ifexist parser function."""
     arg0 = args[0] if args else ""
@@ -113,6 +86,7 @@ def ifexist_fn(ctx, fn_name, args, expander):
     if exists:
         return expander(arg1).strip()
     return expander(arg2).strip()
+
 
 def switch_fn(ctx, fn_name, args, expander):
     """Implements #switch parser function."""
@@ -299,12 +273,12 @@ def talkpagename_fn(ctx, fn_name, args, expander):
     """Implements the TALKPAGENAME magic word."""
     ofs = ctx.title.find(":")
     if ofs < 0:
-        return "Talk:" + ctx.title
+        return ctx.NAMESPACE_DATA["Talk"]["name"] + ":" + ctx.title
     if ofs >= 0:
         prefix = ctx.title[:ofs]
-        if prefix not in namespace_prefixes:
-            return "Talk:" + ctx.title
-        return prefix + "_talk:" + ctx.title[ofs + 1:]
+        if prefix not in ctx.NAMESPACE_DATA:
+            return ctx.NAMESPACE_DATA["Talk"]["name"] + ":" + ctx.title
+        return ctx.NAMESPACE_DATA[prefix + " talk"]["name"] + ":" + ctx.title[ofs + 1:]
 
 
 def namespacenumber_fn(ctx, fn_name, args, expander):
@@ -323,7 +297,7 @@ def namespace_fn(ctx, fn_name, args, expander):
     if ofs >= 0:
         ns = capitalizeFirstOnly(t[:ofs])
         if ns == "Project":
-            return PROJECT_NAME
+            return ctx.NAMESPACE_DATA["Project"]["name"]
         return ns
     return ""
 
@@ -332,7 +306,7 @@ def subjectspace_fn(ctx, fn_name, args, expander):
     """Implements the SUBJECTSPACE magic word/parser function.  This
     implementation is very minimal."""
     t = expander(args[0]) if args else ctx.title
-    for prefix in namespace_prefixes:
+    for prefix in ctx.NAMESPACE_DATA:
         if t.startswith(prefix + ":"):
             return prefix
     return ""
@@ -342,10 +316,10 @@ def talkspace_fn(ctx, fn_name, args, expander):
     """Implements the TALKSPACE magic word/parser function.  This
     implementation is very minimal."""
     t = expander(args[0]) if args else ctx.title
-    for prefix in namespace_prefixes:
+    for prefix in ctx.NAMESPACE_DATA:
         if t.startswith(prefix + ":"):
-            return prefix + "_talk"
-    return "Talk"
+            return ctx.NAMESPACE_DATA[prefix + " talk"]["name"]
+    return ctx.NAMESPACE_DATA["Talk"]["name"]
 
 
 def server_fn(ctx, fn_name, args, expander):
@@ -427,11 +401,13 @@ def displaytitle_fn(ctx, fn_name, args, expander):
     # setting page title
     return ""
 
+
 def defaultsort_fn(ctx, fn_nae, args, expander):
     """Implements the DEFAULTSORT magic word/parser function."""
     # XXX apparently this should set the title by which this page is
     # sorted in category listings
     return ""
+
 
 def lc_fn(ctx, fn_name, args, expander):
     """Implements the lc parser function (lowercase)."""
@@ -590,7 +566,7 @@ def anchorencode_fn(ctx, fn_name, args, expander):
     return anchor
 
 
-class Namespace(object):
+class Namespace:
     __slots__ = (
         "aliases",
         "canonicalName",
@@ -631,72 +607,24 @@ class Namespace(object):
         self.subject = subject
         self.talk = talk
 
-# These duplicate definitions in lua/mw_site.lua
-media_ns = Namespace(id=-2, name="Media", isSubject=True)
-special_ns = Namespace(id=-1, name="Special", isSubject=True)
-main_ns = Namespace(id=0, name="Main", isContent=True, isSubject=True)
-talk_ns = Namespace(id=1, name="Talk", isTalk=True, subject=main_ns)
-user_ns = Namespace(id=2, name="User", isSubject=True)
-user_talk_ns = Namespace(id=3, name="User_talk", isTalk=True,
-                         subject=user_ns)
-project_ns = Namespace(id=4, name="Project", isSubject=True)
-project_talk_ns = Namespace(id=5, name="Project_talk", isTalk=True,
-                            subject=project_ns)
-image_ns = Namespace(id=6, name="File", aliases=["Image"],
-                     isSubject=True)
-image_talk_ns = Namespace(id=7, name="File_talk",
-                          aliases=["Image_talk"],
-                          isTalk=True, subject=image_ns)
-mediawiki_ns = Namespace(id=8, name="MediaWiki", isSubject=True)
-mediawiki_talk_ns = Namespace(id=9, name="MediaWiki_talk",
-                              isTalk=True, subject=mediawiki_ns)
-template_ns = Namespace(id=10, name="Template", isSubject=True)
-template_talk_ns = Namespace(id=11, name="Template_talk", isTalk=True,
-                             subject=template_ns)
-help_ns = Namespace(id=12, name="Help", isSubject=True)
-help_talk_ns = Namespace(id=13, name="Help_talk", isTalk=True,
-                         subject=help_ns)
-category_ns = Namespace(id=14, name="Category", isSubject=True)
-category_talk_ns = Namespace(id=15, name="Category_talk", isTalk=True,
-                             subject=category_ns)
-module_ns = Namespace(id=828, name="Module", isIncludable=True,
-                      isSubject=True)
-module_talk_ns = Namespace(id=829, name="Module_talk", isTalk=True,
-                           subject=module_ns)
-main_ns.talk = talk_ns
-user_ns.talk = user_talk_ns
-project_ns.talk = project_talk_ns
-mediawiki_ns.talk = mediawiki_talk_ns
-template_ns.talk = template_talk_ns
-help_ns.talk = help_talk_ns
-category_ns.talk = category_talk_ns
-module_ns.talk = module_talk_ns
 
-namespaces = {}
-
-def add_ns(t, ns):
-   t[ns.id] = ns
-
-add_ns(namespaces, media_ns)
-add_ns(namespaces, special_ns)
-add_ns(namespaces, main_ns)
-add_ns(namespaces, talk_ns)
-add_ns(namespaces, user_ns)
-add_ns(namespaces, user_talk_ns)
-add_ns(namespaces, project_ns)
-add_ns(namespaces, project_talk_ns)
-add_ns(namespaces, image_ns)
-add_ns(namespaces, image_talk_ns)
-add_ns(namespaces, mediawiki_ns)
-add_ns(namespaces, mediawiki_talk_ns)
-add_ns(namespaces, template_ns)
-add_ns(namespaces, template_talk_ns)
-add_ns(namespaces, help_ns)
-add_ns(namespaces, help_talk_ns)
-add_ns(namespaces, category_ns)
-add_ns(namespaces, category_talk_ns)
-add_ns(namespaces, module_ns)
-add_ns(namespaces, module_talk_ns)
+def init_namespaces(ctx):
+    # These duplicate definitions in lua/mw_site.lua
+    for ns_can_name, ns_data in ctx.NAMESPACE_DATA.items():
+        ctx.namespaces[ns_data["id"]] = Namespace(
+            id=ns_data["id"],
+            name=ns_data["name"],
+            isSubject=ns_data["issubject"],
+            isContent=ns_data["content"],
+            isTalk=ns_data["istalk"],
+            aliases=ns_data["aliases"],
+            canonicalName=ns_can_name
+        )
+    for ns in ctx.namespaces.values():
+        if ns.isContent and ns.id >= 0:
+            ns.talk = ctx.namespaces[ns.id + 1]
+        elif ns.isTalk:
+            ns.subject = ctx.namespaces[ns.id - 1]
 
 
 def ns_fn(ctx, fn_name, args, expander):
@@ -704,9 +632,9 @@ def ns_fn(ctx, fn_name, args, expander):
     t = expander(args[0]).strip().upper() if args else ""
     if t and t.isdigit():
         t = int(t)
-        ns = namespaces.get(t)
+        ns = ctx.namespaces.get(t)
     else:
-        for ns in namespaces.values():
+        for ns in ctx.namespaces.values():
             # print("checking", ns.name)
             if ns.name and t == ns.name.upper():
                 break
@@ -774,6 +702,7 @@ unary_fns = {
     "atan": math.atan,
 }
 
+
 def binary_e_fn(x, y):
     if isinstance(x, int) and isinstance(y, int):
         if y >= 0:
@@ -788,6 +717,7 @@ def binary_e_fn(x, y):
                 return x * math.pow(10, y)
         return x
     return x * math.pow(10, y)
+
 
 binary_e_fns = {
     "e": binary_e_fn,
@@ -830,6 +760,7 @@ binary_and_fns = {
 binary_or_fns = {
     "or": lambda x, y: 1 if x or y else 0,
 }
+
 
 def expr_fn(ctx, fn_name, args, expander):
     """Implements the #titleparts parser function."""
@@ -1062,7 +993,7 @@ time_fmt_map = {
     "0": lambda ctx, t: t.strftime("%z")[:5],
     "P": lambda ctx, t: t.strftime("%z")[:3] + ":" + t.strftime("%z")[3:5],
     "T": "%Z",
-    "Z": lambda ctx, t: 0 if t.utcoffset() == None else t.utcoffset().seconds,
+    "Z": lambda ctx, t: 0 if t.utcoffset() is None else t.utcoffset().seconds,
     "t": month_num_days,
     "c": lambda ctx, t: t.isoformat(),
     "r": lambda ctx, t: t.strftime("%a, %d %b %Y %H:%M:%S {}").format(
@@ -1083,7 +1014,7 @@ def time_fn(ctx, fn_name, args, expander):
     if not dt:
         dt = "now"
 
-    settings = { "RETURN_AS_TIMEZONE_AWARE": True}
+    settings = {"RETURN_AS_TIMEZONE_AWARE": True}
     if loc in ("", "0"):
         dt += " UTC"
 

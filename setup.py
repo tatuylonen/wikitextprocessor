@@ -2,10 +2,8 @@
 #
 # Copyright (c) 2020-2021 Tatu Ylonen.  See LICENSE and https://ylonen.org
 
-import os
 from setuptools import setup
 
-os.system("git submodule update --init --recursive")
 
 with open("README.md", "r") as f:
     long_description = f.read()
@@ -27,7 +25,8 @@ setup(name="wikitextprocessor",
                      "lua/mediawiki-extensions-Scribunto/COPYING",
                      "lua/mediawiki-extensions-Scribunto/includes/engines/LuaCommon/lualib/*.lua",
                      "lua/mediawiki-extensions-Scribunto/includes/engines/LuaCommon/lualib/ustring/*.lua",
-                     "lua/mediawiki-extensions-Scribunto/includes/engines/LuaCommon/lualib/luabit/*.lua"]},
+                     "lua/mediawiki-extensions-Scribunto/includes/engines/LuaCommon/lualib/luabit/*.lua",
+                     "data"]},
       install_requires=["lupa", "dateparser", "lru-dict"],
       keywords=[
           "dictionary",

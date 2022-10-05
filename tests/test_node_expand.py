@@ -4,7 +4,7 @@
 
 import unittest
 from wikitextprocessor import Wtp
-from wikitextprocessor.parser import (print_tree, NodeKind, WikiNode)
+from wikitextprocessor.parser import WikiNode
 
 
 def parse_with_ctx(title, text, **kwargs):
@@ -16,6 +16,7 @@ def parse_with_ctx(title, text, **kwargs):
     root = ctx.parse(text, **kwargs)
     print("parse_with_ctx: root", type(root), root)
     return root, ctx
+
 
 def parse(title, text, **kwargs):
     root, ctx = parse_with_ctx(title, text, **kwargs)
@@ -119,14 +120,14 @@ class NodeExpTests(unittest.TestCase):
     def test_templatearg1(self):
         self.backcvt("{{{1}}}", "{{{1}}}")
 
-    def test_templatearg1(self):
-        self.backcvt("{{{{{templ}}}}}", "{{{{{templ}}}}}")
-
     def test_templatearg2(self):
         self.backcvt("{{{a|def}}}", "{{{a|def}}}")
 
     def test_templatearg3(self):
         self.backcvt("{{{a|}}}", "{{{a|}}}")
+
+    def test_templatearg4(self):
+        self.backcvt("{{{{{templ}}}}}", "{{{{{templ}}}}}")
 
     def test_parserfn1(self):
         self.backcvt("{{#expr: 1 + 2}}", "{{#expr: 1 + 2}}")
@@ -170,7 +171,7 @@ class NodeExpTests(unittest.TestCase):
     def test_html1(self):
         self.backcvt("a<b>foo</b>b", "a<b>foo</b>b")
 
-    def test_html1(self):
+    def test_html2(self):
         self.backcvt('a<span class="bar">foo</span>b',
                      'a<span class="bar">foo</span>b')
 

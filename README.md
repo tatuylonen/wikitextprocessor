@@ -81,7 +81,7 @@ using the &lt;name&gt;-&lt;date&gt;-pages-articles.xml.bz2 files.
 
 Usage example:
 
-```
+```python
    from wikitextprocessor import Wtp, WikiNode, NodeKind
    ctx = Wtp()
 
@@ -115,14 +115,11 @@ Most of the functionality is hidden behind the ``Wtp`` object.
 ``WikiNode`` objects are used for representing the parse
 tree that is returned by the ``Wtp.parse()`` function.  ``NodeKind``
 is an enumeration type used to encode the type of a ``WikiNode``.
-Additionally, ``ALL_LANGUAGES`` is exported and is a list that
-describes all languages (language codes, names, and other data) used
-in Wiktionary.
 
-### class Wtp(object)
+### class Wtp
 
-```
-def __init__(self, num_threads=None, cache_file=None, quiet=False)
+```python
+def __init__(self, num_threads=None, cache_file=None, quiet=False, lang_code="en")
 ```
 
 The initializer can usually be called without arguments, but recognizes
@@ -150,6 +147,7 @@ the following arguments:
   the old cache file first.  The cache file path is actually a prefix for
   multiple individual files.
 * ``quiet`` - if set to True, suppress progress messages during processing
+* `lang_code` - the language code of the dump file.
 
 **Windows and MacOS note:** Setting ``num_threads`` to a value other than 1
 probably doesn't currently work on Windows and MacOS.  It now defaults to 1
@@ -157,7 +155,7 @@ on these platforms.  This is because these platforms don't use ``fork()`` in
 the Python multiprocessing package, and the current parallelization
 implementation depends on this.
 
-```
+```python
 def process(self, path, page_handler, phase1_only=False)
 ```
 
@@ -192,7 +190,7 @@ pass any values back in global variables.  It can, however, access
 global variables assigned before calling ``Wtp.process()`` (in Linux
 only).
 
-```
+```python
 def reprocess(self, page_handler, autoload=True)
 ```
 
@@ -227,7 +225,7 @@ was set to 1 in the initializer).  It may be necessary to set it to 1
 on Windows and MacOS due to operating system/python limitations on those
 platforms.
 
-```
+```python
 def read_by_title(self, title):
 ```
 
@@ -245,7 +243,7 @@ This returns the page contents as a string, or ``None`` if the page
 does not exist.  If a transient page has been added with that title
 (see ``Wtp.add_page()``), then this returns the transient page.
 
-```
+```python
 def parse(self, text, pre_expand=False, expand_all=False,
           additional_expand=None)
 ```
@@ -278,7 +276,7 @@ This accepts the following arguments:
 This returns the parse tree.  See below for a documentation of the ``WikiNode``
 class used for representing the parse tree.
 
-```
+```python
 def node_to_wikitext(self, node)
 ```
 
@@ -289,7 +287,7 @@ Converts a part of a parse tree back to wikitext.
   the argument.
 
 
-```
+```python
 def expand(self, text, template_fn=None, post_template_fn=None,
            pre_expand=False, templates_to_expand=None,
            expand_parserfns=True, expand_invoke=True)
@@ -341,7 +339,7 @@ The arguments are as follows:
   functions.  This can be set to ``False`` to prevent expansion of the
   ``#invoke`` parser function.
 
-```
+```python
 def start_page(self, title)
 ```
 
@@ -360,7 +358,7 @@ The arguments are as follows:
   ``Module:`` prefix, and other prefixes are also used (e.g., ``Thesaurus:``).
   This does not care about the form of the name, but some parser functions do.
 
-```
+```python
 def start_section(self, title)
 ```
 
@@ -372,7 +370,7 @@ The arguments are:
 * ``title`` (str) - the title of the section, or ``None`` to clear it.
 
 
-```
+```python
 def start_subsection(self, title)
 ```
 
@@ -384,7 +382,7 @@ warning, and debug messages.
 The arguments are:
 * ``title`` (str) - the title of the subsection, or ``None`` to clear it.
 
-```
+```python
 def add_page(self, model, title, text, transient=False)
 ```
 
@@ -416,7 +414,7 @@ The ``Wtp.analyze_templates()`` function needs to be called after
 calling ``Wtp.add_page()`` before pages can be expanded or parsed (it should
 preferably only be called once after adding all pages and templates).
 
-```
+```python
 def analyze_templates(self)
 ```
 
@@ -470,7 +468,7 @@ also be called by application code from within the ``page_handler``
 function as well as ``template_fn`` and ``post_template_fn`` functions
 to report errors, warnings, and debug messages in a uniform way.
 
-```
+```python
 def error(self, msg, trace=None)
 ```
 
@@ -480,21 +478,21 @@ printed to stdout.  The arguments are:
 * trace (str or ``None``) - an optional stack trace giving more information
   about where the error occurred
 
-```
+```python
 def warning(self, msg, trace=None)
 ```
 
 Reports a warning message.  The warning will be added to ``Wtp.warnings`` list
 and printed to stdout.  The arguments are the same as for ``Wtp.error()``.
 
-```
+```python
 def debug(self, msg, trace=None)
 ```
 
 Reports a debug message.  The message will be added to ``Wtp.debugs`` list
 and printed to stdout.  The arguments are the same as for ``Wtp.error()``.
 
-```
+```python
 def to_return(self)
 ```
 
@@ -513,7 +511,7 @@ The returned dictionary contains the following keys:
 * ``warnings`` - a list of dictionaries describing any warning messages
 * ``debugs`` - a list of dictionaries describing any debug messages.
 
-### class WikiNode(object)
+### class WikiNode
 
 The ``WikiNode`` class represents a parse tree node and is returned by
 ``Wtp.parse()``.  This object can be printed or converted to a string

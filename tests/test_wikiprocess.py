@@ -3,13 +3,12 @@
 # Copyright (c) 2020, 2021, 2022 Tatu Ylonen.  See file LICENSE and https://ylonen.org
 
 import os
-import html
 import math
 import time
-import datetime
 import unittest
+import platform
 from wikitextprocessor import Wtp
-from wikitextprocessor.common import nowiki_quote, MAGIC_NOWIKI_CHAR
+from wikitextprocessor.common import MAGIC_NOWIKI_CHAR
 
 
 def phase1_to_ctx(pages):
@@ -489,7 +488,7 @@ MORE
         ctx = phase1_to_ctx([])
         ctx.start_page("Help:Tt")
         ret = ctx.expand("{{TALKPAGENAME}}")
-        self.assertEqual(ret, "Help_talk:Tt")
+        self.assertEqual(ret, "Help talk:Tt")
 
     def test_talkpagename2(self):
         ctx = phase1_to_ctx([])
@@ -556,9 +555,6 @@ MORE
     def test_formatnum5(self):
         self.parserfn("{{formatnum:1234.778}}", "1,234.778")
 
-    def test_formatnum5(self):
-        self.parserfn("{{formatnum:12345}}", "12,345")
-
     def test_formatnum6(self):
         self.parserfn("{{formatnum:123456}}", "123,456")
 
@@ -570,6 +566,9 @@ MORE
 
     def test_formatnum9(self):
         self.parserfn("{{formatnum:1,000,001.07|R}}", "1000001.07")
+
+    def test_formatnum10(self):
+        self.parserfn("{{formatnum:12345}}", "12,345")
 
     def test_dateformat1(self):
         self.parserfn("{{#dateformat:25 dec 2009|ymd}}", "2009 Dec 25")
@@ -669,9 +668,9 @@ MORE
         self.parserfn("{{#titleparts:Help:foo/bar/baz|2}}", "Help:foo")
 
     def test_expr1(self):
-        ctx = self.parserfn("{{#expr}}",
-                            '<strong class="error">Expression error near '
-                            '&lt;end&gt;</strong>')
+        self.parserfn("{{#expr}}",
+                      '<strong class="error">Expression error near '
+                      '&lt;end&gt;</strong>')
 
     def test_expr2(self):
         self.parserfn("{{#expr|1 + 2.34}}", "3.34")
@@ -755,7 +754,7 @@ MORE
         self.parserfn("{{#expr|sin(30*pi/180)}}", "0.49999999999999994")
 
     def test_expr29(self):
-        self.parserfn("{{#expr|cos.1}}", "0.9950041652780258")
+        self.parserfn("{{#expr|cos.1}}", "0.9950041652780257" if platform.system() == "Darwin" else "0.9950041652780258")
 
     def test_expr30(self):
         self.parserfn("{{#expr|tan.1}}", "0.10033467208545055")
@@ -956,10 +955,7 @@ MORE
                       "2007February07 (foo)")
 
     def test_time18(self):
-        self.parserfn("{{#time:z|Janary 6, 2007}}", "5")
-
-    def test_time18(self):
-        self.parserfn("{{#time:z|February 2, 2007}}", "32")
+        self.parserfn("{{#time:z|January 6, 2007}}", "5")
 
     def test_time19(self):
         self.parserfn("{{#time:W|January 2, 2007}}", "01")
@@ -1060,6 +1056,9 @@ MORE
     def test_time44(self):
         self.parserfn("{{#time:r|22 oct 2020 19:00:59}}",
                       "Thu, 22 Oct 2020 19:00:59 +0000")
+
+    def test_time45(self):
+        self.parserfn("{{#time:z|February 2, 2007}}", "32")
 
     def test_len1(self):
         self.parserfn("{{#len: xyz }}", "3")
@@ -1184,13 +1183,13 @@ MORE
         ctx = phase1_to_ctx([])
         ctx.start_page("Reconstruction:Tt")
         ret = ctx.expand("{{TALKSPACE}}")
-        self.assertEqual(ret, "Reconstruction_talk")
+        self.assertEqual(ret, "Reconstruction talk")
 
-    def test_subjectspace3(self):
+    def test_talkspace3(self):
         ctx = phase1_to_ctx([])
         ctx.start_page("Tt")
         ret = ctx.expand("{{TALKSPACE:Reconstruction:foo}}")
-        self.assertEqual(ret, "Reconstruction_talk")
+        self.assertEqual(ret, "Reconstruction talk")
 
     def test_localurl1(self):
         ctx = phase1_to_ctx([])
@@ -2440,10 +2439,6 @@ return export
         self.scribunto("ab…", """
         return mw.text.truncate("abc", 2)""")
 
-    def test_mw_text_truncate4(self):
-        self.scribunto("aX", """
-        return mw.text.truncate("abc", 2, "X", true)""")
-
     def test_mw_text_truncate5(self):
         self.scribunto("abXY", """
         return mw.text.truncate("abcdef", 4, "XY", true)""")
@@ -2455,6 +2450,10 @@ return export
     def test_mw_text_truncate7(self):
         self.scribunto("…cdef", """
         return mw.text.truncate("abcdef", -4)""")
+
+    def test_mw_text_truncate8(self):
+        self.scribunto("aX", """
+        return mw.text.truncate("abc", 2, "X", true)""")
 
     def test_mw_jsonencode1(self):
         self.scribunto('"x"', """
@@ -2607,12 +2606,6 @@ return export
         t:addClass("bar")
         return tostring(t)""")
 
-    def test_mw_html11(self):
-        self.scribunto('<div style="foo:bar;"></div>', """
-        local t = mw.html.create("div")
-        t:css("foo", "bar")
-        return tostring(t)""")
-
     def test_mw_html12(self):
         self.scribunto('<div style="foo:bar;"></div>', """
         local t = mw.html.create("div")
@@ -2672,6 +2665,12 @@ return export
         t2:wikitext("A")
         local t4 = t2:tag("hr")
         return tostring(t3:allDone())""")
+
+    def test_mw_html21(self):
+        self.scribunto('<div style="foo:bar;"></div>', """
+        local t = mw.html.create("div")
+        t:css("foo", "bar")
+        return tostring(t)""")
 
     def test_mw_uri1(self):
         self.scribunto("b+c", """
@@ -2875,17 +2874,12 @@ return export
         return t.text""")
 
     def test_mw_title27(self):
-        self.scribunto("User_talk:Test", r"""
-        local t = mw.title.makeTitle(3, "Test", "Frag")
-        return t.prefixedText""")
-
-    def test_mw_title27(self):
-        self.scribunto("User_talk:Test", r"""
+        self.scribunto("User talk:Test", r"""
         local t = mw.title.makeTitle(3, "Test", "Frag")
         return t.prefixedText""")
 
     def test_mw_title28(self):
-        self.scribunto("User_talk:Test#Frag", r"""
+        self.scribunto("User talk:Test#Frag", r"""
         local t = mw.title.makeTitle(3, "Test", "Frag")
         return t.fullText""")
 
@@ -2996,7 +2990,7 @@ return export
 
     def test_mw_title45(self):
         self.scribunto("True", r"""
-        local t = mw.title.makeTitle("User_talk", "Test/foo/bar", "Frag")
+        local t = mw.title.makeTitle("User talk", "Test/foo/bar", "Frag")
         return t:hasSubjectNamespace("User")""")
 
     def test_mw_title46(self):
@@ -3146,7 +3140,7 @@ return export
 
     def test_string_format2(self):
         self.scribunto("00005 % foo 1.1 -6", r"""
-        return string.format("%05d %% %s %.1f %#-d", 4.7, "foo", 1.1, -6)""")
+        return string.format("%05d %% %s %.1f %d", 4.7, "foo", 1.1, -6)""")
 
     def test_string_format3(self):
         self.scribunto("0005", r"""

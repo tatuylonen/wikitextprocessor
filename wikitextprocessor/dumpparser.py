@@ -24,7 +24,7 @@ ignore_xml_tags = set(["sha1", "comment", "username", "timestamp",
 xml_stack_ignore = ("contributor",)
 
 
-class DumpParser(object):
+class DumpParser:
     """This class is used for XML parsing the MediaWiki dump file."""
 
     __slots__ = (

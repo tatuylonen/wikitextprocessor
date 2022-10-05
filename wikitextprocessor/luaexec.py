@@ -3,6 +3,7 @@
 #
 # Copyright (c) Tatu Ylonen.  See file LICENSE and https://ylonen.org
 
+import copy
 import os
 import re
 import html
@@ -10,11 +11,10 @@ import json
 import traceback
 import unicodedata
 import pkg_resources
-#from lru import LRU
+
 import lupa
 from lupa import LuaRuntime
 from .parserfns import PARSER_FUNCTIONS, call_parser_function, tag_fn
-from .languages import ALL_LANGUAGES
 
 # List of search paths for Lua libraries.
 builtin_lua_search_paths = [
@@ -29,11 +29,6 @@ lua_dir = pkg_resources.resource_filename("wikitextprocessor", "lua/")
 if not lua_dir.endswith("/"):
     lua_dir += "/"
 #print("lua_dir", lua_dir)
-
-# Mapping from language code code to language name.
-LANGUAGE_CODE_TO_NAME = { x["code"]: x["name"]
-                          for x in ALL_LANGUAGES
-                          if x.get("code") and x.get("name") }
 
 # Substitutions to perform on Lua code from the dump to convert from
 # Lua 5.1 to current 5.3
@@ -86,6 +81,7 @@ loader_replace_patterns = list((re.compile(src), dst) for src, dst in [
 # content = string.gsub(content, "\\|", "|")  -- XXX tentative, see ryu:951
 # content = string.gsub(content, "\\ʺ", "ʺ")
 
+
 def lua_loader(ctx, modname):
     """This function is called from the Lua sandbox to load a Lua module.
     This will load it from either the user-defined modules on special
@@ -94,12 +90,13 @@ def lua_loader(ctx, modname):
     # print("LUA_LOADER IN PYTHON:", modname)
     assert isinstance(modname, str)
     modname = modname.strip()
-    if modname.startswith("Module:"):
+    local_module_ns_name = ctx.NAMESPACE_DATA["Module"]["name"]
+    if modname.startswith(local_module_ns_name + ":"):
         # Canonicalize the name
         modname = ctx._canonicalize_template_name(modname)
 
         # First try to load it as a module
-        if modname.startswith("Module:_"):
+        if modname.startswith(local_module_ns_name + ":_"):
             # Module names starting with _ are considered internal and cannot be
             # loaded from the dump file for security reasons.  This is to ensure
             # that the sandbox always gets loaded from a local file.
@@ -107,9 +104,10 @@ def lua_loader(ctx, modname):
         else:
             data = ctx.read_by_title(modname)
             # Chinese Wikipedia capitalizes the first letter of module name
+            # can't use str.capitalize(), it'll cause error for "Module:Cmn-pron-Sichuan"
             if data is None:
-                # can't use str.capitalize(), it'll cause error for "Module:Cmn-pron-Sichuan"
-                data = ctx.read_by_title("Module:" + modname[7].upper() + modname[8:])
+                module_name_len = len(local_module_ns_name)
+                data = ctx.read_by_title(local_module_ns_name + ":" + modname[module_name_len + 1].upper() + modname[module_name_len + 2:])
     else:
         # Try to load it from a file
         path = modname
@@ -139,6 +137,7 @@ def lua_loader(ctx, modname):
         data = re.sub(src, dst, data)
     return data
 
+
 def mw_text_decode(text, decodeNamedEntities):
     """Implements the mw.text.decode function for Lua code."""
     if decodeNamedEntities:
@@ -167,6 +166,7 @@ def mw_text_decode(text, decodeNamedEntities):
     parts.append(text[pos:])
     return "".join(parts)
 
+
 def mw_text_encode(text, charset):
     """Implements the mw.text.encode function for Lua code."""
     parts = []
@@ -180,6 +180,7 @@ def mw_text_encode(text, charset):
         else:
             parts.append(ch)
     return "".join(parts)
+
 
 def mw_text_jsondecode(ctx, s, *rest):
     flags = rest[0] if rest else 0
@@ -212,6 +213,7 @@ def mw_text_jsondecode(ctx, s, *rest):
 
     value = recurse(value)
     return value
+
 
 def mw_text_jsonencode(s, *rest):
     flags = rest[0] if rest else 0
@@ -277,12 +279,11 @@ def get_page_content(ctx, title):
         return None
     return data
 
-def fetch_language_name(code):
+
+def fetch_language_name(ctx, code):
     """This function is called from Lua code as part of the mw.language
-    inmplementation.  This maps a language code to its name."""
-    if code in LANGUAGE_CODE_TO_NAME:
-        return LANGUAGE_CODE_TO_NAME[code]
-    return None
+    implementation.  This maps a language code to its name."""
+    return ctx.LANGUAGES_BY_CODE.get(code)
 
 
 def fetch_language_names(ctx, include):
@@ -290,10 +291,10 @@ def fetch_language_names(ctx, include):
     implementation.  This returns a list of known language names."""
     include = str(include)
     if include == "all":
-        ret = LANGUAGE_CODE_TO_NAME
+        ret = ctx.LANGUAGES_BY_CODE
     else:
-        ret = {"en": "English"}
-    return ctx.lua.table_from(dt)
+        ret = {"en": ctx.LANGUAGES_BY_CODE["en"]}
+    return ctx.lua.table_from(ret)
 
 
 def call_set_functions(ctx, set_functions):
@@ -305,28 +306,36 @@ def call_set_functions(ctx, set_functions):
                   mw_text_jsondecode(ctx, x, *rest),
                   lambda x: get_page_info(ctx, x),
                   lambda x: get_page_content(ctx, x),
-                  fetch_language_name,
+                  lambda x: fetch_language_name(ctx, x),
                   lambda x: fetch_language_names(ctx, x))
 
 
 def initialize_lua(ctx):
 
     def filter_attribute_access(obj, attr_name, is_setting):
-        if isinstance(attr_name, unicode):
-            if not attr_name.startswith("_"):
-                return attr_name
+        if isinstance(attr_name, str) and not attr_name.startswith("_"):
+            return attr_name
         raise AttributeError("access denied")
 
     lua = LuaRuntime(unpack_returned_tuples=True,
                      register_eval=False,
                      attribute_filter=filter_attribute_access)
     ctx.lua = lua
+    set_namespace_data = lua.eval("function(v) NAMESPACE_DATA = v end")
+    lua_namespace_data = copy.deepcopy(ctx.NAMESPACE_DATA)
+    for ns_name, ns_data in lua_namespace_data.items():
+        for k, v in ns_data.items():
+            if isinstance(v, list):
+                lua_namespace_data[ns_name][k] = lua.table_from(v)
+        lua_namespace_data[ns_name] = lua.table_from(lua_namespace_data[ns_name])
+    set_namespace_data(lua.table_from(lua_namespace_data))
 
     # Load Lua sandbox Phase 1.  This is a very minimal file that only sets
     # the Lua loader to our custom loader; we will then use it to load the
     # bigger phase 2 of the sandbox.  This way, most of the sandbox loading
     # will benefit from caching and precompilation (when implemented).
-    lua_sandbox = open(lua_dir + "_sandbox_phase1.lua", encoding="utf-8").read()
+    with open(lua_dir + "_sandbox_phase1.lua", encoding="utf-8") as f:
+        lua_sandbox = f.read()
     set_loader = lua.execute(lua_sandbox)
     # Call the function that sets the Lua loader
     set_loader(lambda x: lua_loader(ctx, x))
@@ -498,7 +507,7 @@ end
             if not isinstance(name, str):
                 new_args = name["args"]
                 if isinstance(new_args, str):
-                    new_args = { 1: new_args }
+                    new_args = {1: new_args}
                 else:
                     new_args = dict(new_args)
                 name = name["name"] or ""
@@ -668,7 +677,7 @@ end
                       .format(invoke_args, parent),
                       trace=trace)
     msg = "Lua execution error"
-    if text.find("Lua timeout error") >= 0:
+    if "Lua timeout error" in text:
         msg = "Lua timeout error"
     return ('<strong class="error">{} in Module:{} function {}'
             '</strong>'.format(msg, html.escape(modname), html.escape(modfn)))

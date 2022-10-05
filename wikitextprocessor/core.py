@@ -9,14 +9,16 @@ import sys
 import html
 import time
 import pickle
-import datetime
 import tempfile
 import traceback
 import collections
 import urllib.parse
 import html.entities
 import multiprocessing
-from .parserfns import (PARSER_FUNCTIONS, call_parser_function, tag_fn)
+import json
+from pathlib import Path
+
+from .parserfns import PARSER_FUNCTIONS, call_parser_function, init_namespaces
 from .wikihtml import ALLOWED_HTML_TAGS
 from .luaexec import call_lua_sandbox
 from .parser import parse_encoded, NodeKind
@@ -34,6 +36,7 @@ PAIRED_HTML_TAGS = set(k for k, v in ALLOWED_HTML_TAGS.items()
 _global_ctx = None
 _global_page_handler = None
 _global_page_autoload = True
+
 
 def phase2_page_handler(dt):
     """Helper function for calling the Phase2 page handler (see
@@ -78,7 +81,7 @@ def phase2_page_handler(dt):
             os.remove(debug_path)
 
 
-class Wtp(object):
+class Wtp:
     """Context used for processing wikitext and for expanding templates,
     parser functions and Lua macros.  The indended usage pattern is to
     initialize this context once (this holds template and module definitions),
@@ -124,8 +127,14 @@ class Wtp(object):
         "section",	 # Section within page, for error messages
         "subsection",    # Subsection within page, for error messages
         "suppress_special",  # XXX never set to True???
+        "data_folder",
+        "NAMESPACE_DATA",
+        "namespaces",
+        "LANGUAGES_BY_CODE",
+        "lang_code"
     )
-    def __init__(self, num_threads=None, cache_file=None, quiet=False):
+
+    def __init__(self, num_threads=None, cache_file=None, quiet=False, lang_code="en", languages_by_code = {}):
         assert num_threads is None or isinstance(num_threads, int)
         assert cache_file is None or isinstance(cache_file, str)
         assert quiet in (True, False)
@@ -160,6 +169,13 @@ class Wtp(object):
         # Some predefined templates
         self.need_pre_expand = None
 
+        self.lang_code = lang_code
+        self.data_folder = Path(__file__).parent.joinpath(f"data/{lang_code}")
+        self.init_namespace_data()
+        self.namespaces = {}
+        init_namespaces(self)
+        self.LANGUAGES_BY_CODE = languages_by_code
+
         # Open cache file if it exists; otherwise create new cache file or
         # temporary file and reset saved pages.
         self.tmp_file = None
@@ -183,6 +199,10 @@ class Wtp(object):
             self._reset_pages()
         self.tmp_ofs = 0
         self.buf_ofs = 0
+
+    def init_namespace_data(self):
+        with self.data_folder.joinpath("namespaces.json").open(encoding="utf-8") as f:
+            self.NAMESPACE_DATA = json.load(f)
 
     def _reset_pages(self):
         """Resets any stored pages and gets ready to receive more pages."""
@@ -297,8 +317,8 @@ class Wtp(object):
         uppercase and replacing underscores by spaces and sequences of
         whitespace by a single whitespace."""
         assert isinstance(name, str)
-        if name.lower().startswith("template:"):
-            name = name[9:]
+        if name.lower().startswith(self.NAMESPACE_DATA["Template"]["name"].lower() + ":"):
+            name = name[len(self.NAMESPACE_DATA["Template"]["name"]) + 1:]
         name = re.sub(r"_", " ", name)
         name = re.sub(r"\s+", " ", name)
         name = re.sub(r"\(", "%28", name)
@@ -544,7 +564,7 @@ class Wtp(object):
 
         if transient:
             self.transient_pages[title] = (title, model, text)
-            if (title.startswith("Template:") and
+            if (title.startswith(self.NAMESPACE_DATA["Template"]["name"] + ":") and
                 not title.endswith("/documentation") and
                 not title.endswith("/testcases")):
                 name = self._canonicalize_template_name(title)
@@ -581,7 +601,7 @@ class Wtp(object):
         if model == "redirect":
             self.redirects[title] = text
             return
-        if not title.startswith("Template:"):
+        if not title.startswith(self.NAMESPACE_DATA["Template"]["name"] + ":"):
             return
         if title.endswith("/documentation"):
             return
@@ -595,7 +615,10 @@ class Wtp(object):
         self.templates[name] = body
         # Chinese Wiktionary capitalizes the first letter of template name
         # in template pages but uses lower case in word pages
-        self.templates[name.lower()] = body
+        if self.lang_code == "zh":
+            lower_case_name = name[0].lower() + name[1:]
+            if lower_case_name not in self.templates:
+                self.templates[lower_case_name] = body
 
     def _analyze_template(self, name, body):
         """Analyzes a template body and returns a set of the canonicalized
@@ -741,10 +764,10 @@ class Wtp(object):
 
         # Copy template definitions to redirects to them
         for k, v in self.redirects.items():
-            if not k.startswith("Template:"):
+            if not k.startswith(self.NAMESPACE_DATA["Template"]["name"] + ":"):
                 # print("Unhandled redirect src", k)
                 continue
-            if not v.startswith("Template:"):
+            if not v.startswith(self.NAMESPACE_DATA["Template"]["name"] + ":"):
                 # print("Unhandled redirect dst", v)
                 continue
             k = self._canonicalize_template_name(k)
@@ -1199,19 +1222,11 @@ class Wtp(object):
                         # Expand the body using the calling template/page as
                         # the parent frame for any parserfn calls
                         new_title = tname.strip()
-                        for prefix in ("Media", "Special", "Main", "Talk",
-                                       "User",
-                                       "User_talk", "Project", "Project_talk",
-                                       "File", "Image", "File_talk",
-                                       "MediaWiki", "MediaWiki_talk",
-                                       "Template", "Template_talk",
-                                       "Help", "Help_talk", "Category",
-                                       "Category_talk", "Module",
-                                       "Module_talk"):
+                        for prefix in self.NAMESPACE_DATA:
                             if tname.startswith(prefix + ":"):
                                 break
                         else:
-                            new_title = "Template:" + new_title
+                            new_title = self.NAMESPACE_DATA["Template"]["name"] + ":" + new_title
                         new_parent = (new_title, ht)
                         # print("expanding template body for {} {}"
                         #       .format(name, ht))
@@ -1314,6 +1329,9 @@ class Wtp(object):
         # Convert the special <nowiki /> character back to <nowiki />.
         # This is done at the end of normal expansion.
         text = re.sub(MAGIC_NOWIKI_CHAR, "<nowiki />", text)
+
+        # Remove LanguageConverter markups: https://www.mediawiki.org/wiki/Writing_systems/Syntax
+        text = text.replace("-{", "").replace("}-", "")
         return text
 
     def process(self, path, page_handler, phase1_only=False):

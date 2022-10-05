@@ -3,7 +3,6 @@
 # Copyright (c) 2020-2022 Tatu Ylonen.  See file LICENSE and https://ylonen.org
 
 import re
-import html
 import urllib.parse
 from .parser import WikiNode, NodeKind
 from .wikihtml import ALLOWED_HTML_TAGS

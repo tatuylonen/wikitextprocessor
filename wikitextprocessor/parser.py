@@ -218,7 +218,7 @@ MUST_CLOSE_KINDS = (
 )
 
 
-class WikiNode(object):
+class WikiNode:
     """Node in the parse tree for WikiMedia text."""
 
     __slots__ = (

@@ -150,8 +150,19 @@ function mw_title.makeTitle(namespace, title, fragment, interwiki)
    if title:sub(1, 1) == " " or title:sub(-1) == " " then return nil end
    if title:find("  ") then return nil end
    if title:find("~~~~") then return nil end
-   local prefixes = {"Talk:", "WP:", "WT:", "Project:", "Image:",
-                     "Media:", "Special:"}
+   local prefixes = {
+     NAMESPACE_DATA.Talk.name .. ":",
+     NAMESPACE_DATA.Project.name .. ":",
+     NAMESPACE_DATA.Media.name .. ":",
+     NAMESPACE_DATA.File.name .. ":",
+     NAMESPACE_DATA.Special.name .. ":",
+   }
+   for v in ipairs(NAMESPACE_DATA.Project.aliases) do
+    table.insert(prefixes, v .. ":")
+   end
+   for v in ipairs(NAMESPACE_DATA.File.aliases) do
+    table.insert(prefixes, v .. ":")
+   end
    -- XXX other disallowed prefixes, see
    -- https://www.mediawiki.org/wiki/Special:Interwiki
    for i, prefix in ipairs(prefixes) do
@@ -244,10 +255,9 @@ function mw_title.makeTitle(namespace, title, fragment, interwiki)
       isExternal = interwiki ~= nil,  -- ???
       isLocal = interwiki == nil,   -- ???
       isRedirect = redirectTo ~= nil,
-      isSpecialPage = ns.name == "Special",
+      isSpecialPage = ns.name == NAMESPACE_DATA.Special.name,
       isSubpage = title ~= base,
-      isTalkPage = (ns.name == "Talk" or
-                       mw.ustring.find(ns.name, "_talk") ~= nil),
+      isTalkPage = ns.isTalk,
       _redirectTarget = redirectTo,
    }
    setmetatable(t, mw_title_meta)
