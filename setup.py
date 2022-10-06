@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 #
-# Copyright (c) 2020-2021 Tatu Ylonen.  See LICENSE and https://ylonen.org
+# Copyright (c) 2020-2022 Tatu Ylonen.  See LICENSE and https://ylonen.org
 
 from setuptools import setup
 
@@ -26,7 +26,7 @@ setup(name="wikitextprocessor",
                      "lua/mediawiki-extensions-Scribunto/includes/engines/LuaCommon/lualib/*.lua",
                      "lua/mediawiki-extensions-Scribunto/includes/engines/LuaCommon/lualib/ustring/*.lua",
                      "lua/mediawiki-extensions-Scribunto/includes/engines/LuaCommon/lualib/luabit/*.lua",
-                     "data"]},
+                     "data/*/*"]},
       install_requires=["lupa", "dateparser", "lru-dict"],
       keywords=[
           "dictionary",
