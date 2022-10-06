@@ -7,15 +7,16 @@ import os
 import re
 import sys
 import html
+import json
 import time
 import pickle
 import tempfile
 import traceback
 import collections
 import urllib.parse
+import pkg_resources
 import html.entities
 import multiprocessing
-import json
 from pathlib import Path
 
 from .parserfns import PARSER_FUNCTIONS, call_parser_function, init_namespaces
@@ -170,7 +171,7 @@ class Wtp:
         self.need_pre_expand = None
 
         self.lang_code = lang_code
-        self.data_folder = Path(__file__).parent.joinpath(f"data/{lang_code}")
+        self.data_folder = Path(pkg_resources.resource_filename("wikitextprocessor", "data/")).joinpath(lang_code)
         self.init_namespace_data()
         self.namespaces = {}
         init_namespaces(self)
