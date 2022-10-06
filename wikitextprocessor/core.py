@@ -470,9 +470,11 @@ class Wtp:
                     # This needs to be done before processing templates, as
                     # otherwise the argument with a missing closing brace would
                     # be interpreted as a template.
+                    # Note: we don't want to do this for {{{!}}, as that is
+                    # sometimes used inside {{#if|...}} for table start/end.
                     text = re.sub(r"(?s)([^{])\{" + MAGIC_NOWIKI_CHAR +
                                   r"?\{" + MAGIC_NOWIKI_CHAR +
-                                  r"?\{([^{}]*?)\}" +
+                                  r"?\{([^{}!]*?)\}" +
                                   MAGIC_NOWIKI_CHAR + r"?\}",
                                   repl_arg_err, text)
                     if text != prev2:
@@ -499,9 +501,6 @@ class Wtp:
                               repl_templ_err, text)
                 if text != prev:
                     continue
-                # Replace remaining brackets and braces by corresponding
-                # character entities
-                # XXX
                 break
             prev = text
         # Replace any remaining braces etc by corresponding character entities
