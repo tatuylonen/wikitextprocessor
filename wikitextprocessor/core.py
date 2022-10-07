@@ -18,6 +18,7 @@ import pkg_resources
 import html.entities
 import multiprocessing
 from pathlib import Path
+from inspect import getframeinfo, stack
 
 from .parserfns import PARSER_FUNCTIONS, call_parser_function, init_namespaces
 from .wikihtml import ALLOWED_HTML_TAGS
@@ -271,10 +272,17 @@ class Wtp:
         self.errors."""
         assert isinstance(msg, str)
         assert isinstance(trace, (str, type(None)))
+        # get the data of where error() was called,
+        # basically filename and line number
+        caller = getframeinfo(stack()[1][0])
         self.errors.append({"msg": msg, "trace": trace,
                             "title": self.title,
                             "section": self.section,
                             "subsection": self.subsection,
+                            "called_from": "{}:{}:{}".format(
+                                            caller.filename,
+                                            caller.function,
+                                            caller.lineno),
                             "path": tuple(self.expand_stack)})
         self._fmt_errmsg("ERROR", msg, trace)
 
@@ -283,10 +291,15 @@ class Wtp:
         self.warnings."""
         assert isinstance(msg, str)
         assert isinstance(trace, (str, type(None)))
+        caller = getframeinfo(stack()[1][0])
         self.warnings.append({"msg": msg, "trace": trace,
                               "title": self.title,
                               "section": self.section,
                               "subsection": self.subsection,
+                              "called_from": "{}:{}:{}".format(
+                                            caller.filename,
+                                            caller.function,
+                                            caller.lineno),
                               "path": tuple(self.expand_stack)})
         self._fmt_errmsg("WARNING", msg, trace)
 
@@ -295,10 +308,15 @@ class Wtp:
         self.debug."""
         assert isinstance(msg, str)
         assert isinstance(trace, (str, type(None)))
+        caller = getframeinfo(stack()[1][0])
         self.debugs.append({"msg": msg, "trace": trace,
                             "title": self.title,
                             "section": self.section,
                             "subsection": self.subsection,
+                            "called_from": "{}:{}:{}".format(
+                                            caller.filename,
+                                            caller.function,
+                                            caller.lineno),
                             "path": tuple(self.expand_stack)})
         self._fmt_errmsg("DEBUG", msg, trace)
 
