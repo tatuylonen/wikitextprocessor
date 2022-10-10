@@ -411,6 +411,7 @@ class Wtp:
             orig = m.group(2)
             args = vbar_split(orig)
             self.debug("heuristically added missing }} to template arg {}"
+                        # a single "}" needs to be escaped as "}}" with .format
                          .format(args[0].strip()))
             return prefix + self._save_value("A", args, nowiki)
 
@@ -431,6 +432,7 @@ class Wtp:
             v = m.group(2)
             args = vbar_split(v)
             self.debug("heuristically added missing }} to template {}"
+                        # a single "}" needs to be escaped as "}}" with .format
                          .format(args[0].strip()))
             return prefix + self._save_value("T", args, nowiki)
 
