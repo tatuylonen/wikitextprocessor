@@ -1114,6 +1114,10 @@ class Wtp:
                     tname = expand_recurse(args[0], parent, templates_to_expand)
                     self.expand_stack.pop()
 
+                    # Remove <noinvoke/>
+
+                    tname = re.sub(r"<\s*noinclude\s*/\s*>", "", tname)
+                    
                     # Strip safesubst: and subst: prefixes
                     tname = tname.strip()
                     if tname[:10].lower() == "safesubst:":
@@ -1154,6 +1158,8 @@ class Wtp:
                     if name not in all_templates:
                         # XXX tons of these in enwiktionary-20201201 ???
                         #self.debug("undefined template {!r}.format(tname))
+                        print(name)
+                        print(html.escape(name))
                         parts.append('<strong class="error">Template:{}'
                                      '</strong>'
                                      .format(html.escape(name)))
