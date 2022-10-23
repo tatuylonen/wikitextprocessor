@@ -1285,6 +1285,24 @@ class Wtp:
                         if t2 is not None:
                             t = t2
 
+                    if self.lang_code == "zh" and name.startswith("-"):
+                        if "<h2>" in t:
+                            # https://zh.wiktionary.org/wiki/Template:-la-
+                            lang_heading = re.search(r"<h2>([^<]+)</h2>", t).group(1)
+                            t = f"=={lang_heading}=="
+                        elif "==" in t and " " in t:
+                            # https://zh.wiktionary.org/wiki/Template:-abbr-
+                            origin_heading = re.search(r"=+([^=]+)=+", t).group(1)
+                            heading = origin_heading.split()[-1]
+                            equal_sign_count = 0
+                            for char in origin_heading:
+                                if char == "=":
+                                    equal_sign_count += 1
+                                else:
+                                    break
+                            t = "=" * equal_sign_count
+                            t = t + heading + t
+
                     assert isinstance(t, str)
                     self.expand_stack.pop()  # template name
                     parts.append(t)
