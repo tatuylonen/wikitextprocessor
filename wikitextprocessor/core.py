@@ -379,7 +379,7 @@ class Wtp:
             return self.rev_ht[v]
         idx = len(self.cookies)
         if idx >= MAX_MAGICS:
-            ctx.error("too many templates, arguments, or parser function calls")
+            self.error("too many templates, arguments, or parser function calls")
             return ""
         self.cookies.append(v)
         ch = chr(MAGIC_FIRST + idx)
@@ -634,12 +634,15 @@ class Wtp:
         body = self._template_to_body(title, text)
         assert isinstance(body, str)
         self.templates[name] = body
+        if self.lang_code == "zh":
+            self.add_chinese_lower_case_template(name, body)
+
+    def add_chinese_lower_case_template(self, name, body):
         # Chinese Wiktionary capitalizes the first letter of template name
         # in template pages but uses lower case in word pages
-        if self.lang_code == "zh":
-            lower_case_name = name[0].lower() + name[1:]
-            if lower_case_name not in self.templates:
-                self.templates[lower_case_name] = body
+        lower_case_name = name[0].lower() + name[1:]
+        if lower_case_name not in self.templates:
+            self.templates[lower_case_name] = body
 
     def _analyze_template(self, name, body):
         """Analyzes a template body and returns a set of the canonicalized
@@ -803,6 +806,9 @@ class Wtp:
             self.templates[k] = self.templates[v]
             if v in self.need_pre_expand:
                 self.need_pre_expand.add(k)
+            if self.lang_code == "zh":
+                self.add_chinese_lower_case_template(k, self.templates[v])
+
 
         # Save cache data
         if self.cache_file is not None and not self.cache_file_old:
@@ -1158,8 +1164,6 @@ class Wtp:
                     if name not in all_templates:
                         # XXX tons of these in enwiktionary-20201201 ???
                         #self.debug("undefined template {!r}.format(tname))
-                        print(name)
-                        print(html.escape(name))
                         parts.append('<strong class="error">Template:{}'
                                      '</strong>'
                                      .format(html.escape(name)))
