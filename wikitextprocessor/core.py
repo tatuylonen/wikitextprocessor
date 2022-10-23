@@ -725,9 +725,15 @@ class Wtp:
         #         if v != 0:
         #             print("  {} {}".format(v, k))
 
+        # Chinese Wiktionary uses templates for language and POS headings
+        # For example: https://zh.wiktionary.org/wiki/Template:-fr-
+        # and https://zh.wiktionary.org/wiki/Template:-n-
+        is_chinese_heading = self.lang_code == "zh" and name.startswith("-")
+
         # Determine whether this template should be pre-expanded
         pre_expand = (contains_list or contains_unpaired_table or
-                      contains_table_element or contains_unbalanced_html)
+                      contains_table_element or contains_unbalanced_html or
+                      is_chinese_heading)
 
         # if pre_expand:
         #     print(name,
@@ -757,7 +763,10 @@ class Wtp:
         essential to parsing Wikitext syntax, such as table start or end
         tags.  Such templates generally need to be expanded before
         parsing the page."""
-        self.need_pre_expand = set()
+
+        # langhd is needed for pre-expanding language heading templates in the
+        # Chinese Wiktionary dump file: https://zh.wiktionary.org/wiki/Template:-en-
+        self.need_pre_expand = {"langhd"} if self.lang_code == "zh" else set()
         included_map = collections.defaultdict(set)
         expand_q = []
         for name, body in self.templates.items():
@@ -804,7 +813,7 @@ class Wtp:
                 #       .format(k, v))
                 continue
             self.templates[k] = self.templates[v]
-            if v in self.need_pre_expand:
+            if v in self.need_pre_expand or (self.lang_code == "zh" and k.startswith("-")):
                 self.need_pre_expand.add(k)
             if self.lang_code == "zh":
                 self.add_chinese_lower_case_template(k, self.templates[v])
