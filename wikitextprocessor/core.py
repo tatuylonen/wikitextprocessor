@@ -379,7 +379,7 @@ class Wtp:
             return self.rev_ht[v]
         idx = len(self.cookies)
         if idx >= MAX_MAGICS:
-            ctx.error("too many templates, arguments, or parser function calls")
+            self.error("too many templates, arguments, or parser function calls")
             return ""
         self.cookies.append(v)
         ch = chr(MAGIC_FIRST + idx)
@@ -634,12 +634,15 @@ class Wtp:
         body = self._template_to_body(title, text)
         assert isinstance(body, str)
         self.templates[name] = body
+        if self.lang_code == "zh":
+            self.add_chinese_lower_case_template(name, body)
+
+    def add_chinese_lower_case_template(self, name, body):
         # Chinese Wiktionary capitalizes the first letter of template name
         # in template pages but uses lower case in word pages
-        if self.lang_code == "zh":
-            lower_case_name = name[0].lower() + name[1:]
-            if lower_case_name not in self.templates:
-                self.templates[lower_case_name] = body
+        lower_case_name = name[0].lower() + name[1:]
+        if lower_case_name not in self.templates:
+            self.templates[lower_case_name] = body
 
     def _analyze_template(self, name, body):
         """Analyzes a template body and returns a set of the canonicalized
@@ -722,9 +725,15 @@ class Wtp:
         #         if v != 0:
         #             print("  {} {}".format(v, k))
 
+        # Chinese Wiktionary uses templates for language and POS headings
+        # For example: https://zh.wiktionary.org/wiki/Template:-fr-
+        # and https://zh.wiktionary.org/wiki/Template:-n-
+        is_chinese_heading = self.lang_code == "zh" and name.startswith("-")
+
         # Determine whether this template should be pre-expanded
         pre_expand = (contains_list or contains_unpaired_table or
-                      contains_table_element or contains_unbalanced_html)
+                      contains_table_element or contains_unbalanced_html or
+                      is_chinese_heading)
 
         # if pre_expand:
         #     print(name,
@@ -754,7 +763,10 @@ class Wtp:
         essential to parsing Wikitext syntax, such as table start or end
         tags.  Such templates generally need to be expanded before
         parsing the page."""
-        self.need_pre_expand = set()
+
+        # langhd is needed for pre-expanding language heading templates in the
+        # Chinese Wiktionary dump file: https://zh.wiktionary.org/wiki/Template:-en-
+        self.need_pre_expand = {"langhd"} if self.lang_code == "zh" else set()
         included_map = collections.defaultdict(set)
         expand_q = []
         for name, body in self.templates.items():
@@ -801,8 +813,11 @@ class Wtp:
                 #       .format(k, v))
                 continue
             self.templates[k] = self.templates[v]
-            if v in self.need_pre_expand:
+            if v in self.need_pre_expand or (self.lang_code == "zh" and k.startswith("-")):
                 self.need_pre_expand.add(k)
+            if self.lang_code == "zh":
+                self.add_chinese_lower_case_template(k, self.templates[v])
+
 
         # Save cache data
         if self.cache_file is not None and not self.cache_file_old:
@@ -1158,8 +1173,6 @@ class Wtp:
                     if name not in all_templates:
                         # XXX tons of these in enwiktionary-20201201 ???
                         #self.debug("undefined template {!r}.format(tname))
-                        print(name)
-                        print(html.escape(name))
                         parts.append('<strong class="error">Template:{}'
                                      '</strong>'
                                      .format(html.escape(name)))
@@ -1271,6 +1284,24 @@ class Wtp:
                         t2 = post_template_fn(urllib.parse.unquote(name), ht, t)
                         if t2 is not None:
                             t = t2
+
+                    if self.lang_code == "zh" and name.startswith("-"):
+                        if "<h2>" in t:
+                            # https://zh.wiktionary.org/wiki/Template:-la-
+                            lang_heading = re.search(r"<h2>([^<]+)</h2>", t).group(1)
+                            t = f"=={lang_heading}=="
+                        elif "==" in t and " " in t:
+                            # https://zh.wiktionary.org/wiki/Template:-abbr-
+                            origin_heading = re.search(r"=+([^=]+)=+", t).group(1)
+                            heading = origin_heading.split()[-1]
+                            equal_sign_count = 0
+                            for char in origin_heading:
+                                if char == "=":
+                                    equal_sign_count += 1
+                                else:
+                                    break
+                            t = "=" * equal_sign_count
+                            t = t + heading + t
 
                     assert isinstance(t, str)
                     self.expand_stack.pop()  # template name
