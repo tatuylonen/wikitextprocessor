@@ -131,7 +131,8 @@ def lst_fn(ctx, fn_name, args, expander):
     if text is None:
         ctx.warning("{} trying to transclude chapter {!r} from non-existent "
                     "page {!r}"
-                    .format(fn_name, chapter, pagetitle))
+                    .format(fn_name, chapter, pagetitle),
+                    sortid="parserfns/132")
         return ""
 
     parts = []
@@ -143,7 +144,8 @@ def lst_fn(ctx, fn_name, args, expander):
         parts.append(m.group(1))
     if not parts:
         ctx.warning("{} could not find chapter {!r} on page {!r}"
-                    .format(fn_name, chapter, pagetitle))
+                    .format(fn_name, chapter, pagetitle),
+                    sortid="parserfns/146")
     return "".join(parts)
 
 
@@ -152,7 +154,8 @@ def tag_fn(ctx, fn_name, args, expander):
     tag = expander(args[0]).lower() if args else ""
     if tag not in ALLOWED_HTML_TAGS and tag != "nowiki":
         ctx.warning("#tag creating non-allowed tag <{}> - omitted"
-                    .format(tag))
+                    .format(tag),
+                    sortid="parserfns/156")
         return "{{" + fn_name + ":" + "|".join(args) + "}}"
     content = expander(args[1]) if len(args) >= 2 else ""
     attrs = []
@@ -162,7 +165,8 @@ def tag_fn(ctx, fn_name, args, expander):
             m = re.match(r"""(?s)^([^=<>'"]+)=(.*)$""", x)
             if not m:
                 ctx.warning("invalid attribute format {!r} missing name"
-                            .format(x))
+                            .format(x),
+                            sortid="parserfns/167")
                 continue
             name, value = m.groups()
             if not value.startswith('"') and not value.startswith("'"):
@@ -775,7 +779,8 @@ def expr_fn(ctx, fn_name, args, expander):
         if tok is None:
             tok = "&lt;end&gt;"
         #ctx.warning("#expr error near {} in {!r}"
-        #            .format(tok, full_expr))
+        #            .format(tok, full_expr),
+        #            sortid="parserfns/781")
         return ('<strong class="error">Expression error near {}</strong>'
                 .format(tok))
 
@@ -908,7 +913,8 @@ def padleft_fn(ctx, fn_name, args, expander):
     cnt = expander(args[1]).strip() if len(args) >= 2 else "0"
     pad = expander(args[2]) if len(args) >= 3 and args[2] else "0"
     if not cnt.isdigit():
-        ctx.warning("pad length is not integer: {!r}".format(cnt))
+        ctx.warning("pad length is not integer: {!r}".format(cnt),
+                    sortid="parserfns/916")
         cnt = 0
     else:
         cnt = int(cnt)
@@ -926,7 +932,8 @@ def padright_fn(ctx, fn_name, args, expander):
     arg2 = expander(args[2]) if len(args) >= 3 and args[2] else "0"
     pad = arg2 if len(args) >= 3 and arg2 else "0"
     if not cnt.isdigit():
-        ctx.warning("pad length is not integer: {!r}".format(cnt))
+        ctx.warning("pad length is not integer: {!r}".format(cnt),
+                    sortid="parserfns/936")
         cnt = 0
     else:
         cnt = int(cnt)
@@ -1023,14 +1030,16 @@ def time_fn(ctx, fn_name, args, expander):
             t = datetime.datetime.fromtimestamp(float(dt[1:]))
         except ValueError:
             ctx.warning("bad time syntax in {}: {!r}"
-                        .format(fn_name, orig_dt))
+                        .format(fn_name, orig_dt),
+                        sortid="parserfns/1032")
             return ('<strong class="error">Bad time syntax: {}</strong>'
                     .format(html.escape(orig_dt)))
     else:
         t = dateparser.parse(dt, settings=settings)
         if t is None:
             ctx.warning("unrecognized time syntax in {}: {!r}"
-                        .format(fn_name, orig_dt))
+                        .format(fn_name, orig_dt),
+                        sortid="parserfns/1040")
             return ('<strong class="error">Bad time syntax: {}</strong>'
                     .format(html.escape(orig_dt)))
 
@@ -1121,7 +1130,8 @@ def pad_fn(ctx, fn_name, args, expander):
     pad = expander(args[2]) if len(args) >= 3 and args[2] else "0"
     direction = expander(args[3]) if len(args) >= 4 else ""
     if not cnt.isdigit():
-        ctx.warning("pad length is not integer: {!r}".format(cnt))
+        ctx.warning("pad length is not integer: {!r}".format(cnt),
+                    sortid="parserfns/1133")
         cnt = 0
     else:
         cnt = int(cnt)
@@ -1178,7 +1188,8 @@ def urldecode_fn(ctx, fn_name, args, expander):
 
 
 def unimplemented_fn(ctx, fn_name, args, expander):
-    ctx.error("unimplemented parserfn {}".format(fn_name))
+    ctx.error("unimplemented parserfn {}".format(fn_name),
+              sortid="parserfns/1191")
     return "{{" + fn_name + ":" + "|".join(map(str, args)) + "}}"
 
 
@@ -1340,7 +1351,8 @@ def call_parser_function(ctx, fn_name, args, expander):
     assert isinstance(args, (list, tuple, dict))
     assert callable(expander)
     if fn_name not in PARSER_FUNCTIONS:
-        ctx.error("unrecognized parser function {!r}".format(fn_name))
+        ctx.error("unrecognized parser function {!r}".format(fn_name),
+                  sortid="parserfns/1354")
         return ""
     fn = PARSER_FUNCTIONS[fn_name]
     accept_keyed_args = False
@@ -1380,6 +1392,7 @@ def call_parser_function(ctx, fn_name, args, expander):
     if have_keyed_args and not accept_keyed_args:
         ctx.error("parser function {} does not (yet) support named "
                   "arguments: {}"
-                  .format(fn_name, args))
+                  .format(fn_name, args),
+                  sortid="parserfns/1393")
         return ""
     return fn(ctx, fn_name, args, expander)

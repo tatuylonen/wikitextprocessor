@@ -367,7 +367,8 @@ def call_lua_sandbox(ctx, invoke_args, expander, parent, timeout):
 
     if len(invoke_args) < 2:
         ctx.debug("#invoke {} with too few arguments"
-                  .format(invoke_args))
+                  .format(invoke_args),
+                  sortid="luaexec/369")
         return ("{{" + invoke_args[0] + ":" +
                 "|".join(invoke_args[1:]) + "}}")
 
@@ -460,7 +461,8 @@ end
 
         def extensionTag(frame, *args):
             if len(args) < 1:
-                ctx.debug("lua extensionTag with missing arguments")
+                ctx.debug("lua extensionTag with missing arguments",
+                          sortid="luaexec/464")
                 return ""
             dt = args[0]
             if not isinstance(dt, (str, int, float, type(None))):
@@ -501,7 +503,8 @@ end
 
         def callParserFunction(frame, *args):
             if len(args) < 1:
-                ctx.debug("lua callParserFunction missing name")
+                ctx.debug("lua callParserFunction missing name",
+                          sortid="luaexec/506")
                 return ""
             name = args[0]
             if not isinstance(name, str):
@@ -525,7 +528,7 @@ end
             if name not in PARSER_FUNCTIONS:
                 ctx.debug("lua frame callParserFunction() undefined "
                           "function {!r}"
-                          .format(name))
+                          .format(name), sortid="luaexec/529")
                 return ""
             return call_parser_function(ctx, name, new_args, lambda x: x)
 
@@ -539,7 +542,8 @@ end
 
         def preprocess(frame, *args):
             if len(args) < 1:
-                ctx.debug("lua preprocess missing argument")
+                ctx.debug("lua preprocess missing argument",
+                          sortid="luaexec/545")
                 return ""
             v = args[0]
             if not isinstance(v, str):
@@ -554,11 +558,13 @@ end
 
         def expandTemplate(frame, *args):
             if len(args) < 1:
-                ctx.debug("lua expandTemplate missing arguments")
+                ctx.debug("lua expandTemplate missing arguments",
+                          sortid="luaexec/561")
                 return ""
             dt = args[0]
             if isinstance(dt, (int, float, str, type(None))):
-                ctx.debug("lua expandTemplate arguments should be named")
+                ctx.debug("lua expandTemplate arguments should be named",
+                          sortid="luaexec/566")
                 return ""
             title = dt["title"] or ""
             args = dt["args"] or {}
@@ -618,7 +624,8 @@ end
             ok, text = ret[0], ret[1]
     except UnicodeDecodeError:
         ctx.debug("invalid unicode returned from lua by {}: parent {}"
-                  .format(invoke_args, parent))
+                  .format(invoke_args, parent),
+                  sortid="luaexec/626")
         ok, text = True, ""
     except lupa._lupa.LuaError as e:
         ok, text = False, e
@@ -649,7 +656,7 @@ end
     msg = re.sub(r".*?:\d+: ", "", text.split("\n")[0])
     if text.find("'debug.error'") >= 0:
         if not msg.startswith("This template is deprecated."):
-            ctx.debug("lua error -- " + msg)
+            ctx.debug("lua error -- " + msg, sortid="luaexec/659")
     elif text.find("Translations must be for attested and approved ") >= 0:
         # Ignore this error - it is an error but a clear error in Wiktionary
         # rather than in the extractor.
@@ -671,11 +678,11 @@ end
         if "check deprecated lang param usage" in ctx.expand_stack:
             ctx.debug("LUA error but likely not bug -- in #invoke {} parent {}"
                       .format(invoke_args, parent),
-                      trace=trace)
+                      trace=trace, sortid="luaexec/679")
         else:
             ctx.error("LUA error in #invoke {} parent {}"
                       .format(invoke_args, parent),
-                      trace=trace)
+                      trace=trace, sortid="luaexec/683")
     msg = "Lua execution error"
     if "Lua timeout error" in text:
         msg = "Lua timeout error"

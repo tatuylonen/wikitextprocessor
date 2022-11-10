@@ -303,12 +303,14 @@ def _parser_pop(ctx, warn_unclosed):
         if node.kind == NodeKind.HTML:
             ctx.debug("HTML tag <{}> not properly closed".format(node.args),
                         trace="started on line {}, detected on line {}"
-                        .format(node.loc, ctx.linenum))
+                        .format(node.loc, ctx.linenum),
+                        sortid="parser/304")
         elif node.kind == NodeKind.PARSER_FN:
             ctx.debug("parser function invocation {!r} not properly closed"
                         .format(node.args[0]),
                         trace="started on line {}, detected on line {}"
-                        .format(node.loc, ctx.linenum))
+                        .format(node.loc, ctx.linenum),
+                        sortid="parser/309")
         elif node.kind == NodeKind.URL and not node.children:
             # This can happen at least when [ is inside template argument.
             ctx.parser_stack.pop()
@@ -325,7 +327,8 @@ def _parser_pop(ctx, warn_unclosed):
         else:
             ctx.debug("{} not properly closed".format(node.kind.name),
                       trace="started on line {}, detected on line {}"
-                      .format(node.loc, ctx.linenum))
+                      .format(node.loc, ctx.linenum),
+                      sortid="parser/328")
 
     # When popping BOLD and ITALIC nodes, if the node has no children,
     # just remove the node from it's parent's children.  We may otherwise
@@ -444,7 +447,8 @@ def text_fn(ctx, token):
             elif node.kind in (NodeKind.BOLD, NodeKind.ITALIC):
                 _parser_merge_str_children(ctx)
                 ctx.debug("{} not properly closed on the same line"
-                          .format(node.kind.name))
+                          .format(node.kind.name),
+                          sortid="parser/449")
                 _parser_pop(ctx, False)
             break
 
@@ -538,7 +542,8 @@ def subtitle_end_fn(ctx, token):
     # Move children of the subtitle node to be its first argument.
     node = ctx.parser_stack[-1]
     if node.kind != kind:
-        ctx.debug("subtitle start and end markers level mismatch")
+        ctx.debug("subtitle start and end markers level mismatch",
+                  sortid="parser/545")
     _parser_merge_str_children(ctx)
     node.args.append(node.children)
     node.children = []
@@ -773,7 +778,7 @@ def magic_fn(ctx, token):
         text_fn(ctx, text)
     else:
         self.error("magic_fn: unsupported cookie kind {!r}"
-                   .format(kind))
+                   .format(kind), sortid="parser/780")
 
 
 def colon_fn(ctx, token):
@@ -1219,7 +1224,7 @@ def tag_fn(ctx, token):
             if also_end:
                 text_fn(ctx, MAGIC_NOWIKI_CHAR)
                 return
-            ctx.debug("unmatched <nowiki>")
+            ctx.debug("unmatched <nowiki>", sortid="parser/1227")
             return text_fn(ctx, token)
 
         # Ignore <noinclude/> tags.  They are sometimes used to prevent
@@ -1244,7 +1249,8 @@ def tag_fn(ctx, token):
         if name not in ALLOWED_HTML_TAGS:
             if not name.isdigit() and not SILENT_HTML_LIKE:
                 ctx.debug("html tag <{}{}> not allowed in WikiText"
-                          "".format(name, "/" if also_end else ""))
+                          "".format(name, "/" if also_end else ""),
+                          sortid="parser/1251")
             text_fn(ctx, token)
             return
 
@@ -1290,7 +1296,7 @@ def tag_fn(ctx, token):
 
     # We should never see </section>
     if name == "section":
-        ctx.debug("unexpected </section>")
+        ctx.debug("unexpected </section>", sortid="parser/1299")
         return
 
     # Check for </pre> end tag
@@ -1299,7 +1305,7 @@ def tag_fn(ctx, token):
         ctx.pre_parse = False
         node = ctx.parser_stack[-1]
         if node.kind != NodeKind.PRE:
-            ctx.debug("unexpected </pre>")
+            ctx.debug("unexpected </pre>", sortid="parser/1308")
             return text_fn(ctx, token)
         _parser_pop(ctx, False)
         return
@@ -1312,7 +1318,7 @@ def tag_fn(ctx, token):
     # tags that are allowed.
     if name not in ALLOWED_HTML_TAGS and name != "nowiki":
         ctx.debug("html tag </{}> not allowed in WikiText"
-                  "".format(name))
+                  "".format(name), sortid="parser/1320")
 
     # See if we can find the opening tag from the stack
     for i in range(0, len(ctx.parser_stack)):
@@ -1327,7 +1333,8 @@ def tag_fn(ctx, token):
             node.args = name
             _parser_pop(ctx, False)
             return
-        ctx.debug("no corresponding start tag found for {}".format(token))
+        ctx.debug("no corresponding start tag found for {}".format(token),
+                  sortid="parser/1336")
         text_fn(ctx, token)
         return
 

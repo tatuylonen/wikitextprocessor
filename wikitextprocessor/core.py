@@ -18,7 +18,6 @@ import pkg_resources
 import html.entities
 import multiprocessing
 from pathlib import Path
-from inspect import getframeinfo, stack
 
 from .parserfns import PARSER_FUNCTIONS, call_parser_function, init_namespaces
 from .wikihtml import ALLOWED_HTML_TAGS
@@ -267,56 +266,44 @@ class Wtp:
         print("{}: {}: {}".format(loc, kind,msg))
         sys.stdout.flush()
 
-    def error(self, msg, trace=None):
+    def error(self, msg, trace=None, sortid="XYZunsorted"):
         """Prints an error message to stdout.  The error is also saved in
         self.errors."""
         assert isinstance(msg, str)
         assert isinstance(trace, (str, type(None)))
         # get the data of where error() was called,
         # basically filename and line number
-        caller = getframeinfo(stack()[1][0])
         self.errors.append({"msg": msg, "trace": trace,
                             "title": self.title,
                             "section": self.section,
                             "subsection": self.subsection,
-                            "called_from": "{}:{}:{}".format(
-                                            caller.filename,
-                                            caller.function,
-                                            caller.lineno),
+                            "called_from": sortid,
                             "path": tuple(self.expand_stack)})
         self._fmt_errmsg("ERROR", msg, trace)
 
-    def warning(self, msg, trace=None):
+    def warning(self, msg, trace=None, sortid="XYZunsorted"):
         """Prints a warning message to stdout.  The error is also saved in
         self.warnings."""
         assert isinstance(msg, str)
         assert isinstance(trace, (str, type(None)))
-        caller = getframeinfo(stack()[1][0])
         self.warnings.append({"msg": msg, "trace": trace,
                               "title": self.title,
                               "section": self.section,
                               "subsection": self.subsection,
-                              "called_from": "{}:{}:{}".format(
-                                            caller.filename,
-                                            caller.function,
-                                            caller.lineno),
+                              "called_from": sortid,
                               "path": tuple(self.expand_stack)})
         self._fmt_errmsg("WARNING", msg, trace)
 
-    def debug(self, msg, trace=None):
+    def debug(self, msg, trace=None, sortid="XYZunsorted"):
         """Prints a debug message to stdout.  The error is also saved in
         self.debug."""
         assert isinstance(msg, str)
         assert isinstance(trace, (str, type(None)))
-        caller = getframeinfo(stack()[1][0])
         self.debugs.append({"msg": msg, "trace": trace,
                             "title": self.title,
                             "section": self.section,
                             "subsection": self.subsection,
-                            "called_from": "{}:{}:{}".format(
-                                            caller.filename,
-                                            caller.function,
-                                            caller.lineno),
+                            "called_from": sortid,
                             "path": tuple(self.expand_stack)})
         self._fmt_errmsg("DEBUG", msg, trace)
 
@@ -379,7 +366,9 @@ class Wtp:
             return self.rev_ht[v]
         idx = len(self.cookies)
         if idx >= MAX_MAGICS:
-            self.error("too many templates, arguments, or parser function calls")
+            self.error("too many templates, arguments,"
+                       "or parser function calls",
+                       sortid="core/372")
             return ""
         self.cookies.append(v)
         ch = chr(MAGIC_FIRST + idx)
@@ -412,7 +401,8 @@ class Wtp:
             args = vbar_split(orig)
             self.debug("heuristically added missing }} to template arg {}"
                         # a single "}" needs to be escaped as "}}" with .format
-                         .format(args[0].strip()))
+                         .format(args[0].strip()),
+                         sortid="core/405")
             return prefix + self._save_value("A", args, nowiki)
 
         def repl_templ(m):
@@ -433,7 +423,8 @@ class Wtp:
             args = vbar_split(v)
             self.debug("heuristically added missing }} to template {}"
                         # a single "}" needs to be escaped as "}}" with .format
-                         .format(args[0].strip()))
+                         .format(args[0].strip()),
+                         sortid="core/427")
             return prefix + self._save_value("T", args, nowiki)
 
         def repl_link(m):
@@ -1026,7 +1017,8 @@ class Wtp:
                         if len(args) > 2:
                             self.debug("too many args ({}) in argument "
                                        "reference: {!r}"
-                                       .format(len(args), args))
+                                       .format(len(args), args),
+                                       sortid="core/1021")
                         self.expand_stack.append("ARG-NAME")
                         k = expand_recurse(expand_args(args[0], argmap),
                                            parent, all_templates).strip()
@@ -1065,7 +1057,8 @@ class Wtp:
                         parts.append(ch)
                         continue
                     self.error("expand_arg: unsupported cookie kind {!r} in {}"
-                               .format(kind, m.group(0)))
+                               .format(kind, m.group(0)),
+                               sortid="core/1062")
                     parts.append(m.group(0))
                 parts.append(coded[pos:])
                 return "".join(parts)
@@ -1117,7 +1110,7 @@ class Wtp:
                     # Limit recursion depth
                     if len(self.expand_stack) >= 100:
                         self.error("too deep recursion during template "
-                                   "expansion")
+                                   "expansion", sortid="core/1115")
                         parts.append(
                             '<strong class="error">too deep recursion '
                             'while expanding template {}</strong>'
@@ -1172,7 +1165,8 @@ class Wtp:
                     # Check for undefined templates
                     if name not in all_templates:
                         # XXX tons of these in enwiktionary-20201201 ???
-                        #self.debug("undefined template {!r}.format(tname))
+                        #self.debug("undefined template {!r}.format(tname),
+                        #           sortid="core/1171")
                         parts.append('<strong class="error">Template:{}'
                                      '</strong>'
                                      .format(html.escape(name)))
@@ -1213,7 +1207,8 @@ class Wtp:
                                 if k < 1 or k > 1000:
                                     self.debug("invalid argument number {} "
                                                "for template {!r}"
-                                               .format(k, name))
+                                               .format(k, name),
+                                               sortid="core/1211")
                                     k = 1000
                                 if num <= k:
                                     num = k + 1
@@ -1334,7 +1329,8 @@ class Wtp:
                     parts.append(ch)
                 else:
                     self.error("expand: unsupported cookie kind {!r} in {}"
-                               .format(kind, m.group(0)))
+                               .format(kind, m.group(0)),
+                               sortid="core/1334")
                     parts.append(m.group(0))
             parts.append(coded[pos:])
             return "".join(parts)
@@ -1372,7 +1368,7 @@ class Wtp:
             if kind == "N":
                 return "<nowiki>" + args[0] + "</nowiki>"
             self.error("magic_repl: unsupported cookie kind {!r}"
-                       .format(kind))
+                       .format(kind), sortid="core/1373")
             return ""
 
         # Keep expanding magic cookies until they have all been expanded.
@@ -1455,7 +1451,7 @@ class Wtp:
                     msg = lines[0]
                     trace = "\n".join(lines[1:])
                     if msg.find("EXCEPTION") >= 0:
-                        self.error(msg, trace=trace)
+                        self.error(msg, trace=trace, sortid="core/1457")
                     continue
                 if ret is not None:
                     yield ret
