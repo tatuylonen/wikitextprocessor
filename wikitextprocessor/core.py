@@ -271,8 +271,12 @@ class Wtp:
         self.errors."""
         assert isinstance(msg, str)
         assert isinstance(trace, (str, type(None)))
-        # get the data of where error() was called,
-        # basically filename and line number
+        assert isinstance(sortid, str)
+        # sortid should be a static string only used to sort
+        # error messages into buckets based on where they
+        # have been called. There was previously some code for
+        # inspecting the stack trace here that did the same
+        # thing, but it was a bit costly.
         self.errors.append({"msg": msg, "trace": trace,
                             "title": self.title,
                             "section": self.section,
@@ -286,6 +290,8 @@ class Wtp:
         self.warnings."""
         assert isinstance(msg, str)
         assert isinstance(trace, (str, type(None)))
+        assert isinstance(sortid, str)
+
         self.warnings.append({"msg": msg, "trace": trace,
                               "title": self.title,
                               "section": self.section,
@@ -299,6 +305,8 @@ class Wtp:
         self.debug."""
         assert isinstance(msg, str)
         assert isinstance(trace, (str, type(None)))
+        assert isinstance(sortid, str)
+
         self.debugs.append({"msg": msg, "trace": trace,
                             "title": self.title,
                             "section": self.section,
