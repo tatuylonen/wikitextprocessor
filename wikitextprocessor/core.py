@@ -1393,7 +1393,8 @@ class Wtp:
         text = re.sub(MAGIC_NOWIKI_CHAR, "<nowiki />", text)
 
         # Remove LanguageConverter markups: https://www.mediawiki.org/wiki/Writing_systems/Syntax
-        text = text.replace("-{", "").replace("}-", "")
+
+        text = text.replace("-{([^}\n]*)}-", "\1")
         return text
 
     def process(self, path, page_handler, phase1_only=False):
