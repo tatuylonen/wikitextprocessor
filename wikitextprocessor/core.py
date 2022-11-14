@@ -1353,6 +1353,11 @@ class Wtp:
 
         # Expand any remaining magic cookies and remove nowiki char
         expanded = self._finalize_expand(expanded)
+
+        # Remove LanguageConverter markups: https://www.mediawiki.org/wiki/Writing_systems/Syntax
+        if not pre_expand and "-{" in expanded:
+            expanded = expanded.replace("-{", "").replace("}-", "")
+
         return expanded
 
     def _finalize_expand(self, text):
@@ -1391,10 +1396,6 @@ class Wtp:
         # Convert the special <nowiki /> character back to <nowiki />.
         # This is done at the end of normal expansion.
         text = re.sub(MAGIC_NOWIKI_CHAR, "<nowiki />", text)
-
-        # Remove LanguageConverter markups: https://www.mediawiki.org/wiki/Writing_systems/Syntax
-
-        text = text.replace("-{([^}\n]*)}-", "\1")
         return text
 
     def process(self, path, page_handler, phase1_only=False):
