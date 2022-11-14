@@ -1354,9 +1354,10 @@ class Wtp:
         # Expand any remaining magic cookies and remove nowiki char
         expanded = self._finalize_expand(expanded)
 
-        # Remove LanguageConverter markups: https://www.mediawiki.org/wiki/Writing_systems/Syntax
+        # Remove LanguageConverter markups:
+        # https://www.mediawiki.org/wiki/Writing_systems/Syntax
         if not pre_expand and "-{" in expanded:
-            expanded = expanded.replace("-{", "").replace("}-", "")
+            expanded = re.sub("-{([^}\n])}-", "", expanded)
 
         return expanded
 
