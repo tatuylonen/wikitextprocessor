@@ -1356,8 +1356,9 @@ class Wtp:
 
         # Remove LanguageConverter markups:
         # https://www.mediawiki.org/wiki/Writing_systems/Syntax
-        if not pre_expand and "-{" in expanded:
-            expanded = re.sub("-{([^}\n])}-", "", expanded)
+        if self.langcode="zh" and not pre_expand and "-{" in expanded:
+            expanded = re.sub("(^|[\s\W\n])-{([^\n}])*}-([\s\W\n]|$)",
+                              "", expanded)
 
         return expanded
 
