@@ -725,9 +725,9 @@ class Wtp:
         #             print("  {} {}".format(v, k))
 
         # Chinese Wiktionary uses templates for language and POS headings
-        # For example: https://zh.wiktionary.org/wiki/Template:-fr-
-        # and https://zh.wiktionary.org/wiki/Template:-n-
-        is_chinese_heading = self.lang_code == "zh" and name.startswith("-")
+        # Language templates: https://zh.wiktionary.org/wiki/Category:语言模板
+        # POS templates: https://zh.wiktionary.org/wiki/Category:詞類模板
+        is_chinese_heading = self.lang_code == "zh" and name.startswith(("-", "="))
 
         # Determine whether this template should be pre-expanded
         pre_expand = (contains_list or contains_unpaired_table or
@@ -812,7 +812,7 @@ class Wtp:
                 #       .format(k, v))
                 continue
             self.templates[k] = self.templates[v]
-            if v in self.need_pre_expand or (self.lang_code == "zh" and k.startswith("-")):
+            if v in self.need_pre_expand or (self.lang_code == "zh" and k.startswith(("-", "="))):
                 self.need_pre_expand.add(k)
             if self.lang_code == "zh":
                 self.add_chinese_lower_case_template(k, self.templates[v])
