@@ -91,23 +91,30 @@ def lua_loader(ctx, modname):
     assert isinstance(modname, str)
     modname = modname.strip()
     local_module_ns_name = ctx.NAMESPACE_DATA["Module"]["name"]
-    if modname.startswith(local_module_ns_name + ":"):
+
+    # Local name usually not used in Lua code
+    if modname.startswith(("Module:", local_module_ns_name + ":")):
         # Canonicalize the name
         modname = ctx._canonicalize_template_name(modname)
 
         # First try to load it as a module
-        if modname.startswith(local_module_ns_name + ":_"):
+        if modname.startswith(("Module:_", local_module_ns_name + ":_")):
             # Module names starting with _ are considered internal and cannot be
             # loaded from the dump file for security reasons.  This is to ensure
             # that the sandbox always gets loaded from a local file.
             data = None
         else:
             data = ctx.read_by_title(modname)
-            # Chinese Wikipedia capitalizes the first letter of module name
-            # can't use str.capitalize(), it'll cause error for "Module:Cmn-pron-Sichuan"
             if data is None:
-                module_name_len = len(local_module_ns_name)
-                data = ctx.read_by_title(local_module_ns_name + ":" + modname[module_name_len + 1].upper() + modname[module_name_len + 2:])
+                module_name_len = len("Module") if modname.startswith("Module") else len(local_module_ns_name)
+                new_module_title = local_module_ns_name + ":"
+                # Chinese Wikipedia capitalizes the first letter of module name
+                # can't use str.capitalize(), it'll cause error for "Module:Cmn-pron-Sichuan"
+                if ctx.lang_code == "zh":
+                    new_module_title += modname[module_name_len + 1].upper() + modname[module_name_len + 2:]
+                else:
+                    new_module_title += modname[module_name_len + 1:]
+                data = ctx.read_by_title(new_module_title)
     else:
         # Try to load it from a file
         path = modname
