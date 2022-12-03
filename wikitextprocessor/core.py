@@ -1496,7 +1496,7 @@ class Wtp:
         sys.stderr.flush()
         sys.stdout.flush()
 
-    def page_exists(self, title):
+    def page_exists(self, title: str) -> bool:
         """Returns True if the given page exists, and False if it does not
         exist."""
         assert isinstance(title, str)
@@ -1505,7 +1505,20 @@ class Wtp:
         # XXX should we canonicalize title?
         if title in self.transient_pages:
             return True
-        return title in self.page_contents
+        exists = title in self.page_contents
+        if not exists:
+            # Wikitionary Lua module's `mw.title.exists` attribute comes from here
+            # Change the first letter of module name to upper case for Chinese Wiktionary
+            # for other languages change namespace prefix to local name
+            for ns_prefix in ["Module:", self.NAMESPACE_DATA["Module"]["name"] + ":"]:
+                if title.startswith(ns_prefix):
+                    if self.lang_code == "zh":
+                        new_title = ns_prefix + title[len(ns_prefix)].upper() + title[len(ns_prefix) + 1:]
+                    elif ns_prefix == "Module:":
+                        new_title = self.NAMESPACE_DATA["Module"]["name"] + ":" + title[len(ns_prefix):]
+                    exists = new_title in self.page_contents
+                    break
+        return exists
 
     def read_by_title(self, title):
         """Reads the contents of the page.  Returns None if the page does
