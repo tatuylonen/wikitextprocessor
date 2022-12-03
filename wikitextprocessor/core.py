@@ -1598,7 +1598,10 @@ def overwrite_zh_template(template_name: str, expanded_template: str) -> str:
     """
     Modify some expanded Chinese Wiktionary templates to standard heading format
     """
-    if template_name.startswith(("-", "=")):
+    if template_name == "=n=":
+        # The template "NoEdit" used in "=n=" couldn't be expanded correctly
+        return "===名词==="
+    elif template_name.startswith(("-", "=")):
         if "<h2>" in expanded_template:
             # Remove <h2> tag: https://zh.wiktionary.org/wiki/Template:-la-
             lang_heading = re.search(r"<h2>([^<]+)</h2>", expanded_template).group(1)
