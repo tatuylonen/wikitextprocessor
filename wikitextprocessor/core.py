@@ -1288,23 +1288,8 @@ class Wtp:
                         if t2 is not None:
                             t = t2
 
-                    if self.lang_code == "zh" and name.startswith("-"):
-                        if "<h2>" in t:
-                            # https://zh.wiktionary.org/wiki/Template:-la-
-                            lang_heading = re.search(r"<h2>([^<]+)</h2>", t).group(1)
-                            t = f"=={lang_heading}=="
-                        elif "==" in t and " " in t:
-                            # https://zh.wiktionary.org/wiki/Template:-abbr-
-                            origin_heading = re.search(r"=+([^=]+)=+", t).group(1)
-                            heading = origin_heading.split()[-1]
-                            equal_sign_count = 0
-                            for char in origin_heading:
-                                if char == "=":
-                                    equal_sign_count += 1
-                                else:
-                                    break
-                            t = "=" * equal_sign_count
-                            t = t + heading + t
+                    if self.lang_code == "zh":
+                        t = overwrite_zh_template(name, t)
 
                     assert isinstance(t, str)
                     self.expand_stack.pop()  # template name
@@ -1607,3 +1592,29 @@ class Wtp:
         return to_text(self, node, template_fn=template_fn,
                        post_template_fn=post_template_fn,
                        node_handler_fn=node_handler_fn)
+
+
+def overwrite_zh_template(template_name: str, expanded_template: str) -> str:
+    """
+    Modify some expanded Chinese Wiktionary templates to standard heading format
+    """
+    if template_name.startswith(("-", "=")):
+        if "<h2>" in expanded_template:
+            # Remove <h2> tag: https://zh.wiktionary.org/wiki/Template:-la-
+            lang_heading = re.search(r"<h2>([^<]+)</h2>", expanded_template).group(1)
+            expanded_template = f"=={lang_heading}=="
+        elif "==" in expanded_template and " " in expanded_template:
+            # Remove image from template like "-abbr-" and "=a="
+            # which expanded to "[[Category:英語形容詞|wide]]\n===[[Image:Open book 01.png|30px]] [[形容詞]]===\n"
+            heading = re.search(r"=+([^=]+)=+", expanded_template.strip()).group(1)
+            heading = heading.split()[-1]
+            equal_sign_count = 0
+            for char in expanded_template:  # count "=" number
+                if char == "=":
+                    equal_sign_count += 1
+                elif equal_sign_count > 0:
+                    break
+            expanded_template = "=" * equal_sign_count
+            expanded_template = expanded_template + heading + expanded_template
+
+    return expanded_template
