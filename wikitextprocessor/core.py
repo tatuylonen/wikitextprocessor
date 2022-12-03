@@ -1616,5 +1616,8 @@ def overwrite_zh_template(template_name: str, expanded_template: str) -> str:
                     break
             expanded_template = "=" * equal_sign_count
             expanded_template = expanded_template + heading + expanded_template
+    elif template_name == "CC-CEDICT":
+        # Avoid pasring this license template
+        expanded_template = ""
 
     return expanded_template
