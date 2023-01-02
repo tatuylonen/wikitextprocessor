@@ -10,6 +10,7 @@ import html
 import json
 import time
 import pickle
+import platform
 import tempfile
 import traceback
 import collections
@@ -50,15 +51,13 @@ def phase2_page_handler(dt):
     model, title = dt
     start_t = time.time()
 
-    # XXX Enable this to debug why extraction hangs.  This writes the path
-    # of each file being processed into /tmp/wiktextract-*.  Once a hang
+    # Helps debug extraction hangs. This writes the path of each file being
+    # processed into /tmp/wiktextract*/wiktextract-*.  Once a hang
     # has been observed, these files contain page(s) that hang.  They should
-    # be checked before aborting the process, as an interrupt might delete
-    # them.
-    debug_hangs = True
-    try:
-        debug_path = "/tmp/wiktextract-{}".format(os.getpid())
-        with open(debug_path, "w") as f:
+    # be checked before aborting the process, as an interrupt might delete them.
+    with tempfile.TemporaryDirectory(prefix="wiktextract") as tmpdirname:
+        debug_path = "{}/wiktextract-{}".format(tmpdirname, os.getpid())
+        with open(debug_path, "w", encoding="utf-8") as f:
             f.write(title + "\n")
 
         ctx.start_page(title)
@@ -76,10 +75,6 @@ def phase2_page_handler(dt):
             msg = ("=== EXCEPTION while parsing page \"{}\":\n".format(title) +
                    "".join(lst))
             return False, title, start_t, msg
-
-    finally:
-        if debug_hangs:
-            os.remove(debug_path)
 
 
 class Wtp:
@@ -140,7 +135,6 @@ class Wtp:
         assert cache_file is None or isinstance(cache_file, str)
         assert quiet in (True, False)
         if num_threads is None:
-            import platform
             if platform.system() in ("Windows", "Darwin"):
                 # Default num_threads to 1 on Windows and MacOS, as they
                 # apparently don't use fork() for multiprocessing.Pool()
@@ -1534,10 +1528,20 @@ class Wtp:
             return None
         # The page seems to exist
         title, model, ofs, page_size = self.page_contents[title]
-        # Use os.pread() so that we won't change the file offset; otherwise we
-        # might cause a race condition with parallel scanning of the temporary
-        # file.
-        rawdata = os.pread(self.tmp_file.fileno(), page_size, ofs)
+        rawdata = ""
+        if platform.system() in ("Windows"):
+            # Optimize once multiple threads are used on Windows.
+            # Unfortunately, "os.pread" is not implemented on Windows:
+            # https://stackoverflow.com/questions/50902714/python-pread-pwrite-only-on-unix
+            tmp_ofs = self.tmp_file.tell()
+            self.tmp_file.seek(ofs)
+            rawdata = os.read(self.tmp_file.fileno(), page_size)
+            self.tmp_file.seek(tmp_ofs)
+        else:
+            # Use os.pread() so that we won't change the file offset; otherwise we
+            # might cause a race condition with parallel scanning of the temporary
+            # file.
+            rawdata = os.pread(self.tmp_file.fileno(), page_size, ofs)
         return rawdata.decode("utf-8")
 
     def parse(self, text, pre_expand=False, expand_all=False,
