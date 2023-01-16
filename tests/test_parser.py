@@ -466,6 +466,21 @@ dasfasddasfdas
         assert isinstance(a, WikiNode)
         self.assertEqual(a.kind, NodeKind.HTML)
 
+    def test_html18(self):
+        tree, ctx = parse_with_ctx("test", """<DIV
+
+
+                                            >foo</DIV>""")
+        self.assertEqual(ctx.errors, [])
+        self.assertEqual(ctx.warnings, [])
+        self.assertEqual(ctx.debugs, [])
+        self.assertEqual(len(tree.children), 1)
+        a = tree.children[0]
+        assert isinstance(a, WikiNode)
+        self.assertEqual(a.kind, NodeKind.HTML)
+        self.assertEqual(a.args, "div")
+        self.assertEqual(a.children, ["foo"])
+
     def test_html_unknown(self):
         tree, ctx = parse_with_ctx("test", "<unknown>foo</unknown>")
         self.assertNotEqual(ctx.debugs, [])
