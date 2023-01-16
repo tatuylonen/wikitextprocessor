@@ -6,7 +6,8 @@ import re
 import enum
 from .parserfns import PARSER_FUNCTIONS
 from .wikihtml import ALLOWED_HTML_TAGS
-from .common import MAGIC_NOWIKI_CHAR, MAGIC_FIRST, MAGIC_LAST, nowiki_quote
+from .common import (MAGIC_NOWIKI_CHAR, MAGIC_FIRST, MAGIC_LAST, nowiki_quote,
+                     MAGIC_SQUOTE_CHAR)
 
 
 # Set of tags that can be parents of "flow" parents
@@ -1453,6 +1454,18 @@ def token_iter(ctx, text):
     impossible to always disambiguate them without looking at what follows
     on the same line."""
     assert isinstance(text, str)
+
+    # Replace single quotes inside HTML tags with MAGIC_SQUOTE_CHAR
+    tag_parts = re.split(r"(<[^>]*>)", text)
+    if len(tag_parts) > 1:
+        new_parts = []
+        for tp in tag_parts:
+            if tp.startswith("<") and tp.endswith(">"):
+            # we're inside an HTML tag
+                tp = tp.replace("'", MAGIC_SQUOTE_CHAR)
+            new_parts.append(tp)
+        text = "".join(new_parts)
+    
     lines = re.split(r"(\n+)", text)  # Lines and separators
     parts_re = re.compile(r"(''+)")
     for line in lines:
@@ -1528,10 +1541,14 @@ def token_iter(ctx, text):
                         part = part[2:]
                         state = 1
                 if part:
+                    # Shouldn't contain MAGIC_SQUOTE_CHAR
                     yield False, part
                 continue
             # All other parts handled with normal tokenization
             pos = 0
+            # Revert to single quotes from MAGIC_SQUOTE_CHAR
+            part = part.replace(MAGIC_SQUOTE_CHAR, "'")
+            
             for m in re.finditer(token_re, part):
                 start = m.start()
                 if pos != start:
