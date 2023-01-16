@@ -1463,6 +1463,7 @@ def token_iter(ctx, text):
             if tp.startswith("<") and tp.endswith(">"):
             # we're inside an HTML tag
                 tp = tp.replace("'", MAGIC_SQUOTE_CHAR)
+                tp = tp.replace("\n", "")
             new_parts.append(tp)
         text = "".join(new_parts)
     
