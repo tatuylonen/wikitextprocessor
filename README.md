@@ -93,6 +93,8 @@ Usage example:
          ... value = ctx.node_to_wikitext(node)
 
    ctx.process("enwiktionary-20201201-pages-articles.xml.bz2", page_handler)
+   # for testing, you can iterate over ctx.process(...) with
+   # list(ctx.process...) to actually have the iterator run.
 ```
 
 The basic operation of ``Wtp.process()`` is as follows:
