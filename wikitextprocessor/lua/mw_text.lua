@@ -54,7 +54,7 @@ end
 function mw_text.killMarkers(s)
    -- we have our magic characters, but I don't think they are visible to Lua
    -- (except perhaps the nowiki magic)
-   print("mw.text.killMarkers called")
+   --print("mw.text.killMarkers called")
    return s
 end
 
@@ -114,13 +114,13 @@ function mw_text.truncate(text, length, ellipsis, adjustLength)
 end
 
 function mw_text.unstripNoWiki(s)
-   print("mw.text.unstripNoWiki called")
+   --print("mw.text.unstripNoWiki called")
    -- We don't currently do anything here
    return s
 end
 
 function mw_text.unstrip(s)
-   return mw.text.killMarkers(mw.text.untripNoWiki(s))
+   return mw.text.killMarkers(mw.text.unstripNoWiki(s))
 end
 
 function mw_text.listToText(list, separator, conjunction)
