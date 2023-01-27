@@ -91,23 +91,30 @@ def lua_loader(ctx, modname):
     assert isinstance(modname, str)
     modname = modname.strip()
     local_module_ns_name = ctx.NAMESPACE_DATA["Module"]["name"]
-    if modname.startswith(local_module_ns_name + ":"):
+
+    # Local name usually not used in Lua code
+    if modname.startswith(("Module:", local_module_ns_name + ":")):
         # Canonicalize the name
         modname = ctx._canonicalize_template_name(modname)
 
         # First try to load it as a module
-        if modname.startswith(local_module_ns_name + ":_"):
+        if modname.startswith(("Module:_", local_module_ns_name + ":_")):
             # Module names starting with _ are considered internal and cannot be
             # loaded from the dump file for security reasons.  This is to ensure
             # that the sandbox always gets loaded from a local file.
             data = None
         else:
             data = ctx.read_by_title(modname)
-            # Chinese Wikipedia capitalizes the first letter of module name
-            # can't use str.capitalize(), it'll cause error for "Module:Cmn-pron-Sichuan"
             if data is None:
-                module_name_len = len(local_module_ns_name)
-                data = ctx.read_by_title(local_module_ns_name + ":" + modname[module_name_len + 1].upper() + modname[module_name_len + 2:])
+                module_name_len = len("Module") if modname.startswith("Module") else len(local_module_ns_name)
+                new_module_title = local_module_ns_name + ":"
+                # Chinese Wikipedia capitalizes the first letter of module name
+                # can't use str.capitalize(), it'll cause error for "Module:Cmn-pron-Sichuan"
+                if ctx.lang_code == "zh":
+                    new_module_title += modname[module_name_len + 1].upper() + modname[module_name_len + 2:]
+                else:
+                    new_module_title += modname[module_name_len + 1:]
+                data = ctx.read_by_title(new_module_title)
     else:
         # Try to load it from a file
         path = modname
@@ -367,7 +374,8 @@ def call_lua_sandbox(ctx, invoke_args, expander, parent, timeout):
 
     if len(invoke_args) < 2:
         ctx.debug("#invoke {} with too few arguments"
-                  .format(invoke_args))
+                  .format(invoke_args),
+                  sortid="luaexec/369")
         return ("{{" + invoke_args[0] + ":" +
                 "|".join(invoke_args[1:]) + "}}")
 
@@ -460,7 +468,8 @@ end
 
         def extensionTag(frame, *args):
             if len(args) < 1:
-                ctx.debug("lua extensionTag with missing arguments")
+                ctx.debug("lua extensionTag with missing arguments",
+                          sortid="luaexec/464")
                 return ""
             dt = args[0]
             if not isinstance(dt, (str, int, float, type(None))):
@@ -501,7 +510,8 @@ end
 
         def callParserFunction(frame, *args):
             if len(args) < 1:
-                ctx.debug("lua callParserFunction missing name")
+                ctx.debug("lua callParserFunction missing name",
+                          sortid="luaexec/506")
                 return ""
             name = args[0]
             if not isinstance(name, str):
@@ -525,7 +535,7 @@ end
             if name not in PARSER_FUNCTIONS:
                 ctx.debug("lua frame callParserFunction() undefined "
                           "function {!r}"
-                          .format(name))
+                          .format(name), sortid="luaexec/529")
                 return ""
             return call_parser_function(ctx, name, new_args, lambda x: x)
 
@@ -539,7 +549,8 @@ end
 
         def preprocess(frame, *args):
             if len(args) < 1:
-                ctx.debug("lua preprocess missing argument")
+                ctx.debug("lua preprocess missing argument",
+                          sortid="luaexec/545")
                 return ""
             v = args[0]
             if not isinstance(v, str):
@@ -554,11 +565,13 @@ end
 
         def expandTemplate(frame, *args):
             if len(args) < 1:
-                ctx.debug("lua expandTemplate missing arguments")
+                ctx.debug("lua expandTemplate missing arguments",
+                          sortid="luaexec/561")
                 return ""
             dt = args[0]
             if isinstance(dt, (int, float, str, type(None))):
-                ctx.debug("lua expandTemplate arguments should be named")
+                ctx.debug("lua expandTemplate arguments should be named",
+                          sortid="luaexec/566")
                 return ""
             title = dt["title"] or ""
             args = dt["args"] or {}
@@ -618,7 +631,8 @@ end
             ok, text = ret[0], ret[1]
     except UnicodeDecodeError:
         ctx.debug("invalid unicode returned from lua by {}: parent {}"
-                  .format(invoke_args, parent))
+                  .format(invoke_args, parent),
+                  sortid="luaexec/626")
         ok, text = True, ""
     except lupa._lupa.LuaError as e:
         ok, text = False, e
@@ -649,7 +663,7 @@ end
     msg = re.sub(r".*?:\d+: ", "", text.split("\n")[0])
     if text.find("'debug.error'") >= 0:
         if not msg.startswith("This template is deprecated."):
-            ctx.debug("lua error -- " + msg)
+            ctx.debug("lua error -- " + msg, sortid="luaexec/659")
     elif text.find("Translations must be for attested and approved ") >= 0:
         # Ignore this error - it is an error but a clear error in Wiktionary
         # rather than in the extractor.
@@ -671,11 +685,11 @@ end
         if "check deprecated lang param usage" in ctx.expand_stack:
             ctx.debug("LUA error but likely not bug -- in #invoke {} parent {}"
                       .format(invoke_args, parent),
-                      trace=trace)
+                      trace=trace, sortid="luaexec/679")
         else:
             ctx.error("LUA error in #invoke {} parent {}"
                       .format(invoke_args, parent),
-                      trace=trace)
+                      trace=trace, sortid="luaexec/683")
     msg = "Lua execution error"
     if "Lua timeout error" in text:
         msg = "Lua timeout error"

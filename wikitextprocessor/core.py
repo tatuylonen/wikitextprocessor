@@ -10,6 +10,7 @@ import html
 import json
 import time
 import pickle
+import platform
 import tempfile
 import traceback
 import collections
@@ -50,15 +51,13 @@ def phase2_page_handler(dt):
     model, title = dt
     start_t = time.time()
 
-    # XXX Enable this to debug why extraction hangs.  This writes the path
-    # of each file being processed into /tmp/wiktextract-*.  Once a hang
+    # Helps debug extraction hangs. This writes the path of each file being
+    # processed into /tmp/wiktextract*/wiktextract-*.  Once a hang
     # has been observed, these files contain page(s) that hang.  They should
-    # be checked before aborting the process, as an interrupt might delete
-    # them.
-    debug_hangs = True
-    try:
-        debug_path = "/tmp/wiktextract-{}".format(os.getpid())
-        with open(debug_path, "w") as f:
+    # be checked before aborting the process, as an interrupt might delete them.
+    with tempfile.TemporaryDirectory(prefix="wiktextract") as tmpdirname:
+        debug_path = "{}/wiktextract-{}".format(tmpdirname, os.getpid())
+        with open(debug_path, "w", encoding="utf-8") as f:
             f.write(title + "\n")
 
         ctx.start_page(title)
@@ -76,10 +75,6 @@ def phase2_page_handler(dt):
             msg = ("=== EXCEPTION while parsing page \"{}\":\n".format(title) +
                    "".join(lst))
             return False, title, start_t, msg
-
-    finally:
-        if debug_hangs:
-            os.remove(debug_path)
 
 
 class Wtp:
@@ -140,7 +135,6 @@ class Wtp:
         assert cache_file is None or isinstance(cache_file, str)
         assert quiet in (True, False)
         if num_threads is None:
-            import platform
             if platform.system() in ("Windows", "Darwin"):
                 # Default num_threads to 1 on Windows and MacOS, as they
                 # apparently don't use fork() for multiprocessing.Pool()
@@ -266,39 +260,52 @@ class Wtp:
         print("{}: {}: {}".format(loc, kind,msg))
         sys.stdout.flush()
 
-    def error(self, msg, trace=None):
+    def error(self, msg, trace=None, sortid="XYZunsorted"):
         """Prints an error message to stdout.  The error is also saved in
         self.errors."""
         assert isinstance(msg, str)
         assert isinstance(trace, (str, type(None)))
+        assert isinstance(sortid, str)
+        # sortid should be a static string only used to sort
+        # error messages into buckets based on where they
+        # have been called. There was previously some code for
+        # inspecting the stack trace here that did the same
+        # thing, but it was a bit costly.
         self.errors.append({"msg": msg, "trace": trace,
                             "title": self.title,
                             "section": self.section,
                             "subsection": self.subsection,
+                            "called_from": sortid,
                             "path": tuple(self.expand_stack)})
         self._fmt_errmsg("ERROR", msg, trace)
 
-    def warning(self, msg, trace=None):
+    def warning(self, msg, trace=None, sortid="XYZunsorted"):
         """Prints a warning message to stdout.  The error is also saved in
         self.warnings."""
         assert isinstance(msg, str)
         assert isinstance(trace, (str, type(None)))
+        assert isinstance(sortid, str)
+
         self.warnings.append({"msg": msg, "trace": trace,
                               "title": self.title,
                               "section": self.section,
                               "subsection": self.subsection,
+                              "called_from": sortid,
                               "path": tuple(self.expand_stack)})
         self._fmt_errmsg("WARNING", msg, trace)
 
-    def debug(self, msg, trace=None):
+    def debug(self, msg, trace=None, sortid="XYZunsorted"):
         """Prints a debug message to stdout.  The error is also saved in
         self.debug."""
         assert isinstance(msg, str)
         assert isinstance(trace, (str, type(None)))
+        assert isinstance(sortid, str)
+
         self.debugs.append({"msg": msg, "trace": trace,
                             "title": self.title,
                             "section": self.section,
                             "subsection": self.subsection,
+                            "called_from": sortid,
                             "path": tuple(self.expand_stack)})
         self._fmt_errmsg("DEBUG", msg, trace)
 
@@ -361,7 +368,9 @@ class Wtp:
             return self.rev_ht[v]
         idx = len(self.cookies)
         if idx >= MAX_MAGICS:
-            ctx.error("too many templates, arguments, or parser function calls")
+            self.error("too many templates, arguments,"
+                       "or parser function calls",
+                       sortid="core/372")
             return ""
         self.cookies.append(v)
         ch = chr(MAGIC_FIRST + idx)
@@ -393,7 +402,9 @@ class Wtp:
             orig = m.group(2)
             args = vbar_split(orig)
             self.debug("heuristically added missing }} to template arg {}"
-                         .format(args[0].strip()))
+                        # a single "}" needs to be escaped as "}}" with .format
+                         .format(args[0].strip()),
+                         sortid="core/405")
             return prefix + self._save_value("A", args, nowiki)
 
         def repl_templ(m):
@@ -413,7 +424,9 @@ class Wtp:
             v = m.group(2)
             args = vbar_split(v)
             self.debug("heuristically added missing }} to template {}"
-                         .format(args[0].strip()))
+                        # a single "}" needs to be escaped as "}}" with .format
+                         .format(args[0].strip()),
+                         sortid="core/427")
             return prefix + self._save_value("T", args, nowiki)
 
         def repl_link(m):
@@ -613,12 +626,15 @@ class Wtp:
         body = self._template_to_body(title, text)
         assert isinstance(body, str)
         self.templates[name] = body
+        if self.lang_code == "zh":
+            self.add_chinese_lower_case_template(name, body)
+
+    def add_chinese_lower_case_template(self, name, body):
         # Chinese Wiktionary capitalizes the first letter of template name
         # in template pages but uses lower case in word pages
-        if self.lang_code == "zh":
-            lower_case_name = name[0].lower() + name[1:]
-            if lower_case_name not in self.templates:
-                self.templates[lower_case_name] = body
+        lower_case_name = name[0].lower() + name[1:]
+        if lower_case_name not in self.templates:
+            self.templates[lower_case_name] = body
 
     def _analyze_template(self, name, body):
         """Analyzes a template body and returns a set of the canonicalized
@@ -701,9 +717,15 @@ class Wtp:
         #         if v != 0:
         #             print("  {} {}".format(v, k))
 
+        # Chinese Wiktionary uses templates for language and POS headings
+        # Language templates: https://zh.wiktionary.org/wiki/Category:语言模板
+        # POS templates: https://zh.wiktionary.org/wiki/Category:詞類模板
+        is_chinese_heading = self.lang_code == "zh" and name.startswith(("-", "="))
+
         # Determine whether this template should be pre-expanded
         pre_expand = (contains_list or contains_unpaired_table or
-                      contains_table_element or contains_unbalanced_html)
+                      contains_table_element or contains_unbalanced_html or
+                      is_chinese_heading)
 
         # if pre_expand:
         #     print(name,
@@ -733,7 +755,10 @@ class Wtp:
         essential to parsing Wikitext syntax, such as table start or end
         tags.  Such templates generally need to be expanded before
         parsing the page."""
-        self.need_pre_expand = set()
+
+        # langhd is needed for pre-expanding language heading templates in the
+        # Chinese Wiktionary dump file: https://zh.wiktionary.org/wiki/Template:-en-
+        self.need_pre_expand = {"langhd"} if self.lang_code == "zh" else set()
         included_map = collections.defaultdict(set)
         expand_q = []
         for name, body in self.templates.items():
@@ -780,8 +805,11 @@ class Wtp:
                 #       .format(k, v))
                 continue
             self.templates[k] = self.templates[v]
-            if v in self.need_pre_expand:
+            if v in self.need_pre_expand or (self.lang_code == "zh" and k.startswith(("-", "="))):
                 self.need_pre_expand.add(k)
+            if self.lang_code == "zh":
+                self.add_chinese_lower_case_template(k, self.templates[v])
+
 
         # Save cache data
         if self.cache_file is not None and not self.cache_file_old:
@@ -990,7 +1018,8 @@ class Wtp:
                         if len(args) > 2:
                             self.debug("too many args ({}) in argument "
                                        "reference: {!r}"
-                                       .format(len(args), args))
+                                       .format(len(args), args),
+                                       sortid="core/1021")
                         self.expand_stack.append("ARG-NAME")
                         k = expand_recurse(expand_args(args[0], argmap),
                                            parent, all_templates).strip()
@@ -1029,7 +1058,8 @@ class Wtp:
                         parts.append(ch)
                         continue
                     self.error("expand_arg: unsupported cookie kind {!r} in {}"
-                               .format(kind, m.group(0)))
+                               .format(kind, m.group(0)),
+                               sortid="core/1062")
                     parts.append(m.group(0))
                 parts.append(coded[pos:])
                 return "".join(parts)
@@ -1081,7 +1111,7 @@ class Wtp:
                     # Limit recursion depth
                     if len(self.expand_stack) >= 100:
                         self.error("too deep recursion during template "
-                                   "expansion")
+                                   "expansion", sortid="core/1115")
                         parts.append(
                             '<strong class="error">too deep recursion '
                             'while expanding template {}</strong>'
@@ -1093,6 +1123,10 @@ class Wtp:
                     tname = expand_recurse(args[0], parent, templates_to_expand)
                     self.expand_stack.pop()
 
+                    # Remove <noinvoke/>
+
+                    tname = re.sub(r"<\s*noinclude\s*/\s*>", "", tname)
+                    
                     # Strip safesubst: and subst: prefixes
                     tname = tname.strip()
                     if tname[:10].lower() == "safesubst:":
@@ -1132,7 +1166,8 @@ class Wtp:
                     # Check for undefined templates
                     if name not in all_templates:
                         # XXX tons of these in enwiktionary-20201201 ???
-                        #self.debug("undefined template {!r}.format(tname))
+                        #self.debug("undefined template {!r}.format(tname),
+                        #           sortid="core/1171")
                         parts.append('<strong class="error">Template:{}'
                                      '</strong>'
                                      .format(html.escape(name)))
@@ -1173,7 +1208,8 @@ class Wtp:
                                 if k < 1 or k > 1000:
                                     self.debug("invalid argument number {} "
                                                "for template {!r}"
-                                               .format(k, name))
+                                               .format(k, name),
+                                               sortid="core/1211")
                                     k = 1000
                                 if num <= k:
                                     num = k + 1
@@ -1245,6 +1281,9 @@ class Wtp:
                         if t2 is not None:
                             t = t2
 
+                    if self.lang_code == "zh":
+                        t = overwrite_zh_template(name, t)
+
                     assert isinstance(t, str)
                     self.expand_stack.pop()  # template name
                     parts.append(t)
@@ -1276,7 +1315,8 @@ class Wtp:
                     parts.append(ch)
                 else:
                     self.error("expand: unsupported cookie kind {!r} in {}"
-                               .format(kind, m.group(0)))
+                               .format(kind, m.group(0)),
+                               sortid="core/1334")
                     parts.append(m.group(0))
             parts.append(coded[pos:])
             return "".join(parts)
@@ -1291,6 +1331,13 @@ class Wtp:
 
         # Expand any remaining magic cookies and remove nowiki char
         expanded = self._finalize_expand(expanded)
+
+        # Remove LanguageConverter markups:
+        # https://www.mediawiki.org/wiki/Writing_systems/Syntax
+
+        if not pre_expand and self.lang_code == "zh" and "-{" in expanded:
+            expanded = expanded.replace("-{", "").replace("}-", "")
+
         return expanded
 
     def _finalize_expand(self, text):
@@ -1314,7 +1361,7 @@ class Wtp:
             if kind == "N":
                 return "<nowiki>" + args[0] + "</nowiki>"
             self.error("magic_repl: unsupported cookie kind {!r}"
-                       .format(kind))
+                       .format(kind), sortid="core/1373")
             return ""
 
         # Keep expanding magic cookies until they have all been expanded.
@@ -1329,9 +1376,6 @@ class Wtp:
         # Convert the special <nowiki /> character back to <nowiki />.
         # This is done at the end of normal expansion.
         text = re.sub(MAGIC_NOWIKI_CHAR, "<nowiki />", text)
-
-        # Remove LanguageConverter markups: https://www.mediawiki.org/wiki/Writing_systems/Syntax
-        text = text.replace("-{", "").replace("}-", "")
         return text
 
     def process(self, path, page_handler, phase1_only=False):
@@ -1397,7 +1441,7 @@ class Wtp:
                     msg = lines[0]
                     trace = "\n".join(lines[1:])
                     if msg.find("EXCEPTION") >= 0:
-                        self.error(msg, trace=trace)
+                        self.error(msg, trace=trace, sortid="core/1457")
                     continue
                 if ret is not None:
                     yield ret
@@ -1445,7 +1489,7 @@ class Wtp:
         sys.stderr.flush()
         sys.stdout.flush()
 
-    def page_exists(self, title):
+    def page_exists(self, title: str) -> bool:
         """Returns True if the given page exists, and False if it does not
         exist."""
         assert isinstance(title, str)
@@ -1454,7 +1498,20 @@ class Wtp:
         # XXX should we canonicalize title?
         if title in self.transient_pages:
             return True
-        return title in self.page_contents
+        exists = title in self.page_contents
+        if not exists:
+            # Wikitionary Lua module's `mw.title.exists` attribute comes from here
+            # Change the first letter of module name to upper case for Chinese Wiktionary
+            # for other languages change namespace prefix to local name
+            for ns_prefix in ["Module:", self.NAMESPACE_DATA["Module"]["name"] + ":"]:
+                if title.startswith(ns_prefix):
+                    if self.lang_code == "zh":
+                        new_title = ns_prefix + title[len(ns_prefix)].upper() + title[len(ns_prefix) + 1:]
+                    elif ns_prefix == "Module:":
+                        new_title = self.NAMESPACE_DATA["Module"]["name"] + ":" + title[len(ns_prefix):]
+                    exists = new_title in self.page_contents
+                    break
+        return exists
 
     def read_by_title(self, title):
         """Reads the contents of the page.  Returns None if the page does
@@ -1470,10 +1527,20 @@ class Wtp:
             return None
         # The page seems to exist
         title, model, ofs, page_size = self.page_contents[title]
-        # Use os.pread() so that we won't change the file offset; otherwise we
-        # might cause a race condition with parallel scanning of the temporary
-        # file.
-        rawdata = os.pread(self.tmp_file.fileno(), page_size, ofs)
+        rawdata = ""
+        if platform.system() in ("Windows"):
+            # Optimize once multiple threads are used on Windows.
+            # Unfortunately, "os.pread" is not implemented on Windows:
+            # https://stackoverflow.com/questions/50902714/python-pread-pwrite-only-on-unix
+            tmp_ofs = self.tmp_file.tell()
+            self.tmp_file.seek(ofs)
+            rawdata = os.read(self.tmp_file.fileno(), page_size)
+            self.tmp_file.seek(tmp_ofs)
+        else:
+            # Use os.pread() so that we won't change the file offset; otherwise we
+            # might cause a race condition with parallel scanning of the temporary
+            # file.
+            rawdata = os.pread(self.tmp_file.fileno(), page_size, ofs)
         return rawdata.decode("utf-8")
 
     def parse(self, text, pre_expand=False, expand_all=False,
@@ -1541,3 +1608,35 @@ class Wtp:
         return to_text(self, node, template_fn=template_fn,
                        post_template_fn=post_template_fn,
                        node_handler_fn=node_handler_fn)
+
+
+def overwrite_zh_template(template_name: str, expanded_template: str) -> str:
+    """
+    Modify some expanded Chinese Wiktionary templates to standard heading format
+    """
+    if template_name == "=n=":
+        # The template "NoEdit" used in "=n=" couldn't be expanded correctly
+        return "===名词==="
+    elif template_name.startswith(("-", "=")):
+        if "<h2>" in expanded_template:
+            # Remove <h2> tag: https://zh.wiktionary.org/wiki/Template:-la-
+            lang_heading = re.search(r"<h2>([^<]+)</h2>", expanded_template).group(1)
+            expanded_template = f"=={lang_heading}=="
+        elif "==" in expanded_template and " " in expanded_template:
+            # Remove image from template like "-abbr-" and "=a="
+            # which expanded to "[[Category:英語形容詞|wide]]\n===[[Image:Open book 01.png|30px]] [[形容詞]]===\n"
+            heading = re.search(r"=+([^=]+)=+", expanded_template.strip()).group(1)
+            heading = heading.split()[-1]
+            equal_sign_count = 0
+            for char in expanded_template:  # count "=" number
+                if char == "=":
+                    equal_sign_count += 1
+                elif equal_sign_count > 0:
+                    break
+            expanded_template = "=" * equal_sign_count
+            expanded_template = expanded_template + heading + expanded_template
+    elif template_name == "CC-CEDICT":
+        # Avoid pasring this license template
+        expanded_template = ""
+
+    return expanded_template
