@@ -1,6 +1,6 @@
 -- Sandbox for executing WikiMedia Scribunto Lua code under Python
 --
--- Copyright (c) 2020-2022 Tatu Ylonen.  See file LICENSE and https://ylonen.org
+-- Copyright (c) 2020-2023 Tatu Ylonen.  See file LICENSE and https://ylonen.org
 
 -- Python function for loading a source file or Scribunto Lua module
 local _python_loader = nil
@@ -74,8 +74,6 @@ function new_require(modname)
    if mod ~= nil then
       return mod
    end
-   -- Prevent reloading the package recursively
-   _orig_package.loaded[modname] = true
    -- Load the module and create initialization function
    local fn, msg = new_loader(modname)
    assert(fn, msg)
