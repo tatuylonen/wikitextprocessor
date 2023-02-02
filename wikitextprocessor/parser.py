@@ -778,7 +778,7 @@ def magic_fn(ctx, token):
         text = nowiki_quote(args[0])
         text_fn(ctx, text)
     else:
-        self.error("magic_fn: unsupported cookie kind {!r}"
+        ctx.error("magic_fn: unsupported cookie kind {!r}"
                    .format(kind), sortid="parser/780")
 
 
