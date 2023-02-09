@@ -610,7 +610,7 @@ need to be prefixed by ``Nodekind.``, e.g., ``NodeKind.LEVEL2``):
 
 ## Expected performance
 
-This can generally process a few Wiktionary pages second per processor
+This can generally process a few Wiktionary pages per second per processor
 core, including expansion of all templates, Lua macros, parsing the
 full page, and analyzing the parse.  On a multi-core machine, this can
 generally process a few dozen to a few hundred pages per second,
