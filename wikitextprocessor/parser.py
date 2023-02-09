@@ -218,6 +218,18 @@ MUST_CLOSE_KINDS = (
     NodeKind.TABLE,
 )
 
+# regex for finding html-tags so that we can replace single-quotes
+# inside of them with magic characters.
+# the (?:) signifies a non-capturing group, which is necessary for
+# re.split; if the splitting pattern has capturing groups (like
+# the outer parentheses here), those groups are sent out by
+# the iterator; otherwise it skips the splitting pattern.
+# This means that if you have nesting capturing groups,
+# the contents will be repeated partly.
+inside_html_tags_re = re.compile(
+                      r"(<(?:" +
+                      r"|".join(ALLOWED_HTML_TAGS.keys()) +
+                      r")\s+[^><]*>)")
 
 class WikiNode:
     """Node in the parse tree for WikiMedia text."""
@@ -1454,13 +1466,12 @@ def token_iter(ctx, text):
     impossible to always disambiguate them without looking at what follows
     on the same line."""
     assert isinstance(text, str)
-
     # Replace single quotes inside HTML tags with MAGIC_SQUOTE_CHAR
-    tag_parts = re.split(r"(<[^>]*>)", text)
+    tag_parts = re.split(inside_html_tags_re, text)
     if len(tag_parts) > 1:
         new_parts = []
         for tp in tag_parts:
-            if tp.startswith("<") and tp.endswith(">"):
+            if re.match(inside_html_tags_re, tp):
             # we're inside an HTML tag
                 tp = tp.replace("'", MAGIC_SQUOTE_CHAR)
                 tp = tp.replace("\n", "")
@@ -1549,7 +1560,6 @@ def token_iter(ctx, text):
             pos = 0
             # Revert to single quotes from MAGIC_SQUOTE_CHAR
             part = part.replace(MAGIC_SQUOTE_CHAR, "'")
-            
             for m in re.finditer(token_re, part):
                 start = m.start()
                 if pos != start:

@@ -28,6 +28,7 @@ def capitalizeFirstOnly(s):
 
 def if_fn(ctx, fn_name, args, expander):
     """Implements #if parser function."""
+    # print(f"if_fn: {args}")  # XXX remove me
     arg0 = args[0] if args else ""
     arg1 = args[1] if len(args) >= 2 else ""
     arg2 = args[2] if len(args) >= 3 else ""
