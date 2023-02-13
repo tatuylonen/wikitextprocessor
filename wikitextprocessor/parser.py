@@ -416,7 +416,7 @@ def text_fn(ctx, token):
     # be links if the content looks like a URL."""
     if node.kind == NodeKind.URL:
         if not node.args and not node.children:
-            if not re.match(r"^(https?:|mailto:|//)", token):
+            if not re.match(r"(https?:|mailto:|//)", token):
                 # It does not look like a URL
                 ctx.parser_stack.pop()
                 node2 = ctx.parser_stack[-1]
@@ -1206,7 +1206,7 @@ def tag_fn(ctx, token):
     close_begline_lists(ctx)
 
     # Try to parse it as a start tag
-    m = re.match(r"""<\s*([-a-zA-Z0-9]+)\s*((\b[-a-zA-Z0-9]+(=("[^"]*"|"""
+    m = re.match(r"""<([-a-zA-Z0-9]+)\s*((\b[-a-zA-Z0-9]+(=("[^"]*"|"""
                  r"""'[^']*'|[^ \t\n"'`=<>/]*))?\s*)*)(/?)\s*>""", token)
     if m:
         # This is a start tag
@@ -1300,7 +1300,7 @@ def tag_fn(ctx, token):
         return
 
     # Since it was not a start tag, it should be an end tag
-    m = re.match(r"<\s*/\s*([-a-zA-Z0-9]+)\s*>", token)
+    m = re.match(r"</([-a-zA-Z0-9]+)\s*>", token)
     if m is None:
         print("Could not match end tag token: {!r}".format(token))
         assert False
@@ -1416,7 +1416,7 @@ token_re = re.compile(r"(?m)^(={2,6})\s*(([^=]|=[^=])+?)\s*(={2,6})\s*$|"
 
 
 # Matches a </pre> end token
-pre_end_re = re.compile(r"(?i)<\s*/\s*pre\s*>")
+pre_end_re = re.compile(r"(?i)</pre\s*>")
 
 # Matches a list item prefix
 list_prefix_re = re.compile(r"[*:;#]+")
