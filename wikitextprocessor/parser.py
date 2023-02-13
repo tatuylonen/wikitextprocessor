@@ -227,7 +227,7 @@ MUST_CLOSE_KINDS = (
 # This means that if you have nesting capturing groups,
 # the contents will be repeated partly.
 inside_html_tags_re = re.compile(
-                      r"(<(?:" +
+                      r"(<(?i:" +
                       r"|".join(ALLOWED_HTML_TAGS.keys()) +
                       r")\s+[^><]*>)")
 
