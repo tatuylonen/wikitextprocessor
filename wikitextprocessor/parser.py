@@ -816,7 +816,6 @@ def colon_fn(ctx, token):
 
     # Colon in the first argument of {{name:...}} turns it into a parser
     # function call.
-    _parser_merge_str_children(ctx)
     node.kind = NodeKind.PARSER_FN
     node.args.append(node.children)
     node.children = []

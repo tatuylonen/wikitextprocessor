@@ -460,7 +460,7 @@ class Wtp:
                 # Encode links.
                 while True:
                     text = re.sub(r"(?s)\[" + MAGIC_NOWIKI_CHAR +
-                                  r"?\[(([^][{}<>]|<[-+*a-zA-Z0-9]*>)+)\]" +
+                                  r"?\[(([^][{}]|<[-+*a-zA-Z0-9]*>)+)\]" +
                                   MAGIC_NOWIKI_CHAR + r"?\]",
                                   repl_link, text)
                     if text == prev2:

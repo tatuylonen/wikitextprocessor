@@ -1511,6 +1511,30 @@ def foo(x):
         self.assertEqual(b.kind, NodeKind.TABLE_HEADER_CELL)
         self.assertEqual(b.children, ["Cell\n"])
 
+    def test_html_in_link1(self):
+        """Tests for a bug where HTML tags inside LINKs broke things."""
+        tree = parse("test", """[[foo|<b>bar</b>]]""", expand_all=True)
+        self.assertEqual(tree.kind, NodeKind.ROOT)
+        lnk = tree.children[0]
+        self.assertEqual(lnk.kind, NodeKind.LINK)
+        lnkargs = lnk.args
+        self.assertEqual(lnkargs[0][0], "foo")
+        self.assertEqual(lnkargs[1][0].kind, NodeKind.HTML)
+        self.assertEqual(lnkargs[1][0].children[0], "bar")
+
+    def test_html_in_link2(self):
+        tree = parse("test",
+                     """{{#if:x|[[foo|<b>ppp</b>]] bar}}""", 
+                     expand_all=True)
+        # print_tree(tree, 2)
+        self.assertEqual(tree.kind, NodeKind.ROOT)
+        lnk = tree.children[0]
+        lnkargs = lnk.args
+        self.assertEqual(lnkargs[0][0], "foo")
+        self.assertEqual(lnkargs[1][0].kind, NodeKind.HTML)
+        self.assertEqual(lnkargs[1][0].children[0], "ppp")
+        self.assertEqual(tree.children[1], " bar")
+
     def test_table_hdr1(self):
         tree = parse("test", "{|\n!Header\n|}")
         t = tree.children[0]
