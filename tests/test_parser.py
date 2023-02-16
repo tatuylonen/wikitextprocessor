@@ -1523,6 +1523,10 @@ def foo(x):
         self.assertEqual(lnkargs[1][0].children[0], "bar")
 
     def test_html_in_link2(self):
+        # expand_all=True here causes the #if-template to be parsed away,
+        # and parses the HTML inside the LINK. Without it, the parse-tree
+        # would still have an outer node for the #if and the HTML would
+        # be just the string '<b>ppp</b>'.
         tree = parse("test",
                      """{{#if:x|[[foo|<b>ppp</b>]] bar}}""", 
                      expand_all=True)
