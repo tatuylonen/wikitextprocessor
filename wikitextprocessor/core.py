@@ -750,7 +750,8 @@ class Wtp:
 
         return included_templates, pre_expand
 
-    def analyze_templates(self):
+    def analyze_templates(self, pre_exp_templs=None,
+                                no_pre_exp_templs=None):
         """Analyzes templates to determine which of them might create elements
         essential to parsing Wikitext syntax, such as table start or end
         tags.  Such templates generally need to be expanded before
@@ -758,7 +759,9 @@ class Wtp:
 
         # langhd is needed for pre-expanding language heading templates in the
         # Chinese Wiktionary dump file: https://zh.wiktionary.org/wiki/Template:-en-
-        self.need_pre_expand = {"langhd"} if self.lang_code == "zh" else set()
+        # self.need_pre_expand = {"langhd"} if self.lang_code == "zh" else set()
+        self.need_pre_expand = set()
+        # XXX remove me bookmark
         included_map = collections.defaultdict(set)
         expand_q = []
         for name, body in self.templates.items():
@@ -1398,7 +1401,9 @@ class Wtp:
         text = re.sub(MAGIC_NOWIKI_CHAR, "<nowiki />", text)
         return text
 
-    def process(self, path, page_handler, phase1_only=False):
+    def process(self, path, page_handler, phase1_only=False,
+                      pre_exp_templs=None,
+                      no_pre_exp_templs=None):
         """Parses a WikiMedia dump file ``path`` (which should point to a
         "<project>-<date>-pages-articles.xml.bz2" file.  This calls
         ``page_handler(model, title, page)`` for each raw page.  This
@@ -1418,8 +1423,11 @@ class Wtp:
         SOMETHING."""
         assert isinstance(path, str)
         assert page_handler is None or callable(page_handler)
+        assert isinstance(pre_exp_templs, set) or pre_exp_templs == None
+        assert isinstance(no_pre_exp_templs, set) or no_pre_exp_templs == None
         # Process the dump and copy it to temporary file (Phase 1)
-        process_dump(self, path)
+        process_dump(self, path, pre_exp_templs=pre_exp_templs,
+                                no_pre_exp_templs=no_pre_exp_templs)
         if phase1_only or page_handler is None:
             return []
 
