@@ -293,8 +293,14 @@ end
 function string.gsub(text, pattern, repl)
    --print(string.format("string.gsub %q %q %q", text, pattern, tostring(repl)))
    if type(repl) == "string" then
-      repl = _orig_gsub(repl, "%%]", "]")
-      repl = _orig_gsub(repl, "%%%.", ".")
+      -- First replace all escaped magical character ("%.", "%["), unless
+      -- they are immediately preceded by an escaped % ("%%" so ("%%%%")
+      repl = _orig_gsub(repl, "([^%%])%%([%$%(%)%.%[%]%*%+%?%^])", "%1%2")
+      -- Then, because Lua doesn't have an OR in its pattern language,
+      -- handle the cases at the start of a string (where you wouldn't have
+      -- "%%%%"
+      repl = _orig_gsub(repl, "^%%([%$%(%)%.%[%]%*%+%?%^])", "%1")
+      -- Handle - separately, this is left from the old code.
       if pattern ~= "%-" or repl ~= "%%-" then
          repl = _orig_gsub(repl, "%%%-", "-")
       end
