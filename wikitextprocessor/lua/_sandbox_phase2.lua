@@ -300,15 +300,13 @@ function string.gsub(text, pattern, repl)
       -- because the parenthese is the `([^%%])` of the `%.` match,
       -- the cursor of the pattern engine continues from there and misses
       -- the latter.
-      repl = _orig_gsub(repl, "([^%%])%%([%$%(%)%.%[%]%*%+%?%^])", "%1%2")
-      -- Then, because Lua doesn't have an OR in its pattern language,
-      -- handle the cases at the start of a string (where you wouldn't have
-      -- "%%%%"
-      repl = _orig_gsub(repl, "^%%([%$%(%)%.%[%]%*%+%?%^])", "%1")
+      repl = _orig_gsub(repl, "%%%%", "__PERC__")
+      repl = _orig_gsub(repl, "%%([%$%(%)%.%[%]%*%+%?%^])", "%1")
       -- Handle - separately, this is left from the old code.
       if pattern ~= "%-" or repl ~= "%%-" then
          repl = _orig_gsub(repl, "%%%-", "-")
       end
+      repl = _orig_gsub(repl, "__PERC__", "%%%%")
    end
    return _orig_gsub(text, pattern, repl)
 end
