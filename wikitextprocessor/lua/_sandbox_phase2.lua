@@ -291,13 +291,22 @@ end
 -- while apparently some older versions did.  This is used in Wiktionary.
 -- Thus we mungle the replacement string accordingly.
 function string.gsub(text, pattern, repl)
-   --print(string.format("string.gsub %q %q %q", text, pattern, tostring(repl)))
+   -- print(string.format("string.gsub %q %q %q", text, pattern, tostring(repl)))
    if type(repl) == "string" then
-      repl = _orig_gsub(repl, "%%]", "]")
-      repl = _orig_gsub(repl, "%%%.", ".")
+      -- First replace all escaped magical character ("%.", "%["), unless
+      -- they are immediately preceded by an escaped % ("%%" so ("%%%%")
+      repl = _orig_gsub(repl, "([^%%])%%([%$%(%)%.%[%]%*%+%?%^])", "%1%2")
+      -- Round 2 is needed when patterns overlap like with "%)%.":
+      -- because the parenthese is the `([^%%])` of the `%.` match,
+      -- the cursor of the pattern engine continues from there and misses
+      -- the latter.
+      repl = _orig_gsub(repl, "%%%%", "__PERC__")
+      repl = _orig_gsub(repl, "%%([%$%(%)%.%[%]%*%+%?%^])", "%1")
+      -- Handle - separately, this is left from the old code.
       if pattern ~= "%-" or repl ~= "%%-" then
          repl = _orig_gsub(repl, "%%%-", "-")
       end
+      repl = _orig_gsub(repl, "__PERC__", "%%%%")
    end
    return _orig_gsub(text, pattern, repl)
 end
