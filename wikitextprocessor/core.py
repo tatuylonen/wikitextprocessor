@@ -757,13 +757,14 @@ class Wtp:
         tags.  Such templates generally need to be expanded before
         parsing the page."""
 
-        # langhd is needed for pre-expanding language heading templates in the
-        # Chinese Wiktionary dump file: https://zh.wiktionary.org/wiki/Template:-en-
-        # self.need_pre_expand = {"langhd"} if self.lang_code == "zh" else set()
         self.need_pre_expand = set()
-        # XXX remove me bookmark
-        included_map = collections.defaultdict(set)
         expand_q = []
+        if pre_exp_templs:
+            for name in pre_exp_templs:
+                self.need_pre_expand.add(name)
+                expand_q.append(name)
+        
+        included_map = collections.defaultdict(set)
         for name, body in self.templates.items():
             included_templates, pre_expand = self._analyze_template(name, body)
             for x in included_templates:
@@ -772,6 +773,12 @@ class Wtp:
                 self.need_pre_expand.add(name)
                 expand_q.append(name)
 
+        print(self.need_pre_expand)
+        if no_pre_exp_templs:
+            self.need_pre_expand -= no_pre_exp_templs
+            expand_q = list(x for x in expand_q
+                            if x not in no_pre_exp_templs)
+        print(self.need_pre_expand)
         # XXX consider encoding template bodies here (also need to save related
         # cookies).  This could speed up their expansion, where the first
         # operation is to encode them.  (Consider whether cookie numbers from
@@ -1423,7 +1430,7 @@ class Wtp:
         SOMETHING."""
         assert isinstance(path, str)
         assert page_handler is None or callable(page_handler)
-        assert isinstance(pre_exp_templs, set) or pre_exp_templs == None
+        assert (isinstance(pre_exp_templs, set) or pre_exp_templs == None)
         assert isinstance(no_pre_exp_templs, set) or no_pre_exp_templs == None
         # Process the dump and copy it to temporary file (Phase 1)
         process_dump(self, path, pre_exp_templs=pre_exp_templs,
