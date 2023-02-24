@@ -291,10 +291,15 @@ end
 -- while apparently some older versions did.  This is used in Wiktionary.
 -- Thus we mungle the replacement string accordingly.
 function string.gsub(text, pattern, repl)
-   --print(string.format("string.gsub %q %q %q", text, pattern, tostring(repl)))
+   -- print(string.format("string.gsub %q %q %q", text, pattern, tostring(repl)))
    if type(repl) == "string" then
       -- First replace all escaped magical character ("%.", "%["), unless
       -- they are immediately preceded by an escaped % ("%%" so ("%%%%")
+      repl = _orig_gsub(repl, "([^%%])%%([%$%(%)%.%[%]%*%+%?%^])", "%1%2")
+      -- Round 2 is needed when patterns overlap like with "%)%.":
+      -- because the parenthese is the `([^%%])` of the `%.` match,
+      -- the cursor of the pattern engine continues from there and misses
+      -- the latter.
       repl = _orig_gsub(repl, "([^%%])%%([%$%(%)%.%[%]%*%+%?%^])", "%1%2")
       -- Then, because Lua doesn't have an OR in its pattern language,
       -- handle the cases at the start of a string (where you wouldn't have
