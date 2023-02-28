@@ -750,8 +750,7 @@ class Wtp:
 
         return included_templates, pre_expand
 
-    def analyze_templates(self, pre_exp_templs=None,
-                                no_pre_exp_templs=None):
+    def analyze_templates(self):
         """Analyzes templates to determine which of them might create elements
         essential to parsing Wikitext syntax, such as table start or end
         tags.  Such templates generally need to be expanded before
@@ -759,10 +758,6 @@ class Wtp:
 
         self.need_pre_expand = set()
         expand_q = []
-        if pre_exp_templs:
-            for name in pre_exp_templs:
-                self.need_pre_expand.add(name)
-                expand_q.append(name)
         
         included_map = collections.defaultdict(set)
         for name, body in self.templates.items():
@@ -773,12 +768,6 @@ class Wtp:
                 self.need_pre_expand.add(name)
                 expand_q.append(name)
 
-        print(self.need_pre_expand)
-        if no_pre_exp_templs:
-            self.need_pre_expand -= no_pre_exp_templs
-            expand_q = list(x for x in expand_q
-                            if x not in no_pre_exp_templs)
-        print(self.need_pre_expand)
         # XXX consider encoding template bodies here (also need to save related
         # cookies).  This could speed up their expansion, where the first
         # operation is to encode them.  (Consider whether cookie numbers from
@@ -795,7 +784,7 @@ class Wtp:
                     continue
                 #print("propagating EXP {} -> {}".format(name, inc))
                 self.need_pre_expand.add(inc)
-                expand_q.append(name)
+                expand_q.append(inc)
 
         # Copy template definitions to redirects to them
         for k, v in self.redirects.items():
@@ -912,6 +901,7 @@ class Wtp:
     def expand(self, text, parent=None, pre_expand=False,
                template_fn=None, post_template_fn=None,
                templates_to_expand=None,
+               templates_to_not_expand=None,
                expand_parserfns=True, expand_invoke=True, quiet=False,
                timeout=None):
         """Expands templates and parser functions (and optionally Lua macros)
@@ -921,9 +911,12 @@ class Wtp:
         canonicalized template names that should be expanded; if
         ``pre_expand`` is set to True, then only templates needing
         pre-expansion before parsing plus those in
-        ``templates_to_expand`` are expanded.  ``template_fn``, if
-        given, will be be called as template_fn(name, args_ht) to
-        expand templates; if it is not defined or returns None, the
+        ``templates_to_expand`` are expanded, ignoring those in
+        ``templates_to_not_expand`` (which will preserve their name,
+        so that they can be extracted later as a node). 
+        ``template_fn``, if given, will be be called as
+        template_fn(name, args_ht) to expand templates; 
+        if it is not defined or returns None, the
         default expansion will be used (it can also be used to capture
         template arguments).  If ``post_template_fn`` is given, it
         will be called as post_template_fn(name, args_ht, expanded)
@@ -954,9 +947,20 @@ class Wtp:
                                        "the cache file.")
                 raise RuntimeError("analyze_templates() must be run first to "
                                    "determine which templates need pre-expand")
-            if templates_to_expand is not None:
+            if (templates_to_expand is not None and
+                templates_to_not_expand is not None):
                 templates_to_expand = (set(templates_to_expand) |
                                        set(self.need_pre_expand))
+                templates_to_expand = (templates_to_expand - 
+                                       set(templates_to_not_expand))
+            elif (templates_to_expand is not None and
+                templates_to_not_expand is None):
+                templates_to_expand = (set(templates_to_expand) |
+                                       set(self.need_pre_expand))
+            elif (templates_to_expand is None and
+                templates_to_not_expand is not None):
+                templates_to_expand = (set(self.need_pre_expand) -
+                                       set(templates_to_not_expand))
             else:
                 templates_to_expand = self.need_pre_expand
 
@@ -1408,9 +1412,7 @@ class Wtp:
         text = re.sub(MAGIC_NOWIKI_CHAR, "<nowiki />", text)
         return text
 
-    def process(self, path, page_handler, phase1_only=False,
-                      pre_exp_templs=None,
-                      no_pre_exp_templs=None):
+    def process(self, path, page_handler, phase1_only=False):
         """Parses a WikiMedia dump file ``path`` (which should point to a
         "<project>-<date>-pages-articles.xml.bz2" file.  This calls
         ``page_handler(model, title, page)`` for each raw page.  This
@@ -1430,11 +1432,8 @@ class Wtp:
         SOMETHING."""
         assert isinstance(path, str)
         assert page_handler is None or callable(page_handler)
-        assert (isinstance(pre_exp_templs, set) or pre_exp_templs == None)
-        assert isinstance(no_pre_exp_templs, set) or no_pre_exp_templs == None
         # Process the dump and copy it to temporary file (Phase 1)
-        process_dump(self, path, pre_exp_templs=pre_exp_templs,
-                                no_pre_exp_templs=no_pre_exp_templs)
+        process_dump(self, path)
         if phase1_only or page_handler is None:
             return []
 
@@ -1579,7 +1578,8 @@ class Wtp:
         return rawdata.decode("utf-8")
 
     def parse(self, text, pre_expand=False, expand_all=False,
-              additional_expand=None, template_fn=None, post_template_fn=None):
+              additional_expand=None, do_not_pre_expand=None,
+              template_fn=None, post_template_fn=None):
         """Parses the given text into a parse tree (WikiNode tree).  If
         ``pre_expand`` is True, then before parsing this will expand
         those templates that have been detected to potentially
@@ -1587,13 +1587,15 @@ class Wtp:
         start or end or table rows).  Likewise, if ``expand_all`` is
         True, this will expand all templates that have definitions
         (usually all of them).  If ``additional_expand`` is given, it
-        should be a set of additional templates to expand.  Parser
+        should be a set of additional templates to expand, and 
+        ``do_not_pre_expand`` is the opposite and shouldn't be.  Parser
         function calls and Lua macro invocations are expanded if they
         are inside expanded templates."""
         assert isinstance(text, str)
         assert pre_expand in (True, False)
         assert expand_all in (True, False)
         assert additional_expand is None or isinstance(additional_expand, set)
+        assert do_not_pre_expand is None or isinstance(do_not_pre_expand, set)
 
         # Preprocess.  This may also add some MAGIC_NOWIKI_CHARs.
         text = self.preprocess_text(text)
@@ -1605,6 +1607,7 @@ class Wtp:
         elif pre_expand or additional_expand:
             text = self.expand(text, pre_expand=pre_expand,
                                templates_to_expand=additional_expand,
+                               templates_to_not_expand=do_not_pre_expand,
                                template_fn=template_fn,
                                post_template_fn=post_template_fn)
 
