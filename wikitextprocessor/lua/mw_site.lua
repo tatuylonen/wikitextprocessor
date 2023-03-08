@@ -146,7 +146,7 @@ function mw_site.stats.usersInGroup(filter)
 end
 
 function mw_site.interwikiMap(filter)
-   print("mw.site.interwikiMap called", filter)
+   -- print("mw.site.interwikiMap called", filter)
    return {}
 end
 
