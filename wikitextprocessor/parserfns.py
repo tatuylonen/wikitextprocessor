@@ -914,9 +914,12 @@ def padleft_fn(ctx, fn_name, args, expander):
     cnt = expander(args[1]).strip() if len(args) >= 2 else "0"
     pad = expander(args[2]) if len(args) >= 3 and args[2] else "0"
     if not cnt.isdigit():
-        ctx.warning("pad length is not integer: {!r}".format(cnt),
-                    sortid="parserfns/916")
         cnt = 0
+        if cnt.startswith("-") and cnt[1:].isdigit():
+            pass
+        else:
+            ctx.warning("pad length is not integer: {!r}".format(cnt),
+                        sortid="parserfns/916")
     else:
         cnt = int(cnt)
     if cnt - len(v) > len(pad):
@@ -933,9 +936,12 @@ def padright_fn(ctx, fn_name, args, expander):
     arg2 = expander(args[2]) if len(args) >= 3 and args[2] else "0"
     pad = arg2 if len(args) >= 3 and arg2 else "0"
     if not cnt.isdigit():
-        ctx.warning("pad length is not integer: {!r}".format(cnt),
-                    sortid="parserfns/936")
         cnt = 0
+        if cnt.startswith("-") and cnt[1:].isdigit():
+            pass
+        else:
+            ctx.warning("pad length is not integer: {!r}".format(cnt),
+                        sortid="parserfns/940")
     else:
         cnt = int(cnt)
     if cnt - len(v) > len(pad):
