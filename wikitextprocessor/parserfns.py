@@ -1020,7 +1020,8 @@ def time_fn(ctx, fn_name, args, expander):
     """Implements the #time parser function."""
     fmt = expander(args[0]).strip() if args else ""
     dt = expander(args[1]).strip() if len(args) >= 2 else ""
-    lang = expander(args[2]).strip() if len(args) >= 3 else "en"
+    # unused `lang`?
+    # lang = expander(args[2]).strip() if len(args) >= 3 else "en"
     loc = expander(args[3]).strip() if len(args) >= 4 else ""
 
     orig_dt = dt
@@ -1042,12 +1043,37 @@ def time_fn(ctx, fn_name, args, expander):
             return ('<strong class="error">Bad time syntax: {}</strong>'
                     .format(html.escape(orig_dt)))
     else:
+        # dateparser doesn't have the exact same behavior as
+        # php's strotime() (which is the original function used)
+        # but we can handle special cases here and hope
+        # people on wiktionary don't go crazy with weird formatting
         t = dateparser.parse(dt, settings=settings)
+        if t is None:
+            m = re.match(r"([^+]*)\s*(\+\s*\d+\s*(day|year|month)s?)\s*$", 
+                         orig_dt)
+            if m:
+                main_date = dateparser.parse(m.group(1), settings=settings)
+                add_time = dateparser.parse(m.group(2), settings=settings)
+                now = dateparser.parse("now", settings=settings)
+                if main_date and add_time:
+                    # this is just a kludge: dateparser parses "+2 days" as
+                    # "2 days AGO". The now-datetime object is used to check
+                    # just in case which way the parsing goes (we're relying
+                    # on the "+" in the original argument string).
+                    # Couldn't figure out a way to get a delta value other
+                    # than doing this; didn't even have to round anything,
+                    # things seem to work out at these small timescales.
+                    if add_time < now:
+                        delta = now - add_time
+                    else:
+                        delta = add_time - now
+                    t = main_date + delta
         if t is None:
             ctx.warning("unrecognized time syntax in {}: {!r}"
                         .format(fn_name, orig_dt),
                         sortid="parserfns/1040")
-            return ('<strong class="error">Bad time syntax: {}</strong>'
+            return ('<strong class="error">Bad time syntax: '
+                    '{}</strong>'
                     .format(html.escape(orig_dt)))
 
     # XXX looks like we should not adjust the time
