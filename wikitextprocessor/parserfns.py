@@ -1044,7 +1044,7 @@ def time_fn(ctx, fn_name, args, expander):
                     .format(html.escape(orig_dt)))
     else:
         # dateparser doesn't have the exact same behavior as
-        # php's strotime() (which is the original function used)
+        # php's strtotime() (which is the original function used)
         # but we can handle special cases here and hope
         # people on wiktionary don't go crazy with weird formatting
         t = dateparser.parse(dt, settings=settings)

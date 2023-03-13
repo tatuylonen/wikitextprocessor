@@ -902,7 +902,8 @@ def table_hdr_cell_fn(ctx, token):
             else:
                 text_fn(ctx, token)
             return
-        if node.kind in (NodeKind.HTML, NodeKind.TEMPLATE, NodeKind.LINK):
+        if node.kind in (NodeKind.HTML, NodeKind.TEMPLATE,
+                         NodeKind.LINK, NodeKind.URL):
             # Inside nested HTML, interpret ! and !! as normal text
             return text_fn(ctx, token)
         if (node.kind == NodeKind.TABLE_CELL and
