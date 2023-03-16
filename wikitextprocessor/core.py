@@ -130,7 +130,8 @@ class Wtp:
         "lang_code"
     )
 
-    def __init__(self, num_threads=None, cache_file=None, quiet=False, lang_code="en", languages_by_code = {}):
+    def __init__(self, num_threads=None, cache_file=None, quiet=False,
+                 lang_code="en", languages_by_code = {}):
         assert num_threads is None or isinstance(num_threads, int)
         assert cache_file is None or isinstance(cache_file, str)
         assert quiet in (True, False)
@@ -196,7 +197,8 @@ class Wtp:
         self.buf_ofs = 0
 
     def init_namespace_data(self):
-        with self.data_folder.joinpath("namespaces.json").open(encoding="utf-8") as f:
+        with self.data_folder.joinpath("namespaces.json") \
+                              .open(encoding="utf-8") as f:
             self.NAMESPACE_DATA = json.load(f)
 
     def _reset_pages(self):
@@ -720,7 +722,8 @@ class Wtp:
         # Chinese Wiktionary uses templates for language and POS headings
         # Language templates: https://zh.wiktionary.org/wiki/Category:语言模板
         # POS templates: https://zh.wiktionary.org/wiki/Category:詞類模板
-        is_chinese_heading = self.lang_code == "zh" and name.startswith(("-", "="))
+        is_chinese_heading = (self.lang_code == "zh" and
+                              name.startswith(("-", "=")))
 
         # Determine whether this template should be pre-expanded
         pre_expand = (contains_list or contains_unpaired_table or
@@ -804,7 +807,8 @@ class Wtp:
                 #       .format(k, v))
                 continue
             self.templates[k] = self.templates[v]
-            if v in self.need_pre_expand or (self.lang_code == "zh" and k.startswith(("-", "="))):
+            if v in self.need_pre_expand or (self.lang_code == "zh" and
+                                             k.startswith(("-", "="))):
                 self.need_pre_expand.add(k)
             if self.lang_code == "zh":
                 self.add_chinese_lower_case_template(k, self.templates[v])
@@ -1534,15 +1538,20 @@ class Wtp:
             return True
         exists = title in self.page_contents
         if not exists:
-            # Wikitionary Lua module's `mw.title.exists` attribute comes from here
-            # Change the first letter of module name to upper case for Chinese Wiktionary
+            # Wikitionary Lua module's `mw.title.exists`
+            # attribute comes from here.
+            # Change the first letter of module name
+            # to upper case for Chinese Wiktionary
             # for other languages change namespace prefix to local name
-            for ns_prefix in ["Module:", self.NAMESPACE_DATA["Module"]["name"] + ":"]:
+            for ns_prefix in ["Module:", self.NAMESPACE_DATA["Module"]["name"]
+                              + ":"]:
                 if title.startswith(ns_prefix):
                     if self.lang_code == "zh":
-                        new_title = ns_prefix + title[len(ns_prefix)].upper() + title[len(ns_prefix) + 1:]
+                        new_title = ns_prefix + title[len(ns_prefix)].upper() \
+                                    + title[len(ns_prefix) + 1:]
                     elif ns_prefix == "Module:":
-                        new_title = self.NAMESPACE_DATA["Module"]["name"] + ":" + title[len(ns_prefix):]
+                        new_title = self.NAMESPACE_DATA["Module"]["name"] \
+                                    + ":" + title[len(ns_prefix):]
                     exists = new_title in self.page_contents
                     break
         return exists

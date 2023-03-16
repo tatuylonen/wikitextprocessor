@@ -61,6 +61,19 @@ loader_replace_patterns = list((re.compile(src), dst) for src, dst in [
 
     # Workaround kludge for a bug in Lua 5.4 (lupa 1.10)
     [r"\[(\w+)\s*==\s*true\]", r"[not not \1]"],
+
+    # vararg `...` needs to be asigned to `arg` because it is not
+    # automatically a hidden variable after 5.1.
+    # This regex attempts to do it by basically searching for a
+    # function definition signature "function ? (pars ...)", which is
+    # followed by the function body and is ended with `end`.
+    # We insert a "local arg = {...}" at the very start of the
+    # body; the ... is unpacked inside a table and it hopefully
+    # works out...? don't use "arg" as a variable name.
+    # The function signature is just `function` followed optionally
+    # by a name and then the parentheses containing parameters,
+    # and the parens can't contain other parens inside afaict.
+    [r"(function [^()]*\(.*\.\.\..*\))", r"\1\nlocal arg = {...}\n"]
 ])
 
 # -- Wikimedia uses an older version of Lua.  Make certain substitutions

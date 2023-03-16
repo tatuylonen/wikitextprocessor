@@ -267,21 +267,20 @@ end
 -- that by expressly converting arguments to such formatting codes into
 -- integers.
 function string.format(fmt, ...)
-   local args = {...}
    local new_args = {}
    local i = 1
    for m in string.gmatch(fmt, "%%[-# +'0-9.]*([cdEefgGiouXxqs%%])") do
       if m ~= "%" then
-         local arg = args[i]
+         local ar = arg[i]
          i = i + 1
          if (m == "d" or m == "i" or m == "o" or m == "u" or m == "x" or
              m == "X" or m == "c") then
-            arg = math.floor(arg + 0.5)
+            ar = math.floor(ar + 0.5)
          end
-         table.insert(new_args, arg)
+         table.insert(new_args, ar)
       end
    end
-   if i < #args then
+   if i < #arg then
       print("Warning: extra arguments to string.format")
    end
    return _orig_format(fmt, table.unpack(new_args))
