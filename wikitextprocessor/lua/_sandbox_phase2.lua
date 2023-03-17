@@ -267,6 +267,7 @@ end
 -- that by expressly converting arguments to such formatting codes into
 -- integers.
 function string.format(fmt, ...)
+   -- local arg = {...}
    local new_args = {}
    local i = 1
    for m in string.gmatch(fmt, "%%[-# +'0-9.]*([cdEefgGiouXxqs%%])") do
