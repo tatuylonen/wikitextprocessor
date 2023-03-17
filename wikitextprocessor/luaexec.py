@@ -73,7 +73,7 @@ loader_replace_patterns = list((re.compile(src), dst) for src, dst in [
     # The function signature is just `function` followed optionally
     # by a name and then the parentheses containing parameters,
     # and the parens can't contain other parens inside afaict.
-    [r"(function [\w\.:]*\s*\(.*\.\.\..*\))", r"\1 local arg = {...} "]
+    [r"(function [\w\.:]*\s*\([^()]*\.\.\.[^()]*\))", r"\1 local arg = {...} "]
 ])
 
 # -- Wikimedia uses an older version of Lua.  Make certain substitutions

@@ -316,16 +316,16 @@ end
 -- Wiktionary relies on it.  Also, it seems Wiktionary calls insert with
 -- only one argument (or the second argument nil).  Ignore those calls.
 function table.insert(...)
-   local args = {...}
-   if #args < 2 then return end
-   if #args < 3 then
-      _orig_insert(table.unpack(args))
+   -- local args = {...}
+   if #arg < 2 then return end
+   if #arg < 3 then
+      _orig_insert(table.unpack(arg))
    else
-      local pos = args[2]
-      if pos > #args[1] + 1 then
-         args[1][pos] = args[2]
+      local pos = arg[2]
+      if pos > #arg[1] + 1 then
+         arg[1][pos] = arg[2]
       else
-         _orig_insert(table.unpack(args))
+         _orig_insert(table.unpack(arg))
       end
    end
 end
