@@ -59,6 +59,9 @@ loader_replace_patterns = list((re.compile(src), dst) for src, dst in [
     [r"\\ʺ", r"ʺ"],
     [r"\\s", r"%s"],
 
+    # fr.wiktionary Module:locution
+    [r"(^|[^\\])\\/", "\1/"],
+
     # Workaround kludge for a bug in Lua 5.4 (lupa 1.10)
     [r"\[(\w+)\s*==\s*true\]", r"[not not \1]"],
 
