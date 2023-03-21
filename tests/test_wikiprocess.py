@@ -2527,7 +2527,7 @@ return export
         return tostring(#x)""")
 
     def test_mw_jsondecode7(self):
-        self.scribunto('4.0a', """
+        self.scribunto('4a', """
         local x = mw.text.jsonDecode('[4.0, "a"]')
         return x[1] .. x[2]""")
 
@@ -3168,9 +3168,11 @@ return export
         self.scribunto("True", r"""
         return os.exit == nil""")
 
-    def test_sandbox3(self):
-        self.scribunto("True", r"""
-        return _ENV["os"].exit == nil""")
+    # This test is only appicable for Lua 5.2 and newer, now that we
+    # are using Luajit2.0 (= 5.1) it breaks.
+    # def test_sandbox3(self):
+    #     self.scribunto("True", r"""
+    #     return _ENV["os"].exit == nil""")
 
     def test_sandbox4(self):
         self.scribunto("True", r"""

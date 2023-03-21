@@ -267,7 +267,7 @@ end
 -- that by expressly converting arguments to such formatting codes into
 -- integers.
 function string.format(fmt, ...)
-   -- local arg = {...}
+   local arg = {...}
    local new_args = {}
    local i = 1
    for m in string.gmatch(fmt, "%%[-# +'0-9.]*([cdEefgGiouXxqs%%])") do
@@ -284,7 +284,7 @@ function string.format(fmt, ...)
    if i < #arg then
       print("Warning: extra arguments to string.format")
    end
-   return _orig_format(fmt, table.unpack(new_args))
+   return _orig_format(fmt, unpack(new_args))
 end
 
 -- Original gsub does not accept "%]" in replacement string in modern Lua,
@@ -316,16 +316,16 @@ end
 -- Wiktionary relies on it.  Also, it seems Wiktionary calls insert with
 -- only one argument (or the second argument nil).  Ignore those calls.
 function table.insert(...)
-   -- local args = {...}
+   local arg = {...}
    if #arg < 2 then return end
    if #arg < 3 then
-      _orig_insert(table.unpack(arg))
+      _orig_insert(unpack(arg))
    else
       local pos = arg[2]
       if pos > #arg[1] + 1 then
          arg[1][pos] = arg[2]
       else
-         _orig_insert(table.unpack(arg))
+         _orig_insert(unpack(arg))
       end
    end
 end

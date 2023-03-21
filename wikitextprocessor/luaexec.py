@@ -156,8 +156,8 @@ def lua_loader(ctx, modname):
         return None
 
     # Perform compatibility substitutions on the Lua code
-    for src, dst in loader_replace_patterns:
-        data = re.sub(src, dst, data)
+    # for src, dst in loader_replace_patterns:
+    #     data = re.sub(src, dst, data)
     return data
 
 

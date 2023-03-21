@@ -211,7 +211,7 @@ local _orig_table = table
 local _orig_tonumber = tonumber
 local _orig_tostring = tostring
 local _orig_type = type
-local _orig_unpack = table.unpack
+local _orig_unpack = unpack
 local _orig_xpcall = xpcall
 local _orig_new_require = new_require
 
@@ -366,7 +366,7 @@ local function _lua_reset_env()
     env["tonumber"] = _orig_tonumber
     -- tostring defined in phase2
     env["type"] = _orig_type
-    env["unpack"] = _orig_table.unpack
+    env["unpack"] = unpack
     env["xpcall"] = _orig_xpcall
     env["_lua_set_python_loader"] = _lua_set_python_loader
     env["_lua_set_timeout"] = _lua_set_timeout
