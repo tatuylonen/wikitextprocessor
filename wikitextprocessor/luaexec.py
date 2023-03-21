@@ -12,8 +12,8 @@ import traceback
 import unicodedata
 import pkg_resources
 
-import lupa
-from lupa import LuaRuntime
+import lupa.luajit20 as lupa
+from lupa.luajit20 import LuaRuntime
 from .parserfns import PARSER_FUNCTIONS, call_parser_function, tag_fn
 
 # List of search paths for Lua libraries.

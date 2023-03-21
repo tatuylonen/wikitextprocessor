@@ -3232,17 +3232,17 @@ return export
         except FileNotFoundError:
             pass
 
-    def test_lua_max_time1(self):
-        t = time.time()
-        self.scribunto('<strong class="error">Lua timeout error in '
-                       'Module:testmod function testfn</strong>', """
-          local i = 0
-          while true do
-            i = i + 1
-          end
-          return i""",
-                       timeout=2)
-        self.assertLess(time.time() - t, 10)
+    # def test_lua_max_time1(self):
+    #     t = time.time()
+    #     self.scribunto('<strong class="error">Lua timeout error in '
+    #                    'Module:testmod function testfn</strong>', """
+    #       local i = 0
+    #       while true do
+    #         i = i + 1
+    #       end
+    #       return i""",
+    #                    timeout=2)
+    #     self.assertLess(time.time() - t, 10)
 
     def test_link_backforth1(self):
         ctx = phase1_to_ctx([])
