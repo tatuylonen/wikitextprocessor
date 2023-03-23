@@ -4,6 +4,7 @@
 
 import re
 import enum
+import html
 from .parserfns import PARSER_FUNCTIONS
 from .wikihtml import ALLOWED_HTML_TAGS
 from .common import (MAGIC_NOWIKI_CHAR, MAGIC_FIRST, MAGIC_LAST, nowiki_quote,
@@ -830,37 +831,40 @@ def table_start_fn(ctx, token):
     _parser_push(ctx, NodeKind.TABLE)
 
 
-# kludge to detect ITALIC and BOLD nodes inside attributes
+# kludge to fix intertwined templates
 # [' class="translations" (...)
 # data-gloss="butterfly ', <ITALIC(){} 'Lasiommata megera'>, '"\n']
-# recurse_check delves through the node tree and if it encounters
-# anything but strings or italics or bolds it returns false
-# (which bubbles upwards), otherwise True and the whole string
-# "representation" of the nodes to be used as attributes.
-def recurse_check(children: list) -> (bool, str):
-    """Recursively check a tree to see if it contains only "text"
-    stuff like strings and italic and bold nodes. Return (True, string)
-    if so, otherwise (False, "")"""
-    curstring = ""
-    for child in children:
+#                          ^^^- this shouldn't be here -^^^
+# XXX this kludge is only needed because the interleaved
+# trans-top and multi-trans templates break the parser somewhere
+# else.
+
+# something=other, something="other", something = 'other'
+attr_assignment_pair = r"""\s*[^"'>/=\0-\037\s]+""" \
+                        r"""\s*=\s*("[^"]*"|'[^']*'|[^"'<>`\s]+)"""
+
+attr_assignments_re = re.compile(
+                attr_assignment_pair +
+                r"""(""" +
+                attr_assignment_pair +
+                r""")*\s*$""")  # to account for spaces between entities
+
+
+def check_for_attributes(ctx, node):
+    """Check if the children of this node conform to the format of
+    attribute assignment in tables"""
+    candidate = ""
+    for child in node.children:
         if isinstance(child, str):
-            curstring += child
-        elif isinstance(child, WikiNode):
-            if child.kind == NodeKind.ITALIC:
-                token = "''"
-            elif child.kind == NodeKind.BOLD:
-                token = "'''"
-            else:
-                return (False, "")
-            curstring += token
-            (check, s) = recurse_check(child.children)
-            if check:
-                curstring += s + token
-            else:
-                return (False, "")
+            candidate += child
         else:
-            return (False, "")
-    return (True, curstring)
+            candidate += html.escape(ctx.node_to_wikitext(child))
+    if not candidate.strip():
+        return (True, "")  # No idea why this has to be like this
+    if re.match(attr_assignments_re, candidate):
+        return (True, candidate)
+    return (False, "")
+
 
 def table_check_attrs(ctx):
     """Checks if the table has attributes, and if so, parses them."""
@@ -871,7 +875,7 @@ def table_check_attrs(ctx):
     if len(node.children) < 1:
         return
 
-    check, attribute_string = recurse_check(node.children)
+    check, attribute_string = check_for_attributes(ctx, node)
     if not check:
         return
     node.children = []
@@ -888,7 +892,7 @@ def table_row_check_attrs(ctx):
     if len(node.children) < 1:
         return
 
-    check, attribute_string = recurse_check(node.children)
+    check, attribute_string = check_for_attributes(ctx, node)
     if not check:
         return
     node.children = []
