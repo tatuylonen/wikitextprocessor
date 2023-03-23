@@ -830,16 +830,52 @@ def table_start_fn(ctx, token):
     _parser_push(ctx, NodeKind.TABLE)
 
 
+# kludge to detect ITALIC and BOLD nodes inside attributes
+# [' class="translations" (...)
+# data-gloss="butterfly ', <ITALIC(){} 'Lasiommata megera'>, '"\n']
+# recurse_check delves through the node tree and if it encounters
+# anything but strings or italics or bolds it returns false
+# (which bubbles upwards), otherwise True and the whole string
+# "representation" of the nodes to be used as attributes.
+def recurse_check(children: list) -> (bool, str):
+    """Recursively check a tree to see if it contains only "text"
+    stuff like strings and italic and bold nodes. Return (True, string)
+    if so, otherwise (False, "")"""
+    curstring = ""
+    for child in children:
+        if isinstance(child, str):
+            curstring += child
+        elif isinstance(child, WikiNode):
+            if child.kind == NodeKind.ITALIC:
+                token = "''"
+            elif child.kind == NodeKind.BOLD:
+                token = "'''"
+            else:
+                return (False, "")
+            curstring += token
+            (check, s) = recurse_check(child.children)
+            if check:
+                curstring += s + token
+            else:
+                return (False, "")
+        else:
+            return (False, "")
+    return (True, curstring)
+
 def table_check_attrs(ctx):
     """Checks if the table has attributes, and if so, parses them."""
     node = ctx.parser_stack[-1]
     if node.kind != NodeKind.TABLE:
         return
-    _parser_merge_str_children(ctx)
-    if len(node.children) != 1 or not isinstance(node.children[0], str):
+
+    if len(node.children) < 1:
         return
-    attrs = node.children.pop()
-    parse_attrs(node, attrs)
+
+    check, attribute_string = recurse_check(node.children)
+    if not check:
+        return
+    node.children = []
+    parse_attrs(node, attribute_string)
 
 
 def table_row_check_attrs(ctx):
@@ -848,11 +884,15 @@ def table_row_check_attrs(ctx):
     node = ctx.parser_stack[-1]
     if node.kind != NodeKind.TABLE_ROW:
         return
-    _parser_merge_str_children(ctx)
-    if len(node.children) != 1 or not isinstance(node.children[0], str):
+
+    if len(node.children) < 1:
         return
-    attrs = node.children.pop()
-    parse_attrs(node, attrs)
+
+    check, attribute_string = recurse_check(node.children)
+    if not check:
+        return
+    node.children = []
+    parse_attrs(node, attribute_string)
 
 
 def table_caption_fn(ctx, token):
