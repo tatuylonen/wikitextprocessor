@@ -853,6 +853,15 @@ attr_assignments_re = re.compile(
 def check_for_attributes(ctx, node):
     """Check if the children of this node conform to the format of
     attribute assignment in tables"""
+
+    # Old behavior added here to return earlier without needing
+    # to use regex matching; if the old version worked, why not?
+    # If this fail, then resort to the reverse parsing + regex.
+    _parser_merge_str_children(ctx)
+    if len(node.children) == 1 and isinstance(node.children[0], str):
+        ret = node.children.pop()
+        return (True, ret)
+
     candidate = ""
     for child in node.children:
         if isinstance(child, str):
@@ -861,6 +870,14 @@ def check_for_attributes(ctx, node):
             candidate += html.escape(ctx.node_to_wikitext(child))
     if not candidate.strip():
         return (True, "")  # No idea why this has to be like this
+        # Later on: I figured it out, the original behavior was to
+        # pass on empty lines (with a newline), which took them out
+        # of the normal 'parsing loop' and discarded the data,
+        # because attribute string data is discarded after it is parsed.
+        # So when you *don't* feed the empty string to the attribute
+        # parsing function and empty node.children, you're leaving
+        # 'alive' a newline that used to be killed. This is why the
+        # tests failed because of 'extra' newlines.
     if re.match(attr_assignments_re, candidate):
         return (True, candidate)
     return (False, "")
