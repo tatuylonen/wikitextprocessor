@@ -268,23 +268,23 @@ end
 -- integers.
 function string.format(fmt, ...)
    local arg = {...}
-   local new_args = {}
-   local i = 1
-   for m in string.gmatch(fmt, "%%[-# +'0-9.]*([cdEefgGiouXxqs%%])") do
-      if m ~= "%" then
-         local ar = arg[i]
-         i = i + 1
-         if (m == "d" or m == "i" or m == "o" or m == "u" or m == "x" or
-             m == "X" or m == "c") then
-            ar = math.floor(ar + 0.5)
-         end
-         table.insert(new_args, ar)
-      end
-   end
-   if i < #arg then
-      print("Warning: extra arguments to string.format")
-   end
-   return _orig_format(fmt, unpack(new_args))
+   -- local new_args = {}
+   -- local i = 1
+   -- for m in string.gmatch(fmt, "%%[-# +'0-9.]*([cdEefgGiouXxqs%%])") do
+   --    if m ~= "%" then
+   --       local ar = arg[i]
+   --       i = i + 1
+   --       if (m == "d" or m == "i" or m == "o" or m == "u" or m == "x" or
+   --           m == "X" or m == "c") then
+   --          ar = math.floor(ar + 0.5)
+   --       end
+   --       table.insert(new_args, ar)
+   --    end
+   -- end
+   -- if i < #arg then
+   --    print("Warning: extra arguments to string.format")
+   -- end
+   return _orig_format(fmt, unpack(arg))
 end
 
 -- Original gsub does not accept "%]" in replacement string in modern Lua,
@@ -292,22 +292,22 @@ end
 -- Thus we mungle the replacement string accordingly.
 function string.gsub(text, pattern, repl)
    -- print(string.format("string.gsub %q %q %q", text, pattern, tostring(repl)))
-   if type(repl) == "string" then
+   -- if type(repl) == "string" then
       -- First replace all escaped magical character ("%.", "%["), unless
       -- they are immediately preceded by an escaped % ("%%" so ("%%%%")
-      repl = _orig_gsub(repl, "([^%%])%%([%$%(%)%.%[%]%*%+%?%^])", "%1%2")
+      -- repl = _orig_gsub(repl, "([^%%])%%([%$%(%)%.%[%]%*%+%?%^])", "%1%2")
       -- Round 2 is needed when patterns overlap like with "%)%.":
       -- because the parenthese is the `([^%%])` of the `%.` match,
       -- the cursor of the pattern engine continues from there and misses
       -- the latter.
-      repl = _orig_gsub(repl, "%%%%", "__PERC__")
-      repl = _orig_gsub(repl, "%%([%$%(%)%.%[%]%*%+%?%^])", "%1")
+      -- repl = _orig_gsub(repl, "%%%%", "__PERC__")
+      -- repl = _orig_gsub(repl, "%%([%$%(%)%.%[%]%*%+%?%^])", "%1")
       -- Handle - separately, this is left from the old code.
-      if pattern ~= "%-" or repl ~= "%%-" then
-         repl = _orig_gsub(repl, "%%%-", "-")
-      end
-      repl = _orig_gsub(repl, "__PERC__", "%%%%")
-   end
+      -- if pattern ~= "%-" or repl ~= "%%-" then
+         -- repl = _orig_gsub(repl, "%%%-", "-")
+      -- end
+      -- repl = _orig_gsub(repl, "__PERC__", "%%%%")
+   -- end
    return _orig_gsub(text, pattern, repl)
 end
 

@@ -3135,15 +3135,15 @@ return export
         return math.mod(12, 5)""")
 
     def test_string_format1(self):
-        self.scribunto("00005", r"""
+        self.scribunto("00004", r"""
         return string.format("%05d", 4.7)""")
 
     def test_string_format2(self):
-        self.scribunto("00005 % foo 1.1 -6", r"""
+        self.scribunto("00004 % foo 1.1 -6", r"""
         return string.format("%05d %% %s %.1f %d", 4.7, "foo", 1.1, -6)""")
 
     def test_string_format3(self):
-        self.scribunto("0005", r"""
+        self.scribunto("0004", r"""
         return string.format("%.4X", 4.7)""")
 
     def test_sandbox1(self):
