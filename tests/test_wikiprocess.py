@@ -1565,14 +1565,14 @@ return export
         self.assertEqual(ret, "ain testb")
 
     def test_invoke2(self):
-        self.scribunto("0", """return tostring(#frame.args)""")
+        self.scribunto("0", """return tostring(#frame.args._orig)""")
 
     def test_invoke3(self):
         ctx = phase1_to_ctx([
             ["Scribunto", "Module:testmod", """
 local export = {}
 function export.testfn(frame)
-            return tostring(#frame.args)
+    return tostring(#frame.args._orig)
 end
 return export
 """]])

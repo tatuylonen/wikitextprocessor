@@ -196,8 +196,6 @@ local _orig_error = error
 local _orig_getmetatable = getmetatable
 local _orig_ipairs = ipairs
 local _orig_math = math
-local _orig_next = next
-local _orig_next = next
 local _orig_pairs = pairs
 local _orig_pcall = pcall
 local _orig_print = print
@@ -353,6 +351,7 @@ local function _lua_reset_env()
     env["_orig_next"] = _orig_next
     env["os"] = new_os
     env["pairs"] = _orig_pairs
+    env["_orig_pairs"] = _orig_pairs
     env["pcall"] = _orig_pcall
     env["print"] = _orig_print
     env["rawequal"] = _orig_rawequal

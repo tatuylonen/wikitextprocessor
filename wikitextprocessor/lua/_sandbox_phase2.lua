@@ -317,17 +317,18 @@ end
 -- only one argument (or the second argument nil).  Ignore those calls.
 function table.insert(...)
    local arg = {...}
-   if #arg < 2 then return end
-   if #arg < 3 then
-      _orig_insert(unpack(arg))
-   else
-      local pos = arg[2]
-      if pos > #arg[1] + 1 then
-         arg[1][pos] = arg[2]
-      else
-         _orig_insert(unpack(arg))
-      end
-   end
+   -- if #arg < 2 then return end
+   -- if #arg < 3 then
+   --    _orig_insert(unpack(arg))
+   -- else
+   --    local pos = arg[2]
+   --    if pos > #arg[1] + 1 then
+   --       arg[1][pos] = arg[2]
+   --    else
+   --       _orig_insert(unpack(arg))
+   --    end
+   -- end
+   _orig_insert(unpack(arg))
 end
 
 -- Change next() to use a new metamethod __next so that we can redefine it for
@@ -338,12 +339,18 @@ function next(t, k)
    return n(t, k)
 end
 
+function pairs(t)
+   local m = getmetatable(t)
+   local n = m and m.__pairs or _orig_pairs
+   return n(t)
+end
+
 -- Lua 5.2 tostring(60/20)=="3", Lua 5.3.3 tostring(60/20)=="3.0"
 function tostring(v)
-   if type(v) == "number" and math.abs(v) > 0.5 and
-      math.abs(v - math.floor(v + 0.5)) < 0.000001 then
-      return string.format("%.0f", v)
-   end
+   -- if type(v) == "number" and math.abs(v) > 0.5 and
+   --    math.abs(v - math.floor(v + 0.5)) < 0.000001 then
+   --    return string.format("%.0f", v)
+   -- end
    return _orig_tostring(v)
 end
 

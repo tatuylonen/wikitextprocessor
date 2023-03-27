@@ -12,7 +12,8 @@ import traceback
 import unicodedata
 import pkg_resources
 
-import lupa.luajit20 as lupa
+import lupa
+import lupa.luajit20 as luajit
 from lupa.luajit20 import LuaRuntime
 from .parserfns import PARSER_FUNCTIONS, call_parser_function, tag_fn
 
@@ -244,7 +245,7 @@ def mw_text_jsonencode(s, *rest):
     def recurse(x):
         if isinstance(x, (str, int, float, type(None), type(True))):
             return x
-        if lupa.lua_type(x) == "table":
+        if luajit.lua_type(x) == "table":
             conv_to_dict = (flags & 1) != 0  # JSON_PRESERVE_KEYS flag
             if not conv_to_dict:
                 # Also convert to dict if keys are not sequential integers
@@ -416,21 +417,21 @@ def call_lua_sandbox(ctx, invoke_args, expander, parent, timeout):
 
     # Wikipedia uses Lua 5.1, and lupa uses 5.4. Some methods
     # were removed between now and then, so we need this polyfill:
-    lua.execute(
-"""
-table.maxn = function(tab)
-if type(tab) ~= 'table' then
-    error('table.maxn param #1 tab expect "table", got "' .. type(tab) .. '"', 2)
-end
-local length = 0
-for k in pairs(tab) do
-    if type(k) == 'number' and length < k and math.floor(k) == k then
-    length = k
-    end
-end
-return length
-end
-""")
+#     lua.execute(
+# """
+# table.maxn = function(tab)
+# if type(tab) ~= 'table' then
+#     error('table.maxn param #1 tab expect "table", got "' .. type(tab) .. '"', 2)
+# end
+# local length = 0
+# for k in pairs(tab) do
+#     if type(k) == 'number' and length < k and math.floor(k) == k then
+#     length = k
+#     end
+# end
+# return length
+# end
+# """)
 
     # Get module and function name
     modname = expander(invoke_args[0]).strip()
@@ -650,7 +651,7 @@ end
                   .format(invoke_args, parent),
                   sortid="luaexec/626")
         ok, text = True, ""
-    except lupa._lupa.LuaError as e:
+    except lupa.LuaError as e:
         ok, text = False, e
     finally:
         while len(ctx.expand_stack) > stack_len:
