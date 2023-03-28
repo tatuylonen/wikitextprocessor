@@ -1321,8 +1321,6 @@ class Wtp:
 
                     if self.lang_code == "zh":
                         t = overwrite_zh_template(name, t)
-                    if self.lang_code == "fr":
-                        t = overwrite_fr_template(name, t)
 
                     assert isinstance(t, str)
                     self.expand_stack.pop()  # template name
@@ -1687,33 +1685,5 @@ def overwrite_zh_template(template_name: str, expanded_template: str) -> str:
     elif template_name == "CC-CEDICT":
         # Avoid pasring this license template
         expanded_template = ""
-
-    return expanded_template
-
-def overwrite_fr_template(template_name: str, expanded_template: str) -> str:
-    """
-    Modify some French Wiktionary templates to standard heading format
-    """
-
-    if template_name == "langue":
-        if "sectionlangue" in expanded_template:
-            lang_heading = re.search(r">([^<]+)\[\[", expanded_template).group(1)
-            if "Portail" in lang_heading:
-                lang_heading = re.search(
-                    r"Portail:([^\|]+)\|", expanded_template
-                ).group(1)
-            expanded_template = f"=={lang_heading}=="
-
-    if template_name == "S":
-        regex = re.search(r">([^<]+)<\/span>", expanded_template)
-        if regex is None:
-            return expanded_template
-
-        section_heading = regex.group(1)
-
-        if "titredef" in expanded_template:
-            expanded_template = f"===={section_heading}===="
-        else:
-            expanded_template = f"==={section_heading}==="
 
     return expanded_template
