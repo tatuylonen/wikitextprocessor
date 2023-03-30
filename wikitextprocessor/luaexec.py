@@ -31,9 +31,20 @@ if not lua_dir.endswith("/"):
     lua_dir += "/"
 #print("lua_dir", lua_dir)
 
+# Substitutions to perform on Lua code fromt he dump to convert from
+# 5.1 to LuaJIT
+# Even though LuaJIT is supposed to use 5.1 syntax, it will complain
+# about escaped characters that are not valid, while 5.1 would silently
+# unescape them.
+loader_replace_patterns = list((re.compile(src), dst) for src, dst in [
+    [r"\\\\", r"___bslash___"],
+    [r"\\([^abfnrtv\"\'\d])", r"\1"],
+    [r"___bslash___", r"\\\\"],
+])
+
 # Substitutions to perform on Lua code from the dump to convert from
 # Lua 5.1 to current 5.3
-loader_replace_patterns = list((re.compile(src), dst) for src, dst in [
+loader_replace_patternsOLD = list((re.compile(src), dst) for src, dst in [
     [r"\\\\\?", r"%\\092?"],
     [r"\\\\\*", r"%\\092*"],
     [r"\\\\\-", r"%\\092-"],
@@ -157,8 +168,8 @@ def lua_loader(ctx, modname):
         return None
 
     # Perform compatibility substitutions on the Lua code
-    # for src, dst in loader_replace_patterns:
-    #     data = re.sub(src, dst, data)
+    for src, dst in loader_replace_patterns:
+        data = re.sub(src, dst, data)
     return data
 
 

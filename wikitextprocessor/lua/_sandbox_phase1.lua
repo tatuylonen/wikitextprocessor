@@ -45,6 +45,7 @@ function new_loader(modname)
 
    -- Load the content into the Lua interpreter.
    local fn, msg = load(content, modname, "t", env)
+   -- print(tostring(fn).."  "..tostring(msg))
    -- Cache the loaded module initialization function
    loader_cache[modname] = fn
    return fn, msg
@@ -363,7 +364,7 @@ local function _lua_reset_env()
     env["string"] = _orig_string
     env["table"] = _orig_table
     env["tonumber"] = _orig_tonumber
-    -- tostring defined in phase2
+    env["tostring"] = _orig_tostring
     env["type"] = _orig_type
     env["unpack"] = unpack
     env["xpcall"] = _orig_xpcall

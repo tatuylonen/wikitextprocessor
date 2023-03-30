@@ -203,7 +203,7 @@ local function _lua_invoke(mod_name, fn_name, frame, page_title, timeout)
             end
             _save_mod(mod_name, mod)
          else
-            error("Could not find module " .. mod_name .. ": " .. msg)
+            error("Could not find module `" .. mod_name .. "`: " .. msg)
          end
       end
    end
@@ -246,28 +246,28 @@ local function _lua_set_functions(mw_text_decode, mw_text_encode,
 end
 
 -- math.log10 seems to be sometimes missing???
-function math.log10(x)
-   return math.log(x, 10)
-end
+-- function math.log10(x)
+--    return math.log(x, 10)
+-- end
 
 -- This is a compatibility function for an older version of Lua (the getn
 -- function was deprecated and then removed, but it is used in Wiktionary)
-function table.getn(tbl)
-   return #tbl
-end
+-- function table.getn(tbl)
+--    return #tbl
+-- end
 
 -- This is a compatibility function for an older version of Lua.  Apparently
 -- the math.mod function was renamed to math.fmod in Lua 5.1.
-function math.mod(a, b)
-   return math.fmod(a, b)
-end
+-- function math.mod(a, b)
+--    return math.fmod(a, b)
+-- end
 
 -- With the introduction of 64-bit integer type in Lua 5.3, the %d and similar
 -- formats in string.format no longer accept floating point arguments.  Remedy
 -- that by expressly converting arguments to such formatting codes into
 -- integers.
-function string.format(fmt, ...)
-   local arg = {...}
+-- function string.format(fmt, ...)
+   -- local arg = {...}
    -- local new_args = {}
    -- local i = 1
    -- for m in string.gmatch(fmt, "%%[-# +'0-9.]*([cdEefgGiouXxqs%%])") do
@@ -284,13 +284,13 @@ function string.format(fmt, ...)
    -- if i < #arg then
    --    print("Warning: extra arguments to string.format")
    -- end
-   return _orig_format(fmt, unpack(arg))
-end
+   -- return _orig_format(fmt, unpack(arg))
+-- end
 
 -- Original gsub does not accept "%]" in replacement string in modern Lua,
 -- while apparently some older versions did.  This is used in Wiktionary.
 -- Thus we mungle the replacement string accordingly.
-function string.gsub(text, pattern, repl)
+-- function string.gsub(text, pattern, repl)
    -- print(string.format("string.gsub %q %q %q", text, pattern, tostring(repl)))
    -- if type(repl) == "string" then
       -- First replace all escaped magical character ("%.", "%["), unless
@@ -308,16 +308,16 @@ function string.gsub(text, pattern, repl)
       -- end
       -- repl = _orig_gsub(repl, "__PERC__", "%%%%")
    -- end
-   return _orig_gsub(text, pattern, repl)
-end
+   -- return _orig_gsub(text, pattern, repl)
+-- end
 
 -- Original table.insert in Lua 5.1 allows inserting beyond the end of the
 -- table.  Lua 5.3 does not.  Implement the old functionality for compatibility;
 -- Wiktionary relies on it.  Also, it seems Wiktionary calls insert with
 -- only one argument (or the second argument nil).  Ignore those calls.
-function table.insert(...)
-   local arg = {...}
-   -- if #arg < 2 then return end
+-- function table.insert(...)
+--    local arg = {...}
+--    if #arg < 2 then return end
    -- if #arg < 3 then
    --    _orig_insert(unpack(arg))
    -- else
@@ -328,8 +328,8 @@ function table.insert(...)
    --       _orig_insert(unpack(arg))
    --    end
    -- end
-   _orig_insert(unpack(arg))
-end
+--    _orig_insert(unpack(arg))
+-- end
 
 -- Change next() to use a new metamethod __next so that we can redefine it for
 -- certain tables
@@ -346,13 +346,13 @@ function pairs(t)
 end
 
 -- Lua 5.2 tostring(60/20)=="3", Lua 5.3.3 tostring(60/20)=="3.0"
-function tostring(v)
+-- function tostring(v)
    -- if type(v) == "number" and math.abs(v) > 0.5 and
    --    math.abs(v - math.floor(v + 0.5)) < 0.000001 then
    --    return string.format("%.0f", v)
    -- end
-   return _orig_tostring(v)
-end
+   -- return _orig_tostring(v)
+-- end
 
 -- XXX missing built-in modules?
     -- bit32
