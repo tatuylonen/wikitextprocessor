@@ -31,7 +31,7 @@ if not lua_dir.endswith("/"):
     lua_dir += "/"
 #print("lua_dir", lua_dir)
 
-# Substitutions to perform on Lua code fromt he dump to convert from
+# Substitutions to perform on Lua code from the dump to convert from
 # 5.1 to LuaJIT
 # Even though LuaJIT is supposed to use 5.1 syntax, it will complain
 # about escaped characters that are not valid, while 5.1 would silently
@@ -41,73 +41,6 @@ loader_replace_patterns = list((re.compile(src), dst) for src, dst in [
     [r"\\([^abfnrtv\"\'\d])", r"\1"],
     [r"___bslash___", r"\\\\"],
 ])
-
-# Substitutions to perform on Lua code from the dump to convert from
-# Lua 5.1 to current 5.3
-loader_replace_patternsOLD = list((re.compile(src), dst) for src, dst in [
-    [r"\\\\\?", r"%\\092?"],
-    [r"\\\\\*", r"%\\092*"],
-    [r"\\\\\-", r"%\\092-"],
-    [r"\\\\\+", r"%\\092+"],
-    [r"\\\\\|", r"%\\092|"],
-    [r"\\\\\[", r"%\\092["],
-    # [r"'\\\\'", r"'\092'"],  # now covered by the one below
-    [r"\\\\", r"\\092"],
-
-    [r"\\\[", r"%%["],
-    [r"\\:", r":"],
-    [r"\\,", r","],
-    [r"\\\(", r"%("],
-    [r"\\\)", r"%)"],
-    [r"\\\+", r"%+"],
-    [r"\\\*", r"%*"],
-    [r"\\>", r">"],
-    [r"\\\.", r"%."],
-    [r"\\\?", r"%?"],
-    [r"\\-", r"%-"],
-    [r"\\!", r"!"],
-    [r"\\\|", r"|"],
-    [r"\\\^", r"%^"],
-    [r"\\ʺ", r"ʺ"],
-    [r"\\s", r"%s"],
-
-    # fr.wiktionary Module:locution
-    [r"(^|[^\\])\\/", "\1/"],
-
-    # Workaround kludge for a bug in Lua 5.4 (lupa 1.10)
-    [r"\[(\w+)\s*==\s*true\]", r"[not not \1]"],
-
-    # vararg `...` needs to be asigned to `arg` because it is not
-    # automatically a hidden variable after 5.1.
-    # This regex attempts to do it by basically searching for a
-    # function definition signature "function ? (pars ...)", which is
-    # followed by the function body and is ended with `end`.
-    # We insert a "local arg = {...}" at the very start of the
-    # body; the ... is unpacked inside a table and it hopefully
-    # works out...? don't use "arg" as a variable name.
-    # The function signature is just `function` followed optionally
-    # by a name and then the parentheses containing parameters,
-    # and the parens can't contain other parens inside afaict.
-    [r"(function [\w\.:]*\s*\([^()]*\.\.\.[^()]*\))", r"\1 local arg = {...} "]
-])
-
-# -- Wikimedia uses an older version of Lua.  Make certain substitutions
-# -- to make existing code run on more modern versions of Lua.
-# content = string.gsub(content, "\\\\", "\\092")
-# content = string.gsub(content, "%%\\%[", "%%%%[")
-# content = string.gsub(content, "\\:", ":")
-# content = string.gsub(content, "\\,", ",")
-# content = string.gsub(content, "\\%(", "%%(")
-# content = string.gsub(content, "\\%)", "%%)")
-# content = string.gsub(content, "\\%+", "%%+")
-# content = string.gsub(content, "\\%*", "%%*")
-# content = string.gsub(content, "\\>", ">")
-# content = string.gsub(content, "\\%.", "%%.")
-# content = string.gsub(content, "\\%?", "%%?")
-# content = string.gsub(content, "\\%-", "%%-")
-# content = string.gsub(content, "\\!", "!")
-# content = string.gsub(content, "\\|", "|")  -- XXX tentative, see ryu:951
-# content = string.gsub(content, "\\ʺ", "ʺ")
 
 
 def lua_loader(ctx, modname):
@@ -134,12 +67,17 @@ def lua_loader(ctx, modname):
         else:
             data = ctx.read_by_title(modname)
             if data is None:
-                module_name_len = len("Module") if modname.startswith("Module") else len(local_module_ns_name)
+                if modname.startswith("Module"):
+                    module_name_len = len("Module")
+                else:
+                    module_name_len = len(local_module_ns_name)
                 new_module_title = local_module_ns_name + ":"
                 # Chinese Wikipedia capitalizes the first letter of module name
-                # can't use str.capitalize(), it'll cause error for "Module:Cmn-pron-Sichuan"
+                # can't use str.capitalize(), it'll cause error for
+                # "Module:Cmn-pron-Sichuan"
                 if ctx.lang_code == "zh":
-                    new_module_title += modname[module_name_len + 1].upper() + modname[module_name_len + 2:]
+                    new_module_title += modname[module_name_len + 1].upper() +\
+                        modname[module_name_len + 2:]
                 else:
                     new_module_title += modname[module_name_len + 1:]
                 data = ctx.read_by_title(new_module_title)
@@ -426,24 +364,6 @@ def call_lua_sandbox(ctx, invoke_args, expander, parent, timeout):
     ctx.lua_depth += 1
     lua = ctx.lua
 
-    # Wikipedia uses Lua 5.1, and lupa uses 5.4. Some methods
-    # were removed between now and then, so we need this polyfill:
-#     lua.execute(
-# """
-# table.maxn = function(tab)
-# if type(tab) ~= 'table' then
-#     error('table.maxn param #1 tab expect "table", got "' .. type(tab) .. '"', 2)
-# end
-# local length = 0
-# for k in pairs(tab) do
-#     if type(k) == 'number' and length < k and math.floor(k) == k then
-#     length = k
-#     end
-# end
-# return length
-# end
-# """)
-
     # Get module and function name
     modname = expander(invoke_args[0]).strip()
     modfn = expander(invoke_args[1]).strip()
@@ -703,9 +623,8 @@ def call_lua_sandbox(ctx, invoke_args, expander, parent, timeout):
         return ""
     else:
         parts = []
-        in_traceback = 0
         for line in text.split("\n"):
-            s = line.strip()
+            # s = line.strip()
             #if s == "[C]: in function 'xpcall'":
             #    break
             parts.append(line)

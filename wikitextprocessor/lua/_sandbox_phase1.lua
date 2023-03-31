@@ -45,7 +45,6 @@ function new_loader(modname)
 
    -- Load the content into the Lua interpreter.
    local fn, msg = load(content, modname, "t", env)
-   -- print(tostring(fn).."  "..tostring(msg))
    -- Cache the loaded module initialization function
    loader_cache[modname] = fn
    return fn, msg
