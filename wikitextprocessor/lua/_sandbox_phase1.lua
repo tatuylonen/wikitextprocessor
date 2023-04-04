@@ -286,7 +286,7 @@ retained_modules[module_namespace_name .. ":labels"] = true
 retained_modules[module_namespace_name .. ":TemplateStyles"] = true
 retained_modules[module_namespace_name .. ":columns"] = true
 retained_modules[module_namespace_name .. ":collation"] = true
-retained_modules[module_namespace_name .. ":glossary"] = true
+-- retained_modules[module_namespace_name .. ":glossary"] = true
 
 -- Note: the following are examples that cannot be retained:
 --   Module:headword (saves page title)

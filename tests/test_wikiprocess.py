@@ -3234,6 +3234,10 @@ return export
         except FileNotFoundError:
             pass
 
+    # Currently, do not re-enable: luaJIT's JIT compiler may
+    # disable debug hooks which timeout relies on, and thus
+    # very simple infinite loops like this will not trigger
+    # timeout.
     # def test_lua_max_time1(self):
     #     t = time.time()
     #     self.scribunto('<strong class="error">Lua timeout error in '
