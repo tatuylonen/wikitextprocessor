@@ -4,6 +4,7 @@
 
 import re
 import enum
+import html
 from .parserfns import PARSER_FUNCTIONS
 from .wikihtml import ALLOWED_HTML_TAGS
 from .common import (MAGIC_NOWIKI_CHAR, MAGIC_FIRST, MAGIC_LAST, nowiki_quote,
@@ -830,16 +831,72 @@ def table_start_fn(ctx, token):
     _parser_push(ctx, NodeKind.TABLE)
 
 
+# kludge to fix intertwined templates
+# [' class="translations" (...)
+# data-gloss="butterfly ', <ITALIC(){} 'Lasiommata megera'>, '"\n']
+#                          ^^^- this shouldn't be here -^^^
+# XXX this kludge is only needed because the interleaved
+# trans-top and multi-trans templates break the parser somewhere
+# else.
+
+# something=other, something="other", something = 'other'
+attr_assignment_pair = r"""\s*[^"'>/=\0-\037\s]+""" \
+                        r"""\s*=\s*("[^"]*"|'[^']*'|[^"'<>`\s]+)"""
+
+attr_assignments_re = re.compile(
+                attr_assignment_pair +
+                r"""(""" +
+                attr_assignment_pair +
+                r""")*\s*$""")  # to account for spaces between entities
+
+
+def check_for_attributes(ctx, node):
+    """Check if the children of this node conform to the format of
+    attribute assignment in tables"""
+
+    # Old behavior added here to return earlier without needing
+    # to use regex matching; if the old version worked, why not?
+    # If this fail, then resort to the reverse parsing + regex.
+    _parser_merge_str_children(ctx)
+    if len(node.children) == 1 and isinstance(node.children[0], str):
+        ret = node.children.pop()
+        return (True, ret)
+
+    candidate = ""
+    for child in node.children:
+        if isinstance(child, str):
+            candidate += child
+        else:
+            candidate += html.escape(ctx.node_to_wikitext(child))
+    if not candidate.strip():
+        return (True, "")  # No idea why this has to be like this
+        # Later on: I figured it out, the original behavior was to
+        # pass on empty lines (with a newline), which took them out
+        # of the normal 'parsing loop' and discarded the data,
+        # because attribute string data is discarded after it is parsed.
+        # So when you *don't* feed the empty string to the attribute
+        # parsing function and empty node.children, you're leaving
+        # 'alive' a newline that used to be killed. This is why the
+        # tests failed because of 'extra' newlines.
+    if re.match(attr_assignments_re, candidate):
+        return (True, candidate)
+    return (False, "")
+
+
 def table_check_attrs(ctx):
     """Checks if the table has attributes, and if so, parses them."""
     node = ctx.parser_stack[-1]
     if node.kind != NodeKind.TABLE:
         return
-    _parser_merge_str_children(ctx)
-    if len(node.children) != 1 or not isinstance(node.children[0], str):
+
+    if len(node.children) < 1:
         return
-    attrs = node.children.pop()
-    parse_attrs(node, attrs)
+
+    check, attribute_string = check_for_attributes(ctx, node)
+    if not check:
+        return
+    node.children = []
+    parse_attrs(node, attribute_string)
 
 
 def table_row_check_attrs(ctx):
@@ -848,11 +905,15 @@ def table_row_check_attrs(ctx):
     node = ctx.parser_stack[-1]
     if node.kind != NodeKind.TABLE_ROW:
         return
-    _parser_merge_str_children(ctx)
-    if len(node.children) != 1 or not isinstance(node.children[0], str):
+
+    if len(node.children) < 1:
         return
-    attrs = node.children.pop()
-    parse_attrs(node, attrs)
+
+    check, attribute_string = check_for_attributes(ctx, node)
+    if not check:
+        return
+    node.children = []
+    parse_attrs(node, attribute_string)
 
 
 def table_caption_fn(ctx, token):
