@@ -196,6 +196,8 @@ local _orig_error = error
 local _orig_getmetatable = getmetatable
 local _orig_ipairs = ipairs
 local _orig_math = math
+local _orig_next = next
+local _orig_next = next
 local _orig_pairs = pairs
 local _orig_pcall = pcall
 local _orig_print = print
@@ -209,7 +211,7 @@ local _orig_table = table
 local _orig_tonumber = tonumber
 local _orig_tostring = tostring
 local _orig_type = type
-local _orig_unpack = unpack
+local _orig_unpack = table.unpack
 local _orig_xpcall = xpcall
 local _orig_new_require = new_require
 
@@ -351,7 +353,6 @@ local function _lua_reset_env()
     env["_orig_next"] = _orig_next
     env["os"] = new_os
     env["pairs"] = _orig_pairs
-    env["_orig_pairs"] = _orig_pairs
     env["pcall"] = _orig_pcall
     env["print"] = _orig_print
     env["rawequal"] = _orig_rawequal
@@ -363,9 +364,9 @@ local function _lua_reset_env()
     env["string"] = _orig_string
     env["table"] = _orig_table
     env["tonumber"] = _orig_tonumber
-    env["tostring"] = _orig_tostring
+    -- tostring defined in phase2
     env["type"] = _orig_type
-    env["unpack"] = unpack
+    env["unpack"] = _orig_table.unpack
     env["xpcall"] = _orig_xpcall
     env["_lua_set_python_loader"] = _lua_set_python_loader
     env["_lua_set_timeout"] = _lua_set_timeout

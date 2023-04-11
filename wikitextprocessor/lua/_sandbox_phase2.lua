@@ -203,7 +203,7 @@ local function _lua_invoke(mod_name, fn_name, frame, page_title, timeout)
             end
             _save_mod(mod_name, mod)
          else
-            error("Could not find module `" .. mod_name .. "`: " .. msg)
+            error("Could not find module " .. mod_name .. ": " .. msg)
          end
       end
    end
@@ -245,6 +245,90 @@ local function _lua_set_functions(mw_text_decode, mw_text_encode,
    mw_python_fetch_language_names = fetch_language_names
 end
 
+-- math.log10 seems to be sometimes missing???
+function math.log10(x)
+   return math.log(x, 10)
+end
+
+-- This is a compatibility function for an older version of Lua (the getn
+-- function was deprecated and then removed, but it is used in Wiktionary)
+function table.getn(tbl)
+   return #tbl
+end
+
+-- This is a compatibility function for an older version of Lua.  Apparently
+-- the math.mod function was renamed to math.fmod in Lua 5.1.
+function math.mod(a, b)
+   return math.fmod(a, b)
+end
+
+-- With the introduction of 64-bit integer type in Lua 5.3, the %d and similar
+-- formats in string.format no longer accept floating point arguments.  Remedy
+-- that by expressly converting arguments to such formatting codes into
+-- integers.
+function string.format(fmt, ...)
+   -- local arg = {...}
+   local new_args = {}
+   local i = 1
+   for m in string.gmatch(fmt, "%%[-# +'0-9.]*([cdEefgGiouXxqs%%])") do
+      if m ~= "%" then
+         local ar = arg[i]
+         i = i + 1
+         if (m == "d" or m == "i" or m == "o" or m == "u" or m == "x" or
+             m == "X" or m == "c") then
+            ar = math.floor(ar + 0.5)
+         end
+         table.insert(new_args, ar)
+      end
+   end
+   if i < #arg then
+      print("Warning: extra arguments to string.format")
+   end
+   return _orig_format(fmt, table.unpack(new_args))
+end
+
+-- Original gsub does not accept "%]" in replacement string in modern Lua,
+-- while apparently some older versions did.  This is used in Wiktionary.
+-- Thus we mungle the replacement string accordingly.
+function string.gsub(text, pattern, repl)
+   -- print(string.format("string.gsub %q %q %q", text, pattern, tostring(repl)))
+   if type(repl) == "string" then
+      -- First replace all escaped magical character ("%.", "%["), unless
+      -- they are immediately preceded by an escaped % ("%%" so ("%%%%")
+      repl = _orig_gsub(repl, "([^%%])%%([%$%(%)%.%[%]%*%+%?%^])", "%1%2")
+      -- Round 2 is needed when patterns overlap like with "%)%.":
+      -- because the parenthese is the `([^%%])` of the `%.` match,
+      -- the cursor of the pattern engine continues from there and misses
+      -- the latter.
+      repl = _orig_gsub(repl, "%%%%", "__PERC__")
+      repl = _orig_gsub(repl, "%%([%$%(%)%.%[%]%*%+%?%^])", "%1")
+      -- Handle - separately, this is left from the old code.
+      if pattern ~= "%-" or repl ~= "%%-" then
+         repl = _orig_gsub(repl, "%%%-", "-")
+      end
+      repl = _orig_gsub(repl, "__PERC__", "%%%%")
+   end
+   return _orig_gsub(text, pattern, repl)
+end
+
+-- Original table.insert in Lua 5.1 allows inserting beyond the end of the
+-- table.  Lua 5.3 does not.  Implement the old functionality for compatibility;
+-- Wiktionary relies on it.  Also, it seems Wiktionary calls insert with
+-- only one argument (or the second argument nil).  Ignore those calls.
+function table.insert(...)
+   -- local args = {...}
+   if #arg < 2 then return end
+   if #arg < 3 then
+      _orig_insert(table.unpack(arg))
+   else
+      local pos = arg[2]
+      if pos > #arg[1] + 1 then
+         arg[1][pos] = arg[2]
+      else
+         _orig_insert(table.unpack(arg))
+      end
+   end
+end
 
 -- Change next() to use a new metamethod __next so that we can redefine it for
 -- certain tables
@@ -254,11 +338,19 @@ function next(t, k)
    return n(t, k)
 end
 
-function pairs(t)
-   local m = getmetatable(t)
-   local n = m and m.__pairs or _orig_pairs
-   return n(t)
+-- Lua 5.2 tostring(60/20)=="3", Lua 5.3.3 tostring(60/20)=="3.0"
+function tostring(v)
+   if type(v) == "number" and math.abs(v) > 0.5 and
+      math.abs(v - math.floor(v + 0.5)) < 0.000001 then
+      return string.format("%.0f", v)
+   end
+   return _orig_tostring(v)
 end
+
+-- XXX missing built-in modules?
+    -- bit32
+    -- libraryUtil
+    -- luabit
 
 -- Make sure we are operating in the restricted environment
 assert(io == nil)

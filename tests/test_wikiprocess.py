@@ -1565,14 +1565,14 @@ return export
         self.assertEqual(ret, "ain testb")
 
     def test_invoke2(self):
-        self.scribunto("0", """return tostring(#frame.args._orig)""")
+        self.scribunto("0", """return tostring(#frame.args)""")
 
     def test_invoke3(self):
         ctx = phase1_to_ctx([
             ["Scribunto", "Module:testmod", """
 local export = {}
 function export.testfn(frame)
-    return tostring(#frame.args._orig)
+            return tostring(#frame.args)
 end
 return export
 """]])
@@ -2527,7 +2527,7 @@ return export
         return tostring(#x)""")
 
     def test_mw_jsondecode7(self):
-        self.scribunto('4a', """
+        self.scribunto('4.0a', """
         local x = mw.text.jsonDecode('[4.0, "a"]')
         return x[1] .. x[2]""")
 
@@ -3135,15 +3135,15 @@ return export
         return math.mod(12, 5)""")
 
     def test_string_format1(self):
-        self.scribunto("00004", r"""
+        self.scribunto("00005", r"""
         return string.format("%05d", 4.7)""")
 
     def test_string_format2(self):
-        self.scribunto("00004 % foo 1.1 -6", r"""
+        self.scribunto("00005 % foo 1.1 -6", r"""
         return string.format("%05d %% %s %.1f %d", 4.7, "foo", 1.1, -6)""")
 
     def test_string_format3(self):
-        self.scribunto("0004", r"""
+        self.scribunto("0005", r"""
         return string.format("%.4X", 4.7)""")
 
     def test_sandbox1(self):
@@ -3168,11 +3168,9 @@ return export
         self.scribunto("True", r"""
         return os.exit == nil""")
 
-    # This test is only appicable for Lua 5.2 and newer, now that we
-    # are using Luajit2.0 (= 5.1) it breaks.
-    # def test_sandbox3(self):
-    #     self.scribunto("True", r"""
-    #     return _ENV["os"].exit == nil""")
+    def test_sandbox3(self):
+        self.scribunto("True", r"""
+        return _ENV["os"].exit == nil""")
 
     def test_sandbox4(self):
         self.scribunto("True", r"""
@@ -3234,22 +3232,17 @@ return export
         except FileNotFoundError:
             pass
 
-    # Currently, do not re-enable: luaJIT's JIT compiler may
-    # disable debug hooks which timeout relies on, and thus
-    # very simple infinite loops like this will not trigger
-    # timeout.
-    # def test_lua_max_time1(self):
-    #     t = time.time()
-    #     self.scribunto('<strong class="error">Lua timeout error in '
-    #                    'Module:testmod function testfn</strong>', """
-    #       local i = 0
-    #       while true do
-    #         i = i + 1
-    #         -- print(i)
-    #       end
-    #       return i""",
-    #                    timeout=2)
-    #     self.assertLess(time.time() - t, 10)
+    def test_lua_max_time1(self):
+        t = time.time()
+        self.scribunto('<strong class="error">Lua timeout error in '
+                       'Module:testmod function testfn</strong>', """
+          local i = 0
+          while true do
+            i = i + 1
+          end
+          return i""",
+                       timeout=2)
+        self.assertLess(time.time() - t, 10)
 
     def test_link_backforth1(self):
         ctx = phase1_to_ctx([])
