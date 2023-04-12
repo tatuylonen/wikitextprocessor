@@ -127,7 +127,8 @@ class Wtp:
         "NAMESPACE_DATA",
         "namespaces",
         "LANGUAGES_BY_CODE",
-        "lang_code"
+        "lang_code",
+        "template_overrides",
     )
 
     def __init__(self, num_threads=None, cache_file=None, quiet=False,
@@ -164,6 +165,7 @@ class Wtp:
         self.transient_templates = {}
         # Some predefined templates
         self.need_pre_expand = None
+        self.template_overrides = {}
 
         self.lang_code = lang_code
         self.data_folder = Path(pkg_resources.resource_filename("wikitextprocessor", "data/")).joinpath(lang_code)
@@ -1201,6 +1203,7 @@ class Wtp:
                     name = tname
                     name = self._canonicalize_template_name(name)
 
+
                     # Check for undefined templates
                     if name not in all_templates:
                         # XXX tons of these in enwiktionary-20201201 ???
@@ -1209,6 +1212,15 @@ class Wtp:
                         parts.append('<strong class="error">Template:{}'
                                      '</strong>'
                                      .format(html.escape(name)))
+                        continue
+
+                    if name in self.template_overrides and not nowiki:
+                        # print("Name in template_overrides: {}".format(name))
+                        new_args = list(expand_recurse(x, parent,
+                                                    templates_to_expand)
+                                                    for x in args)
+                        parts.append(self.template_overrides[name](new_args,
+                                                                   ))
                         continue
 
                     # If this template is not one of those we want to expand,
@@ -1656,6 +1668,8 @@ class Wtp:
                        post_template_fn=post_template_fn,
                        node_handler_fn=node_handler_fn)
 
+    def set_template_overrides(self, overrides):
+        self.template_overrides = overrides
 
 def overwrite_zh_template(template_name: str, expanded_template: str) -> str:
     """
