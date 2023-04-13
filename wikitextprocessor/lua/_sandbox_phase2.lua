@@ -344,6 +344,10 @@ function tostring(v)
       math.abs(v - math.floor(v + 0.5)) < 0.000001 then
       return string.format("%.0f", v)
    end
+   local m = getmetatable(v)
+   if m.__tostring ~= nil then
+      return m.__tostring(v)
+   end
    return _orig_tostring(v)
 end
 
