@@ -345,10 +345,8 @@ function tostring(v)
       return string.format("%.0f", v)
    end
    local m = getmetatable(v)
-   if m.__tostring ~= nil then
-      return m.__tostring(v)
-   end
-   return _orig_tostring(v)
+   local n = m and m.__next or _orig_tostring
+   return n(v)
 end
 
 -- XXX missing built-in modules?
