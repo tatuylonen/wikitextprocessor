@@ -178,7 +178,7 @@ local function _lua_invoke(mod_name, fn_name, frame, page_title, timeout)
       if not mod then
          local initfn, msg = _new_loader(mod1)
          if initfn then
-            success, mod = xpcall(initfn, debug.traceback)
+            success, mod = pcall(initfn, _G)
             if not success then
                _mw_frame = saved_frame
                _mw_pageTitle = saved_pageTitle
@@ -194,7 +194,7 @@ local function _lua_invoke(mod_name, fn_name, frame, page_title, timeout)
       if not mod then
          local initfn, msg = _new_loader(mod_name)
          if initfn then
-            success, mod = xpcall(initfn, debug.traceback)
+            success, mod = pcall(initfn, _G)
             if not success then
                _mw_frame = saved_frame
                _mw_pageTitle = saved_pageTitle
@@ -216,7 +216,7 @@ local function _lua_invoke(mod_name, fn_name, frame, page_title, timeout)
       return false, "\tNo function '" .. fn_name .. "' in module " .. mod_name
    end
    -- Call the function in the module
-   local st, v = xpcall(fn, debug.traceback)
+   local st, v = pcall(fn, frame)
    -- print("Lua sandbox:", tostring(v))
    _mw_frame = saved_frame
    _mw_pageTitle = saved_pageTitle
