@@ -12,8 +12,7 @@ import traceback
 import unicodedata
 import pkg_resources
 
-import lupa
-from lupa import LuaRuntime
+import lupa.lua51 as lupa
 from .parserfns import PARSER_FUNCTIONS, call_parser_function, tag_fn
 
 # List of search paths for Lua libraries.
@@ -266,9 +265,9 @@ def initialize_lua(ctx):
             return attr_name
         raise AttributeError("access denied")
 
-    lua = LuaRuntime(unpack_returned_tuples=True,
-                     register_eval=False,
-                     attribute_filter=filter_attribute_access)
+    lua = lupa.LuaRuntime(unpack_returned_tuples=True,
+                          register_eval=False,
+                          attribute_filter=filter_attribute_access)
     ctx.lua = lua
     set_namespace_data = lua.eval("function(v) NAMESPACE_DATA = v end")
     lua_namespace_data = copy.deepcopy(ctx.NAMESPACE_DATA)

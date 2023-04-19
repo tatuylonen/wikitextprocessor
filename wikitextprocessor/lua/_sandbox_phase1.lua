@@ -7,12 +7,6 @@ local _python_loader = nil
 
 -- The new sandbox environment we create
 local env = {}
--- for k, v in pairs(_ENV) do
---    env[k] = v
--- end
--- print("_ENV", _ENV, type(_ENV))
--- local _ENV = env
--- print("new _ENV", _ENV, type(_ENV))
 
 local loader_cache = {}
 local value_cache = {}
@@ -44,7 +38,14 @@ function new_loader(modname)
    end
 
    -- Load the content into the Lua interpreter.
-   local fn, msg = load(content, modname, "t", env)
+   local fn = nil
+   local msg = nil
+   if type(content) == "string" then
+      fn, msg = loadstring(content, modname)
+   else
+      fn, msg = load(content, modname)
+   end
+   setfenv(fn, env)
    -- Cache the loaded module initialization function
    loader_cache[modname] = fn
    return fn, msg
@@ -196,8 +197,6 @@ local _orig_error = error
 local _orig_getmetatable = getmetatable
 local _orig_ipairs = ipairs
 local _orig_math = math
-local _orig_next = next
-local _orig_next = next
 local _orig_pairs = pairs
 local _orig_pcall = pcall
 local _orig_print = print
@@ -209,9 +208,8 @@ local _orig_setmetatable = setmetatable
 local _orig_string = string
 local _orig_table = table
 local _orig_tonumber = tonumber
-local _orig_tostring = tostring
 local _orig_type = type
-local _orig_unpack = table.unpack
+local _orig_unpack = unpack
 local _orig_xpcall = xpcall
 local _orig_new_require = new_require
 
@@ -362,11 +360,11 @@ local function _lua_reset_env()
     env["select"] = _orig_select
     env["setmetatable"] = _orig_setmetatable
     env["string"] = _orig_string
+    env["tostring"] = _orig_tostring
     env["table"] = _orig_table
     env["tonumber"] = _orig_tonumber
-    -- tostring defined in phase2
     env["type"] = _orig_type
-    env["unpack"] = _orig_table.unpack
+    env["unpack"] = _orig_unpack
     env["xpcall"] = _orig_xpcall
     env["_lua_set_python_loader"] = _lua_set_python_loader
     env["_lua_set_timeout"] = _lua_set_timeout
