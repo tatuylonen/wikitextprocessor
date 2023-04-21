@@ -46,37 +46,6 @@ local function frame_args_index(new_args, key)
    return v
 end
 
-local function frame_args_pairs(new_args)
-   -- print("frame_args_pairs")
-   local frame = new_args._frame
-   local function stateless_iter(new_args, key)
-      -- print("stateless_iter: " .. tostring(key))
-      if key == nil then key = "***nil***" end
-      local nkey = new_args._next_key[key]
-      if nkey == nil then return nil end
-      local v = new_args[nkey]
-      if v == nil then return nil end
-      -- print("stateless_iter returning: " .. tostring(nkey) .. "=" ..
-      --          tostring(v))
-      return nkey, v
-   end
-   return stateless_iter, new_args, nil
-end
-
-local function frame_args_ipairs(new_args)
-   -- print("frame_args_ipairs")
-   local frame = new_args._frame
-   local function stateless_iter(new_args, key)
-      -- print("ipairs stateless_iter: " .. tostring(key))
-      if key == nil then key = 1 else key = key + 1 end
-      local v = new_args[key]
-      if v == nil then return nil end
-      -- print("stateless_iter returning: " .. tostring(key) .. "=" ..
-      --       tostring(v))
-      return key, v
-   end
-   return stateless_iter, new_args, nil
-end
 local function frame_args_next(t, key)
    if key == nil then key = "***nil***" end
    local nkey = t._next_key[key]
@@ -88,7 +57,6 @@ end
 
 local frame_args_meta = {
    __index = frame_args_index,
-   __pairs = frame_args_pairs,
    __next = frame_args_next,
 }
 
@@ -246,6 +214,31 @@ function next(t, k)
    local m = getmetatable(t)
    local n = m and m.__next or _orig_next
    return n(t, k)
+end
+
+-- Add support of __pairs and __ipairs metamethods
+-- https://www.mediawiki.org/wiki/LuaSandbox#Differences_from_standard_Lua
+function pairs(t)
+    local mt = getmetatable(t)
+    if mt and mt.__pairs then
+       return mt.__pairs(t)
+    else
+       return next, t, nil
+    end
+end
+
+function ipairs(t)
+    local mt = getmetatable(t)
+    if mt and mt.__ipairs then
+       return mt.__ipairs(t)
+    else
+       local function stateless_iter(tbl, i)
+	  i = i + 1
+	  local v = tbl[i]
+	  if nil~=v then return i, v end
+       end
+       return stateless_iter, t, 0
+    end
 end
 
 -- Make sure we are operating in the restricted environment
