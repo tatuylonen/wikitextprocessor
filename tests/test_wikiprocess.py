@@ -1567,19 +1567,6 @@ return export
     def test_invoke2(self):
         self.scribunto("0", """return tostring(#frame.args)""")
 
-    def test_invoke3(self):
-        ctx = phase1_to_ctx([
-            ["Scribunto", "Module:testmod", """
-local export = {}
-function export.testfn(frame)
-            return tostring(#frame.args)
-end
-return export
-"""]])
-        ctx.start_page("Tt")
-        ret = ctx.expand("{{#invoke:testmod|testfn|a|b|foo=bar}}")
-        self.assertEqual(ret, "2")
-
     def test_invoke4a(self):
         ctx = phase1_to_ctx([
             ["Scribunto", "Module:testmod", """

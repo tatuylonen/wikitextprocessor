@@ -77,11 +77,6 @@ local function frame_args_ipairs(new_args)
    end
    return stateless_iter, new_args, nil
 end
-
-local function frame_args_len(new_args)
-   return #new_args._orig
-end
-
 local function frame_args_next(t, key)
    if key == nil then key = "***nil***" end
    local nkey = t._next_key[key]
@@ -95,7 +90,6 @@ local frame_args_meta = {
    __index = frame_args_index,
    __pairs = frame_args_pairs,
    __next = frame_args_next,
-   __len = frame_args_len
 }
 
 local function prepare_frame_args(frame)
@@ -106,22 +100,22 @@ local function prepare_frame_args(frame)
      next_key[prev] = k
      prev = k
   end
-  new_args = {_orig = frame.args, _frame = frame, _next_key = next_key,
-              _preprocessed = {}}
+  local new_args = {_orig = frame.args, _frame = frame, _next_key = next_key,
+		    _preprocessed = {}}
   setmetatable(new_args, frame_args_meta)
   frame.args = new_args
-  frame.argumentPairs = function (frame) return pairs(frame.args) end
-  frame.getArgument = function(frame, name)
+  frame.argumentPairs = function (x) return pairs(x.args) end
+  frame.getArgument = function(x, name)
     if type(name) == "table" then name = name.name end
-    v = frame.args[name]
+    local v = x.args[name]
     if v == nil then return nil end
     return { expand = function() return v end }
   end
-  frame.newChild = function(frame, o)
+  frame.newChild = function(x, o)
     local title = (o and o.title) or ""
     local args = (o and o.args) or {}
-    local new_frame = mw.clone(frame)
-    new_frame.getParent = function() return frame end
+    local new_frame = mw.clone(x)
+    new_frame.getParent = function() return x end
     new_frame.getTitle = function() return title end
     new_frame.args = args
     prepare_frame_args(new_frame)
