@@ -45,27 +45,32 @@ For pre-existing extraction modules that use this package, please see:
 
 ### Installing
 
-The best way to install this package is from [pypi](https://pypi.org):
+Install from source:
+
 ```
-pip3 install wikitextprocessor
+git clone https://github.com/tatuylonen/wikitextprocessor.git
+cd wikitextprocessor
+python -m pip venv .venv
+source .venv/bin/activate
+python -m pip install .
 ```
 
-Alternatively, you can install the master branch from github:
+Alternatively, you can install from pypi.org:
+
 ```
-git clone https://github.com/tatuylonen/wikitextprocessor
-cd wikitextprocessor
-pip3 install -e .
+python -m pip install wikitextprocessor
 ```
 
 ### Running tests
 
-This package includes tests written using the ``unittest`` framework.
-They can be run using, for example, ``nose``, which can be installed
-using ``pip3 install nose``.
+This package includes tests written using the `unittest` framework.
+They can be run using, for example, `nose2`, which can be installed
+using `python -m pip install -e ".[dev]"`.
 
 To run the tests, use the following command in the top-level directory:
+
 ```
-nosetests
+make test
 ```
 
 ### Obtaining WikiMedia dump files
