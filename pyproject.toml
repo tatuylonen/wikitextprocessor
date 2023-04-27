@@ -38,6 +38,9 @@ dependencies = [
     "lupa @ git+https://github.com/xxyzz/lupa.git@dbd9bc9b8c9b7c100185b6632710059aba552e71",
 ]
 
+[project.optional-dependencies]
+dev = ["nose2[coverage_plugin]"]
+
 [project.urls]
 homepage = "https://github.com/tatuylonen/wikitextprocessor"
 
