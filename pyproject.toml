@@ -35,7 +35,7 @@ classifiers = [
 dependencies = [
     "dateparser",
     "lru-dict @ git+https://github.com/nining/lru-dict.git@6badf6376d12a2e0498f67bbc7d5c0332b96a4d7",
-    "lupa @ git+https://github.com/xxyzz/lupa.git@dbd9bc9b8c9b7c100185b6632710059aba552e71",
+    "lupa @ git+https://github.com/xxyzz/lupa.git@setup",
 ]
 
 [project.optional-dependencies]
