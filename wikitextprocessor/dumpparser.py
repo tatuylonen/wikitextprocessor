@@ -9,8 +9,6 @@ import subprocess
 from typing import Optional
 from collections.abc import Callable
 
-from .core import Wtp
-
 
 def process_input(path: str, page_cb: Callable[[str, str, str], None], ignored_namespaces: set[int] = set()) -> None:
     """Processes the entire input once, calling chunk_fn for each chunk.
@@ -33,7 +31,7 @@ def process_input(path: str, page_cb: Callable[[str, str, str], None], ignored_n
     namespace_str = "http://www.mediawiki.org/xml/export-0.10/"
     namespaces = {None: namespace_str}
 
-    for _, page_element in etree.iterparse(f, tag=f"{{{namespace_str}}}page"):
+    for _, page_element in etree.iterparse(wikt_f, tag=f"{{{namespace_str}}}page"):
         title = html.unescape(page_element.findtext("title", "", namespaces))
         namespace_id = int(page_element.findtext("ns", "0", namespaces))
         if namespace_id in ignored_namespaces:
