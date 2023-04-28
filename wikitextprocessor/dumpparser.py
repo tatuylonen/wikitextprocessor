@@ -2,12 +2,8 @@
 #
 # Copyright (c) 2018-2022 Tatu Ylonen.  See file LICENSE and https://ylonen.org
 
-import re
-import sys
-import bz2
-import json
 import html
-import traceback
+import shutil
 import subprocess
 
 from typing import Optional
@@ -28,7 +24,8 @@ def process_input(path: str, page_cb: Callable[[str, str, str], None], ignored_n
     from lxml import etree
 
     if path.endswith(".bz2"):
-        subp = subprocess.Popen(["lbzcat", path], stdout=subprocess.PIPE)
+        bzcat_command = "lbzcat" if shutil.which("lbzcat") is not None else "bzcat"
+        subp = subprocess.Popen([bzcat_command, path], stdout=subprocess.PIPE)
         wikt_f = subp.stdout
     else:
         wikt_f = open(path, "rb")
@@ -67,8 +64,7 @@ def process_dump(ctx: Wtp, path: str, page_handler: Optional[Callable[[str, int]
 
     # Analyze which templates should be expanded before parsing
     if not ctx.quiet:
-        print("Analyzing which templates should be expanded before parsing")
-        sys.stdout.flush()
+        print("Analyzing which templates should be expanded before parsing", flush=True)
     ctx.analyze_templates()
 
 # XXX parse <namespaces> and use that in both Python and Lua code
