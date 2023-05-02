@@ -202,7 +202,7 @@ def process_input(path, page_cb):
     return lst
 
 
-def process_dump(ctx, path):
+def process_dump(ctx, path, analyze_templates=True):
     """Parses a WikiMedia dump file ``path`` (which should point to a
     "<project>-<date>-pages-articles.xml.bz2" file.  This implements
     the first phase of processing a dump - copying it to a temporary
@@ -220,10 +220,11 @@ def process_dump(ctx, path):
     process_input(path, phase1_page_handler)
 
     # Analyze which templates should be expanded before parsing
-    if not ctx.quiet:
-        print("Analyzing which templates should be expanded before parsing")
-        sys.stdout.flush()
-    ctx.analyze_templates()
+    if analyze_templates:
+        if not ctx.quiet:
+            print("Analyzing which templates should be expanded before parsing")
+            sys.stdout.flush()
+        ctx.analyze_templates()
 
 # XXX parse <namespaces> and use that in both Python and Lua code
 
