@@ -954,17 +954,17 @@ class Wtp:
                 raise RuntimeError("analyze_templates() must be run first to "
                                    "determine which templates need pre-expand")
             if (templates_to_expand is not None and
-                templates_to_not_expand is not None):
+               templates_to_not_expand is not None):
                 templates_to_expand = (set(templates_to_expand) |
                                        set(self.need_pre_expand))
-                templates_to_expand = (templates_to_expand - 
+                templates_to_expand = (templates_to_expand -
                                        set(templates_to_not_expand))
             elif (templates_to_expand is not None and
-                templates_to_not_expand is None):
+                 templates_to_not_expand is None):
                 templates_to_expand = (set(templates_to_expand) |
                                        set(self.need_pre_expand))
             elif (templates_to_expand is None and
-                templates_to_not_expand is not None):
+                 templates_to_not_expand is not None):
                 templates_to_expand = (set(self.need_pre_expand) -
                                        set(templates_to_not_expand))
             else:

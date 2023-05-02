@@ -320,7 +320,8 @@ function mw_language.getFallbacksFor(code)
 end
 
 function mw_language.isKnownLanguageTag(code)
-   return mw.language.fetchLanguageName(code) ~= nil
+   return true
+   -- return mw.language.fetchLanguageName(code) ~= nil
 end
 
 function mw_language.isSupportedLanguage(code)
