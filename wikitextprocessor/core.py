@@ -1299,14 +1299,7 @@ class Wtp:
                         # Determine if the template starts with a list item
                         contains_list = (re.match(r"(?s)^[#*;:]", body)
                                          is not None)
-                        if contains_list or name == "multitrans":
-                            # The multitrans module generates a list, which is
-                            # easily broken when it's on the same line as
-                            # trans-top:
-                            # {{trans-top}}{{multitrans|data=
-                            # * Blahian translation <- Not part of list
-                            # }}
-                            # {{trans-bottom}}
+                        if contains_list:
                             body = "\n" + body
                         encoded_body = self._encode(body)
                         # Expand template arguments recursively.  The arguments
