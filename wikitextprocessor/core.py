@@ -324,32 +324,22 @@ class Wtp:
             "debugs": self.debugs,
         }
 
-    def _canonicalize_template_name(self, name):
-        """Canonicalizes a template name by making its first character
-        uppercase and replacing underscores by spaces and sequences of
-        whitespace by a single whitespace."""
-        assert isinstance(name, str)
-        if name.lower().startswith(self.NAMESPACE_DATA["Template"]["name"].lower() + ":"):
-            name = name[len(self.NAMESPACE_DATA["Template"]["name"]) + 1:]
-        name = re.sub(r"_", " ", name)
-        name = re.sub(r"\s+", " ", name)
-        name = re.sub(r"\(", "%28", name)
-        name = re.sub(r"\)", "%29", name)
-        name = re.sub(r"&", "%26", name)
-        name = re.sub(r"\+", "%2B", name)
-        name = name.strip()
-        #if name:
-        #    name = name[0].upper() + name[1:]
-        return name
+    def _canonicalize_template_name(self, name: str) -> str:
+        """Canonicalizes a template name by replacing underscores by spaces
+        and sequences of whitespace by a single whitespace."""
+        local_template_name = self.NAMESPACE_DATA["Template"]["name"]
+        if name.lower().startswith(local_template_name.lower() + ":"):
+            name = name[len(local_template_name) + 1:]
+        name = re.sub(r"[\s_]+", " ", name)
+        return name.translate(str.maketrans({
+            character: urllib.parse.quote(character)
+            for character in ["(", ")", "&", "+"]
+        })).strip()
 
-    def _canonicalize_parserfn_name(self, name):
-        """Canonicalizes a parser function name by making its first character
-        uppercase and replacing underscores by spaces and sequences of
-        whitespace by a single whitespace."""
-        assert isinstance(name, str)
-        name = re.sub(r"_", " ", name)
-        name = re.sub(r"\s+", " ", name)
-        name = name.strip()
+    def _canonicalize_parserfn_name(self, name: str) -> str:
+        """Canonicalizes a parser function name by replacing underscores by spaces
+        and sequences of whitespace by a single whitespace."""
+        name = re.sub(r"[\s_]+", " ", name)
         if name not in PARSER_FUNCTIONS:
             name = name.lower()  # Parser function names are case-insensitive
         return name
