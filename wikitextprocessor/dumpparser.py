@@ -10,7 +10,7 @@ from typing import Optional
 from collections.abc import Callable
 
 
-def process_input(path: str, page_cb: Callable[[str, str, str], None], namespace_ids: set[int]) -> None:
+def process_input(path: str, page_cb: Callable[[str, str], None], namespace_ids: set[int]) -> None:
     """Processes the entire input once, calling chunk_fn for each chunk.
     A chunk is a list of data, where ``data`` is a dict
     containing at least "title" and "text" keys.  This returns a list
@@ -40,18 +40,19 @@ def process_input(path: str, page_cb: Callable[[str, str, str], None], namespace
             page_element.clear(keep_tail=True)
             continue
 
+        text = None
+        redirect_to = None
         if (redirect_element := page_element.find("redirect", namespaces=namespaces)) is not None:
-            model = "redirect"
-            text = redirect_element.get("title", "")
+            redirect_to = html.unescape(redirect_element.get("title", ""))
         else:
             model = page_element.findtext("revision/model", "", namespaces)
             if model not in {"wikitext", "Scribunto", "json"}:
                 # ignore css, javascript and sanitized-css pages
                 page_element.clear(keep_tail=True)
                 continue
-            text = page_element.findtext("revision/text", "", namespaces)
+            text = html.unescape(tpage_element.findtext("revision/text", "", namespaces))
 
-        page_cb(model, title, html.unescape(text))
+        page_cb(title, namespace_id, body=text, redirect_to=redirect_to)
         page_element.clear(keep_tail=True)
 
     wikt_f.close()

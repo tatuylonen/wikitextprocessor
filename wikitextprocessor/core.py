@@ -9,7 +9,6 @@ import sys
 import html
 import json
 import time
-import pickle
 import platform
 import tempfile
 import traceback
@@ -18,8 +17,14 @@ import urllib.parse
 import pkg_resources
 import html.entities
 import multiprocessing
+
+from collections import defaultdict
+from typing import Optional, Dict
 from pathlib import Path
 
+from sqlalchemy import func, select
+
+from .db_models import Base, Page, PageKey
 from .parserfns import PARSER_FUNCTIONS, call_parser_function, init_namespaces
 from .wikihtml import ALLOWED_HTML_TAGS
 from .luaexec import call_lua_sandbox
@@ -40,15 +45,13 @@ _global_page_handler = None
 _global_page_autoload = True
 
 
-def phase2_page_handler(dt):
+def phase2_page_handler(page: Page) -> Tuple[bool, str, float, Tuple[str, str]]:
     """Helper function for calling the Phase2 page handler (see
     reprocess()).  This is a global function in order to make this
     pickleable.  The implication is that process() and reprocess() are not
     re-entrant (i.e., cannot be called safely from multiple threads or
     recursively)"""
     ctx = _global_ctx
-    autoload = _global_page_autoload
-    model, title = dt
     start_t = time.time()
 
     # Helps debug extraction hangs. This writes the path of each file being
@@ -58,16 +61,11 @@ def phase2_page_handler(dt):
     with tempfile.TemporaryDirectory(prefix="wiktextract") as tmpdirname:
         debug_path = "{}/wiktextract-{}".format(tmpdirname, os.getpid())
         with open(debug_path, "w", encoding="utf-8") as f:
-            f.write(title + "\n")
+            f.write(page.key.title + "\n")
 
-        ctx.start_page(title)
-        if autoload:
-            data = ctx.read_by_title(title)
-            assert isinstance(data, str)
-        else:
-            data = None
+        ctx.start_page(page.key.title)
         try:
-            ret = _global_page_handler(model, title, data)
+            ret = _global_page_handler(page)
             return True, title, start_t, ret
         except Exception as e:
             lst = traceback.format_exception(type(e), value=e,
@@ -83,12 +81,9 @@ class Wtp:
     initialize this context once (this holds template and module definitions),
     and then using the context for processing many pages."""
     __slots__ = (
-        "buf",		 # Buffer for reading/writing tmp_file
-        "buf_ofs",	 # Offset into buf
-        "buf_used",	 # Number of bytes in the buffer when reading
-        "buf_size",      # Allocated size of buf, in bytes
-        "cache_file",	 # Prefix to cache files (instead of temporary file)
-        "cache_file_old",  # Using pre-existing cache file
+        "db_path",	 # Database path
+        "db_engine",     # Database engine
+        "db_session",    # Database session
         "cookies",	 # Mapping from magic cookie -> expansion data
         "debugs",	 # List of debug messages (cleared for each new page)
         "errors",	 # List of error messages (cleared for each new page)
@@ -98,21 +93,11 @@ class Wtp:
         "lua_invoke",	 # Lua function used to invoke a Lua module
         "lua_reset_env", # Function to reset Lua environment
         "lua_path",	 # Path to Lua modules
-        "modules",	 # Lua code for defined Lua modules
-        "need_pre_expand",  # Set of template names to be expanded before parse
         "num_threads",   # Number of parallel threads to use
-        "page_contents",  # Full content for selected pages (e.g., Thesaurus)
-        "page_seq",	 # All content pages (title, model, ofs, len) in order
         "quiet",	 # If True, don't print any messages during processing
-        "redirects",	 # Redirects in the wikimedia project
         "rev_ht",	 # Mapping from text to magic cookie
         "expand_stack",	 # Saved stack before calling Lua function
-        "templates",     # dict temlate name -> definition
         "title",         # current page title
-        "tmp_file",	 # Temporary file used to store templates and pages
-        "tmp_ofs",	 # Next write offset
-        "transient_pages",     # Unsaved pages added by extraction application
-        "transient_templates", # Unsaved templates added by application
         "warnings",	 # List of warning messages (cleared for each new page)
         # Data for parsing
         "beginning_of_line", # Parser at beginning of line
@@ -125,27 +110,21 @@ class Wtp:
         "suppress_special",  # XXX never set to True???
         "data_folder",
         "NAMESPACE_DATA",
+        "LOCAL_NS_NAME_BY_ID",  # Local namespace names
         "namespaces",
         "LANGUAGES_BY_CODE",
         "lang_code",
-        "template_overrides",
+        "overwritten_pages",  # Dictionary, not saved to database, exmaple: {"title": "body"}
     )
 
-    def __init__(self, num_threads=None, cache_file=None, quiet=False,
-                 lang_code="en", languages_by_code = {}):
-        assert num_threads is None or isinstance(num_threads, int)
-        assert cache_file is None or isinstance(cache_file, str)
-        assert quiet in (True, False)
-        if num_threads is None:
-            if platform.system() in ("Windows", "Darwin"):
-                # Default num_threads to 1 on Windows and MacOS, as they
-                # apparently don't use fork() for multiprocessing.Pool()
-                num_threads = 1
-        self.buf_ofs = 0
-        self.buf_size = 4 * 1024 * 1024
-        self.buf = bytearray(self.buf_size)
-        self.cache_file = cache_file
-        self.cache_file_old = False
+    def __init__(self, num_threads: Optional[int] = None, db_path: Optional[Path] = None,
+                 quiet: bool = False, lang_code: str = "en", languages_by_code = {}):
+        if num_threads is None and platform.system() in ("Windows", "Darwin"):
+            # Default num_threads to 1 on Windows and MacOS, as they
+            # apparently don't use fork() for multiprocessing.Pool()
+            self.num_threads = 1
+        else:
+            self.num_threads = num_threads
         self.cookies = []
         self.errors = []
         self.warnings = []
@@ -160,80 +139,57 @@ class Wtp:
         self.rev_ht = {}
         self.expand_stack = []
         self.parser_stack = None
-        self.num_threads = num_threads
-        self.transient_pages = {}
-        self.transient_templates = {}
-        # Some predefined templates
-        self.need_pre_expand = None
-        self.template_overrides = {}
-
+        self.overwritten_pages: Dict[str, str] = {}
         self.lang_code = lang_code
         self.data_folder = Path(pkg_resources.resource_filename("wikitextprocessor", "data/")).joinpath(lang_code)
         self.init_namespace_data()
         self.namespaces = {}
         init_namespaces(self)
         self.LANGUAGES_BY_CODE = languages_by_code
+        self.create_db()
 
-        # Open cache file if it exists; otherwise create new cache file or
-        # temporary file and reset saved pages.
-        self.tmp_file = None
-        if self.cache_file:
-            try:
-                # Load self.templates, self.page_contents, self.page_seq,
-                # self.redirects
-                with open(self.cache_file + ".pickle", "rb") as f:
-                    dt = pickle.load(f)
-                version, dt = dt
-                if version == 1:
-                    # Cache file version is compatible
-                    self.tmp_file = open(self.cache_file, "rb", buffering=0)
-                    self.page_contents, self.page_seq, self.redirects, \
-                        self.templates, self.need_pre_expand = dt
-                    self.need_pre_expand = set(self.need_pre_expand)
-                    self.cache_file_old = True
-            except (FileNotFoundError, EOFError):
-                pass
-        if self.tmp_file is None:
-            self._reset_pages()
-        self.tmp_ofs = 0
-        self.buf_ofs = 0
+    def create_db(self) -> None:
+        if self.db_path is None:
+            temp_file = NamedTemporaryFile(prefix="tempdb", delete=False)
+            self.db_path = Path(temp_file.name)
+            temp_file.close()
+
+        self.db_engine = create_engine(f"sqlite://{db_path.absolute()}", echo=True)
+        Base.metadata.create_all(engine)
+        # Add predefined templates
+        self.add_page("!", self.NAMESPACE_DATA.get("Template", {}).get("id"), "|")
+
+    def is_temp_db(self) -> bool:
+        return self.db_path.name.startswith("tempdb")
+
+    def init_child_db_session(self) -> None:
+        # don't close parent connection
+        # https://docs.sqlalchemy.org/en/20/core/pooling.html#pooling-multiprocessing
+        from sqlalchemy.orm import Session
+
+        self.db_engine.dispose(close=False)
+        self.db_session = Session(self.engine)
+
+    def clsose_db_session(self) -> None:
+        self.db_session.close()
+
+    def dispose_db_engine(self) -> None:
+        self.db_engine.dispose()
+        if self.is_temp_db():
+            self.db_path.unlink()
+
+    def saved_page_nums(self) -> int:
+        return self.db_session.scalar(
+            select(func.count().select_from(Page)))
 
     def init_namespace_data(self):
         with self.data_folder.joinpath("namespaces.json") \
                               .open(encoding="utf-8") as f:
             self.NAMESPACE_DATA = json.load(f)
-
-    def _reset_pages(self):
-        """Resets any stored pages and gets ready to receive more pages."""
-        self.tmp_file = None
-        self.page_contents = {}
-        self.page_seq = []
-        self.redirects = {}
-        self.templates = {}
-        self.need_pre_expand = None
-        self.cache_file_old = False
-        # Add predefined templates
-        self.templates["!"] = "|"
-        self.templates["!-"] = "|-"
-        self.templates[self._canonicalize_template_name("((")] = \
-            "&lbrace;&lbrace;"  # {{((}}
-        self.templates[self._canonicalize_template_name("))")] = \
-            "&rbrace;&rbrace;"  # {{))}}
-        # Create cache file or temporary file
-        if self.cache_file:
-            # Create new cache file
-            try:
-                os.remove(self.cache_file)
-            except FileNotFoundError:
-                pass
-            try:
-                os.remove(self.cache_file + ".pickle")
-            except FileNotFoundError:
-                pass
-            self.tmp_file = open(self.cache_file, "w+b", buffering=0)
-        else:
-            # Create temporary file
-            self.tmp_file = tempfile.TemporaryFile(mode="w+b", buffering=0)
+            self.LOCAL_NS_NAME_BY_ID: Dict[int, str] = {
+                data["id"]: data["name"]
+                for data in self.NAMESPACE_DATA.values()
+            }
 
     def _fmt_errmsg(self, kind, msg, trace):
         assert isinstance(kind, str)
@@ -330,7 +286,6 @@ class Wtp:
         local_template_name = self.NAMESPACE_DATA["Template"]["name"]
         if name.lower().startswith(local_template_name.lower() + ":"):
             name = name[len(local_template_name) + 1:]
-        name = re.sub(r"[\s_]+", " ", name)
         return name.translate(str.maketrans({
             character: urllib.parse.quote(character)
             for character in ["(", ")", "&", "+"]
@@ -549,86 +504,30 @@ class Wtp:
         text = re.sub(r"(?is)<\s*(/\s*)?includeonly\s*(/\s*)?>", "", text)
         return text
 
-    def add_page(self, model, title, text, transient=False):
-        """Collects information about the page.  For templates and modules,
-        this keeps the content in memory.  For other pages, this saves the
-        content in a temporary file so that it can be accessed later.  There
-        must be enough space on the volume containing the temporary file
-        to store the entire contents of the uncompressed WikiMedia dump.
-        The content is saved because it is common for Wiktionary Lua macros
-        to access content from arbitrary pages.  Furthermore, this way we
-        only need to decompress and parse the dump file once.  ``model``
-        is "wikitext" for normal pages, "redirect" for redirects (in which
-        case ``text`` is the page pointed to), or "Scribunto" for Lua code;
-        other values may also be encountered.  If ``transient`` is True, then
-        this page will not be saved but will replace any saved page.  This can
-        be used, for example, to add Lua code for data extraction, or for
-        debugging Lua modules."""
-        assert isinstance(model, str)
-        assert isinstance(title, str)
-        assert isinstance(text, str)
-        assert transient in (True, False)
+    def add_page(self, title: str, namespace_id: int, body: Optional[str] = None,
+                 redirect_to: Optional[str] = None, need_pre_expand: bool = False,
+                 overwrite: bool = False) -> None:
+        """Collects information about the page and save page text to a
+        SQLite database file."""
+        is_template = namespace_id == self.NAMESPACE_DATA.get("Template", {}).get("id")
+        if is_template:
+            body = self._template_to_body(title, text)
 
         if transient:
-            self.transient_pages[title] = (title, model, text)
-            if (title.startswith(self.NAMESPACE_DATA["Template"]["name"] + ":") and
-                not title.endswith("/documentation") and
-                not title.endswith("/testcases")):
-                name = self._canonicalize_template_name(title)
-                body = self._template_to_body(title, text)
-                self.transient_templates[name] = body
-            return
-
-        # If we have previously analyzed pages and this is called again,
-        # reset all previously saved pages (e.g., in case we are to update
-        # existing cache file).
-        if self.need_pre_expand is not None:
-            self._reset_pages()
-
-        # Save the page in our temporary file and metadata in memory
-        rawtext = text.encode("utf-8")
-        if self.buf_ofs + len(rawtext) > self.buf_size:
-            bufview = memoryview(self.buf)[0: self.buf_ofs]
-            self.tmp_file.write(bufview)
-            self.buf_ofs = 0
-        ofs = self.tmp_ofs
-        self.tmp_ofs += len(rawtext)
-        if len(rawtext) >= self.buf_ofs:
-            self.tmp_file.write(rawtext)
+            self.overwritten_pages[title] = body
+            if is_template or is_module:
+                self.overwritten_pages[title_without_prefix] = body
         else:
-            self.buf[self.buf_ofs: self.buf_ofs + len(rawtext)] = rawtext
-        # XXX should we canonicalize title in page_contents
-        self.page_contents[title] = (title, model, ofs, len(rawtext))
-        self.page_seq.append((model, title))
-        if not self.quiet and len(self.page_seq) % 10000 == 0:
-            print("  ... {} raw pages collected"
-                  .format(len(self.page_seq)))
-            sys.stdout.flush()
+            page = Page(PageKey(title=title, namespace_id=namespace_id),
+                        body=body, redirect_to=redirect_to)
+            self.add_page_to_db(page)
 
-        if model == "redirect":
-            self.redirects[title] = text
-            return
-        if not title.startswith(self.NAMESPACE_DATA["Template"]["name"] + ":"):
-            return
-        if title.endswith("/documentation"):
-            return
-        if title.endswith("/testcases"):
-            return
-
-        # It is a template
-        name = self._canonicalize_template_name(title)
-        body = self._template_to_body(title, text)
-        assert isinstance(body, str)
-        self.templates[name] = body
-        if self.lang_code == "zh":
-            self.add_chinese_lower_case_template(name, body)
-
-    def add_chinese_lower_case_template(self, name, body):
-        # Chinese Wiktionary capitalizes the first letter of template name
-        # in template pages but uses lower case in word pages
-        lower_case_name = name[0].lower() + name[1:]
-        if lower_case_name not in self.templates:
-            self.templates[lower_case_name] = body
+    def add_page_to_db(self, page: Page) -> None:
+        self.db_session.add(page)
+        self.db_session.commit()
+        page_num = self.saved_page_nums()
+        if not self.quiet and page_num % 10000 == 0:
+            print(f"  ... {page_num} raw pages collected", flush=True)
 
     def _analyze_template(self, name, body):
         """Analyzes a template body and returns a set of the canonicalized
@@ -1418,7 +1317,7 @@ class Wtp:
         text = re.sub(MAGIC_NOWIKI_CHAR, "<nowiki />", text)
         return text
 
-    def process(self, path, page_handler, phase1_only=False):
+    def process(self, path, page_handler, namespace_ids: set[int], phase1_only=False):
         """Parses a WikiMedia dump file ``path`` (which should point to a
         "<project>-<date>-pages-articles.xml.bz2" file.  This calls
         ``page_handler(model, title, page)`` for each raw page.  This
@@ -1439,7 +1338,7 @@ class Wtp:
         assert isinstance(path, str)
         assert page_handler is None or callable(page_handler)
         # Process the dump and copy it to temporary file (Phase 1)
-        process_dump(self, path)
+        process_dump(self, path, namespace_ids)
         if phase1_only or page_handler is None:
             return []
 
@@ -1529,64 +1428,43 @@ class Wtp:
         sys.stderr.flush()
         sys.stdout.flush()
 
-    def page_exists(self, title: str) -> bool:
-        """Returns True if the given page exists, and False if it does not
-        exist."""
-        assert isinstance(title, str)
+    def get_page(self, title: str, namespace_id: Optional[int] = None) -> Optional[Page]:
         if title.startswith("Main:"):
             title = title[5:]
-        # XXX should we canonicalize title?
-        if title in self.transient_pages:
-            return True
-        exists = title in self.page_contents
-        if not exists:
-            # Wikitionary Lua module's `mw.title.exists`
-            # attribute comes from here.
-            # Change the first letter of module name
-            # to upper case for Chinese Wiktionary
-            # for other languages change namespace prefix to local name
-            for ns_prefix in ["Module:", self.NAMESPACE_DATA["Module"]["name"]
-                              + ":"]:
-                if title.startswith(ns_prefix):
-                    if self.lang_code == "zh":
-                        new_title = ns_prefix + title[len(ns_prefix)].upper() \
-                                    + title[len(ns_prefix) + 1:]
-                    elif ns_prefix == "Module:":
-                        new_title = self.NAMESPACE_DATA["Module"]["name"] \
-                                    + ":" + title[len(ns_prefix):]
-                    exists = new_title in self.page_contents
-                    break
-        return exists
+        elif ":" not in title and namespace_id is not None and namespace_id != 0:
+            # Add namespace prefix
+            if self.lang_code == "zh" and namespace_id in {
+                    self.NAMESPACE_DATA[ns]["id"]
+                    for ns in ["Template", "Module"]
+            }:
+                # Chinese Wiktionary capitalizes the first letter of template/module
+                # page titles but uses lower case in Wikitext and Lua code
+                title = f"{self.LOCAL_NS_NAME_BY_ID[namespace_id]}:{title[0].upper()}{title[1:]}"
+            else:
+                title = f"{self.LOCAL_NS_NAME_BY_ID[namespace_id]}:{title}"
 
-    def read_by_title(self, title):
+        body = self.overwritten_pages.get(title)
+        if body is not None:
+            return body
+
+        if namespace_id is not None:
+            page = self.db_session.scalar(select(Page)
+                                          .where(Page.key.title == title)
+                                          .where(Page.key.namespace_id == namespace_id))
+        else:
+            page = self.db_session.scalar(select(Page).where(Page.key.title == title))
+
+        return page
+
+    def read_by_title(self, title: str, namespace_id: Optional[int] = None) -> Optional[str]:
         """Reads the contents of the page.  Returns None if the page does
         not exist."""
-        assert isinstance(title, str)
-        if title.startswith("Main:"):
-            title = title[5:]
-        # XXX should we canonicalize title?
-        if title in self.transient_pages:
-            title, model, text = self.transient_pages[title]
-            return text
-        if title not in self.page_contents:
+        page = self.get_page(title, namespace_id)
+        if page is None:
             return None
-        # The page seems to exist
-        title, model, ofs, page_size = self.page_contents[title]
-        rawdata = ""
-        if platform.system() in ("Windows"):
-            # Optimize once multiple threads are used on Windows.
-            # Unfortunately, "os.pread" is not implemented on Windows:
-            # https://stackoverflow.com/questions/50902714/python-pread-pwrite-only-on-unix
-            tmp_ofs = self.tmp_file.tell()
-            self.tmp_file.seek(ofs)
-            rawdata = os.read(self.tmp_file.fileno(), page_size)
-            self.tmp_file.seek(tmp_ofs)
-        else:
-            # Use os.pread() so that we won't change the file offset; otherwise we
-            # might cause a race condition with parallel scanning of the temporary
-            # file.
-            rawdata = os.pread(self.tmp_file.fileno(), page_size, ofs)
-        return rawdata.decode("utf-8")
+        if page.redirect_to is not None:
+            return self.read_by_title(page.redirect_to, namespace_id)
+        return page.body if page is not None else None
 
     def parse(self, text, pre_expand=False, expand_all=False,
               additional_expand=None, do_not_pre_expand=None,
@@ -1658,8 +1536,6 @@ class Wtp:
                        post_template_fn=post_template_fn,
                        node_handler_fn=node_handler_fn)
 
-    def set_template_overrides(self, overrides):
-        self.template_overrides = overrides
 
 def overwrite_zh_template(template_name: str, expanded_template: str) -> str:
     """
