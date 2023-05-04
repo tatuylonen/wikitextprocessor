@@ -33,8 +33,10 @@ def process_input(path: str, page_cb: Callable[[str, str, str], None], namespace
 
     for _, page_element in etree.iterparse(wikt_f, tag=f"{{{namespace_str}}}page"):
         title = html.unescape(page_element.findtext("title", "", namespaces))
+        title_without_prefix = title[title.find(":") + 1:]
         namespace_id = int(page_element.findtext("ns", "0", namespaces))
-        if namespace_id not in namespace_ids or title.endswith(("/documentation", "/testcases", "/sandbox")):
+        if namespace_id not in namespace_ids or title_without_prefix.startswith("User:") or \
+           title.endswith(("/documentation", "/testcases", "/sandbox")):
             page_element.clear(keep_tail=True)
             continue
 
@@ -49,7 +51,7 @@ def process_input(path: str, page_cb: Callable[[str, str, str], None], namespace
                 continue
             text = page_element.findtext("revision/text", "", namespaces)
 
-        page_cb(model, title, text)
+        page_cb(model, title, html.unescape(text))
         page_element.clear(keep_tail=True)
 
     wikt_f.close()
