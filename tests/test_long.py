@@ -20,7 +20,7 @@ class LongTests(unittest.TestCase):
         path = "tests/test-pages-articles.xml.bz2"
         print("Parsing test data")
         ctx = Wtp(num_threads=num_threads)
-        ret = ctx.process(path, page_cb)
+        ret = ctx.process(path, page_cb, {0, 4, 10, 14, 100, 110, 118, 828})
         titles = collections.defaultdict(int)
         redirects = collections.defaultdict(int)
         for title, redirect_to in ret:

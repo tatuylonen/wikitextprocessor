@@ -1,4 +1,5 @@
 from dataclasses import dataclass
+from typing import Optional
 
 from sqlalchemy import create_engine
 from sqlalchemy.orm import DeclarativeBase, Mapped, composite, mapped_column
@@ -20,8 +21,8 @@ class Page(Base):
     key: Mapped[PageKey] = composite(
         mapped_column("title"), mapped_column("namespace_id")
     )
-    body: Mapped[str | None]
-    redirect_to: Mapped[str | None] = mapped_column(index=True)
+    body: Mapped[Optional[str]]
+    redirect_to: Mapped[Optional[str]] = mapped_column(index=True)
     need_pre_expand: Mapped[bool] = mapped_column(index=True, default=False)
 
     def __repr__(self) -> str:

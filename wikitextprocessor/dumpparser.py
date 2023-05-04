@@ -10,7 +10,7 @@ from typing import Optional
 from collections.abc import Callable
 
 
-def process_input(path: str, page_cb: Callable[[str, str, str], None], ignored_namespaces: set[int] = set()) -> None:
+def process_input(path: str, page_cb: Callable[[str, str, str], None], namespace_ids: set[int]) -> None:
     """Processes the entire input once, calling chunk_fn for each chunk.
     A chunk is a list of data, where ``data`` is a dict
     containing at least "title" and "text" keys.  This returns a list
@@ -34,7 +34,7 @@ def process_input(path: str, page_cb: Callable[[str, str, str], None], ignored_n
     for _, page_element in etree.iterparse(wikt_f, tag=f"{{{namespace_str}}}page"):
         title = html.unescape(page_element.findtext("title", "", namespaces))
         namespace_id = int(page_element.findtext("ns", "0", namespaces))
-        if namespace_id in ignored_namespaces:
+        if namespace_id not in namespace_ids or title.endswith(("/documentation", "/testcases", "/sandbox")):
             page_element.clear(keep_tail=True)
             continue
 
@@ -43,13 +43,19 @@ def process_input(path: str, page_cb: Callable[[str, str, str], None], ignored_n
             text = redirect_element.get("title", "")
         else:
             model = page_element.findtext("revision/model", "", namespaces)
+            if model not in {"wikitext", "Scribunto", "json"}:
+                # ignore css, javascript and sanitized-css pages
+                page_element.clear(keep_tail=True)
+                continue
             text = page_element.findtext("revision/text", "", namespaces)
 
         page_cb(model, title, text)
         page_element.clear(keep_tail=True)
 
+    wikt_f.close()
 
-def process_dump(ctx: Wtp, path: str, page_handler: Optional[Callable[[str, int], None]] = None) -> None:
+def process_dump(ctx: Wtp, path: str, namespace_ids: set[int],
+                 page_handler: Optional[Callable[[str, int], None]] = None) -> None:
     """Parses a WikiMedia dump file ``path`` (which should point to a
     "<project>-<date>-pages-articles.xml.bz2" file.  This implements
     the first phase of processing a dump - copying it to a temporary
@@ -58,7 +64,7 @@ def process_dump(ctx: Wtp, path: str, page_handler: Optional[Callable[[str, int]
 
     # Run Phase 1 in a single thread; this mostly just extracts pages into
     # a temporary file.
-    process_input(path, page_handler if page_handler else ctx.add_page)
+    process_input(path, page_handler if page_handler else ctx.add_page, namespace_ids)
 
     # Analyze which templates should be expanded before parsing
     if not ctx.quiet:
