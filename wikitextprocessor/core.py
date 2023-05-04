@@ -10,7 +10,6 @@ import html
 import json
 import time
 import platform
-import tempfile
 import traceback
 import collections
 import urllib.parse
@@ -19,13 +18,14 @@ import html.entities
 import multiprocessing
 
 from collections import defaultdict
-from typing import Optional, Dict, Set
+from tempfile import TemporaryDirectory, NamedTemporaryFile
+from typing import Optional, Dict, Set, Tuple, Union
 from pathlib import Path
 
-from sqlalchemy import func, select, ScalarResult
-from sqlalchemy.orm import aliased
+from sqlalchemy import func, select, create_engine, ScalarResult
+from sqlalchemy.orm import aliased, Session
 
-from .db_models import Base, Page, PageKey
+from .db_models import Base, Page
 from .parserfns import PARSER_FUNCTIONS, call_parser_function, init_namespaces
 from .wikihtml import ALLOWED_HTML_TAGS
 from .luaexec import call_lua_sandbox
@@ -59,20 +59,22 @@ def phase2_page_handler(page: Page) -> Tuple[bool, str, float, Tuple[str, str]]:
     # processed into /tmp/wiktextract*/wiktextract-*.  Once a hang
     # has been observed, these files contain page(s) that hang.  They should
     # be checked before aborting the process, as an interrupt might delete them.
-    with tempfile.TemporaryDirectory(prefix="wiktextract") as tmpdirname:
+    with TemporaryDirectory(prefix="wiktextract") as tmpdirname:
         debug_path = "{}/wiktextract-{}".format(tmpdirname, os.getpid())
         with open(debug_path, "w", encoding="utf-8") as f:
-            f.write(page.key.title + "\n")
+            f.write(page.title + "\n")
 
-        ctx.start_page(page.key.title)
+        ctx.start_page(page.title)
         try:
             ret = _global_page_handler(page)
+            ctx.close_db_session()
             return True, title, start_t, ret
         except Exception as e:
             lst = traceback.format_exception(type(e), value=e,
                                              tb=e.__traceback__)
             msg = ("=== EXCEPTION while parsing page \"{}\":\n".format(title) +
                    "".join(lst))
+            ctx.close_db_session()
             return False, title, start_t, msg
 
 
@@ -115,7 +117,6 @@ class Wtp:
         "namespaces",
         "LANGUAGES_BY_CODE",
         "lang_code",
-        "overwritten_pages",  # Dictionary, not saved to database, exmaple: {"title": "body"}
     )
 
     def __init__(self, num_threads: Optional[int] = None, db_path: Optional[Path] = None,
@@ -126,6 +127,7 @@ class Wtp:
             self.num_threads = 1
         else:
             self.num_threads = num_threads
+        self.db_path = db_path
         self.cookies = []
         self.errors = []
         self.warnings = []
@@ -140,7 +142,6 @@ class Wtp:
         self.rev_ht = {}
         self.expand_stack = []
         self.parser_stack = None
-        self.overwritten_pages: Dict[str, str] = {}
         self.lang_code = lang_code
         self.data_folder = Path(pkg_resources.resource_filename("wikitextprocessor", "data/")).joinpath(lang_code)
         self.init_namespace_data()
@@ -154,34 +155,31 @@ class Wtp:
             temp_file = NamedTemporaryFile(prefix="tempdb", delete=False)
             self.db_path = Path(temp_file.name)
             temp_file.close()
+        elif isinstance(self.db_path, str):
+            self.db_path = Path(self.db_path)
 
-        self.db_engine = create_engine(f"sqlite://{db_path.absolute()}", echo=True)
-        Base.metadata.create_all(engine)
+        self.db_engine = create_engine(f"sqlite:///{self.db_path.absolute()}")
+        Base.metadata.create_all(self.db_engine)
+        self.db_session = Session(self.db_engine)
         # Add predefined templates
         self.add_page("!", self.NAMESPACE_DATA.get("Template", {}).get("id"), "|")
-
-    def is_temp_db(self) -> bool:
-        return self.db_path.name.startswith("tempdb")
 
     def init_child_db_session(self) -> None:
         # don't close parent connection
         # https://docs.sqlalchemy.org/en/20/core/pooling.html#pooling-multiprocessing
-        from sqlalchemy.orm import Session
-
         self.db_engine.dispose(close=False)
         self.db_session = Session(self.engine)
 
-    def clsose_db_session(self) -> None:
+    def close_db_session(self) -> None:
         self.db_session.close()
 
     def dispose_db_engine(self) -> None:
         self.db_engine.dispose()
-        if self.is_temp_db():
+        if self.db_path.name.startswith("tempdb"):
             self.db_path.unlink()
 
     def saved_page_nums(self) -> int:
-        return self.db_session.scalar(
-            select(func.count().select_from(Page)))
+        return self.db_session.scalar(select(func.count(Page.title)))
 
     def init_namespace_data(self):
         with self.data_folder.joinpath("namespaces.json") \
@@ -280,17 +278,6 @@ class Wtp:
             "warnings": self.warnings,
             "debugs": self.debugs,
         }
-
-    def _canonicalize_template_name(self, name: str) -> str:
-        """Canonicalizes a template name by replacing underscores by spaces
-        and sequences of whitespace by a single whitespace."""
-        local_template_name = self.NAMESPACE_DATA["Template"]["name"]
-        if name.lower().startswith(local_template_name.lower() + ":"):
-            name = name[len(local_template_name) + 1:]
-        return name.translate(str.maketrans({
-            character: urllib.parse.quote(character)
-            for character in ["(", ")", "&", "+"]
-        })).strip()
 
     def _canonicalize_parserfn_name(self, name: str) -> str:
         """Canonicalizes a parser function name by replacing underscores by spaces
@@ -512,23 +499,21 @@ class Wtp:
         SQLite database file."""
         is_template = namespace_id == self.NAMESPACE_DATA.get("Template", {}).get("id")
         if is_template:
-            body = self._template_to_body(title, text)
+            body = self._template_to_body(title, body)
 
-        if transient:
-            self.overwritten_pages[title] = body
-            if is_template or is_module:
-                self.overwritten_pages[title_without_prefix] = body
+        if overwrite:
+            page = self.get_page(title, namespace_id)
+            if page is not None:
+                page.body = body
+                self.db_session.commit()
         else:
-            page = Page(PageKey(title=title, namespace_id=namespace_id),
-                        body=body, redirect_to=redirect_to)
-            self.add_page_to_db(page)
-
-    def add_page_to_db(self, page: Page) -> None:
-        self.db_session.add(page)
-        self.db_session.commit()
-        page_num = self.saved_page_nums()
-        if not self.quiet and page_num % 10000 == 0:
-            print(f"  ... {page_num} raw pages collected", flush=True)
+            page = Page(title=title, namespace_id=namespace_id, body=body,
+                        redirect_to=redirect_to)
+            self.db_session.add(page)
+            self.db_session.commit()
+            page_num = self.saved_page_nums()
+            if not self.quiet and page_num % 10000 == 0:
+                print(f"  ... {page_num} raw pages collected", flush=True)
 
     def _analyze_template(self, name: str, body: str) -> Tuple[Set[str], bool]:
         """Analyzes a template body and returns a set of the canonicalized
@@ -637,7 +622,6 @@ class Wtp:
                              unpaired_text):
             name = m.group(3)
             name = re.sub(r"(?si)<\s*nowiki\s*/\s*>", "", name)
-            name = self._canonicalize_template_name(name)
             if not name:
                 continue
             included_templates.add(name)
@@ -654,12 +638,12 @@ class Wtp:
 
         included_map = collections.defaultdict(set)
         for page in self.get_template_pages():
-            used_templates, pre_expand = self._analyze_template(page.key.title, page.body)
+            used_templates, pre_expand = self._analyze_template(page.title, page.body)
             for used_template in used_templates:
-                included_map[used_template].add(page.key.title)
+                included_map[used_template].add(page.title)
             if pre_expand:
                 page.need_pre_expand = True
-                expand_q.append(page)
+                expand_stack.append(page)
 
         # XXX consider encoding template bodies here (also need to save related
         # cookies).  This could speed up their expansion, where the first
@@ -670,23 +654,23 @@ class Wtp:
         # refer to them
         while len(expand_stack) > 0:
             page = expand_stack.pop()
-            if page.key.title not in included_map:
+            if page.title not in included_map:
                 continue
-            for template_title in included_map[page.key.title]:
+            for template_title in included_map[page.title]:
                 template = self.get_page(template_title, template_ns_id)
                 if template.need_pre_expand:
                     continue
                 #print("propagating EXP {} -> {}".format(name, inc))
                 template.need_pre_expand = True
-                expand_q.append(template)
+                expand_stack.append(template)
 
         # Also set `need_pre_expand` value for redirected templates
         dest_templates = aliased(Page)
         for source_template, dest_template in self.db_session.scalars(
                 select(Page, dest_templates)
-                .join(dest_templates, Page.redirect_to == dest_templates.key.title)
-                .where(Page.key.namespace_id == template_ns_id)
-                .where(dest_templates.key.namespace_id == template_ns_id)):
+                .join(dest_templates, Page.redirect_to == dest_templates.title)
+                .where(Page.namespace_id == template_ns_id)
+                .where(dest_templates.namespace_id == template_ns_id)):
             if source_template.need_pre_expand:
                 dest_template.need_pre_expand = True
             elif dest_template.need_pre_expand:
@@ -811,40 +795,32 @@ class Wtp:
 
         # Handle <nowiki> in a preprocessing step
         text = self.preprocess_text(text)
+        pre_expand_templates = self.get_pre_expand_template_titles()
 
         # If requesting to pre_expand, then add templates needing pre-expand
         # to those to be expanded (and don't expand everything).
         if pre_expand:
-            if self.need_pre_expand is None:
-                if self.cache_file and not self.cache_file_old:
-                    raise RuntimeError("You have specified a cache file "
-                                       "but have not properly initialized "
-                                       "the cache file.")
+            if len(pre_expand_templates) == 0:
                 raise RuntimeError("analyze_templates() must be run first to "
                                    "determine which templates need pre-expand")
             if (templates_to_expand is not None and
-               templates_to_not_expand is not None):
+                templates_to_not_expand is not None):
                 templates_to_expand = (set(templates_to_expand) |
-                                       set(self.need_pre_expand))
-                templates_to_expand = (templates_to_expand -
-                                       set(templates_to_not_expand))
+                                       pre_expand_templates) - \
+                                       set(templates_to_not_expand)
             elif (templates_to_expand is not None and
-                 templates_to_not_expand is None):
+                  templates_to_not_expand is None):
                 templates_to_expand = (set(templates_to_expand) |
-                                       set(self.need_pre_expand))
+                                       pre_expand_templates)
             elif (templates_to_expand is None and
-                 templates_to_not_expand is not None):
-                templates_to_expand = (set(self.need_pre_expand) -
+                  templates_to_not_expand is not None):
+                templates_to_expand = (pre_expand_templates -
                                        set(templates_to_not_expand))
             else:
-                templates_to_expand = self.need_pre_expand
+                templates_to_expand = pre_expand_templates
 
-        # Create set or dict of all defined templates
-        if self.transient_templates:
-            all_templates = (set(self.templates) |
-                             set(self.transient_templates))
-        else:
-            all_templates = self.templates
+        # Create a set of all defined templates
+        all_templates = self.get_template_titles()
 
         # If templates_to_expand is None, then expand all known templates
         if templates_to_expand is None:
@@ -1070,8 +1046,6 @@ class Wtp:
 
                     # Otherwise it must be a template expansion
                     name = tname
-                    name = self._canonicalize_template_name(name)
-
 
                     # Check for undefined templates
                     if name not in all_templates:
@@ -1081,15 +1055,6 @@ class Wtp:
                         parts.append('<strong class="error">Template:{}'
                                      '</strong>'
                                      .format(html.escape(name)))
-                        continue
-
-                    if name in self.template_overrides and not nowiki:
-                        # print("Name in template_overrides: {}".format(name))
-                        new_args = list(expand_recurse(x, parent,
-                                                    templates_to_expand)
-                                                    for x in args)
-                        parts.append(self.template_overrides[name](new_args,
-                                                                   ))
                         continue
 
                     # If this template is not one of those we want to expand,
@@ -1158,10 +1123,7 @@ class Wtp:
                         # print("TEMPLATE_FN {}: {} {} -> {}"
                         #      .format(template_fn, name, ht, repr(t)))
                     if t is None:
-                        if name in self.transient_templates:
-                            body = self.transient_templates[name]
-                        else:
-                            body = self.templates[name]
+                        body = self.read_by_title(name, self.NAMESPACE_DATA["Template"]["id"])
                         # XXX optimize by pre-encoding bodies during
                         # preprocessing
                         # (Each template is typically used many times)
@@ -1253,7 +1215,6 @@ class Wtp:
 
         # Remove LanguageConverter markups:
         # https://www.mediawiki.org/wiki/Writing_systems/Syntax
-
         if not pre_expand and self.lang_code == "zh" and "-{" in expanded:
             expanded = expanded.replace("-{", "").replace("}-", "")
 
@@ -1367,9 +1328,9 @@ class Wtp:
             # Process pages using multiple parallel processes (the normal
             # case)
             if self.num_threads is None:
-                pool = multiprocessing.Pool()
+                pool = multiprocessing.Pool(initializer=self.init_child_db_session)
             else:
-                pool = multiprocessing.Pool(self.num_threads)
+                pool = multiprocessing.Pool(self.num_threads, self.init_child_db_session)
             cnt = 0
             start_t = time.time()
             last_t = time.time()
@@ -1401,9 +1362,12 @@ class Wtp:
                                   int(secs % 60)))
                     sys.stdout.flush()
                     last_t = time.time()
+
             pool.close()
             pool.join()
 
+        self.close_db_session()
+        self.dispose_db_engine()
         sys.stderr.flush()
         sys.stdout.flush()
 
@@ -1422,16 +1386,12 @@ class Wtp:
             else:
                 title = f"{self.LOCAL_NS_NAME_BY_ID[namespace_id]}:{title}"
 
-        body = self.overwritten_pages.get(title)
-        if body is not None:
-            return body
-
         if namespace_id is not None:
             page = self.db_session.scalar(select(Page)
-                                          .where(Page.key.title == title)
-                                          .where(Page.key.namespace_id == namespace_id))
+                                          .where(Page.title == title)
+                                          .where(Page.namespace_id == namespace_id))
         else:
-            page = self.db_session.scalar(select(Page).where(Page.key.title == title))
+            page = self.db_session.scalar(select(Page).where(Page.title == title))
 
         return page
 
@@ -1440,10 +1400,28 @@ class Wtp:
 
     def get_template_pages(self) -> ScalarResult[Page]:
         return self.db_session.scalars(
-            selct(Page).where(Page.key.namespace_id == self.NAMESPACE_DATA["Templates"]["id"]))
+            select(Page).where(Page.namespace_id == self.NAMESPACE_DATA["Template"]["id"]))
 
-    def get_redirect_pages(self) -> ScalarResult[Page]:
-        return self.db_session.scalars(selct(Page).where(Page.redirect_to is not None))
+    def get_template_titles(self) -> Set[str]:
+        """Return a set of all template titles without namespace prefix"""
+        titles = {title[title.find(":") + 1:] for title in self.db_session.scalars(
+            select(Page.title)
+            .where(Page.namespace_id == self.NAMESPACE_DATA["Template"]["id"]))}
+        if self.lang_code == "zh":
+            return titles | {f"{t[0].lower()}{t[1:]}" for t in titles}
+        else:
+            return titles
+
+    def get_pre_expand_template_titles(self) -> Set[str]:
+        """Return a set of need pre-expanded template titles without namespace prefix"""
+        titles = {title[title.find(":") + 1:] for title in self.db_session.scalars(
+            select(Page.title)
+            .where(Page.namespace_id == self.NAMESPACE_DATA["Template"]["id"])
+            .where(Page.need_pre_expand))}
+        if self.lang_code == "zh":
+            return titles | {f"{t[0].lower()}{t[1:]}" for t in titles}
+        else:
+            return titles
 
     def read_by_title(self, title: str, namespace_id: Optional[int] = None) -> Optional[str]:
         """Reads the contents of the page.  Returns None if the page does

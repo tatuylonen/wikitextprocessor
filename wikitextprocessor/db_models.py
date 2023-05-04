@@ -1,4 +1,3 @@
-from dataclasses import dataclass
 from typing import Optional
 
 from sqlalchemy import create_engine
@@ -9,22 +8,15 @@ class Base(DeclarativeBase):
     pass
 
 
-@dataclass
-class PageKey:
-    title: str
-    namespace_id: int
-
-
 class Page(Base):
     __tablename__ = "pages"
 
-    key: Mapped[PageKey] = composite(
-        mapped_column("title"), mapped_column("namespace_id")
-    )
-    body: Mapped[Optional[str]]
+    title: Mapped[str] = mapped_column(primary_key=True)
+    namespace_id: Mapped[int] = mapped_column(primary_key=True)
     redirect_to: Mapped[Optional[str]] = mapped_column(index=True)
     need_pre_expand: Mapped[bool] = mapped_column(index=True, default=False)
+    body: Mapped[Optional[str]]
 
     def __repr__(self) -> str:
-        return f"Page(key={self.key!r}, redirect_to={self.redirect_to!r}, \
-        need_pre_expand={self.need_pre_expand!r})"
+        return f"Page(title={self.title!r}, namespace_id={self.namespace_id!r}, " + \
+            f"redirect_to={self.redirect_to!r}, need_pre_expand={self.need_pre_expand!r})"
