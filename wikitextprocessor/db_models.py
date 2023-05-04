@@ -26,5 +26,5 @@ class Page(Base):
     need_pre_expand: Mapped[bool] = mapped_column(index=True, default=False)
 
     def __repr__(self) -> str:
-        return f"Page(title={self.key.title!r}, namespace_id={self.key.namespace_id!r}, \
-        redirect_to={self.redirect_to!r}, need_pre_expand={self.need_pre_expand!r})"
+        return f"Page(key={self.key!r}, redirect_to={self.redirect_to!r}, \
+        need_pre_expand={self.need_pre_expand!r})"
