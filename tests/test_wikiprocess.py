@@ -27,7 +27,11 @@ def phase1_to_ctx(pages: List[Tuple[str, str, str]]) -> Wtp:
             namespace_id = 10
         elif model == "Scribunto":
             namespace_id = 828
-        ctx.add_page(title, namespace_id, text)
+
+        if model == "redirect":
+            ctx.add_page(title, namespace_id, redirect_to=text)
+        else:
+            ctx.add_page(title, namespace_id, text)
     ctx.analyze_templates()
     return ctx
 
@@ -763,7 +767,7 @@ MORE
         self.parserfn("{{#expr|sin(30*pi/180)}}", "0.49999999999999994")
 
     def test_expr29(self):
-        self.parserfn("{{#expr|cos.1}}", "0.9950041652780257" if platform.system() == "Darwin" else "0.9950041652780258")
+        self.parserfn("{{#expr|cos.1}}", "0.9950041652780258")
 
     def test_expr30(self):
         self.parserfn("{{#expr|tan.1}}", "0.10033467208545055")
@@ -3174,21 +3178,21 @@ return export
         self.scribunto("False", r"""
         return _G["os"].clock == nil""")
 
-    def test_cachefile1(self):
+    def test_dbfile1(self):
         path = "/tmp/cachefiletest1"
         try:
             os.remove(path)
             os.remove(path + ".json")
         except FileNotFoundError:
             pass
-        ctx = Wtp(cache_file=path)
+        ctx = Wtp(db_path=path)
         ctx.add_page("Template:testmod", 10, "test content")
         ctx.analyze_templates()
         ctx.start_page("Tt")
         ret = ctx.expand("a{{testmod}}b")
         self.assertEqual(ret, "atest contentb")
         # Now create a new context with the same cachefile but do not add page
-        ctx = Wtp(cache_file=path)
+        ctx = Wtp(db_path=path)
         ctx.start_page("Tt")
         ret = ctx.expand("a{{testmod}}b")
         self.assertEqual(ret, "atest contentb")
@@ -3198,21 +3202,21 @@ return export
         except FileNotFoundError:
             pass
 
-    def test_cachefile2(self):
+    def test_dbfile2(self):
         path = "/tmp/cachefiletest1"
         try:
             os.remove(path)
             os.remove(path + ".json")
         except FileNotFoundError:
             pass
-        ctx = Wtp(cache_file=path)
+        ctx = Wtp(db_path=path)
         ctx.add_page("Template:testmod", 10, "test content")
         ctx.analyze_templates()
         ctx.start_page("Tt")
         ret = ctx.expand("a{{testmod}}b")
         self.assertEqual(ret, "atest contentb")
         # Now create a new context with the same cachefile but do not add page
-        ctx = Wtp(cache_file=path)
+        ctx = Wtp(db_path=path)
         ctx.add_page("Template:testmod", 10, "test content 2")
         ctx.analyze_templates()
         ctx.start_page("Tt")

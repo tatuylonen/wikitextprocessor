@@ -14,7 +14,7 @@ def parse_with_ctx(title, text, **kwargs):
     ctx.analyze_templates()
     ctx.start_page(title)
     root = ctx.parse(text, **kwargs)
-    print("parse_with_ctx: root", type(root), root)
+    # print("parse_with_ctx: root", type(root), root)
     return root, ctx
 
 

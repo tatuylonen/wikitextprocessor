@@ -14,7 +14,7 @@ def parse_with_ctx(title, text, **kwargs):
     ctx.analyze_templates()
     ctx.start_page(title)
     root = ctx.parse(text, **kwargs)
-    print("parse_with_ctx: root", type(root), root)
+    # print("parse_with_ctx: root", type(root), root)
     return root, ctx
 
 
@@ -2038,19 +2038,19 @@ def foo(x):
         assert isinstance(x, str)
 
     def test_file_animal(self):
-        text = open("tests/animal.txt", "r").read()
-        tree, ctx = parse_with_ctx("animal", text)
-        self.assertEqual(ctx.errors, [])
+        with open("tests/animal.txt", "r") as f:
+            tree, ctx = parse_with_ctx("animal", f.read())
+            self.assertEqual(ctx.errors, [])
 
     def test_file_Babel(self):
-        text = open("tests/Babel.txt", "r").read()
-        tree, ctx = parse_with_ctx("Babel", text, pre_expand=True)
-        self.assertEqual(ctx.errors, [])
+        with open("tests/Babel.txt", "r") as f:
+            tree, ctx = parse_with_ctx("Babel", f.read(), pre_expand=True)
+            self.assertEqual(ctx.errors, [])
 
     def test_file_fi_gradation(self):
-        text = open("tests/fi-gradation.txt", "r").read()
-        tree, ctx = parse_with_ctx("fi-gradation", text, pre_expand=True)
-        self.assertEqual(ctx.errors, [])
+        with open("tests/fi-gradation.txt", "r") as f:
+            tree, ctx = parse_with_ctx("fi-gradation", f.read(), pre_expand=True)
+            self.assertEqual(ctx.errors, [])
 
 # XXX implement <nowiki/> marking for links, templates
 #  - https://en.wikipedia.org/wiki/Help:Wikitext#Nowiki

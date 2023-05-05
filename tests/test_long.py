@@ -4,13 +4,10 @@ from wikitextprocessor import Wtp
 import platform
 
 
-def page_cb(model, title, text):
+def page_cb(page):
     # Note: this may be called in a separate thread and thus cannot
     # update external variables
-    assert model in ("wikitext", "redirect", "Scribunto") # in this data
-    if model == "redirect":
-        return title, text
-    return title, None
+    return page.title, page.redirect_to
 
 
 class LongTests(unittest.TestCase):

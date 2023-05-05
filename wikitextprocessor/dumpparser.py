@@ -50,7 +50,7 @@ def process_input(path: str, page_cb: Callable[[str, str], None], namespace_ids:
                 # ignore css, javascript and sanitized-css pages
                 page_element.clear(keep_tail=True)
                 continue
-            text = html.unescape(tpage_element.findtext("revision/text", "", namespaces))
+            text = html.unescape(page_element.findtext("revision/text", "", namespaces))
 
         page_cb(title, namespace_id, body=text, redirect_to=redirect_to)
         page_element.clear(keep_tail=True)

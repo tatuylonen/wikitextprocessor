@@ -83,8 +83,7 @@ def ifexist_fn(ctx, fn_name, args, expander):
     arg0 = args[0] if args else ""
     arg1 = args[1] if len(args) >= 2 else ""
     arg2 = args[2] if len(args) >= 3 else ""
-    exists = ctx.page_exists(expander(arg0).strip())
-    if exists:
+    if ctx.get_page(expander(arg0).strip()) is not None:
         return expander(arg1).strip()
     return expander(arg2).strip()
 
