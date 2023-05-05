@@ -31,7 +31,7 @@ def phase1_to_ctx(pages: List[Tuple[str, str, str]]) -> Wtp:
         if model == "redirect":
             ctx.add_page(title, namespace_id, redirect_to=text)
         else:
-            ctx.add_page(title, namespace_id, text)
+            ctx.add_page(title, namespace_id, text, model=model)
     ctx.analyze_templates()
     return ctx
 

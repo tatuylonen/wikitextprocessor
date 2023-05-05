@@ -113,7 +113,8 @@ class Wtp:
         "suppress_special",  # XXX never set to True???
         "data_folder",
         "NAMESPACE_DATA",
-        "LOCAL_NS_NAME_BY_ID",  # Local namespace names
+        "LOCAL_NS_NAME_BY_ID",  # Local namespace names dictionary
+        "NS_ID_BY_LOCAL_NAME",
         "namespaces",
         "LANGUAGES_BY_CODE",
         "lang_code",
@@ -188,6 +189,10 @@ class Wtp:
             self.NAMESPACE_DATA = json.load(f)
             self.LOCAL_NS_NAME_BY_ID: Dict[int, str] = {
                 data["id"]: data["name"]
+                for data in self.NAMESPACE_DATA.values()
+            }
+            self.NS_ID_BY_LOCAL_NAME: Dict[int, str] = {
+                data["name"]: data["id"]
                 for data in self.NAMESPACE_DATA.values()
             }
 
@@ -494,7 +499,8 @@ class Wtp:
         return text
 
     def add_page(self, title: str, namespace_id: int, body: Optional[str] = None,
-                 redirect_to: Optional[str] = None, need_pre_expand: bool = False) -> None:
+                 redirect_to: Optional[str] = None, need_pre_expand: bool = False,
+                 model: str = "wikitext") -> None:
         """Collects information about the page and save page text to a
         SQLite database file."""
         from sqlalchemy.dialects.sqlite import insert
@@ -515,13 +521,15 @@ class Wtp:
             "namespace_id": namespace_id,
             "body": body,
             "redirect_to": redirect_to,
-            "need_pre_expand": need_pre_expand
+            "need_pre_expand": need_pre_expand,
+            "model": model
         }
         stmt = insert(Page).values([data])
         stmt = stmt.on_conflict_do_update(index_elements=[Page.title, Page.namespace_id], set_={
             "body": body,
             "redirect_to": redirect_to,
-            "need_pre_expand": need_pre_expand
+            "need_pre_expand": need_pre_expand,
+            "model": model
         })
         self.db_session.execute(stmt)
         self.db_session.commit()
@@ -1293,7 +1301,8 @@ class Wtp:
         text = re.sub(MAGIC_NOWIKI_CHAR, "<nowiki />", text)
         return text
 
-    def process(self, path, page_handler, namespace_ids: set[int], phase1_only=False):
+    def process(self, path, page_handler, namespace_ids: set[int], phase1_only=False,
+                override_folders: Optional[List[Path]] = None):
         """Parses a WikiMedia dump file ``path`` (which should point to a
         "<project>-<date>-pages-articles.xml.bz2" file.  This calls
         ``page_handler(model, title, page)`` for each raw page.  This
@@ -1314,7 +1323,7 @@ class Wtp:
         assert isinstance(path, str)
         assert page_handler is None or callable(page_handler)
         # Process the dump and copy it to temporary file (Phase 1)
-        process_dump(self, path, namespace_ids)
+        process_dump(self, path, namespace_ids, override_folders)
         if phase1_only or page_handler is None:
             return []
 

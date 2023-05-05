@@ -16,6 +16,7 @@ class Page(Base):
     redirect_to: Mapped[Optional[str]] = mapped_column(index=True)
     need_pre_expand: Mapped[bool] = mapped_column(index=True, default=False)
     body: Mapped[Optional[str]]
+    model: Mapped[Optional[str]]
 
     def __repr__(self) -> str:
         return f"Page(title={self.title!r}, namespace_id={self.namespace_id!r}, " + \
