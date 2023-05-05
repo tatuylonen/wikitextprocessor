@@ -1330,7 +1330,7 @@ class Wtp:
         # Reprocess all the pages that we captured in Phase 1
         return self.reprocess(page_handler)
 
-    def reprocess(self, page_handler, autoload=True):
+    def reprocess(self, page_handler, autoload=True, namespace_ids: Optional[List[int]] = None):
         """Reprocess all pages captured by self.process() or explicit calls to
         self.add_page().  This calls page_handler(model, title, text)
         for each page, and returns of list of their return values
@@ -1355,7 +1355,7 @@ class Wtp:
         if self.num_threads == 1:
             # Single-threaded version (without subprocessing).  This is
             # primarily intended for debugging.
-            for page in self.get_all_pages():
+            for page in self.get_all_pages(namespace_ids):
                 success, ret_title, t, ret = phase2_page_handler(page)
                 assert ret_title == page.title
                 if not success:
@@ -1378,8 +1378,9 @@ class Wtp:
             cnt = 0
             start_t = time.time()
             last_t = time.time()
+            all_page_nums = self.saved_page_nums()
             for success, title, t, ret in \
-                pool.imap_unordered(phase2_page_handler, self.get_all_pages()):
+                pool.imap_unordered(phase2_page_handler, self.get_all_pages(namespace_ids)):
                 if t + 300 < time.time():
                     print("====== REPROCESS GOT OLD RESULT ({:.1f}s): {}"
                           .format(time.time() - t, title))
@@ -1395,12 +1396,12 @@ class Wtp:
                 if (not self.quiet and
                     # cnt % 1000 == 0 and
                     time.time() - last_t > 1):
-                    remaining = len(self.page_seq) - cnt
+                    remaining = all_page_nums - cnt
                     secs = (time.time() - start_t) / cnt * remaining
                     print("  ... {}/{} pages ({:.1%}) processed, "
                           "{:02d}:{:02d}:{:02d} remaining"
-                          .format(cnt, len(self.page_seq),
-                                  cnt / len(self.page_seq),
+                          .format(cnt, all_page_nums,
+                                  cnt / all_page_nums,
                                   int(secs / 3600),
                                   int(secs / 60 % 60),
                                   int(secs % 60)))
@@ -1442,8 +1443,12 @@ class Wtp:
     def page_exists(self, title: str) -> bool:
         return self.get_page(title) is not None
 
-    def get_all_pages(self) -> ScalarResult[Page]:
-        return self.db_session.scalars(select(Page))
+    def get_all_pages(self, namespace_ids: Optional[List[int]] = None) -> ScalarResult[Page]:
+        if namespace_ids is None:
+            return self.db_session.scalars(select(Page))
+        else:
+            return self.db_session.scalars(select(Page)
+                                           .where(Page.namespace_id.in_(namespace_ids)))
 
     def get_template_titles(self) -> Set[str]:
         """Return a set of all template titles without namespace prefix"""

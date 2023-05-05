@@ -20,4 +20,5 @@ class Page(Base):
 
     def __repr__(self) -> str:
         return f"Page(title={self.title!r}, namespace_id={self.namespace_id!r}, " + \
-            f"redirect_to={self.redirect_to!r}, need_pre_expand={self.need_pre_expand!r})"
+            f"redirect_to={self.redirect_to!r}, need_pre_expand={self.need_pre_expand!r})" + \
+            f"model={self.model!r}"
