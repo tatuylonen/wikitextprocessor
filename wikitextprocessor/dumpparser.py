@@ -202,22 +202,21 @@ def process_input(path, page_cb):
     return lst
 
 
-def process_dump(ctx, path):
+def process_dump(ctx, path, page_handler=None):
     """Parses a WikiMedia dump file ``path`` (which should point to a
     "<project>-<date>-pages-articles.xml.bz2" file.  This implements
     the first phase of processing a dump - copying it to a temporary
     file with some preprocessing.  The Wtp.reprocess() must then be
     called to actually process the data."""
     assert isinstance(path, str)
+    assert isinstance(page_handler, type(None)) or callable(page_handler)
 
-    def phase1_page_handler(model, title, text):
-        """Handler for pages in Phase 1, for extracting special pages and saving
-        data about all pages."""
-        ctx.add_page(model, title, text)
+    if page_handler is None:
+        page_handler = lambda model, title, text: ctx.add_page(model, title, text)
 
     # Run Phase 1 in a single thread; this mostly just extracts pages into
     # a temporary file.
-    process_input(path, phase1_page_handler)
+    process_input(path, page_handler)
 
     # Analyze which templates should be expanded before parsing
     if not ctx.quiet:
