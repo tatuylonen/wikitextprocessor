@@ -19,7 +19,7 @@ import html.entities
 import multiprocessing
 
 from collections import defaultdict
-from typing import Optional, Dict, Set, Tuple, Union
+from typing import Optional, Dict, Set, Tuple, Union, Callable, List
 from pathlib import Path
 
 from sqlalchemy import func, select, create_engine, ScalarResult
@@ -117,10 +117,12 @@ class Wtp:
         "namespaces",
         "LANGUAGES_BY_CODE",
         "lang_code",
+        "template_override_funcs"  # Python functions for overriding template expaneded text
     )
 
     def __init__(self, num_threads: Optional[int] = None, db_path: Optional[Path] = None,
-                 quiet: bool = False, lang_code: str = "en", languages_by_code = {}):
+                 quiet: bool = False, lang_code: str = "en", languages_by_code: Dict[str, List[str]] = {},
+                 template_override_funcs: Dict[str, Callable[List[str], str]] = {}):
         if num_threads is None and platform.system() in ("Windows", "Darwin"):
             # Default num_threads to 1 on Windows and MacOS, as they
             # apparently don't use fork() for multiprocessing.Pool()
@@ -149,6 +151,7 @@ class Wtp:
         init_namespaces(self)
         self.LANGUAGES_BY_CODE = languages_by_code
         self.create_db()
+        self.template_override_funcs = template_override_funcs
 
     def create_db(self) -> None:
         if self.db_path is None:
@@ -1079,6 +1082,14 @@ class Wtp:
                         parts.append('<strong class="error">Template:{}'
                                      '</strong>'
                                      .format(html.escape(name)))
+                        continue
+
+                    if name in self.template_override_funcs and not nowiki:
+                        # print("Name in template_overrides: {}".format(name))
+                        new_args = list(expand_recurse(x, parent,
+                                                       templates_to_expand)
+                                        for x in args)
+                        parts.append(self.template_override_funcs[name](new_args,))
                         continue
 
                     # If this template is not one of those we want to expand,
