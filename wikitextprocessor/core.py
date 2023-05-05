@@ -1439,6 +1439,9 @@ class Wtp:
 
         return page
 
+    def page_exists(self, title: str) -> bool:
+        return self.get_page(title) is not None
+
     def get_all_pages(self) -> ScalarResult[Page]:
         return self.db_session.scalars(select(Page))
 
