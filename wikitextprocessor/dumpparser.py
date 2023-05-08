@@ -76,6 +76,7 @@ def process_dump(ctx: "Wtp", path: str, namespace_ids: Set[int], overwrite_folde
     if overwrite_folders is not None:
         overwrite_pages(ctx, overwite_folders)
 
+    ctx.db_session.commit()
     # Analyze which templates should be expanded before parsing
     logging.info("Analyzing which templates should be expanded before parsing")
     ctx.analyze_templates()

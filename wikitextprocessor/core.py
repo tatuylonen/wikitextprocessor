@@ -8,6 +8,7 @@ import re
 import sys
 import html
 import json
+import logging
 import tempfile
 import time
 import platform
@@ -534,10 +535,9 @@ class Wtp:
             "model": model
         })
         self.db_session.execute(stmt)
-        self.db_session.commit()
         self.page_nums += 1
-        if not self.quiet and self.page_nums % 10000 == 0:
-            print(f"  ... {self.page_nums} raw pages collected", flush=True)
+        if self.page_nums % 10000 == 0:
+            logging.info(f"  ... {self.page_nums} raw pages collected")
 
     def _analyze_template(self, name: str, body: str) -> Tuple[Set[str], bool]:
         """Analyzes a template body and returns a set of the canonicalized
