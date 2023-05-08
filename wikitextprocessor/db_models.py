@@ -1,7 +1,17 @@
 from typing import Optional
 
-from sqlalchemy import create_engine
+from sqlalchemy import create_engine, event
+from sqlalchemy.engine import Engine
 from sqlalchemy.orm import DeclarativeBase, Mapped, composite, mapped_column
+
+
+@event.listens_for(Engine, "connect")
+def set_sqlite_pragma(dbapi_connection, connection_record):
+    # https://www.sqlite.org/wal.html
+    # https://docs.sqlalchemy.org/en/20/dialects/sqlite.html#foreign-key-support
+    cursor = dbapi_connection.cursor()
+    cursor.execute("PRAGMA journal_mode=WAL;")
+    cursor.close()
 
 
 class Base(DeclarativeBase):
