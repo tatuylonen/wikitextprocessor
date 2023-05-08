@@ -118,7 +118,8 @@ class Wtp:
         "namespaces",
         "LANGUAGES_BY_CODE",
         "lang_code",
-        "template_override_funcs"  # Python functions for overriding template expaneded text
+        "template_override_funcs",  # Python functions for overriding template expaneded text,
+        "page_nums"  # Page number saved to database
     )
 
     def __init__(self, num_threads: Optional[int] = None, db_path: Optional[Path] = None,
@@ -153,6 +154,7 @@ class Wtp:
         self.LANGUAGES_BY_CODE = languages_by_code
         self.create_db()
         self.template_override_funcs = template_override_funcs
+        self.page_nums = 0
 
     def create_db(self) -> None:
         if self.db_path is None:
@@ -533,9 +535,9 @@ class Wtp:
         })
         self.db_session.execute(stmt)
         self.db_session.commit()
-        page_num = self.saved_page_nums()
-        if not self.quiet and page_num % 10000 == 0:
-            print(f"  ... {page_num} raw pages collected", flush=True)
+        self.page_nums += 1
+        if not self.quiet and self.page_nums % 10000 == 0:
+            print(f"  ... {self.page_nums} raw pages collected", flush=True)
 
     def _analyze_template(self, name: str, body: str) -> Tuple[Set[str], bool]:
         """Analyzes a template body and returns a set of the canonicalized
