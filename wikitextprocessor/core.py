@@ -181,7 +181,7 @@ class Wtp:
             self.db_path.unlink()
 
     def saved_page_nums(self) -> int:
-        return self.db_session.scalar(func.count(Page.title))
+        return self.db_session.query(func.count()).select_from(Page).scalar()
 
     def init_namespace_data(self):
         with self.data_folder.joinpath("namespaces.json") \

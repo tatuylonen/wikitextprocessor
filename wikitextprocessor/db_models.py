@@ -13,8 +13,8 @@ class Page(Base):
 
     title: Mapped[str] = mapped_column(primary_key=True)
     namespace_id: Mapped[int] = mapped_column(primary_key=True)
-    redirect_to: Mapped[Optional[str]] = mapped_column(index=True)
-    need_pre_expand: Mapped[bool] = mapped_column(index=True, default=False)
+    redirect_to: Mapped[Optional[str]]
+    need_pre_expand: Mapped[bool] = mapped_column(default=False)
     body: Mapped[Optional[str]]
     model: Mapped[Optional[str]]
 
