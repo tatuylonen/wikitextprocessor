@@ -87,9 +87,9 @@ def overwrite_pages(ctx: "Wtp", folder_paths: List[Path]) -> None:
         for file_path in folder_path.iterdir():
             with file_path.open(encoding="utf-8") as f:
                 first_line = f.readline()
-                if not first_line.startswith("Title: "):
+                if not first_line.startswith("TITLE: "):
                     logging.error(
-                        'First line of file supplied with --override must be "Title: <page title>"'
+                        'First line of file supplied with --override must be "TITLE: <page title>"'
                         '(The page title for this would normally start with Module:')
                     sys.exit(1)
                 title = first_line[7:].strip()
