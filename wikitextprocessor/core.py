@@ -181,7 +181,7 @@ class Wtp:
             self.db_path.unlink()
 
     def saved_page_nums(self) -> int:
-        return self.db_session.scalar(select(func.count(Page.title)))
+        return self.db_session.scalar(func.count(Page.title))
 
     def init_namespace_data(self):
         with self.data_folder.joinpath("namespaces.json") \
@@ -1378,6 +1378,7 @@ class Wtp:
             cnt = 0
             start_t = time.time()
             last_t = time.time()
+
             all_page_nums = self.saved_page_nums()
             for success, title, t, ret in \
                 pool.imap_unordered(phase2_page_handler, self.get_all_pages(namespace_ids)):
@@ -1411,8 +1412,6 @@ class Wtp:
             pool.close()
             pool.join()
 
-        self.close_db_session()
-        self.dispose_db_engine()
         sys.stderr.flush()
         sys.stdout.flush()
 
