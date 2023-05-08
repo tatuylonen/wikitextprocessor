@@ -74,7 +74,7 @@ def process_dump(ctx: "Wtp", path: str, namespace_ids: Set[int], overwrite_folde
     # a temporary file.
     process_input(path, page_handler if page_handler else ctx.add_page, namespace_ids)
     if overwrite_folders is not None:
-        overwrite_pages(ctx, overwite_folders)
+        overwrite_pages(ctx, overwrite_folders)
 
     ctx.db_session.commit()
     # Analyze which templates should be expanded before parsing
@@ -87,7 +87,7 @@ def overwrite_pages(ctx: "Wtp", folder_paths: List[Path]) -> None:
         for file_path in folder_path.iterdir():
             with file_path.open(encoding="utf-8") as f:
                 first_line = f.readline()
-                if not file_line.startswith("Title: "):
+                if not first_line.startswith("Title: "):
                     logging.error(
                         'First line of file supplied with --override must be "Title: <page title>"'
                         '(The page title for this would normally start with Module:')
