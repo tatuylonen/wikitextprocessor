@@ -1415,6 +1415,8 @@ class Wtp:
         sys.stdout.flush()
 
     def get_page(self, title: str, namespace_id: Optional[int] = None) -> Optional[Page]:
+        # " " in Lua Module name is replaced by "_" in Wiktionary Lua code when call `require`
+        title = title.replace("_", " ")
         if title.startswith("Main:"):
             title = title[5:]
         if namespace_id is not None and namespace_id != 0:
