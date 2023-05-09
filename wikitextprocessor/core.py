@@ -181,8 +181,13 @@ class Wtp:
         if self.db_path.parent.samefile(Path(tempfile.gettempdir())):
             self.db_path.unlink()
 
-    def saved_page_nums(self) -> int:
-        return self.db_session.query(func.count()).select_from(Page).scalar()
+    def saved_page_nums(self, namespace_ids: Optional[List[int]] = None, include_redirects: bool = True) -> int:
+        query = self.db_session.query(func.count()).select_from(Page)
+        if namespace_ids is not None:
+            query = query.where(Page.namespace_id.in_(namespace_ids))
+        if not include_redirects:
+            query = query.where(Page.redirect_to.is_(None))
+        return query.scalar()
 
     def init_namespace_data(self):
         with self.data_folder.joinpath("namespaces.json") \
@@ -1378,17 +1383,16 @@ class Wtp:
             start_t = time.time()
             last_t = time.time()
 
-            all_page_nums = self.saved_page_nums()
+            all_page_nums = self.saved_page_nums(namespace_ids, include_redirects)
             for success, title, t, ret in \
                 pool.imap_unordered(phase2_page_handler, self.get_all_pages(namespace_ids, include_redirects)):
-                if t + 300 < time.time():
-                    print("====== REPROCESS GOT OLD RESULT ({:.1f}s): {}"
-                          .format(time.time() - t, title))
-                sys.stdout.flush()
+                time_diff = time.time() - t
+                if time_diff < 300:
+                    logging.info("====== REPROCESS GOT OLD RESULT ({:.1f}s): {}"
+                                 .format(time_diff, title))
                 if not success:
                     # Print error in parent process - do not remove
-                    print(ret)
-                    sys.stdout.flush()
+                    logging.error(ret)
                     continue
                 if ret is not None:
                     yield ret
@@ -1398,14 +1402,13 @@ class Wtp:
                     time.time() - last_t > 1):
                     remaining = all_page_nums - cnt
                     secs = (time.time() - start_t) / cnt * remaining
-                    print("  ... {}/{} pages ({:.1%}) processed, "
-                          "{:02d}:{:02d}:{:02d} remaining"
-                          .format(cnt, all_page_nums,
-                                  cnt / all_page_nums,
-                                  int(secs / 3600),
-                                  int(secs / 60 % 60),
-                                  int(secs % 60)))
-                    sys.stdout.flush()
+                    logging.info("  ... {}/{} pages ({:.1%}) processed, "
+                                 "{:02d}:{:02d}:{:02d} remaining"
+                                 .format(cnt, all_page_nums,
+                                         cnt / all_page_nums,
+                                         int(secs / 3600),
+                                         int(secs / 60 % 60),
+                                         int(secs % 60)))
                     last_t = time.time()
 
             pool.close()
