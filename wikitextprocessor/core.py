@@ -509,12 +509,31 @@ class Wtp:
                  model: str = "wikitext") -> None:
         """Collects information about the page and save page text to a
         SQLite database file."""
+        ns_prefix = self.LOCAL_NS_NAME_BY_ID.get(namespace_id) + ":"
+        if namespace_id != 0 and not title.startswith(ns_prefix):
+            title = ns_prefix + title
+
+        if title.startswith("Main:"):
+            title = title[5:]
+
+        if namespace_id == self.NAMESPACE_DATA.get("Template", {}).get("id") and redirect_to is None:
+            body = self._template_to_body(title, body)
+
+        self.db_session.add(Page(title=title, namespace_id=namespace_id, body=body,
+                                 redirect_to=redirect_to, need_pre_expand=need_pre_expand,
+                                 model=model))
+        self.page_nums += 1
+        if self.page_nums % 10000 == 0:
+            logging.info(f"  ... {self.page_nums} raw pages collected")
+
+    def overwrite_page(self, title: str, namespace_id: int, body: Optional[str] = None,
+                       redirect_to: Optional[str] = None, need_pre_expand: bool = False,
+                       model: str = "wikitext") -> None:
         from sqlalchemy.dialects.sqlite import insert
 
-        if namespace_id != 0 and ":" not in title:
-            local_ns_name = self.LOCAL_NS_NAME_BY_ID.get(namespace_id)
-            if local_ns_name is not None:
-                title = f"{local_ns_name}:{title}"
+        ns_prefix = self.LOCAL_NS_NAME_BY_ID.get(namespace_id) + ":"
+        if namespace_id != 0 and not title.startswith(ns_prefix):
+            title = ns_prefix + title
 
         if title.startswith("Main:"):
             title = title[5:]
@@ -531,16 +550,13 @@ class Wtp:
             "model": model
         }
         stmt = insert(Page).values([data])
-        stmt = stmt.on_conflict_do_update(index_elements=[Page.title, Page.namespace_id], set_={
+        stmt = stmt.on_conflict_do_update(index_elements=["title", "namespace_id"], set_={
             "body": body,
             "redirect_to": redirect_to,
             "need_pre_expand": need_pre_expand,
             "model": model
         })
         self.db_session.execute(stmt)
-        self.page_nums += 1
-        if self.page_nums % 10000 == 0:
-            logging.info(f"  ... {self.page_nums} raw pages collected")
 
     def _analyze_template(self, name: str, body: str) -> Tuple[Set[str], bool]:
         """Analyzes a template body and returns a set of the canonicalized
@@ -665,11 +681,9 @@ class Wtp:
         template_ns = self.NAMESPACE_DATA.get("Template", {})
         template_ns_id = template_ns.get("id")
         template_ns_local_name = template_ns.get("name")
-        self.add_page(f"{template_ns_local_name}:!", template_ns_id, "|")  # magic word
-        # Wiktionary already has this template
-        self.add_page(f"{template_ns_local_name}:!-", template_ns_id, "|-")
-        self.add_page(f"{template_ns_local_name}:((", template_ns_id, "&lbrace;&lbrace;")  # {{((}} -> {{
-        self.add_page(f"{template_ns_local_name}:))", template_ns_id, "&rbrace;&rbrace;")  # {{))}} -> }}
+        self.overwrite_page(f"{template_ns_local_name}:!", template_ns_id, "|")  # magic word
+        self.overwrite_page(f"{template_ns_local_name}:((", template_ns_id, "&lbrace;&lbrace;")  # {{((}} -> {{
+        self.overwrite_page(f"{template_ns_local_name}:))", template_ns_id, "&rbrace;&rbrace;")  # {{))}} -> }}
 
         expand_stack = []
         included_map = collections.defaultdict(set)

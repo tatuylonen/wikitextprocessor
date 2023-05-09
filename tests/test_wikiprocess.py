@@ -1432,6 +1432,7 @@ MORE
     def test_template24b(self):
         ctx = phase1_to_ctx([
             ["wikitext", "Template:testmod", "a{{{1}}}b"],
+            ["wikitext", "Template:!-", "|-"]
         ])
         ctx.start_page("Tt")
         ret = ctx.expand("{{testmod|{{!-}}}}")
@@ -3217,7 +3218,7 @@ return export
         self.assertEqual(ret, "atest contentb")
         # Now create a new context with the same cachefile but do not add page
         ctx = Wtp(db_path=path)
-        ctx.add_page("Template:testmod", 10, "test content 2")
+        ctx.overwrite_page("Template:testmod", 10, "test content 2")
         ctx.analyze_templates()
         ctx.start_page("Tt")
         ret = ctx.expand("a{{testmod}}b")

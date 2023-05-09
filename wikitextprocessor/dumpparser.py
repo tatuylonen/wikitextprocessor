@@ -96,7 +96,7 @@ def overwrite_pages(ctx: "Wtp", folder_paths: List[Path]) -> None:
                 ns_id = ctx.NS_ID_BY_LOCAL_NAME.get(local_ns_name, 0)
                 module_ns_id = ctx.NAMESPACE_DATA.get("Module", {}).get("id")
                 model = "Scribunto" if ns_id == module_ns_id else "wikitext"
-                ctx.add_page(title, ns_id, f.read(), model=model)
+                ctx.overwrite_page(title, ns_id, f.read(), model=model)
 
 # XXX parse <namespaces> and use that in both Python and Lua code
 
