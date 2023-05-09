@@ -263,10 +263,9 @@ def initialize_lua(ctx):
     # bigger phase 2 of the sandbox.  This way, most of the sandbox loading
     # will benefit from caching and precompilation (when implemented).
     with open(lua_dir + "_sandbox_phase1.lua", encoding="utf-8") as f:
-        lua_sandbox = f.read()
-    set_loader = lua.execute(lua_sandbox)
-    # Call the function that sets the Lua loader
-    set_loader(lambda x: lua_loader(ctx, x))
+        set_loader = lua.execute(f.read())
+        # Call the function that sets the Lua loader
+        set_loader(lambda x: lua_loader(ctx, x))
 
     # Then load the second phase of the sandbox.  This now goes through the
     # new loader and is evaluated in the sandbox.  This mostly implements

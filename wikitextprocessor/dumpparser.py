@@ -2,7 +2,6 @@
 #
 # Copyright (c) 2018-2022 Tatu Ylonen.  See file LICENSE and https://ylonen.org
 
-import html
 import logging
 import shutil
 import subprocess
@@ -37,7 +36,7 @@ def process_input(path: str, page_cb: Callable[[str, str], None], namespace_ids:
     namespaces = {None: namespace_str}
 
     for _, page_element in etree.iterparse(wikt_f, tag=f"{{{namespace_str}}}page"):
-        title = html.unescape(page_element.findtext("title", "", namespaces))
+        title = page_element.findtext("title", "", namespaces)
         title_without_prefix = title[title.find(":") + 1:]
         namespace_id = int(page_element.findtext("ns", "0", namespaces))
         if namespace_id not in namespace_ids or title_without_prefix.startswith("User:") or \
@@ -49,13 +48,13 @@ def process_input(path: str, page_cb: Callable[[str, str], None], namespace_ids:
         redirect_to = None
         model = page_element.findtext("revision/model", "", namespaces)
         if (redirect_element := page_element.find("redirect", namespaces=namespaces)) is not None:
-            redirect_to = html.unescape(redirect_element.get("title", ""))
+            redirect_to = redirect_element.get("title", "")
         else:
             if model not in {"wikitext", "Scribunto", "json"}:
                 # ignore css, javascript and sanitized-css pages
                 page_element.clear(keep_tail=True)
                 continue
-            text = html.unescape(page_element.findtext("revision/text", "", namespaces))
+            text = page_element.findtext("revision/text", "", namespaces)
 
         page_cb(title, namespace_id, body=text, redirect_to=redirect_to, model=model)
         page_element.clear(keep_tail=True)
