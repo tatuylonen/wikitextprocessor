@@ -1171,9 +1171,7 @@ class Wtp:
                         # preprocessing
                         # (Each template is typically used many times)
                         # Determine if the template starts with a list item
-                        contains_list = (re.match(r"(?s)^[#*;:]", body)
-                                         is not None)
-                        if contains_list:
+                        if body.startswith(("#", "*", ";", ":")):
                             body = "\n" + body
                         encoded_body = self._encode(body)
                         # Expand template arguments recursively.  The arguments
@@ -1330,7 +1328,8 @@ class Wtp:
         # Reprocess all the pages that we captured in Phase 1
         return self.reprocess(page_handler)
 
-    def reprocess(self, page_handler, autoload=True, namespace_ids: Optional[List[int]] = None):
+    def reprocess(self, page_handler, autoload=True, namespace_ids: Optional[List[int]] = None,
+                  include_redirects: bool = True):
         """Reprocess all pages captured by self.process() or explicit calls to
         self.add_page().  This calls page_handler(model, title, text)
         for each page, and returns of list of their return values
@@ -1355,7 +1354,7 @@ class Wtp:
         if self.num_threads == 1:
             # Single-threaded version (without subprocessing).  This is
             # primarily intended for debugging.
-            for page in self.get_all_pages(namespace_ids):
+            for page in self.get_all_pages(namespace_ids, include_redirects):
                 success, ret_title, t, ret = phase2_page_handler(page)
                 assert ret_title == page.title
                 if not success:
@@ -1381,7 +1380,7 @@ class Wtp:
 
             all_page_nums = self.saved_page_nums()
             for success, title, t, ret in \
-                pool.imap_unordered(phase2_page_handler, self.get_all_pages(namespace_ids)):
+                pool.imap_unordered(phase2_page_handler, self.get_all_pages(namespace_ids, include_redirects)):
                 if t + 300 < time.time():
                     print("====== REPROCESS GOT OLD RESULT ({:.1f}s): {}"
                           .format(time.time() - t, title))
@@ -1442,12 +1441,14 @@ class Wtp:
     def page_exists(self, title: str) -> bool:
         return self.get_page(title) is not None
 
-    def get_all_pages(self, namespace_ids: Optional[List[int]] = None) -> ScalarResult[Page]:
-        if namespace_ids is None:
-            return self.db_session.scalars(select(Page))
-        else:
-            return self.db_session.scalars(select(Page)
-                                           .where(Page.namespace_id.in_(namespace_ids)))
+    def get_all_pages(self, namespace_ids: Optional[List[int]] = None,
+                      include_redirects: bool = True) -> ScalarResult[Page]:
+        stmt = select(Page)
+        if namespace_ids is not None:
+            stmt = stmt.where(Page.namespace_id.in_(namespace_ids))
+        if not include_redirects:
+            stmt = stmt.where(Page.redirect_to.is_(None))
+        return self.db_session.scalars(stmt)
 
     def get_template_titles(self) -> Set[str]:
         """Return a set of all template titles without namespace prefix"""
