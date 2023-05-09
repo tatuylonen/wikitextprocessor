@@ -68,14 +68,12 @@ def phase2_page_handler(page: Page) -> Tuple[bool, str, float, Tuple[str, str]]:
         ctx.start_page(page.title)
         try:
             ret = _global_page_handler(page)
-            ctx.close_db_session()
             return True, page.title, start_t, ret
         except Exception as e:
             lst = traceback.format_exception(type(e), value=e,
                                              tb=e.__traceback__)
             msg = ("=== EXCEPTION while parsing page \"{}\":\n".format(page.title) +
                    "".join(lst))
-            ctx.close_db_session()
             return False, page.title, start_t, msg
 
 
