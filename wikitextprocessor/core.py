@@ -1417,26 +1417,28 @@ class Wtp:
     def get_page(self, title: str, namespace_id: Optional[int] = None) -> Optional[Page]:
         if title.startswith("Main:"):
             title = title[5:]
-        elif ":" not in title and namespace_id is not None and namespace_id != 0:
-            # Add namespace prefix
+        if namespace_id is not None and namespace_id != 0:
+            local_ns_name = self.LOCAL_NS_NAME_BY_ID[namespace_id]
+            ns_prefix = local_ns_name + ":"
             if self.lang_code == "zh" and namespace_id in {
                     self.NAMESPACE_DATA[ns]["id"]
                     for ns in ["Template", "Module"]
             }:
                 # Chinese Wiktionary capitalizes the first letter of template/module
                 # page titles but uses lower case in Wikitext and Lua code
-                title = f"{self.LOCAL_NS_NAME_BY_ID[namespace_id]}:{title[0].upper()}{title[1:]}"
-            else:
-                title = f"{self.LOCAL_NS_NAME_BY_ID[namespace_id]}:{title}"
+                if title.startswith(ns_prefix):
+                    template_name = title[len(ns_prefix):]
+                    title = ns_prefix + template_name[0].upper() + template_name[1:]
+                else:
+                    title = ns_prefix + title[0].upper() + title[1:]
+            elif not title.startswith(ns_prefix):
+                # Add namespace prefix
+                title = ns_prefix + title
 
+        stmt = select(Page).where(Page.title == title)
         if namespace_id is not None:
-            page = self.db_session.scalar(select(Page)
-                                          .where(Page.title == title)
-                                          .where(Page.namespace_id == namespace_id))
-        else:
-            page = self.db_session.scalar(select(Page).where(Page.title == title))
-
-        return page
+            stmt = stmt.where(Page.namespace_id == namespace_id)
+        return self.db_session.scalar(stmt)
 
     def page_exists(self, title: str) -> bool:
         return self.get_page(title) is not None
