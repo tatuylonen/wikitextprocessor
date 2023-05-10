@@ -89,12 +89,13 @@ Usage example:
 
 ```python
    from wikitextprocessor import Wtp, WikiNode, NodeKind
+   from wikitextprocessor.db_models import Page
    ctx = Wtp()
 
-   def page_handler(model, title, text):
-       if model != "wikitext" or title.startswith("Template:"):
+   def page_handler(page: Page) -> None:
+       if page.model != "wikitext" or page.title.startswith("Template:"):
            return None
-       tree = ctx.parse(text, pre_expand=True)
+       tree = ctx.parse(page.body, pre_expand=True)
        ... process parse tree
          ... value = ctx.node_to_wikitext(node)
 
@@ -127,7 +128,9 @@ is an enumeration type used to encode the type of a ``WikiNode``.
 ### class Wtp
 
 ```python
-def __init__(self, num_threads=None, cache_file=None, quiet=False, lang_code="en")
+def __init__(self, num_threads: Optional[int] = None, db_path: Optional[Path] = None,
+             quiet: bool = False, lang_code: str = "en", languages_by_code: Dict[str, List[str]] = {},
+             template_override_funcs: Dict[str, Callable[List[str], str]] = {})
 ```
 
 The initializer can usually be called without arguments, but recognizes
@@ -138,33 +141,35 @@ the following arguments:
   parallel processes if you are limited by available memory; we have found
   that processing Wiktionary (including templates and Lua macros)
   requires 3-4GB of memory per process.  This MUST be set to 1 on Windows.
-* ``cache_file`` can normally be ``None``, in which case a temporary file will
-  be created under ``/tmp``, or a path (str) for the cache file(s).
-  There are two reasons why you might want to
-  set this: 1) you don't have enough space on ``/tmp`` (the whole uncompressed
-  dump must fit there, which can easily be 10-20GB), or 2) for testing.
-  If you specify the cache file, if an existing cache file exists, that will be
-  loaded and used, eliminating the time needed for Phase 1 (this is very
+* `db_path` can be `None`, in which case a temporary database file
+  will be created under `/tmp`, or a path for the database file which contains
+  page texts and other data of the dump file.
+  There are two reasons why you might want to set this:
+  1) you don't have enough space on `/tmp` (3.4G for English dump file),
+  or 2) for testing.
+  If you specify the path and an existing database file exists, that file will
+  be used, eliminating the time needed for Phase 1 (this is very
   important for testing, allowing processing single pages reasonably fast).
   In this case, you should not call ``Wtp.process()`` but instead use
   ``Wtp.reprocess()`` or just call ``Wtp.expand()`` or ``Wtp.parse()`` on
   wikitext that you have obtained otherwise (e.g., from some file).
-  If the cache file doesn't exist, you will need to call ``Wtp.process()``
-  to parse a dump file, which will initialize the cache file during the
-  first phase.  If you wish to re-create cache file, you should remove
-  the old cache file first.  The cache file path is actually a prefix for
-  multiple individual files.
+  If the file doesn't exist, you will need to call `Wtp.process()`
+  to parse a dump file, which will initialize the database file during the
+  first phase. If you wish to re-create the database, you should remove
+  the old file first.
 * ``quiet`` - if set to True, suppress progress messages during processing
 * `lang_code` - the language code of the dump file.
+* `languages_by_code` - Languages data.
+* `template_override_funcs` - Python functions for overriding expanded template text.
 
-**Windows and MacOS note:** Setting ``num_threads`` to a value other than 1
-probably doesn't currently work on Windows and MacOS.  It now defaults to 1
-on these platforms.  This is because these platforms don't use ``fork()`` in
-the Python multiprocessing package, and the current parallelization
-implementation depends on this.
+**Windows and MacOS note:** Setting `num_threads` to a value other than 1
+doesn't work on Windows and MacOS. It now defaults to 1 on these platforms.
+This is because these platforms don't use `fork()` in the Python multiprocessing
+package, and the current parallelization implementation depends on this.
 
 ```python
-def process(self, path, page_handler, phase1_only=False)
+def process(self, path: str, page_handler, namespace_ids: Set[int], phase1_only=False,
+            override_folders: Optional[List[Path]] = None, skip_extract_dump: bool = False):
 ```
 
 This function processes a WikiMedia dump, uncompressing and extracing pages
@@ -177,18 +182,24 @@ This takes the following arguments:
   (e.g., "enwiktionary-20201201-pages-articles.xml.bz2").  Note that the
   compressed file can be used.  Dump files can be
   downloaded [here](https://dumps.wikimedia.org).
-* ``page_handler`` (function) - this function will be called for each page
-  in phase 2 (unless ``phase1_only`` is set to True).  The call takes the form
-  ``page_handler(model, title, data)``, where ``model`` is the ``model`` value
-  for the page in the dump (``wikitext`` for normal wikitext pages and
-  templates, ``Scribunto`` for Lua modules; other values are also possible),
-  ``title`` is page title (e.g., ``sample`` or ``Template:foobar``
-  or ``Module:mystic``), and ``data`` is the contents of the page (usually
+* `page_handler` (function) - this function will be called for each page
+  in phase 2 (unless `phase1_only` is set to `True`). The call takes the form
+  `page_handler(page: Page)`, where `page.model` is the `model` value
+  for the page in the dump (`wikitext` for normal wikitext pages and
+  templates, `Scribunto` for Lua modules; other values are also possible),
+  `page.title` is page title (e.g., `sample` or `Template:foobar`
+  or `Module:mystic`), and `page.body` is the contents of the page (usually
   wikitext).
+* `namespace_ids` - a set of namespace ids, pages have namespace ids that not
+  included in this set won't be processed.
 * ``phase1_only`` (boolean) - if set to True, prevents phase 2
   processing and the ``page_handler`` function will not be called.  The
   ``Wtp.reprocess()`` function can be used to run the second phase separately,
   or ``Wtp.expand()``, ``Wtp.parse()`` and other functions can be used.
+* `override_folders` - a list of folder paths, each folder contains files for
+  overriding pages in the dump file.
+* `skip_extract_dump` - Extract dump file can be skipped if the database was
+  created before.
 
 This function returns an iterator over the values returned by the
 ``page_handler`` function (if ``page_handler`` returns ``None`` or no
@@ -199,7 +210,8 @@ global variables assigned before calling ``Wtp.process()`` (in Linux
 only).
 
 ```python
-def reprocess(self, page_handler, autoload=True)
+def reprocess(self, page_handler, autoload=True, namespace_ids: Optional[List[int]] = None,
+              include_redirects: bool = True):
 ```
 
 Iterates over all pages in the cache file and calls ``page_handler``
@@ -207,15 +219,8 @@ for each page.  This basically implements phase 2 of processing a dump
 file (see ``Wtp.process()``).  This can be called more than once if desired.
 
 The arguments are:
-* ``page_handler`` (function) - this function will be called for every page.
-  The call takes the form ``page_handler(model, title, data)``,
-  where ``model`` is the ``model`` value
-  for the page in the dump (``wikitext`` for normal wikitext pages and
-  templates, ``Scribunto`` for Lua modules; other values are also possible),
-  ``title`` is page title (e.g., ``sample`` or ``Template:foobar``
-  or ``Module:mystic``), and ``data`` is the contents of the page (usually
-  wikitext).  If ``autoload`` is set to ``False``, then ``data`` will be
-  ``None``.
+* `page_handler` (function) - as same as the argument in `Wtp.process()`.
+  If `autoload` is set to `False`, then `page.body` will be `None`.
 * ``autoload`` (boolean) - Normally this function loads the page contents
   automatically before calling the page handler.  If ``autoload`` is set to
   ``False``, then this will not automatically load the contents.  This will
@@ -223,6 +228,8 @@ The arguments are:
   all pages when only a small fraction of them are likely to be of interest.
   The ``Wtp.read_by_title()`` function can then be used to load the page
   contents.
+* `namespace_ids` - as same as the argument in `Wtp.process()`.
+* `include_redirects` - redirect pages will be processed if set to `True`.
 
 This function returns an iterator that iterates over the return values
 of ``page_handler``.  If the return value is ``None`` or ``page_handler``
@@ -234,7 +241,7 @@ on Windows and MacOS due to operating system/python limitations on those
 platforms.
 
 ```python
-def read_by_title(self, title):
+def read_by_title(self, title: str, namespace_id: Optional[int] = None) -> Optional[str]
 ```
 
 Reads the contents of the page with the specified title from the cache
@@ -245,11 +252,12 @@ automatically.  However, this can be useful if calling
 does not automatically call ``Wtp.start_page()``.
 
 Arguments are:
-* ``title`` (str) - the title of the page to read
+* `title` - the title of the page to read
+* `namespace_id` - namespace id number, this argument is required if
+  `title` donesn't have namespace prefix like `Template:`.
 
 This returns the page contents as a string, or ``None`` if the page
-does not exist.  If a transient page has been added with that title
-(see ``Wtp.add_page()``), then this returns the transient page.
+does not exist.
 
 ```python
 def parse(self, text, pre_expand=False, expand_all=False,
@@ -391,36 +399,40 @@ The arguments are:
 * ``title`` (str) - the title of the subsection, or ``None`` to clear it.
 
 ```python
-def add_page(self, model, title, text, transient=False)
+def add_page(self, title: str, namespace_id: int, body: Optional[str] = None,
+             redirect_to: Optional[str] = None, need_pre_expand: bool = False,
+             model: str = "wikitext") -> None:
 ```
 
 This function is used to add pages, templates, and modules for
 processing.  There is usually no need to use this if ``Wtp.process()``
 is used; however, this can be used to add templates and pages for
-testing or other special processing needs.  This can also be used for
-adding transient pages that are not stored in the cache file but could
-be used for debugging or information extraction.  An example would be
-overriding some Lua module from the dump file for debugging the Lua
-code, or adding a new Lua module that can import other modules and
-then dump data from them, for example to extract the category
-hierarchy of Wiktionary pages.
+testing or other special processing needs.
 
 The arguments are:
-* ``model`` (str) - the model value for the page (usually ``wikitext``
-  for normal pages and templates and ``Scribunto`` for Lua modules)
-* ``title`` (str) - the title of the page to be added (normal pages typically
-  have no prefix in the title, templates begin with ``Template:``, and Lua
-  modules begin with ``Module:``)
-* ``text`` (str) - the content of the page, template, or module
-* ``transient`` (boolean) - normally, the added pages will be stored in
-  the cache file.  If this is set to ``True``, the page will not be stored
-  in the cache file and will only affect the current run.  Transient
-  pages will override any pages in the cache file, and are useful for
-  debugging and data extraction.
+* `title` - the title of the page to be added (normal pages typically
+  have no prefix in the title, templates begin with `Template:`, and Lua
+  modules begin with `Module:`)
+* `namespace_id` - namespace id
+* `body` - the content of the page, template, or module
+* `redirect_to` - title of redirect page
+* `need_pre_expand` - set to `True` if the page is a template that need to
+  be expanded before parsing.
+* `model` - the model value for the page (usually `wikitext`
+  for normal pages and templates and `Scribunto` for Lua modules)
 
 The ``Wtp.analyze_templates()`` function needs to be called after
 calling ``Wtp.add_page()`` before pages can be expanded or parsed (it should
 preferably only be called once after adding all pages and templates).
+
+
+```python
+def overwrite_page(self, title: str, namespace_id: int, body: Optional[str] = None,
+                   redirect_to: Optional[str] = None, need_pre_expand: bool = False,
+                   model: str = "wikitext") -> None:
+```
+
+Use this method to overwirte page in the database.
 
 ```python
 def analyze_templates(self)

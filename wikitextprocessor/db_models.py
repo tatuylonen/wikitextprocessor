@@ -1,8 +1,8 @@
 from typing import Optional
 
-from sqlalchemy import create_engine, event
+from sqlalchemy import event
 from sqlalchemy.engine import Engine
-from sqlalchemy.orm import DeclarativeBase, Mapped, composite, mapped_column
+from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column
 
 
 @event.listens_for(Engine, "connect")

@@ -1281,7 +1281,7 @@ class Wtp:
         text = re.sub(MAGIC_NOWIKI_CHAR, "<nowiki />", text)
         return text
 
-    def process(self, path, page_handler, namespace_ids: set[int], phase1_only=False,
+    def process(self, path: str, page_handler, namespace_ids: Set[int], phase1_only=False,
                 override_folders: Optional[List[Path]] = None, skip_extract_dump: bool = False):
         """Parses a WikiMedia dump file ``path`` (which should point to a
         "<project>-<date>-pages-articles.xml.bz2" file.  This calls
