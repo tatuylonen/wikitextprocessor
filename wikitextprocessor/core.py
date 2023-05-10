@@ -1281,7 +1281,7 @@ class Wtp:
         return text
 
     def process(self, path, page_handler, namespace_ids: set[int], phase1_only=False,
-                override_folders: Optional[List[Path]] = None):
+                override_folders: Optional[List[Path]] = None, skip_extract_dump: bool = False):
         """Parses a WikiMedia dump file ``path`` (which should point to a
         "<project>-<date>-pages-articles.xml.bz2" file.  This calls
         ``page_handler(model, title, page)`` for each raw page.  This
@@ -1302,7 +1302,7 @@ class Wtp:
         assert isinstance(path, str)
         assert page_handler is None or callable(page_handler)
         # Process the dump and copy it to temporary file (Phase 1)
-        process_dump(self, path, namespace_ids, override_folders)
+        process_dump(self, path, namespace_ids, override_folders, skip_extract_dump)
         if phase1_only or page_handler is None:
             return []
 

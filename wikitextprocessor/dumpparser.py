@@ -61,7 +61,8 @@ def process_input(path: str, page_cb: Callable[[str, str], None], namespace_ids:
 
     wikt_f.close()
 
-def process_dump(ctx: "Wtp", path: str, namespace_ids: Set[int], overwrite_folders: Optional[List[Path]] = None,
+def process_dump(ctx: "Wtp", path: str, namespace_ids: Set[int],
+                 overwrite_folders: Optional[List[Path]] = None, skip_extract_dump: bool = False,
                  page_handler: Optional[Callable[[str, int], None]] = None) -> None:
     """Parses a WikiMedia dump file ``path`` (which should point to a
     "<project>-<date>-pages-articles.xml.bz2" file.  This implements
@@ -71,7 +72,8 @@ def process_dump(ctx: "Wtp", path: str, namespace_ids: Set[int], overwrite_folde
 
     # Run Phase 1 in a single thread; this mostly just extracts pages into
     # a temporary file.
-    process_input(path, page_handler if page_handler else ctx.add_page, namespace_ids)
+    if not skip_extract_dump:
+        process_input(path, page_handler if page_handler is not None else ctx.add_page, namespace_ids)
     if overwrite_folders is not None:
         overwrite_pages(ctx, overwrite_folders)
 
