@@ -572,7 +572,7 @@ class Wtp:
 
         # Determine if the template starts with a list item
         # XXX should we expand other templates that produce list items???
-        contains_list = re.match(r"(?s)^[#*;:]", body) is not None
+        contains_list = body.startswith(("#", "*", ";", ":"))
 
         # Remove paired tables
         prev = body
@@ -1364,10 +1364,6 @@ class Wtp:
             all_page_nums = self.saved_page_nums(namespace_ids, include_redirects)
             for success, title, t, ret in \
                 pool.imap_unordered(phase2_page_handler, self.get_all_pages(namespace_ids, include_redirects)):
-                time_diff = time.time() - t
-                if time_diff < 300:
-                    logging.info("====== REPROCESS GOT OLD RESULT ({:.1f}s): {}"
-                                 .format(time_diff, title))
                 if not success:
                     # Print error in parent process - do not remove
                     logging.error(ret)
