@@ -1340,11 +1340,12 @@ class Wtp:
                 success, ret_title, t, ret = phase2_page_handler(page)
                 assert ret_title == page.title
                 if not success:
-                    print(ret)  # Print error in parent process - do not remove
-                    lines = ret.split("\n")
+                    # Print error in parent process - do not remove
+                    logging.error(ret)
+                    lines = ret.splitlines()
                     msg = lines[0]
                     trace = "\n".join(lines[1:])
-                    if msg.find("EXCEPTION") >= 0:
+                    if "EXCEPTION" in msg:
                         self.error(msg, trace=trace, sortid="core/1457")
                     continue
                 if ret is not None:

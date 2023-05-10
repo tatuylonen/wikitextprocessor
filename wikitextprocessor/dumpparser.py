@@ -40,7 +40,7 @@ def process_input(path: str, page_cb: Callable[[str, str], None], namespace_ids:
         title_without_prefix = title[title.find(":") + 1:]
         namespace_id = int(page_element.findtext("ns", "0", namespaces))
         if namespace_id not in namespace_ids or title_without_prefix.startswith("User:") or \
-           title.endswith(("/documentation", "/testcases", "/sandbox")):
+           title.endswith(("/documentation", "/testcases")):
             page_element.clear(keep_tail=True)
             continue
 
@@ -78,8 +78,9 @@ def process_dump(ctx: "Wtp", path: str, namespace_ids: Set[int],
         overwrite_pages(ctx, overwrite_folders)
 
     # Analyze which templates should be expanded before parsing
-    logging.info("Analyzing which templates should be expanded before parsing")
-    ctx.analyze_templates()
+    if not skip_extract_dump or (skip_extract_dump and overwrite_folders is not None):
+        logging.info("Analyzing which templates should be expanded before parsing")
+        ctx.analyze_templates()
 
 
 def overwrite_pages(ctx: "Wtp", folder_paths: List[Path]) -> None:
