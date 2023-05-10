@@ -866,7 +866,7 @@ class Wtp:
             #       .format(invoke_args, parent, ret))
             return ret
 
-        def expand_recurse(coded, parent, not_expand_templates: Optional[Set[str]] = None):
+        def expand_recurse(coded, parent, expand_all: bool):
             """This function does most of the work for expanding encoded
             templates, arguments, and parser functions."""
             assert isinstance(coded, str)
@@ -910,7 +910,7 @@ class Wtp:
                                        .format(len(args), args),
                                        sortid="core/1021")
                         self.expand_stack.append("ARG-NAME")
-                        k = expand_recurse(expand_args(args[0], argmap), parent).strip()
+                        k = expand_recurse(expand_args(args[0], argmap), parent, True).strip()
                         self.expand_stack.pop()
                         if k.isdigit():
                             k = int(k)
@@ -978,7 +978,7 @@ class Wtp:
                     return "{{" + fn_name + ":" + "|".join(args) + "}}"
                 # Call parser function
                 self.expand_stack.append(fn_name)
-                expander = lambda arg: expand_recurse(arg, parent)
+                expander = lambda arg: expand_recurse(arg, parent, True)
                 if fn_name == "#invoke":
                     if not expand_invoke:
                         return "{{#invoke:" + "|".join(args) + "}}"
@@ -1026,7 +1026,7 @@ class Wtp:
 
                     # Expand template/parserfn name
                     self.expand_stack.append("TEMPLATE_NAME")
-                    tname = expand_recurse(args[0], parent, not_expand_templates)
+                    tname = expand_recurse(args[0], parent, expand_all)
                     self.expand_stack.pop()
 
                     # Remove <noinvoke/>
@@ -1080,7 +1080,7 @@ class Wtp:
 
                     if name in self.template_override_funcs and not nowiki:
                         # print("Name in template_overrides: {}".format(name))
-                        new_args = list(expand_recurse(x, parent, not_expand_templates)
+                        new_args = list(expand_recurse(x, parent, expand_all)
                                         for x in args)
                         parts.append(self.template_override_funcs[name](new_args,))
                         continue
@@ -1088,12 +1088,13 @@ class Wtp:
                     # If this template is not one of those we want to expand,
                     # return it unexpanded (but with arguments possibly
                     # expanded)
-                    if not_expand_templates is not None and name in not_expand_templates:
+                    if not expand_all and not self.check_template_need_expand(
+                            name, templates_to_expand, templates_to_not_expand):
                         # Note: we will still expand parser functions in its
                         # arguments, because those parser functions could
                         # refer to its parent frame and fail if expanded
                         # after eliminating the intermediate templates.
-                        new_args = list(expand_recurse(x, parent, not_expand_templates)
+                        new_args = list(expand_recurse(x, parent, expand_all)
                                         for x in args)
                         parts.append(self._unexpanded_template(new_args,
                                                                nowiki))
@@ -1126,7 +1127,7 @@ class Wtp:
                                     num = k + 1
                             else:
                                 self.expand_stack.append("ARGNAME")
-                                k = expand_recurse(k, parent)
+                                k = expand_recurse(k, parent, True)
                                 k = re.sub(r"\s+", " ", k).strip()
                                 self.expand_stack.pop()
                         else:
@@ -1137,7 +1138,7 @@ class Wtp:
                         # calls to #invoke within a template argument (the
                         # parent frame would be different).
                         self.expand_stack.append("ARGVAL-{}".format(k))
-                        arg = expand_recurse(arg, parent)
+                        arg = expand_recurse(arg, parent, True)
                         self.expand_stack.pop()
                         ht[k] = arg
 
@@ -1175,7 +1176,7 @@ class Wtp:
                         # XXX no real need to expand here, it will expanded on
                         # next iteration anyway (assuming parent unchanged)
                         # Otherwise expand the body
-                        t = expand_recurse(encoded_body, new_parent, not_expand_templates)
+                        t = expand_recurse(encoded_body, new_parent, expand_all)
 
                     # If a post_template_fn has been supplied, call it now
                     # to capture or alter the expansion
@@ -1200,7 +1201,7 @@ class Wtp:
                     else:
                         # Link to another page
                         self.expand_stack.append("[[link]]")
-                        new_args = list(expand_recurse(x, parent, not_expand_templates)
+                        new_args = list(expand_recurse(x, parent, expand_all)
                                         for x in args)
                         self.expand_stack.pop()
                         parts.append(self._unexpanded_link(new_args, nowiki))
@@ -1210,7 +1211,7 @@ class Wtp:
                     else:
                         # Link to an external page
                         self.expand_stack.append("[extlink]")
-                        new_args = list(expand_recurse(x, parent, not_expand_templates)
+                        new_args = list(expand_recurse(x, parent, expand_all)
                                         for x in args)
                         self.expand_stack.pop()
                         parts.append(self._unexpanded_extlink(new_args, nowiki))
@@ -1230,7 +1231,7 @@ class Wtp:
 
         # Recursively expand the selected templates.  This is an outside-in
         # operation.
-        expanded = expand_recurse(encoded, parent, templates_to_not_expand)
+        expanded = expand_recurse(encoded, parent, not pre_expand)
 
         # Expand any remaining magic cookies and remove nowiki char
         expanded = self._finalize_expand(expanded)
@@ -1435,6 +1436,20 @@ class Wtp:
 
     def template_exists(self, name: str) -> bool:
         return self.get_page(name, self.NAMESPACE_DATA["Template"]["id"]) is not None
+
+    def check_template_need_expand(self, name: str, expand_names: Optional[Set[str]] = None, not_expand_names: Optional[Set[str]] = None) -> bool:
+        page = self.get_page(name, self.NAMESPACE_DATA["Template"]["id"])
+        if page is None:
+            return False
+
+        if expand_names is None and not_expand_names is not None:
+            return name not in not_expand_names and page.need_pre_expand
+        if expand_names is not None and not_expand_names is None:
+            return name in expand_names or page.need_pre_expand
+        if expand_names is not None and not_expand_names is not None:
+            return name not in not_expand_names and (name in expand_names or page.need_pre_expand)
+
+        return page.need_pre_expand
 
     def read_by_title(self, title: str, namespace_id: Optional[int] = None) -> Optional[str]:
         """Reads the contents of the page.  Returns None if the page does
