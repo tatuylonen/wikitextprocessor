@@ -7,11 +7,9 @@ import shutil
 import subprocess
 import sys
 
+from collections.abc import Callable
 from pathlib import Path
 from typing import Optional, Set, List
-
-from typing import Optional
-from collections.abc import Callable
 
 
 def process_input(path: str, page_cb: Callable[[str, str], None], namespace_ids: Set[int]) -> None:
@@ -37,10 +35,8 @@ def process_input(path: str, page_cb: Callable[[str, str], None], namespace_ids:
 
     for _, page_element in etree.iterparse(wikt_f, tag=f"{{{namespace_str}}}page"):
         title = page_element.findtext("title", "", namespaces)
-        title_without_prefix = title[title.find(":") + 1:]
         namespace_id = int(page_element.findtext("ns", "0", namespaces))
-        if namespace_id not in namespace_ids or title_without_prefix.startswith("User:") or \
-           title.endswith("/documentation") or "/testcases" in title:
+        if namespace_id not in namespace_ids or title.endswith("/documentation") or "/testcases" in title:
             page_element.clear(keep_tail=True)
             continue
 
@@ -60,6 +56,7 @@ def process_input(path: str, page_cb: Callable[[str, str], None], namespace_ids:
         page_element.clear(keep_tail=True)
 
     wikt_f.close()
+
 
 def process_dump(ctx: "Wtp", path: str, namespace_ids: Set[int],
                  overwrite_folders: Optional[List[Path]] = None, skip_extract_dump: bool = False,
