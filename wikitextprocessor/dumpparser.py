@@ -40,7 +40,7 @@ def process_input(path: str, page_cb: Callable[[str, str], None], namespace_ids:
         title_without_prefix = title[title.find(":") + 1:]
         namespace_id = int(page_element.findtext("ns", "0", namespaces))
         if namespace_id not in namespace_ids or title_without_prefix.startswith("User:") or \
-           title.endswith(("/documentation", "/testcases")):
+           title.endswith("/documentation") or "/testcases" in title:
             page_element.clear(keep_tail=True)
             continue
 
