@@ -50,9 +50,10 @@ Install from source:
 ```
 git clone https://github.com/tatuylonen/wikitextprocessor.git
 cd wikitextprocessor
-python -m pip venv .venv
+python -m venv .venv
 source .venv/bin/activate
-python -m pip install .
+python -m pip install -U pip
+python -m pip install --use-pep517 .
 ```
 
 Alternatively, you can install from pypi.org:
