@@ -688,10 +688,7 @@ class Wtp:
         expand_stack = []
         included_map = collections.defaultdict(set)
 
-        for page in self.db_session.scalars(
-                select(Page)
-                .where(Page.namespace_id == template_ns_id)
-                .where(Page.redirect_to.is_(None))):
+        for page in self.get_all_pages([template_ns_id], False):
             used_templates, pre_expand = self._analyze_template(page.title, page.body)
             for used_template in used_templates:
                 included_map[used_template].add(page.title)
@@ -724,7 +721,8 @@ class Wtp:
                 select(Page, dest_templates)
                 .join(dest_templates, Page.redirect_to == dest_templates.title)
                 .where(Page.namespace_id == template_ns_id)
-                .where(dest_templates.namespace_id == template_ns_id)):
+                .where(dest_templates.namespace_id == template_ns_id)
+                .execution_options(yield_per=1000)):
             if source_template.need_pre_expand:
                 dest_template.need_pre_expand = True
             elif dest_template.need_pre_expand:
@@ -1362,8 +1360,8 @@ class Wtp:
             last_t = time.time()
 
             all_page_nums = self.saved_page_nums(namespace_ids, include_redirects)
-            for success, title, t, ret in \
-                pool.imap_unordered(phase2_page_handler, self.get_all_pages(namespace_ids, include_redirects)):
+            for success, title, t, ret in pool.imap_unordered(
+                    phase2_page_handler, self.get_all_pages(namespace_ids, include_redirects)):
                 if not success:
                     # Print error in parent process - do not remove
                     logging.error(ret)
@@ -1429,7 +1427,9 @@ class Wtp:
             stmt = stmt.where(Page.namespace_id.in_(namespace_ids))
         if not include_redirects:
             stmt = stmt.where(Page.redirect_to.is_(None))
-        return self.db_session.scalars(stmt)
+        # https://docs.sqlalchemy.org/en/20/orm/queryguide/api.html#fetching-large-result-sets-with-yield-per
+        # reduce memory usage
+        return self.db_session.scalars(stmt.execution_options(yield_per=1000))
 
     def template_exists(self, name: str) -> bool:
         return self.get_page(name, self.NAMESPACE_DATA["Template"]["id"]) is not None
