@@ -1,3 +1,0 @@
-lupa==1.10
-dateparser
-lru-dict

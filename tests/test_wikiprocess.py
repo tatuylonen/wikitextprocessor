@@ -1567,19 +1567,6 @@ return export
     def test_invoke2(self):
         self.scribunto("0", """return tostring(#frame.args)""")
 
-    def test_invoke3(self):
-        ctx = phase1_to_ctx([
-            ["Scribunto", "Module:testmod", """
-local export = {}
-function export.testfn(frame)
-            return tostring(#frame.args)
-end
-return export
-"""]])
-        ctx.start_page("Tt")
-        ret = ctx.expand("{{#invoke:testmod|testfn|a|b|foo=bar}}")
-        self.assertEqual(ret, "2")
-
     def test_invoke4a(self):
         ctx = phase1_to_ctx([
             ["Scribunto", "Module:testmod", """
@@ -2527,7 +2514,7 @@ return export
         return tostring(#x)""")
 
     def test_mw_jsondecode7(self):
-        self.scribunto('4.0a', """
+        self.scribunto('4a', """
         local x = mw.text.jsonDecode('[4.0, "a"]')
         return x[1] .. x[2]""")
 
@@ -3135,15 +3122,15 @@ return export
         return math.mod(12, 5)""")
 
     def test_string_format1(self):
-        self.scribunto("00005", r"""
+        self.scribunto("00004", r"""
         return string.format("%05d", 4.7)""")
 
     def test_string_format2(self):
-        self.scribunto("00005 % foo 1.1 -6", r"""
+        self.scribunto("00004 % foo 1.1 -6", r"""
         return string.format("%05d %% %s %.1f %d", 4.7, "foo", 1.1, -6)""")
 
     def test_string_format3(self):
-        self.scribunto("0005", r"""
+        self.scribunto("0004", r"""
         return string.format("%.4X", 4.7)""")
 
     def test_sandbox1(self):
@@ -3167,10 +3154,6 @@ return export
         # available)
         self.scribunto("True", r"""
         return os.exit == nil""")
-
-    def test_sandbox3(self):
-        self.scribunto("True", r"""
-        return _ENV["os"].exit == nil""")
 
     def test_sandbox4(self):
         self.scribunto("True", r"""

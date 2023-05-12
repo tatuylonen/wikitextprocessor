@@ -12,8 +12,7 @@ import traceback
 import unicodedata
 import pkg_resources
 
-import lupa
-from lupa import LuaRuntime
+import lupa.lua51 as lupa
 from .parserfns import PARSER_FUNCTIONS, call_parser_function, tag_fn
 
 # List of search paths for Lua libraries.
@@ -29,73 +28,6 @@ lua_dir = pkg_resources.resource_filename("wikitextprocessor", "lua/")
 if not lua_dir.endswith("/"):
     lua_dir += "/"
 #print("lua_dir", lua_dir)
-
-# Substitutions to perform on Lua code from the dump to convert from
-# Lua 5.1 to current 5.3
-loader_replace_patterns = list((re.compile(src), dst) for src, dst in [
-    [r"\\\\\?", r"%\\092?"],
-    [r"\\\\\*", r"%\\092*"],
-    [r"\\\\\-", r"%\\092-"],
-    [r"\\\\\+", r"%\\092+"],
-    [r"\\\\\|", r"%\\092|"],
-    [r"\\\\\[", r"%\\092["],
-    # [r"'\\\\'", r"'\092'"],  # now covered by the one below
-    [r"\\\\", r"\\092"],
-
-    [r"\\\[", r"%%["],
-    [r"\\:", r":"],
-    [r"\\,", r","],
-    [r"\\\(", r"%("],
-    [r"\\\)", r"%)"],
-    [r"\\\+", r"%+"],
-    [r"\\\*", r"%*"],
-    [r"\\>", r">"],
-    [r"\\\.", r"%."],
-    [r"\\\?", r"%?"],
-    [r"\\-", r"%-"],
-    [r"\\!", r"!"],
-    [r"\\\|", r"|"],
-    [r"\\\^", r"%^"],
-    [r"\\ʺ", r"ʺ"],
-    [r"\\s", r"%s"],
-
-    # fr.wiktionary Module:locution
-    [r"(^|[^\\])\\/", "\1/"],
-
-    # Workaround kludge for a bug in Lua 5.4 (lupa 1.10)
-    [r"\[(\w+)\s*==\s*true\]", r"[not not \1]"],
-
-    # vararg `...` needs to be asigned to `arg` because it is not
-    # automatically a hidden variable after 5.1.
-    # This regex attempts to do it by basically searching for a
-    # function definition signature "function ? (pars ...)", which is
-    # followed by the function body and is ended with `end`.
-    # We insert a "local arg = {...}" at the very start of the
-    # body; the ... is unpacked inside a table and it hopefully
-    # works out...? don't use "arg" as a variable name.
-    # The function signature is just `function` followed optionally
-    # by a name and then the parentheses containing parameters,
-    # and the parens can't contain other parens inside afaict.
-    [r"(function [\w\.:]*\s*\([^()]*\.\.\.[^()]*\))", r"\1 local arg = {...} "]
-])
-
-# -- Wikimedia uses an older version of Lua.  Make certain substitutions
-# -- to make existing code run on more modern versions of Lua.
-# content = string.gsub(content, "\\\\", "\\092")
-# content = string.gsub(content, "%%\\%[", "%%%%[")
-# content = string.gsub(content, "\\:", ":")
-# content = string.gsub(content, "\\,", ",")
-# content = string.gsub(content, "\\%(", "%%(")
-# content = string.gsub(content, "\\%)", "%%)")
-# content = string.gsub(content, "\\%+", "%%+")
-# content = string.gsub(content, "\\%*", "%%*")
-# content = string.gsub(content, "\\>", ">")
-# content = string.gsub(content, "\\%.", "%%.")
-# content = string.gsub(content, "\\%?", "%%?")
-# content = string.gsub(content, "\\%-", "%%-")
-# content = string.gsub(content, "\\!", "!")
-# content = string.gsub(content, "\\|", "|")  -- XXX tentative, see ryu:951
-# content = string.gsub(content, "\\ʺ", "ʺ")
 
 
 def lua_loader(ctx, modname):
@@ -151,13 +83,6 @@ def lua_loader(ctx, modname):
                     data = f.read()
                 break
 
-    if data is None:
-        # We did not find the module
-        return None
-
-    # Perform compatibility substitutions on the Lua code
-    for src, dst in loader_replace_patterns:
-        data = re.sub(src, dst, data)
     return data
 
 
@@ -340,9 +265,9 @@ def initialize_lua(ctx):
             return attr_name
         raise AttributeError("access denied")
 
-    lua = LuaRuntime(unpack_returned_tuples=True,
-                     register_eval=False,
-                     attribute_filter=filter_attribute_access)
+    lua = lupa.LuaRuntime(unpack_returned_tuples=True,
+                          register_eval=False,
+                          attribute_filter=filter_attribute_access)
     ctx.lua = lua
     set_namespace_data = lua.eval("function(v) NAMESPACE_DATA = v end")
     lua_namespace_data = copy.deepcopy(ctx.NAMESPACE_DATA)
@@ -414,24 +339,6 @@ def call_lua_sandbox(ctx, invoke_args, expander, parent, timeout):
     ctx.lua_depth += 1
     lua = ctx.lua
 
-    # Wikipedia uses Lua 5.1, and lupa uses 5.4. Some methods
-    # were removed between now and then, so we need this polyfill:
-    lua.execute(
-"""
-table.maxn = function(tab)
-if type(tab) ~= 'table' then
-    error('table.maxn param #1 tab expect "table", got "' .. type(tab) .. '"', 2)
-end
-local length = 0
-for k in pairs(tab) do
-    if type(k) == 'number' and length < k and math.floor(k) == k then
-    length = k
-    end
-end
-return length
-end
-""")
-
     # Get module and function name
     modname = expander(invoke_args[0]).strip()
     modfn = expander(invoke_args[1]).strip()
@@ -458,7 +365,7 @@ end
             frame_args = {}
             num = 1
             for arg in args:
-                m = re.match(r"""^(?s)\s*([^<>="']+?)\s*=\s*(.*?)\s*$""", arg)
+                m = re.match(r"""(?s)^\s*([^<>="']+?)\s*=\s*(.*?)\s*$""", arg)
                 if m:
                     # Have argument name
                     k, arg = m.groups()
@@ -691,9 +598,8 @@ end
         return ""
     else:
         parts = []
-        in_traceback = 0
-        for line in text.split("\n"):
-            s = line.strip()
+        for line in text.splitlines():
+            # s = line.strip()
             #if s == "[C]: in function 'xpcall'":
             #    break
             parts.append(line)

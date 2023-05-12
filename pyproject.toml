@@ -1,0 +1,54 @@
+[build-system]
+requires = ["setuptools"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "wikitextprocessor"
+version = "0.4.96"
+description = "Parser and expander for Wikipedia, Wiktionary etc. dump files, with Lua execution support"
+readme = "README.md"
+license = {text = "MIT License"}
+authors = [
+    {name = "Tatu Ylonen", email = "ylo@clausal.com"},
+]
+keywords = [
+    "data extraction",
+    "dictionary",
+    "lua",
+    "scribunto",
+    "wikipedia",
+    "wikitext",
+    "wiktionary",
+]
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Intended Audience :: Developers",
+    "Intended Audience :: Science/Research",
+    "License :: OSI Approved :: MIT License",
+    "Natural Language :: English",
+    "Operating System :: POSIX :: Linux",
+    "Programming Language :: Python",
+    "Programming Language :: Python :: 3 :: Only",
+    "Topic :: Text Processing",
+    "Topic :: Text Processing :: Linguistic",
+]
+dependencies = [
+    "dateparser",
+    "lupa @ git+https://github.com/scoder/lupa.git",
+]
+
+[project.optional-dependencies]
+dev = ["nose2[coverage_plugin]"]
+
+[project.urls]
+homepage = "https://github.com/tatuylonen/wikitextprocessor"
+
+[tool.setuptools.package-data]
+wikitextprocessor = [
+    "lua/*.lua",
+    "lua/mediawiki-extensions-Scribunto/COPYING",
+    "lua/mediawiki-extensions-Scribunto/includes/engines/LuaCommon/lualib/*.lua",
+    "lua/mediawiki-extensions-Scribunto/includes/engines/LuaCommon/lualib/ustring/*.lua",
+    "lua/mediawiki-extensions-Scribunto/includes/engines/LuaCommon/lualib/luabit/*.lua",
+    "data/*/*",
+]
