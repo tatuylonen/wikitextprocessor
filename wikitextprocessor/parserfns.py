@@ -445,7 +445,7 @@ def formatnum_fn(ctx, fn_name, args, expander):
     if arg1 == "R":
         # Reverse formatting
         # XXX this is a very simplified implementation, should handle more cases
-        return re.sub(r",", "", arg0)
+        return arg0.replace(",", "")
     if arg1 == "NOSEP":
         sep = ""
     else:
@@ -564,7 +564,7 @@ def anchorencode_fn(ctx, fn_name, args, expander):
     # XXX should really check from MediaWiki source code
     def repl_anchor(m):
         v = urllib.parse.quote(m.group(0))
-        return re.sub(r"%", ".", v)
+        return v.replace("%", ".")
 
     anchor = re.sub(r"""['"<>]""", repl_anchor, anchor)
     return anchor

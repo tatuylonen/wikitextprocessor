@@ -56,8 +56,8 @@ def lua_loader(ctx: "Wtp", modname: str) -> Optional[str]:
         # Try to load it from a file
         path = modname
         path = re.sub(r"[\0-\037]", "", path)  # Remove control chars, e.g. \n
-        path = re.sub(r":", "/", path)      # Replace : by /
-        path = re.sub(r" ", "_", path)      # Replace spaces by underscore
+        path = path.replace(":", "/")
+        path = path.replace(" ", "_")
         path = re.sub(r"//+", "/", path)    # Replace multiple slashes by one
         path = re.sub(r"\.\.+", ".", path)  # Replace .. and longer by .
         path = re.sub(r"^//+", "", path)    # Remove initial slashes
