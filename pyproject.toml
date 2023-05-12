@@ -34,7 +34,6 @@ classifiers = [
 ]
 dependencies = [
     "dateparser",
-    "lru-dict",
     "lupa @ git+https://github.com/scoder/lupa.git",
 ]
 
