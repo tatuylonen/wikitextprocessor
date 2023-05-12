@@ -562,35 +562,28 @@ def call_lua_sandbox(ctx, invoke_args, expander, parent, timeout):
         text = "\n".join(parts)
     elif not isinstance(text, str):
         text = str(text)
-    msg = re.sub(r".*?:\d+: ", "", text.split("\n")[0])
-    if text.find("'debug.error'") >= 0:
+    msg = re.sub(r".*?:\d+: ", "", text.split("\n", 1)[0])
+    if "'debug.error'" in text:
         if not msg.startswith("This template is deprecated."):
             ctx.debug("lua error -- " + msg, sortid="luaexec/659")
-    elif text.find("Translations must be for attested and approved ") >= 0:
+    elif "Translations must be for attested and approved " in text:
         # Ignore this error - it is an error but a clear error in Wiktionary
         # rather than in the extractor.
         return ""
-    elif (text.find("attempt to index a nil value (local 'lang')") >= 0 and
-          text.find("in function 'Module:links.getLinkPage'") >= 0):
+    elif "attempt to index a nil value (local 'lang')" in text and \
+         "in function 'Module:links.getLinkPage'" in text:
         # Ignore this error - happens when an unknown language code is passed
         # to various templates (a Wiktionary error, not extractor error)
         return ""
     else:
-        parts = []
-        for line in text.splitlines():
-            # s = line.strip()
-            #if s == "[C]: in function 'xpcall'":
-            #    break
-            parts.append(line)
-        trace = "\n".join(parts)
         if "check deprecated lang param usage" in ctx.expand_stack:
             ctx.debug("LUA error but likely not bug -- in #invoke {} parent {}"
                       .format(invoke_args, parent),
-                      trace=trace, sortid="luaexec/679")
+                      trace=text, sortid="luaexec/679")
         else:
             ctx.error("LUA error in #invoke {} parent {}"
                       .format(invoke_args, parent),
-                      trace=trace, sortid="luaexec/683")
+                      trace=text, sortid="luaexec/683")
     msg = "Lua execution error"
     if "Lua timeout error" in text:
         msg = "Lua timeout error"

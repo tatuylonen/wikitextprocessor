@@ -339,14 +339,14 @@ class Wtp:
 
         def repl_arg(m):
             """Replacement function for template arguments."""
-            nowiki = m.group(0).find(MAGIC_NOWIKI_CHAR) >= 0
+            nowiki = MAGIC_NOWIKI_CHAR in m.group(0)
             orig = m.group(1)
             args = vbar_split(orig)
             return self._save_value("A", args, nowiki)
 
         def repl_arg_err(m):
             """Replacement function for template arguments, with error."""
-            nowiki = m.group(0).find(MAGIC_NOWIKI_CHAR) >= 0
+            nowiki = MAGIC_NOWIKI_CHAR in m.group(0)
             prefix = m.group(1)
             orig = m.group(2)
             args = vbar_split(orig)
@@ -359,7 +359,7 @@ class Wtp:
         def repl_templ(m):
             """Replacement function for templates {{name|...}} and parser
             functions."""
-            nowiki = m.group(0).find(MAGIC_NOWIKI_CHAR) >= 0
+            nowiki = MAGIC_NOWIKI_CHAR in m.group(0)
             v = m.group(1)
             args = vbar_split(v)
             # print("REPL_TEMPL: args={}".format(args))
@@ -368,7 +368,7 @@ class Wtp:
         def repl_templ_err(m):
             """Replacement function for templates {{name|...}} and parser
             functions, with error."""
-            nowiki = m.group(0).find(MAGIC_NOWIKI_CHAR) >= 0
+            nowiki = MAGIC_NOWIKI_CHAR in m.group(0)
             prefix = m.group(1)
             v = m.group(2)
             args = vbar_split(v)
@@ -380,7 +380,7 @@ class Wtp:
 
         def repl_link(m):
             """Replacement function for links [[...]]."""
-            nowiki = m.group(0).find(MAGIC_NOWIKI_CHAR) >= 0
+            nowiki = MAGIC_NOWIKI_CHAR in m.group(0)
             orig = m.group(1)
             args = vbar_split(orig)
             # print("REPL_LINK: orig={!r}".format(orig))
@@ -389,7 +389,7 @@ class Wtp:
         def repl_extlink(m):
             """Replacement function for external links [...].  This is also
             used to replace bracketed sections, such as [...]."""
-            nowiki = m.group(0).find(MAGIC_NOWIKI_CHAR) >= 0
+            nowiki = MAGIC_NOWIKI_CHAR in m.group(0)
             orig = m.group(1)
             args = [orig]
             return self._save_value("E", args, nowiki)
@@ -926,7 +926,7 @@ class Wtp:
                             #  {{}} template braces or <> html brackets
                             # is encountered, escape it  as the equal-sign
                             # HTML entity.
-                            if v.find("=") >= 0:
+                            if "=" in v:
                                 nv = ""
                                 em = re.split(r"({{.+}}|<.+>)", v)
                                 for s in em:
