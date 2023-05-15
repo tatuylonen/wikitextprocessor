@@ -88,8 +88,7 @@ using the &lt;name&gt;-&lt;date&gt;-pages-articles.xml.bz2 files.
 Usage example:
 
 ```python
-   from wikitextprocessor import Wtp, WikiNode, NodeKind
-   from wikitextprocessor.db_models import Page
+   from wikitextprocessor import Wtp, WikiNode, NodeKind, Page
    ctx = Wtp()
 
    def page_handler(page: Page) -> None:
@@ -424,15 +423,6 @@ The arguments are:
 The ``Wtp.analyze_templates()`` function needs to be called after
 calling ``Wtp.add_page()`` before pages can be expanded or parsed (it should
 preferably only be called once after adding all pages and templates).
-
-
-```python
-def overwrite_page(self, title: str, namespace_id: int, body: Optional[str] = None,
-                   redirect_to: Optional[str] = None, need_pre_expand: bool = False,
-                   model: str = "wikitext") -> None:
-```
-
-Use this method to overwirte page in the database.
 
 ```python
 def analyze_templates(self)

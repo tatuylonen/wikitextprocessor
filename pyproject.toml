@@ -36,7 +36,6 @@ dependencies = [
     "dateparser",
     "lupa @ git+https://github.com/scoder/lupa.git",
     "lxml",
-    "SQLAlchemy",
 ]
 
 [project.optional-dependencies]

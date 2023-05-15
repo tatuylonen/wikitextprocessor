@@ -18,15 +18,14 @@ import urllib.parse
 import pkg_resources
 import html.entities
 import multiprocessing
+import sqlite3
 
 from collections import defaultdict
+from collections.abc import Iterable
+from dataclasses import dataclass
 from typing import Optional, Dict, Set, Tuple, Union, Callable, List
 from pathlib import Path
 
-from sqlalchemy import func, select, create_engine, ScalarResult
-from sqlalchemy.orm import aliased, Session
-
-from .db_models import Base, Page
 from .parserfns import PARSER_FUNCTIONS, call_parser_function, init_namespaces
 from .wikihtml import ALLOWED_HTML_TAGS
 from .luaexec import call_lua_sandbox
@@ -45,6 +44,16 @@ PAIRED_HTML_TAGS = set(k for k, v in ALLOWED_HTML_TAGS.items()
 _global_ctx = None
 _global_page_handler = None
 _global_page_autoload = True
+
+
+@dataclass
+class Page:
+    title: str
+    namespace_id: int
+    redirect_to: Optional[str]
+    need_pre_expand: bool
+    body: Optional[str]
+    model: Optional[str]
 
 
 def phase2_page_handler(page: Page) -> Tuple[bool, str, float, Tuple[str, str]]:
@@ -84,8 +93,7 @@ class Wtp:
     and then using the context for processing many pages."""
     __slots__ = (
         "db_path",	 # Database path
-        "db_engine",     # Database engine
-        "db_session",    # Database session
+        "db_conn",       # Database connection
         "cookies",	 # Mapping from magic cookie -> expansion data
         "debugs",	 # List of debug messages (cleared for each new page)
         "errors",	 # List of error messages (cleared for each new page)
@@ -117,8 +125,7 @@ class Wtp:
         "namespaces",
         "LANGUAGES_BY_CODE",
         "lang_code",
-        "template_override_funcs",  # Python functions for overriding template expaneded text,
-        "page_nums"  # Page number saved to database
+        "template_override_funcs"  # Python functions for overriding template expaneded text,
     )
 
     def __init__(self, num_threads: Optional[int] = None, db_path: Optional[Path] = None,
@@ -153,7 +160,6 @@ class Wtp:
         self.LANGUAGES_BY_CODE = languages_by_code
         self.create_db()
         self.template_override_funcs = template_override_funcs
-        self.page_nums = 0
 
     def create_db(self) -> None:
         if self.db_path is None:
@@ -163,31 +169,35 @@ class Wtp:
         elif isinstance(self.db_path, str):
             self.db_path = Path(self.db_path)
 
-        self.db_engine = create_engine(f"sqlite:///{self.db_path.absolute()}")
-        Base.metadata.create_all(self.db_engine)
-        self.db_session = Session(self.db_engine)
+        self.db_conn = sqlite3.connect(self.db_path, check_same_thread=False)
+        self.db_conn.execute("""
+        CREATE TABLE IF NOT EXISTS pages (
+        title TEXT,
+        namespace_id INTEGER,
+        redirect_to TEXT,
+        need_pre_expand INTEGER,
+        body TEXT,
+        model TEXT,
+        PRIMARY KEY(title, namespace_id))
+        """)
+        self.db_conn.execute("PRAGMA journal_mode=WAL")
 
-    def init_child_db_session(self) -> None:
-        # don't close parent connection
-        # https://docs.sqlalchemy.org/en/20/core/pooling.html#pooling-multiprocessing
-        self.db_engine.dispose(close=False)
-        self.db_session = Session(self.db_engine)
-
-    def close_db_session(self) -> None:
-        self.db_session.close()
-
-    def dispose_db_engine(self) -> None:
-        self.db_engine.dispose()
+    def close_db_conn(self) -> None:
+        self.db_conn.close()
         if self.db_path.parent.samefile(Path(tempfile.gettempdir())):
             self.db_path.unlink()
 
     def saved_page_nums(self, namespace_ids: Optional[List[int]] = None, include_redirects: bool = True) -> int:
-        query = self.db_session.query(func.count()).select_from(Page)
+        query_str = "SELECT count(*) FROM pages"
         if namespace_ids is not None:
-            query = query.where(Page.namespace_id.in_(namespace_ids))
-        if not include_redirects:
-            query = query.where(Page.redirect_to.is_(None))
-        return query.scalar()
+            query_str += f" WHERE namespace_id IN ({','.join('?' * len(namespace_ids))})"
+            if not include_redirects:
+                query_str += " AND redirect_to IS NULL"
+        elif not include_redirects:
+            query_str += " WHERE redirect_to IS NULL"
+
+        for result in self.db_conn.execute(query_str, namespace_ids if namespace_ids else ()):
+            return result[0]
 
     def init_namespace_data(self):
         with self.data_folder.joinpath("namespaces.json") \
@@ -519,44 +529,12 @@ class Wtp:
         if namespace_id == self.NAMESPACE_DATA.get("Template", {}).get("id") and redirect_to is None:
             body = self._template_to_body(title, body)
 
-        self.db_session.add(Page(title=title, namespace_id=namespace_id, body=body,
-                                 redirect_to=redirect_to, need_pre_expand=need_pre_expand,
-                                 model=model))
-        self.page_nums += 1
-        if self.page_nums % 10000 == 0:
-            logging.info(f"  ... {self.page_nums} raw pages collected")
-
-    def overwrite_page(self, title: str, namespace_id: int, body: Optional[str] = None,
-                       redirect_to: Optional[str] = None, need_pre_expand: bool = False,
-                       model: str = "wikitext") -> None:
-        from sqlalchemy.dialects.sqlite import insert
-
-        ns_prefix = self.LOCAL_NS_NAME_BY_ID.get(namespace_id) + ":"
-        if namespace_id != 0 and not title.startswith(ns_prefix):
-            title = ns_prefix + title
-
-        if title.startswith("Main:"):
-            title = title[5:]
-
-        if namespace_id == self.NAMESPACE_DATA.get("Template", {}).get("id") and redirect_to is None:
-            body = self._template_to_body(title, body)
-
-        data = {
-            "title": title,
-            "namespace_id": namespace_id,
-            "body": body,
-            "redirect_to": redirect_to,
-            "need_pre_expand": need_pre_expand,
-            "model": model
-        }
-        stmt = insert(Page).values([data])
-        stmt = stmt.on_conflict_do_update(index_elements=["title", "namespace_id"], set_={
-            "body": body,
-            "redirect_to": redirect_to,
-            "need_pre_expand": need_pre_expand,
-            "model": model
-        })
-        self.db_session.execute(stmt)
+        self.db_conn.execute("""INSERT INTO pages (title, namespace_id, body,
+        redirect_to, need_pre_expand, model) VALUES (?, ?, ?, ?, ?, ?)
+        ON CONFLICT(title, namespace_id) DO UPDATE SET
+        body=excluded.body, redirect_to=excluded.redirect_to,
+        need_pre_expand=excluded.need_pre_expand, model=excluded.model""",
+                             (title, namespace_id, body, redirect_to, need_pre_expand, model))
 
     def _analyze_template(self, name: str, body: str) -> Tuple[Set[str], bool]:
         """Analyzes a template body and returns a set of the canonicalized
@@ -681,9 +659,9 @@ class Wtp:
         template_ns = self.NAMESPACE_DATA.get("Template", {})
         template_ns_id = template_ns.get("id")
         template_ns_local_name = template_ns.get("name")
-        self.overwrite_page(f"{template_ns_local_name}:!", template_ns_id, "|")  # magic word
-        self.overwrite_page(f"{template_ns_local_name}:((", template_ns_id, "&lbrace;&lbrace;")  # {{((}} -> {{
-        self.overwrite_page(f"{template_ns_local_name}:))", template_ns_id, "&rbrace;&rbrace;")  # {{))}} -> }}
+        self.add_page(f"{template_ns_local_name}:!", template_ns_id, "|")  # magic word
+        self.add_page(f"{template_ns_local_name}:((", template_ns_id, "&lbrace;&lbrace;")  # {{((}} -> {{
+        self.add_page(f"{template_ns_local_name}:))", template_ns_id, "&rbrace;&rbrace;")  # {{))}} -> }}
 
         expand_stack = []
         included_map = collections.defaultdict(set)
@@ -693,7 +671,7 @@ class Wtp:
             for used_template in used_templates:
                 included_map[used_template].add(page.title)
             if pre_expand:
-                page.need_pre_expand = True
+                self.set_template_pre_expand(page.title)
                 expand_stack.append(page)
 
         # XXX consider encoding template bodies here (also need to save related
@@ -712,23 +690,23 @@ class Wtp:
                 if template.need_pre_expand:
                     continue
                 #print("propagating EXP {} -> {}".format(name, inc))
-                template.need_pre_expand = True
+                self.set_template_pre_expand(template.title)
                 expand_stack.append(template)
 
         # Also set `need_pre_expand` value for redirected templates
-        dest_templates = aliased(Page)
-        for source_template, dest_template in self.db_session.execute(
-                select(Page, dest_templates)
-                .join(dest_templates, Page.redirect_to == dest_templates.title)
-                .where(Page.namespace_id == template_ns_id)
-                .where(dest_templates.namespace_id == template_ns_id)
-                .execution_options(yield_per=1000)):
-            if source_template.need_pre_expand:
-                dest_template.need_pre_expand = True
-            elif dest_template.need_pre_expand:
-                source_template.need_pre_expand = True
+        query_str = """
+        UPDATE pages SET need_pre_expand = 1
+        FROM pages AS dest
+        WHERE pages.redirect_to = dest.title
+        AND pages.namespace_id = dest.namespace_id
+        AND dest.need_pre_expand = 1
+        AND pages.need_pre_expand = 0
+        """
+        self.db_conn.execute(query_str)
+        self.db_conn.commit()
 
-        self.db_session.commit()
+    def set_template_pre_expand(self, name: str) -> None:
+        self.db_conn.execute("UPDATE pages SET need_pre_expand = 1 WHERE title = ?", (name,))
 
     def start_page(self, title: str) -> None:
         """Starts a new page for expanding Wikitext.  This saves the title and
@@ -1352,9 +1330,9 @@ class Wtp:
             # Process pages using multiple parallel processes (the normal
             # case)
             if self.num_threads is None:
-                pool = multiprocessing.Pool(initializer=self.init_child_db_session)
+                pool = multiprocessing.Pool()
             else:
-                pool = multiprocessing.Pool(self.num_threads, self.init_child_db_session)
+                pool = multiprocessing.Pool(self.num_threads)
             cnt = 0
             start_t = time.time()
             last_t = time.time()
@@ -1412,24 +1390,33 @@ class Wtp:
                 # Add namespace prefix
                 title = ns_prefix + title
 
-        stmt = select(Page).where(Page.title == title)
+        query_str = "SELECT * FROM pages WHERE title = ?"
         if namespace_id is not None:
-            stmt = stmt.where(Page.namespace_id == namespace_id)
-        return self.db_session.scalar(stmt)
+            query_str += " AND namespace_id = ?"
+        query_str += " LIMIT 1"
+        for result in self.db_conn.execute(
+                query_str, (title,) if namespace_id is None else (title, namespace_id)):
+            return Page(title=result[0], namespace_id=result[1], redirect_to=result[2],
+                        need_pre_expand=result[3], body=result[4], model=result[5])
+        return None
 
     def page_exists(self, title: str) -> bool:
         return self.get_page(title) is not None
 
     def get_all_pages(self, namespace_ids: Optional[List[int]] = None,
-                      include_redirects: bool = True) -> ScalarResult[Page]:
-        stmt = select(Page)
+                      include_redirects: bool = True) -> Iterable[Page]:
+        query_str = "SELECT * FROM pages"
         if namespace_ids is not None:
-            stmt = stmt.where(Page.namespace_id.in_(namespace_ids))
-        if not include_redirects:
-            stmt = stmt.where(Page.redirect_to.is_(None))
-        # https://docs.sqlalchemy.org/en/20/orm/queryguide/api.html#fetching-large-result-sets-with-yield-per
-        # reduce memory usage
-        return self.db_session.scalars(stmt.execution_options(yield_per=1000))
+            query_str += f" WHERE namespace_id IN ({','.join('?' * len(namespace_ids))})"
+            if not include_redirects:
+                query_str += " AND redirect_to IS NULL"
+        elif not include_redirects:
+            query_str += " WHERE redirect_to IS NULL"
+
+        for result in self.db_conn.execute(query_str, namespace_ids if namespace_ids else ()):
+            yield Page(title=result[0], namespace_id=result[1], redirect_to=result[2],
+                       need_pre_expand=result[3], body=result[4], model=result[5])
+        return []
 
     def template_exists(self, name: str) -> bool:
         return self.get_page(name, self.NAMESPACE_DATA["Template"]["id"]) is not None

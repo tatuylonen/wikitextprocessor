@@ -3218,7 +3218,7 @@ return export
         self.assertEqual(ret, "atest contentb")
         # Now create a new context with the same cachefile but do not add page
         ctx = Wtp(db_path=path)
-        ctx.overwrite_page("Template:testmod", 10, "test content 2")
+        ctx.add_page("Template:testmod", 10, "test content 2")
         ctx.analyze_templates()
         ctx.start_page("Tt")
         ret = ctx.expand("a{{testmod}}b")

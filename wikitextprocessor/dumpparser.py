@@ -33,6 +33,7 @@ def process_input(path: str, page_cb: Callable[[str, str], None], namespace_ids:
     namespace_str = "http://www.mediawiki.org/xml/export-0.10/"
     namespaces = {None: namespace_str}
 
+    page_nums = 0
     for _, page_element in etree.iterparse(wikt_f, tag=f"{{{namespace_str}}}page"):
         title = page_element.findtext("title", "", namespaces)
         namespace_id = int(page_element.findtext("ns", "0", namespaces))
@@ -54,6 +55,9 @@ def process_input(path: str, page_cb: Callable[[str, str], None], namespace_ids:
 
         page_cb(title, namespace_id, body=text, redirect_to=redirect_to, model=model)
         page_element.clear(keep_tail=True)
+        page_nums += 1
+        if page_nums % 10000 == 0:
+            logging.info(f"  ... {page_nums} raw pages collected")
 
     wikt_f.close()
 
@@ -95,7 +99,7 @@ def overwrite_pages(ctx: "Wtp", folder_paths: List[Path]) -> None:
                 ns_id = ctx.NS_ID_BY_LOCAL_NAME.get(local_ns_name, 0)
                 module_ns_id = ctx.NAMESPACE_DATA.get("Module", {}).get("id")
                 model = "Scribunto" if ns_id == module_ns_id else "wikitext"
-                ctx.overwrite_page(title, ns_id, f.read(), model=model)
+                ctx.add_page(title, ns_id, f.read(), model=model)
 
 # XXX parse <namespaces> and use that in both Python and Lua code
 
