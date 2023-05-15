@@ -557,7 +557,7 @@ def call_lua_sandbox(ctx, invoke_args, expander, parent, timeout):
                   .format(invoke_args, parent),
                   sortid="luaexec/626")
         ok, text = True, ""
-    except lupa._lupa.LuaError as e:
+    except lupa.LuaError as e:
         ok, text = False, e
     finally:
         while len(ctx.expand_stack) > stack_len:
