@@ -2253,6 +2253,10 @@ return export
         self.scribunto("<br />", """
         return frame:extensionTag("br")""")
 
+    def test_frame_extensionTag5(self):
+        self.scribunto("{{#tag:not_allowed_tag|}}", """
+        return frame:extensionTag("not_allowed_tag")""")
+
     def test_frame_newChild1(self):
         self.scribunto("", """
         return frame:newChild():getTitle()""")
