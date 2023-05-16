@@ -424,7 +424,7 @@ def call_lua_sandbox(ctx, invoke_args, expander, parent, timeout):
                 attrs = [attrs]
 
             ctx.expand_stack.append("extensionTag()")
-            ret = tag_fn(title, "#tag", [name, content] + attrs,
+            ret = tag_fn(ctx, "#tag", [name, content] + attrs,
                          lambda x: x)  # Already expanded
             ctx.expand_stack.pop()
             # Expand any templates from the result

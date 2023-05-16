@@ -8,6 +8,10 @@ import math
 import datetime
 import urllib.parse
 import dateparser
+
+from typing import List
+from collections.abc import Callable
+
 from .wikihtml import ALLOWED_HTML_TAGS
 from .common import nowiki_quote, MAGIC_NOWIKI_CHAR
 
@@ -150,7 +154,7 @@ def lst_fn(ctx, fn_name, args, expander):
     return "".join(parts)
 
 
-def tag_fn(ctx, fn_name, args, expander):
+def tag_fn(ctx: "Wtp", fn_name: str, args: List[str], expander: Callable[[str], str]) -> str:
     """Implements #tag parser function."""
     tag = expander(args[0]).lower() if args else ""
     if tag not in ALLOWED_HTML_TAGS and tag != "nowiki":
