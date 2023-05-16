@@ -1632,6 +1632,10 @@ def token_iter(ctx, text):
                     for x in token_iter(ctx, m.group(2)):
                         yield x
                     yield True, ">" + m.group(4)
+                elif start > 0 and part[start - 1] == "=" and token.startswith(("https://", "http://")):
+                    # treat URL in template argument as plain text
+                    # otherwise it'll be converted to wikitext link: [url]
+                    yield False, token
                 else:
                     yield True, token
             if pos != len(part):
