@@ -7,18 +7,31 @@ import math
 import time
 import unittest
 import platform
+
+from typing import List, Tuple
+
 from wikitextprocessor import Wtp
 from wikitextprocessor.common import MAGIC_NOWIKI_CHAR
 
 
-def phase1_to_ctx(pages):
+def phase1_to_ctx(pages: List[Tuple[str, str, str]]) -> Wtp:
     """Creates a context and adds the given pages to it.  ``pages`` is a
-    list or tuple of (tag, title, text), where ``tag`` is "Template"
-    for templates and "Module" for modules.  Title is the title of the
-    page and text the content of the page."""
+    list or tuple of (model, title, text), where `tag` is "wikitext"
+    for templates or word page and "Scribunto" for modules, "redirects"
+    for redirect page. Title is the title of the page and text the content
+    of the page."""
     ctx = Wtp()
-    for tag, title, text in pages:
-        ctx.add_page(tag, title, text)
+    for model, title, text in pages:
+        namespace_id = 0
+        if title.startswith("Template:"):
+            namespace_id = 10
+        elif model == "Scribunto":
+            namespace_id = 828
+
+        if model == "redirect":
+            ctx.add_page(title, namespace_id, redirect_to=text)
+        else:
+            ctx.add_page(title, namespace_id, text, model=model)
     ctx.analyze_templates()
     return ctx
 
@@ -754,7 +767,7 @@ MORE
         self.parserfn("{{#expr|sin(30*pi/180)}}", "0.49999999999999994")
 
     def test_expr29(self):
-        self.parserfn("{{#expr|cos.1}}", "0.9950041652780257" if platform.system() == "Darwin" else "0.9950041652780258")
+        self.parserfn("{{#expr|cos.1}}", "0.9950041652780258")
 
     def test_expr30(self):
         self.parserfn("{{#expr|tan.1}}", "0.10033467208545055")
@@ -1419,6 +1432,7 @@ MORE
     def test_template24b(self):
         ctx = phase1_to_ctx([
             ["wikitext", "Template:testmod", "a{{{1}}}b"],
+            ["wikitext", "Template:!-", "|-"]
         ])
         ctx.start_page("Tt")
         ret = ctx.expand("{{testmod|{{!-}}}}")
@@ -3169,21 +3183,21 @@ return export
         self.scribunto("False", r"""
         return _G["os"].clock == nil""")
 
-    def test_cachefile1(self):
+    def test_dbfile1(self):
         path = "/tmp/cachefiletest1"
         try:
             os.remove(path)
             os.remove(path + ".json")
         except FileNotFoundError:
             pass
-        ctx = Wtp(cache_file=path)
-        ctx.add_page("wikitext", "Template:testmod", "test content")
+        ctx = Wtp(db_path=path)
+        ctx.add_page("Template:testmod", 10, "test content")
         ctx.analyze_templates()
         ctx.start_page("Tt")
         ret = ctx.expand("a{{testmod}}b")
         self.assertEqual(ret, "atest contentb")
         # Now create a new context with the same cachefile but do not add page
-        ctx = Wtp(cache_file=path)
+        ctx = Wtp(db_path=path)
         ctx.start_page("Tt")
         ret = ctx.expand("a{{testmod}}b")
         self.assertEqual(ret, "atest contentb")
@@ -3193,22 +3207,22 @@ return export
         except FileNotFoundError:
             pass
 
-    def test_cachefile2(self):
+    def test_dbfile2(self):
         path = "/tmp/cachefiletest1"
         try:
             os.remove(path)
             os.remove(path + ".json")
         except FileNotFoundError:
             pass
-        ctx = Wtp(cache_file=path)
-        ctx.add_page("wikitext", "Template:testmod", "test content")
+        ctx = Wtp(db_path=path)
+        ctx.add_page("Template:testmod", 10, "test content")
         ctx.analyze_templates()
         ctx.start_page("Tt")
         ret = ctx.expand("a{{testmod}}b")
         self.assertEqual(ret, "atest contentb")
         # Now create a new context with the same cachefile but do not add page
-        ctx = Wtp(cache_file=path)
-        ctx.add_page("wikitext", "Template:testmod", "test content 2")
+        ctx = Wtp(db_path=path)
+        ctx.add_page("Template:testmod", 10, "test content 2")
         ctx.analyze_templates()
         ctx.start_page("Tt")
         ret = ctx.expand("a{{testmod}}b")

@@ -12,6 +12,8 @@ import traceback
 import unicodedata
 import pkg_resources
 
+from typing import Optional
+
 import lupa.lua51 as lupa
 from .parserfns import PARSER_FUNCTIONS, call_parser_function, tag_fn
 
@@ -30,7 +32,7 @@ if not lua_dir.endswith("/"):
 #print("lua_dir", lua_dir)
 
 
-def lua_loader(ctx, modname):
+def lua_loader(ctx: "Wtp", modname: str) -> Optional[str]:
     """This function is called from the Lua sandbox to load a Lua module.
     This will load it from either the user-defined modules on special
     pages or from a built-in module in the file system.  This returns None
@@ -42,9 +44,6 @@ def lua_loader(ctx, modname):
 
     # Local name usually not used in Lua code
     if modname.startswith(("Module:", local_module_ns_name + ":")):
-        # Canonicalize the name
-        modname = ctx._canonicalize_template_name(modname)
-
         # First try to load it as a module
         if modname.startswith(("Module:_", local_module_ns_name + ":_")):
             # Module names starting with _ are considered internal and cannot be
@@ -52,23 +51,13 @@ def lua_loader(ctx, modname):
             # that the sandbox always gets loaded from a local file.
             data = None
         else:
-            data = ctx.read_by_title(modname)
-            if data is None:
-                module_name_len = len("Module") if modname.startswith("Module") else len(local_module_ns_name)
-                new_module_title = local_module_ns_name + ":"
-                # Chinese Wikipedia capitalizes the first letter of module name
-                # can't use str.capitalize(), it'll cause error for "Module:Cmn-pron-Sichuan"
-                if ctx.lang_code == "zh":
-                    new_module_title += modname[module_name_len + 1].upper() + modname[module_name_len + 2:]
-                else:
-                    new_module_title += modname[module_name_len + 1:]
-                data = ctx.read_by_title(new_module_title)
+            data = ctx.read_by_title(modname, ctx.NAMESPACE_DATA["Module"]["id"])
     else:
         # Try to load it from a file
         path = modname
         path = re.sub(r"[\0-\037]", "", path)  # Remove control chars, e.g. \n
-        path = re.sub(r":", "/", path)      # Replace : by /
-        path = re.sub(r" ", "_", path)      # Replace spaces by underscore
+        path = path.replace(":", "/")
+        path = path.replace(" ", "_")
         path = re.sub(r"//+", "/", path)    # Replace multiple slashes by one
         path = re.sub(r"\.\.+", ".", path)  # Replace .. and longer by .
         path = re.sub(r"^//+", "", path)    # Remove initial slashes
@@ -193,39 +182,30 @@ def mw_text_jsonencode(s, *rest):
     return json.dumps(value, sort_keys=True)
 
 
-def get_page_info(ctx, title):
+def get_page_info(ctx: "Wtp", title: str):
     """Retrieves information about a page identified by its table (with
     namespace prefix.  This returns a lua table with fields "id", "exists",
     and "redirectTo".  This is used for retrieving information about page
     titles."""
-    assert isinstance(title, str)
-
     page_id = 0  # XXX collect required info in phase 1
-    page_exists = ctx.page_exists(title)
-    redirect_to = ctx.redirects.get(title, None)
-
+    page = ctx.get_page(title)
     # whether the page exists and what its id might be
     dt = {
         "id": page_id,
-        "exists": page_exists,
-        "redirectTo": redirect_to,
+        "exists": page is not None,
+        "redirectTo": page.redirect_to if page is not None else None,
     }
     return ctx.lua.table_from(dt)
 
 
-def get_page_content(ctx, title):
+def get_page_content(ctx: "Wtp", title: str) -> Optional[str]:
     """Retrieves the full content of the page identified by the title.
     Currently this will only return content for the current page.
     This returns None if the page is other than the current page, and
     False if the page does not exist (currently not implemented)."""
-    assert isinstance(title, str)
-    title = title.strip()
 
     # Read the page by its title
-    data = ctx.read_by_title(title)
-    if data is None:
-        return None
-    return data
+    return ctx.read_by_title(title.strip())
 
 
 def fetch_language_name(ctx, code):
@@ -283,10 +263,9 @@ def initialize_lua(ctx):
     # bigger phase 2 of the sandbox.  This way, most of the sandbox loading
     # will benefit from caching and precompilation (when implemented).
     with open(lua_dir + "_sandbox_phase1.lua", encoding="utf-8") as f:
-        lua_sandbox = f.read()
-    set_loader = lua.execute(lua_sandbox)
-    # Call the function that sets the Lua loader
-    set_loader(lambda x: lua_loader(ctx, x))
+        set_loader = lua.execute(f.read())
+        # Call the function that sets the Lua loader
+        set_loader(lambda x: lua_loader(ctx, x))
 
     # Then load the second phase of the sandbox.  This now goes through the
     # new loader and is evaluated in the sandbox.  This mostly implements
@@ -583,35 +562,28 @@ def call_lua_sandbox(ctx, invoke_args, expander, parent, timeout):
         text = "\n".join(parts)
     elif not isinstance(text, str):
         text = str(text)
-    msg = re.sub(r".*?:\d+: ", "", text.split("\n")[0])
-    if text.find("'debug.error'") >= 0:
+    msg = re.sub(r".*?:\d+: ", "", text.split("\n", 1)[0])
+    if "'debug.error'" in text:
         if not msg.startswith("This template is deprecated."):
             ctx.debug("lua error -- " + msg, sortid="luaexec/659")
-    elif text.find("Translations must be for attested and approved ") >= 0:
+    elif "Translations must be for attested and approved " in text:
         # Ignore this error - it is an error but a clear error in Wiktionary
         # rather than in the extractor.
         return ""
-    elif (text.find("attempt to index a nil value (local 'lang')") >= 0 and
-          text.find("in function 'Module:links.getLinkPage'") >= 0):
+    elif "attempt to index a nil value (local 'lang')" in text and \
+         "in function 'Module:links.getLinkPage'" in text:
         # Ignore this error - happens when an unknown language code is passed
         # to various templates (a Wiktionary error, not extractor error)
         return ""
     else:
-        parts = []
-        for line in text.splitlines():
-            # s = line.strip()
-            #if s == "[C]: in function 'xpcall'":
-            #    break
-            parts.append(line)
-        trace = "\n".join(parts)
         if "check deprecated lang param usage" in ctx.expand_stack:
             ctx.debug("LUA error but likely not bug -- in #invoke {} parent {}"
                       .format(invoke_args, parent),
-                      trace=trace, sortid="luaexec/679")
+                      trace=text, sortid="luaexec/679")
         else:
             ctx.error("LUA error in #invoke {} parent {}"
                       .format(invoke_args, parent),
-                      trace=trace, sortid="luaexec/683")
+                      trace=text, sortid="luaexec/683")
     msg = "Lua execution error"
     if "Lua timeout error" in text:
         msg = "Lua timeout error"

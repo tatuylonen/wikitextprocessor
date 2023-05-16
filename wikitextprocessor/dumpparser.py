@@ -2,227 +2,104 @@
 #
 # Copyright (c) 2018-2022 Tatu Ylonen.  See file LICENSE and https://ylonen.org
 
-import re
-import sys
-import bz2
-import json
-import html
-import traceback
+import logging
+import shutil
 import subprocess
+import sys
 
-# These XML tags are ignored when parsing.
-ignore_xml_tags = set(["sha1", "comment", "username", "timestamp",
-                       "sitename", "dbname", "base", "generator", "case",
-                       "ns", "restrictions", "contributor", "username",
-                       "minor", "parentid", "namespaces", "revision",
-                       "siteinfo", "mediawiki",
-                       "id", "revision", "namespace", "format",
-                       # "model",
-])
-
-# Other tags are ignored inside these tags.
-xml_stack_ignore = ("contributor",)
+from collections.abc import Callable
+from pathlib import Path
+from typing import Optional, Set, List
 
 
-class DumpParser:
-    """This class is used for XML parsing the MediaWiki dump file."""
-
-    __slots__ = (
-        "tag",
-        "stack",
-        "stack_ignore",
-        "text",
-        "title",
-        "redirect",
-        "model",
-        "aborted",
-        "data",
-        "args",
-        "buf",
-        "ofs",
-    )
-
-    def __init__(self):
-        self.tag = None
-        self.stack = []
-        self.stack_ignore = False
-        self.text = None
-        self.title = None
-        self.redirect = None
-        self.model = None
-        self.aborted = False
-        self.data = []
-        self.args = b""
-
-tag_re = re.compile(
-    rb"""(?s)<!--[^\0]*?-->|"""
-    rb"""<([^>\s]+)"""
-    rb"""(\s+[^"'>/=\s]+\b(\s*=\s*("[^"]*"|'[^']*'|[^ \t\n"'`=<>]*))?)*?"""
-    rb"""\s*(/\s*)?>""")
-
-arg_re = re.compile(
-    rb"""([^"'>/=\s]+)(\s*=\s*("[^"]*"|'[^']*'|[^ \t\n"'`=<>]*))?"""
-)
-
-def make_iter(f):
-    dp = DumpParser()
-    dp.buf = b""
-    dp.ofs = 0
-
-    def handle_start(tag, args):
-        """This is called whenever an XML start tag is encountered."""
-        assert isinstance(tag, str)
-        assert isinstance(args, bytes)
-        dp.args = args
-        dp.tag = tag
-        dp.stack.append(tag)
-        dp.data = []
-        if tag == "page":
-            dp.text = None
-            dp.title = None
-            dp.redirect = None
-            dp.model = None
-        elif tag in xml_stack_ignore:
-            dp.stack_ignore = True
-
-    def parse_attrs(args):
-        attrs = {}
-        for m in re.finditer(arg_re, args):
-            name = m.group(1).decode("utf-8")
-            if m.group(2):
-                value = m.group(3).decode("utf-8")
-            else:
-                value = ""
-            if value.startswith("'") or value.startswith('"'):
-                value = value[1:-1]
-            attrs[name] = value
-        return attrs
-
-    def handle_end(tag):
-        """This function is called whenever an XML end tag is encountered."""
-        ptag = dp.stack.pop()
-        if ptag in xml_stack_ignore:
-            dp.stack_ignore = False
-        if tag in ignore_xml_tags or dp.stack_ignore:
-            return None
-
-        data = b"".join(dp.data)
-        data = data.decode("utf-8")
-        dp.data = []
-
-        if tag == "title":
-            dp.title = data
-        elif tag == "text":
-            dp.text = data
-        elif tag == "redirect":
-            attrs = parse_attrs(dp.args)
-            dp.redirect = attrs.get("title")
-        elif tag == "page":
-            if dp.redirect:
-                return "redirect", dp.title, dp.redirect
-            return dp.model, dp.title, dp.text
-        elif tag == "model":
-            dp.model = data
-        else:
-            attrs = parse_attrs(dp.args)
-            print("UNSUPPORTED", tag, len(data), attrs)
-        return None
-
-    def article_iter():
-        try:
-            while not dp.aborted:
-                more_data = f.read(64 * 1024)
-                if not more_data:
-                    rest = dp.buf[dp.ofs:]
-                    dp.data.append(rest)
-                    break
-                dp.buf = dp.buf[dp.ofs:] + more_data
-                dp.ofs = 0
-                for m in re.finditer(tag_re, dp.buf):
-                    before = dp.buf[dp.ofs:m.start()]
-                    if before:
-                        dp.data.append(before)
-                    dp.ofs = m.end()
-                    tag = m.group(1)
-                    if not tag:
-                        continue
-                    tag = tag.lower().decode("utf-8")
-                    args = m.group(2) or b""
-                    close = m.group(5)
-                    if tag.startswith("/"):
-                        tag = tag[1:]
-                        art = handle_end(tag)
-                        if art:
-                            yield art
-                    elif close:
-                        handle_start(tag, args)
-                        art = handle_end(tag)
-                        if art:
-                            yield art
-                    else:
-                        handle_start(tag, args)
-        except Exception as e:
-            print("GOT EXCEPTION", str(e))
-            traceback.print_exc()
-            raise
-
-    return article_iter()
-
-
-def process_input(path, page_cb):
+def process_input(path: str, page_cb: Callable[[str, str], None], namespace_ids: Set[int]) -> None:
     """Processes the entire input once, calling chunk_fn for each chunk.
     A chunk is a list of data, where ``data`` is a dict
     containing at least "title" and "text" keys.  This returns a list
     of the values returned by ``chunk_fn`` in arbitrary order.  Each return
     value must be json-serializable."""
-    assert isinstance(path, str)
-    assert callable(page_cb)
 
     # Open the input file, optionally decompressing on the fly (in a parallel
     # process to maximize concurrency).  This requires the ``buffer`` program.
-    subp = None
+    from lxml import etree
+
     if path.endswith(".bz2"):
-        # cmd = "bzcat {} | buffer -m 16M".format(path)
-        cmd = "bzcat {}".format(path)
-        subp = subprocess.Popen(["/bin/sh", "-c", cmd], stdout=subprocess.PIPE,
-                                bufsize=256*1024)
+        bzcat_command = "lbzcat" if shutil.which("lbzcat") is not None else "bzcat"
+        subp = subprocess.Popen([bzcat_command, path], stdout=subprocess.PIPE)
         wikt_f = subp.stdout
     else:
-        wikt_f = open(path, "rb", buffering=(256 * 1024))
+        wikt_f = open(path, "rb")
 
-    # Create an iterator that produces chunks of articles to process.
-    lst = []
-    for model, title, text in make_iter(wikt_f):
-        title = html.unescape(title)
-        text = html.unescape(text)
-        ret = page_cb(model, title, text)
-        if ret is not None:
-            lst.append(ret)
+    namespace_str = "http://www.mediawiki.org/xml/export-0.10/"
+    namespaces = {None: namespace_str}
 
-    return lst
+    page_nums = 0
+    for _, page_element in etree.iterparse(wikt_f, tag=f"{{{namespace_str}}}page"):
+        title = page_element.findtext("title", "", namespaces)
+        namespace_id = int(page_element.findtext("ns", "0", namespaces))
+        if namespace_id not in namespace_ids or title.endswith("/documentation") or "/testcases" in title:
+            page_element.clear(keep_tail=True)
+            continue
+
+        text = None
+        redirect_to = None
+        model = page_element.findtext("revision/model", "", namespaces)
+        if (redirect_element := page_element.find("redirect", namespaces=namespaces)) is not None:
+            redirect_to = redirect_element.get("title", "")
+        else:
+            if model not in {"wikitext", "Scribunto", "json"}:
+                # ignore css, javascript and sanitized-css pages
+                page_element.clear(keep_tail=True)
+                continue
+            text = page_element.findtext("revision/text", "", namespaces)
+
+        page_cb(title, namespace_id, body=text, redirect_to=redirect_to, model=model)
+        page_element.clear(keep_tail=True)
+        page_nums += 1
+        if page_nums % 10000 == 0:
+            logging.info(f"  ... {page_nums} raw pages collected")
+
+    wikt_f.close()
 
 
-def process_dump(ctx, path, page_handler=None):
+def process_dump(ctx: "Wtp", path: str, namespace_ids: Set[int],
+                 overwrite_folders: Optional[List[Path]] = None, skip_extract_dump: bool = False,
+                 page_handler: Optional[Callable[[str, int], None]] = None) -> None:
     """Parses a WikiMedia dump file ``path`` (which should point to a
     "<project>-<date>-pages-articles.xml.bz2" file.  This implements
     the first phase of processing a dump - copying it to a temporary
     file with some preprocessing.  The Wtp.reprocess() must then be
     called to actually process the data."""
-    assert isinstance(path, str)
-    assert isinstance(page_handler, type(None)) or callable(page_handler)
-
-    if page_handler is None:
-        page_handler = lambda model, title, text: ctx.add_page(model, title, text)
 
     # Run Phase 1 in a single thread; this mostly just extracts pages into
     # a temporary file.
-    process_input(path, page_handler)
+    if not skip_extract_dump:
+        process_input(path, page_handler if page_handler is not None else ctx.add_page, namespace_ids)
+    if overwrite_folders is not None:
+        overwrite_pages(ctx, overwrite_folders)
 
     # Analyze which templates should be expanded before parsing
-    if not ctx.quiet:
-        print("Analyzing which templates should be expanded before parsing")
-        sys.stdout.flush()
-    ctx.analyze_templates()
+    if not skip_extract_dump or (skip_extract_dump and overwrite_folders is not None):
+        logging.info("Analyzing which templates should be expanded before parsing")
+        ctx.analyze_templates()
+
+
+def overwrite_pages(ctx: "Wtp", folder_paths: List[Path]) -> None:
+    for folder_path in folder_paths:
+        for file_path in folder_path.iterdir():
+            with file_path.open(encoding="utf-8") as f:
+                first_line = f.readline()
+                if not first_line.startswith("TITLE: "):
+                    logging.error(
+                        'First line of file supplied with --override must be "TITLE: <page title>"'
+                        '(The page title for this would normally start with Module:')
+                    sys.exit(1)
+                title = first_line[7:].strip()
+                local_ns_name = title[:title.find(":")]
+                ns_id = ctx.NS_ID_BY_LOCAL_NAME.get(local_ns_name, 0)
+                module_ns_id = ctx.NAMESPACE_DATA.get("Module", {}).get("id")
+                model = "Scribunto" if ns_id == module_ns_id else "wikitext"
+                ctx.add_page(title, ns_id, f.read(), model=model)
 
 # XXX parse <namespaces> and use that in both Python and Lua code
 

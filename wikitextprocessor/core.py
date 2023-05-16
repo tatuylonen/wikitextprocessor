@@ -8,16 +8,22 @@ import re
 import sys
 import html
 import json
-import time
-import pickle
-import platform
+import logging
 import tempfile
+import time
+import platform
 import traceback
 import collections
 import urllib.parse
 import pkg_resources
 import html.entities
 import multiprocessing
+import sqlite3
+
+from collections import defaultdict
+from collections.abc import Iterable
+from dataclasses import dataclass
+from typing import Optional, Dict, Set, Tuple, Union, Callable, List
 from pathlib import Path
 
 from .parserfns import PARSER_FUNCTIONS, call_parser_function, init_namespaces
@@ -40,15 +46,23 @@ _global_page_handler = None
 _global_page_autoload = True
 
 
-def phase2_page_handler(dt):
+@dataclass
+class Page:
+    title: str
+    namespace_id: int
+    redirect_to: Optional[str]
+    need_pre_expand: bool
+    body: Optional[str]
+    model: Optional[str]
+
+
+def phase2_page_handler(page: Page) -> Tuple[bool, str, float, Tuple[str, str]]:
     """Helper function for calling the Phase2 page handler (see
     reprocess()).  This is a global function in order to make this
     pickleable.  The implication is that process() and reprocess() are not
     re-entrant (i.e., cannot be called safely from multiple threads or
     recursively)"""
     ctx = _global_ctx
-    autoload = _global_page_autoload
-    model, title = dt
     start_t = time.time()
 
     # Helps debug extraction hangs. This writes the path of each file being
@@ -58,23 +72,18 @@ def phase2_page_handler(dt):
     with tempfile.TemporaryDirectory(prefix="wiktextract") as tmpdirname:
         debug_path = "{}/wiktextract-{}".format(tmpdirname, os.getpid())
         with open(debug_path, "w", encoding="utf-8") as f:
-            f.write(title + "\n")
+            f.write(page.title + "\n")
 
-        ctx.start_page(title)
-        if autoload:
-            data = ctx.read_by_title(title)
-            assert isinstance(data, str)
-        else:
-            data = None
+        ctx.start_page(page.title)
         try:
-            ret = _global_page_handler(model, title, data)
-            return True, title, start_t, ret
+            ret = _global_page_handler(page)
+            return True, page.title, start_t, ret
         except Exception as e:
             lst = traceback.format_exception(type(e), value=e,
                                              tb=e.__traceback__)
-            msg = ("=== EXCEPTION while parsing page \"{}\":\n".format(title) +
+            msg = ("=== EXCEPTION while parsing page \"{}\":\n".format(page.title) +
                    "".join(lst))
-            return False, title, start_t, msg
+            return False, page.title, start_t, msg
 
 
 class Wtp:
@@ -83,12 +92,8 @@ class Wtp:
     initialize this context once (this holds template and module definitions),
     and then using the context for processing many pages."""
     __slots__ = (
-        "buf",		 # Buffer for reading/writing tmp_file
-        "buf_ofs",	 # Offset into buf
-        "buf_used",	 # Number of bytes in the buffer when reading
-        "buf_size",      # Allocated size of buf, in bytes
-        "cache_file",	 # Prefix to cache files (instead of temporary file)
-        "cache_file_old",  # Using pre-existing cache file
+        "db_path",	 # Database path
+        "db_conn",       # Database connection
         "cookies",	 # Mapping from magic cookie -> expansion data
         "debugs",	 # List of debug messages (cleared for each new page)
         "errors",	 # List of error messages (cleared for each new page)
@@ -98,21 +103,11 @@ class Wtp:
         "lua_invoke",	 # Lua function used to invoke a Lua module
         "lua_reset_env", # Function to reset Lua environment
         "lua_path",	 # Path to Lua modules
-        "modules",	 # Lua code for defined Lua modules
-        "need_pre_expand",  # Set of template names to be expanded before parse
         "num_threads",   # Number of parallel threads to use
-        "page_contents",  # Full content for selected pages (e.g., Thesaurus)
-        "page_seq",	 # All content pages (title, model, ofs, len) in order
         "quiet",	 # If True, don't print any messages during processing
-        "redirects",	 # Redirects in the wikimedia project
         "rev_ht",	 # Mapping from text to magic cookie
         "expand_stack",	 # Saved stack before calling Lua function
-        "templates",     # dict temlate name -> definition
         "title",         # current page title
-        "tmp_file",	 # Temporary file used to store templates and pages
-        "tmp_ofs",	 # Next write offset
-        "transient_pages",     # Unsaved pages added by extraction application
-        "transient_templates", # Unsaved templates added by application
         "warnings",	 # List of warning messages (cleared for each new page)
         # Data for parsing
         "beginning_of_line", # Parser at beginning of line
@@ -125,27 +120,24 @@ class Wtp:
         "suppress_special",  # XXX never set to True???
         "data_folder",
         "NAMESPACE_DATA",
+        "LOCAL_NS_NAME_BY_ID",  # Local namespace names dictionary
+        "NS_ID_BY_LOCAL_NAME",
         "namespaces",
         "LANGUAGES_BY_CODE",
         "lang_code",
-        "template_overrides",
+        "template_override_funcs"  # Python functions for overriding template expaneded text,
     )
 
-    def __init__(self, num_threads=None, cache_file=None, quiet=False,
-                 lang_code="en", languages_by_code = {}):
-        assert num_threads is None or isinstance(num_threads, int)
-        assert cache_file is None or isinstance(cache_file, str)
-        assert quiet in (True, False)
-        if num_threads is None:
-            if platform.system() in ("Windows", "Darwin"):
-                # Default num_threads to 1 on Windows and MacOS, as they
-                # apparently don't use fork() for multiprocessing.Pool()
-                num_threads = 1
-        self.buf_ofs = 0
-        self.buf_size = 4 * 1024 * 1024
-        self.buf = bytearray(self.buf_size)
-        self.cache_file = cache_file
-        self.cache_file_old = False
+    def __init__(self, num_threads: Optional[int] = None, db_path: Optional[Path] = None,
+                 quiet: bool = False, lang_code: str = "en", languages_by_code: Dict[str, List[str]] = {},
+                 template_override_funcs: Dict[str, Callable[List[str], str]] = {}):
+        if num_threads is None and platform.system() in ("Windows", "Darwin"):
+            # Default num_threads to 1 on Windows and MacOS, as they
+            # apparently don't use fork() for multiprocessing.Pool()
+            self.num_threads = 1
+        else:
+            self.num_threads = num_threads
+        self.db_path = db_path
         self.cookies = []
         self.errors = []
         self.warnings = []
@@ -160,80 +152,65 @@ class Wtp:
         self.rev_ht = {}
         self.expand_stack = []
         self.parser_stack = None
-        self.num_threads = num_threads
-        self.transient_pages = {}
-        self.transient_templates = {}
-        # Some predefined templates
-        self.need_pre_expand = None
-        self.template_overrides = {}
-
         self.lang_code = lang_code
         self.data_folder = Path(pkg_resources.resource_filename("wikitextprocessor", "data/")).joinpath(lang_code)
         self.init_namespace_data()
         self.namespaces = {}
         init_namespaces(self)
         self.LANGUAGES_BY_CODE = languages_by_code
+        self.create_db()
+        self.template_override_funcs = template_override_funcs
 
-        # Open cache file if it exists; otherwise create new cache file or
-        # temporary file and reset saved pages.
-        self.tmp_file = None
-        if self.cache_file:
-            try:
-                # Load self.templates, self.page_contents, self.page_seq,
-                # self.redirects
-                with open(self.cache_file + ".pickle", "rb") as f:
-                    dt = pickle.load(f)
-                version, dt = dt
-                if version == 1:
-                    # Cache file version is compatible
-                    self.tmp_file = open(self.cache_file, "rb", buffering=0)
-                    self.page_contents, self.page_seq, self.redirects, \
-                        self.templates, self.need_pre_expand = dt
-                    self.need_pre_expand = set(self.need_pre_expand)
-                    self.cache_file_old = True
-            except (FileNotFoundError, EOFError):
-                pass
-        if self.tmp_file is None:
-            self._reset_pages()
-        self.tmp_ofs = 0
-        self.buf_ofs = 0
+    def create_db(self) -> None:
+        if self.db_path is None:
+            temp_file = tempfile.NamedTemporaryFile(prefix="wikitextprocessor_tempdb", delete=False)
+            self.db_path = Path(temp_file.name)
+            temp_file.close()
+        elif isinstance(self.db_path, str):
+            self.db_path = Path(self.db_path)
+
+        self.db_conn = sqlite3.connect(self.db_path, check_same_thread=False)
+        self.db_conn.execute("""
+        CREATE TABLE IF NOT EXISTS pages (
+        title TEXT,
+        namespace_id INTEGER,
+        redirect_to TEXT,
+        need_pre_expand INTEGER,
+        body TEXT,
+        model TEXT,
+        PRIMARY KEY(title, namespace_id))
+        """)
+        self.db_conn.execute("PRAGMA journal_mode=WAL")
+
+    def close_db_conn(self) -> None:
+        self.db_conn.close()
+        if self.db_path.parent.samefile(Path(tempfile.gettempdir())):
+            self.db_path.unlink()
+
+    def saved_page_nums(self, namespace_ids: Optional[List[int]] = None, include_redirects: bool = True) -> int:
+        query_str = "SELECT count(*) FROM pages"
+        if namespace_ids is not None:
+            query_str += f" WHERE namespace_id IN ({','.join('?' * len(namespace_ids))})"
+            if not include_redirects:
+                query_str += " AND redirect_to IS NULL"
+        elif not include_redirects:
+            query_str += " WHERE redirect_to IS NULL"
+
+        for result in self.db_conn.execute(query_str, namespace_ids if namespace_ids else ()):
+            return result[0]
 
     def init_namespace_data(self):
         with self.data_folder.joinpath("namespaces.json") \
                               .open(encoding="utf-8") as f:
             self.NAMESPACE_DATA = json.load(f)
-
-    def _reset_pages(self):
-        """Resets any stored pages and gets ready to receive more pages."""
-        self.tmp_file = None
-        self.page_contents = {}
-        self.page_seq = []
-        self.redirects = {}
-        self.templates = {}
-        self.need_pre_expand = None
-        self.cache_file_old = False
-        # Add predefined templates
-        self.templates["!"] = "|"
-        self.templates["!-"] = "|-"
-        self.templates[self._canonicalize_template_name("((")] = \
-            "&lbrace;&lbrace;"  # {{((}}
-        self.templates[self._canonicalize_template_name("))")] = \
-            "&rbrace;&rbrace;"  # {{))}}
-        # Create cache file or temporary file
-        if self.cache_file:
-            # Create new cache file
-            try:
-                os.remove(self.cache_file)
-            except FileNotFoundError:
-                pass
-            try:
-                os.remove(self.cache_file + ".pickle")
-            except FileNotFoundError:
-                pass
-            self.tmp_file = open(self.cache_file, "w+b", buffering=0)
-        else:
-            # Create temporary file
-            self.tmp_file = tempfile.TemporaryFile(mode="w+b", buffering=0)
+            self.LOCAL_NS_NAME_BY_ID: Dict[int, str] = {
+                data["id"]: data["name"]
+                for data in self.NAMESPACE_DATA.values()
+            }
+            self.NS_ID_BY_LOCAL_NAME: Dict[int, str] = {
+                data["name"]: data["id"]
+                for data in self.NAMESPACE_DATA.values()
+            }
 
     def _fmt_errmsg(self, kind, msg, trace):
         assert isinstance(kind, str)
@@ -324,32 +301,10 @@ class Wtp:
             "debugs": self.debugs,
         }
 
-    def _canonicalize_template_name(self, name):
-        """Canonicalizes a template name by making its first character
-        uppercase and replacing underscores by spaces and sequences of
-        whitespace by a single whitespace."""
-        assert isinstance(name, str)
-        if name.lower().startswith(self.NAMESPACE_DATA["Template"]["name"].lower() + ":"):
-            name = name[len(self.NAMESPACE_DATA["Template"]["name"]) + 1:]
-        name = re.sub(r"_", " ", name)
-        name = re.sub(r"\s+", " ", name)
-        name = re.sub(r"\(", "%28", name)
-        name = re.sub(r"\)", "%29", name)
-        name = re.sub(r"&", "%26", name)
-        name = re.sub(r"\+", "%2B", name)
-        name = name.strip()
-        #if name:
-        #    name = name[0].upper() + name[1:]
-        return name
-
-    def _canonicalize_parserfn_name(self, name):
-        """Canonicalizes a parser function name by making its first character
-        uppercase and replacing underscores by spaces and sequences of
-        whitespace by a single whitespace."""
-        assert isinstance(name, str)
-        name = re.sub(r"_", " ", name)
-        name = re.sub(r"\s+", " ", name)
-        name = name.strip()
+    def _canonicalize_parserfn_name(self, name: str) -> str:
+        """Canonicalizes a parser function name by replacing underscores by spaces
+        and sequences of whitespace by a single whitespace."""
+        name = re.sub(r"[\s_]+", " ", name)
         if name not in PARSER_FUNCTIONS:
             name = name.lower()  # Parser function names are case-insensitive
         return name
@@ -394,14 +349,14 @@ class Wtp:
 
         def repl_arg(m):
             """Replacement function for template arguments."""
-            nowiki = m.group(0).find(MAGIC_NOWIKI_CHAR) >= 0
+            nowiki = MAGIC_NOWIKI_CHAR in m.group(0)
             orig = m.group(1)
             args = vbar_split(orig)
             return self._save_value("A", args, nowiki)
 
         def repl_arg_err(m):
             """Replacement function for template arguments, with error."""
-            nowiki = m.group(0).find(MAGIC_NOWIKI_CHAR) >= 0
+            nowiki = MAGIC_NOWIKI_CHAR in m.group(0)
             prefix = m.group(1)
             orig = m.group(2)
             args = vbar_split(orig)
@@ -414,7 +369,7 @@ class Wtp:
         def repl_templ(m):
             """Replacement function for templates {{name|...}} and parser
             functions."""
-            nowiki = m.group(0).find(MAGIC_NOWIKI_CHAR) >= 0
+            nowiki = MAGIC_NOWIKI_CHAR in m.group(0)
             v = m.group(1)
             args = vbar_split(v)
             # print("REPL_TEMPL: args={}".format(args))
@@ -423,7 +378,7 @@ class Wtp:
         def repl_templ_err(m):
             """Replacement function for templates {{name|...}} and parser
             functions, with error."""
-            nowiki = m.group(0).find(MAGIC_NOWIKI_CHAR) >= 0
+            nowiki = MAGIC_NOWIKI_CHAR in m.group(0)
             prefix = m.group(1)
             v = m.group(2)
             args = vbar_split(v)
@@ -435,7 +390,7 @@ class Wtp:
 
         def repl_link(m):
             """Replacement function for links [[...]]."""
-            nowiki = m.group(0).find(MAGIC_NOWIKI_CHAR) >= 0
+            nowiki = MAGIC_NOWIKI_CHAR in m.group(0)
             orig = m.group(1)
             args = vbar_split(orig)
             # print("REPL_LINK: orig={!r}".format(orig))
@@ -444,7 +399,7 @@ class Wtp:
         def repl_extlink(m):
             """Replacement function for external links [...].  This is also
             used to replace bracketed sections, such as [...]."""
-            nowiki = m.group(0).find(MAGIC_NOWIKI_CHAR) >= 0
+            nowiki = MAGIC_NOWIKI_CHAR in m.group(0)
             orig = m.group(1)
             args = [orig]
             return self._save_value("E", args, nowiki)
@@ -559,88 +514,29 @@ class Wtp:
         text = re.sub(r"(?is)<\s*(/\s*)?includeonly\s*(/\s*)?>", "", text)
         return text
 
-    def add_page(self, model, title, text, transient=False):
-        """Collects information about the page.  For templates and modules,
-        this keeps the content in memory.  For other pages, this saves the
-        content in a temporary file so that it can be accessed later.  There
-        must be enough space on the volume containing the temporary file
-        to store the entire contents of the uncompressed WikiMedia dump.
-        The content is saved because it is common for Wiktionary Lua macros
-        to access content from arbitrary pages.  Furthermore, this way we
-        only need to decompress and parse the dump file once.  ``model``
-        is "wikitext" for normal pages, "redirect" for redirects (in which
-        case ``text`` is the page pointed to), or "Scribunto" for Lua code;
-        other values may also be encountered.  If ``transient`` is True, then
-        this page will not be saved but will replace any saved page.  This can
-        be used, for example, to add Lua code for data extraction, or for
-        debugging Lua modules."""
-        assert isinstance(model, str)
-        assert isinstance(title, str)
-        assert isinstance(text, str)
-        assert transient in (True, False)
+    def add_page(self, title: str, namespace_id: int, body: Optional[str] = None,
+                 redirect_to: Optional[str] = None, need_pre_expand: bool = False,
+                 model: str = "wikitext") -> None:
+        """Collects information about the page and save page text to a
+        SQLite database file."""
+        ns_prefix = self.LOCAL_NS_NAME_BY_ID.get(namespace_id) + ":"
+        if namespace_id != 0 and not title.startswith(ns_prefix):
+            title = ns_prefix + title
 
-        if transient:
-            self.transient_pages[title] = (title, model, text)
-            if (title.startswith(self.NAMESPACE_DATA["Template"]["name"] + ":") and
-                not title.endswith("/documentation") and
-                not title.endswith("/testcases")):
-                name = self._canonicalize_template_name(title)
-                body = self._template_to_body(title, text)
-                self.transient_templates[name] = body
-            return
+        if title.startswith("Main:"):
+            title = title[5:]
 
-        # If we have previously analyzed pages and this is called again,
-        # reset all previously saved pages (e.g., in case we are to update
-        # existing cache file).
-        if self.need_pre_expand is not None:
-            self._reset_pages()
+        if namespace_id == self.NAMESPACE_DATA.get("Template", {}).get("id") and redirect_to is None:
+            body = self._template_to_body(title, body)
 
-        # Save the page in our temporary file and metadata in memory
-        rawtext = text.encode("utf-8")
-        if self.buf_ofs + len(rawtext) > self.buf_size:
-            bufview = memoryview(self.buf)[0: self.buf_ofs]
-            self.tmp_file.write(bufview)
-            self.buf_ofs = 0
-        ofs = self.tmp_ofs
-        self.tmp_ofs += len(rawtext)
-        if len(rawtext) >= self.buf_ofs:
-            self.tmp_file.write(rawtext)
-        else:
-            self.buf[self.buf_ofs: self.buf_ofs + len(rawtext)] = rawtext
-        # XXX should we canonicalize title in page_contents
-        self.page_contents[title] = (title, model, ofs, len(rawtext))
-        self.page_seq.append((model, title))
-        if not self.quiet and len(self.page_seq) % 10000 == 0:
-            print("  ... {} raw pages collected"
-                  .format(len(self.page_seq)))
-            sys.stdout.flush()
+        self.db_conn.execute("""INSERT INTO pages (title, namespace_id, body,
+        redirect_to, need_pre_expand, model) VALUES (?, ?, ?, ?, ?, ?)
+        ON CONFLICT(title, namespace_id) DO UPDATE SET
+        body=excluded.body, redirect_to=excluded.redirect_to,
+        need_pre_expand=excluded.need_pre_expand, model=excluded.model""",
+                             (title, namespace_id, body, redirect_to, need_pre_expand, model))
 
-        if model == "redirect":
-            self.redirects[title] = text
-            return
-        if not title.startswith(self.NAMESPACE_DATA["Template"]["name"] + ":"):
-            return
-        if title.endswith("/documentation"):
-            return
-        if title.endswith("/testcases"):
-            return
-
-        # It is a template
-        name = self._canonicalize_template_name(title)
-        body = self._template_to_body(title, text)
-        assert isinstance(body, str)
-        self.templates[name] = body
-        if self.lang_code == "zh":
-            self.add_chinese_lower_case_template(name, body)
-
-    def add_chinese_lower_case_template(self, name, body):
-        # Chinese Wiktionary capitalizes the first letter of template name
-        # in template pages but uses lower case in word pages
-        lower_case_name = name[0].lower() + name[1:]
-        if lower_case_name not in self.templates:
-            self.templates[lower_case_name] = body
-
-    def _analyze_template(self, name, body):
+    def _analyze_template(self, name: str, body: str) -> Tuple[Set[str], bool]:
         """Analyzes a template body and returns a set of the canonicalized
         names of all other templates it calls and a boolean that is True
         if it should be pre-expanded before final parsing and False if it
@@ -649,13 +545,12 @@ class Wtp:
         templates that include the given template.  This does not work for
         template and template function calls where the name is generated by
         other expansions."""
-        assert isinstance(body, str)
-        included_templates = set()
+        included_templates: Set[str] = set()
         pre_expand = False
 
         # Determine if the template starts with a list item
         # XXX should we expand other templates that produce list items???
-        contains_list = re.match(r"(?s)^[#*;:]", body) is not None
+        contains_list = body.startswith(("#", "*", ";", ":"))
 
         # Remove paired tables
         prev = body
@@ -748,30 +643,36 @@ class Wtp:
                              unpaired_text):
             name = m.group(3)
             name = re.sub(r"(?si)<\s*nowiki\s*/\s*>", "", name)
-            name = self._canonicalize_template_name(name)
             if not name:
                 continue
             included_templates.add(name)
 
         return included_templates, pre_expand
 
-    def analyze_templates(self):
+    def analyze_templates(self) -> None:
         """Analyzes templates to determine which of them might create elements
         essential to parsing Wikitext syntax, such as table start or end
         tags.  Such templates generally need to be expanded before
         parsing the page."""
 
-        self.need_pre_expand = set()
-        expand_q = []
-        
+        # Add/overwrite templates
+        template_ns = self.NAMESPACE_DATA.get("Template", {})
+        template_ns_id = template_ns.get("id")
+        template_ns_local_name = template_ns.get("name")
+        self.add_page(f"{template_ns_local_name}:!", template_ns_id, "|")  # magic word
+        self.add_page(f"{template_ns_local_name}:((", template_ns_id, "&lbrace;&lbrace;")  # {{((}} -> {{
+        self.add_page(f"{template_ns_local_name}:))", template_ns_id, "&rbrace;&rbrace;")  # {{))}} -> }}
+
+        expand_stack = []
         included_map = collections.defaultdict(set)
-        for name, body in self.templates.items():
-            included_templates, pre_expand = self._analyze_template(name, body)
-            for x in included_templates:
-                included_map[x].add(name)
+
+        for page in self.get_all_pages([template_ns_id], False):
+            used_templates, pre_expand = self._analyze_template(page.title, page.body)
+            for used_template in used_templates:
+                included_map[used_template].add(page.title)
             if pre_expand:
-                self.need_pre_expand.add(name)
-                expand_q.append(name)
+                self.set_template_pre_expand(page.title)
+                expand_stack.append(page)
 
         # XXX consider encoding template bodies here (also need to save related
         # cookies).  This could speed up their expansion, where the first
@@ -780,58 +681,40 @@ class Wtp:
 
         # Propagate pre_expand from lower-level templates to all templates that
         # refer to them
-        while expand_q:
-            name = expand_q.pop()
-            if name not in included_map:
+        while len(expand_stack) > 0:
+            page = expand_stack.pop()
+            if page.title not in included_map:
                 continue
-            for inc in included_map[name]:
-                if inc in self.need_pre_expand:
+            for template_title in included_map[page.title]:
+                template = self.get_page(template_title, template_ns_id)
+                if template.need_pre_expand:
                     continue
                 #print("propagating EXP {} -> {}".format(name, inc))
-                self.need_pre_expand.add(inc)
-                expand_q.append(inc)
+                self.set_template_pre_expand(template.title)
+                expand_stack.append(template)
 
-        # Copy template definitions to redirects to them
-        for k, v in self.redirects.items():
-            if not k.startswith(self.NAMESPACE_DATA["Template"]["name"] + ":"):
-                # print("Unhandled redirect src", k)
-                continue
-            if not v.startswith(self.NAMESPACE_DATA["Template"]["name"] + ":"):
-                # print("Unhandled redirect dst", v)
-                continue
-            k = self._canonicalize_template_name(k)
-            v = self._canonicalize_template_name(v)
-            if v not in self.templates:
-                # print("{} redirects to non-existent template {}".format(k, v))
-                continue
-            if k in self.templates:
-                # print("{} -> {} is redirect but already in templates"
-                #       .format(k, v))
-                continue
-            self.templates[k] = self.templates[v]
-            if v in self.need_pre_expand or (self.lang_code == "zh" and
-                                             k.startswith(("-", "="))):
-                self.need_pre_expand.add(k)
-            if self.lang_code == "zh":
-                self.add_chinese_lower_case_template(k, self.templates[v])
+        # Also set `need_pre_expand` value for redirected templates
+        query_str = """
+        UPDATE pages SET need_pre_expand = 1
+        FROM pages AS dest
+        WHERE pages.redirect_to = dest.title
+        AND pages.namespace_id = dest.namespace_id
+        AND dest.need_pre_expand = 1
+        AND pages.need_pre_expand = 0
+        """
+        self.db_conn.execute(query_str)
+        self.db_conn.commit()
 
+    def set_template_pre_expand(self, name: str) -> None:
+        self.db_conn.execute("UPDATE pages SET need_pre_expand = 1 WHERE title = ?", (name,))
 
-        # Save cache data
-        if self.cache_file is not None and not self.cache_file_old:
-            with open(self.cache_file + ".pickle", "wb") as f:
-                pickle.dump((1, (self.page_contents, self.page_seq,
-                                 self.redirects, self.templates,
-                                 list(sorted(self.need_pre_expand)))),
-                            f)
-
-    def start_page(self, title):
+    def start_page(self, title: str) -> None:
         """Starts a new page for expanding Wikitext.  This saves the title and
         full page source in the context.  Calling this is mandatory
         for each page; expand_wikitext() can then be called multiple
         times for the same page.  This clears the self.errors,
         self.warnings, and self.debugs lists and any current section
         or subsection."""
-        assert isinstance(title, str)
         self.title = title
         self.errors = []
         self.warnings = []
@@ -943,44 +826,6 @@ class Wtp:
         # Handle <nowiki> in a preprocessing step
         text = self.preprocess_text(text)
 
-        # If requesting to pre_expand, then add templates needing pre-expand
-        # to those to be expanded (and don't expand everything).
-        if pre_expand:
-            if self.need_pre_expand is None:
-                if self.cache_file and not self.cache_file_old:
-                    raise RuntimeError("You have specified a cache file "
-                                       "but have not properly initialized "
-                                       "the cache file.")
-                raise RuntimeError("analyze_templates() must be run first to "
-                                   "determine which templates need pre-expand")
-            if (templates_to_expand is not None and
-               templates_to_not_expand is not None):
-                templates_to_expand = (set(templates_to_expand) |
-                                       set(self.need_pre_expand))
-                templates_to_expand = (templates_to_expand -
-                                       set(templates_to_not_expand))
-            elif (templates_to_expand is not None and
-                 templates_to_not_expand is None):
-                templates_to_expand = (set(templates_to_expand) |
-                                       set(self.need_pre_expand))
-            elif (templates_to_expand is None and
-                 templates_to_not_expand is not None):
-                templates_to_expand = (set(self.need_pre_expand) -
-                                       set(templates_to_not_expand))
-            else:
-                templates_to_expand = self.need_pre_expand
-
-        # Create set or dict of all defined templates
-        if self.transient_templates:
-            all_templates = (set(self.templates) |
-                             set(self.transient_templates))
-        else:
-            all_templates = self.templates
-
-        # If templates_to_expand is None, then expand all known templates
-        if templates_to_expand is None:
-            templates_to_expand = all_templates
-
         def invoke_fn(invoke_args, expander, parent):
             """This is called to expand a #invoke parser function."""
             assert isinstance(invoke_args, (list, tuple))
@@ -997,12 +842,11 @@ class Wtp:
             #       .format(invoke_args, parent, ret))
             return ret
 
-        def expand_recurse(coded, parent, templates_to_expand):
+        def expand_recurse(coded, parent, expand_all: bool):
             """This function does most of the work for expanding encoded
             templates, arguments, and parser functions."""
             assert isinstance(coded, str)
             assert isinstance(parent, (tuple, type(None)))
-            assert isinstance(templates_to_expand, (set, dict))
             # print("parent = {!r}".format(parent))
             # print("expand_recurse coded={!r}".format(coded))
 
@@ -1042,8 +886,7 @@ class Wtp:
                                        .format(len(args), args),
                                        sortid="core/1021")
                         self.expand_stack.append("ARG-NAME")
-                        k = expand_recurse(expand_args(args[0], argmap),
-                                           parent, all_templates).strip()
+                        k = expand_recurse(expand_args(args[0], argmap), parent, True).strip()
                         self.expand_stack.pop()
                         if k.isdigit():
                             k = int(k)
@@ -1061,7 +904,7 @@ class Wtp:
                             #  {{}} template braces or <> html brackets
                             # is encountered, escape it  as the equal-sign
                             # HTML entity.
-                            if v.find("=") >= 0:
+                            if "=" in v:
                                 nv = ""
                                 em = re.split(r"({{.+}}|<.+>)", v)
                                 for s in em:
@@ -1111,8 +954,7 @@ class Wtp:
                     return "{{" + fn_name + ":" + "|".join(args) + "}}"
                 # Call parser function
                 self.expand_stack.append(fn_name)
-                expander = lambda arg: expand_recurse(arg, parent,
-                                                      all_templates)
+                expander = lambda arg: expand_recurse(arg, parent, True)
                 if fn_name == "#invoke":
                     if not expand_invoke:
                         return "{{#invoke:" + "|".join(args) + "}}"
@@ -1160,7 +1002,7 @@ class Wtp:
 
                     # Expand template/parserfn name
                     self.expand_stack.append("TEMPLATE_NAME")
-                    tname = expand_recurse(args[0], parent, templates_to_expand)
+                    tname = expand_recurse(args[0], parent, expand_all)
                     self.expand_stack.pop()
 
                     # Remove <noinvoke/>
@@ -1201,11 +1043,9 @@ class Wtp:
 
                     # Otherwise it must be a template expansion
                     name = tname
-                    name = self._canonicalize_template_name(name)
-
 
                     # Check for undefined templates
-                    if name not in all_templates:
+                    if not self.template_exists(name):
                         # XXX tons of these in enwiktionary-20201201 ???
                         #self.debug("undefined template {!r}.format(tname),
                         #           sortid="core/1171")
@@ -1214,25 +1054,23 @@ class Wtp:
                                      .format(html.escape(name)))
                         continue
 
-                    if name in self.template_overrides and not nowiki:
+                    if name in self.template_override_funcs and not nowiki:
                         # print("Name in template_overrides: {}".format(name))
-                        new_args = list(expand_recurse(x, parent,
-                                                    templates_to_expand)
-                                                    for x in args)
-                        parts.append(self.template_overrides[name](new_args,
-                                                                   ))
+                        new_args = list(expand_recurse(x, parent, expand_all)
+                                        for x in args)
+                        parts.append(self.template_override_funcs[name](new_args,))
                         continue
 
                     # If this template is not one of those we want to expand,
                     # return it unexpanded (but with arguments possibly
                     # expanded)
-                    if name not in templates_to_expand:
+                    if not expand_all and not self.check_template_need_expand(
+                            name, templates_to_expand, templates_to_not_expand):
                         # Note: we will still expand parser functions in its
                         # arguments, because those parser functions could
                         # refer to its parent frame and fail if expanded
                         # after eliminating the intermediate templates.
-                        new_args = list(expand_recurse(x, parent,
-                                                       templates_to_expand)
+                        new_args = list(expand_recurse(x, parent, expand_all)
                                         for x in args)
                         parts.append(self._unexpanded_template(new_args,
                                                                nowiki))
@@ -1265,7 +1103,7 @@ class Wtp:
                                     num = k + 1
                             else:
                                 self.expand_stack.append("ARGNAME")
-                                k = expand_recurse(k, parent, all_templates)
+                                k = expand_recurse(k, parent, True)
                                 k = re.sub(r"\s+", " ", k).strip()
                                 self.expand_stack.pop()
                         else:
@@ -1276,7 +1114,7 @@ class Wtp:
                         # calls to #invoke within a template argument (the
                         # parent frame would be different).
                         self.expand_stack.append("ARGVAL-{}".format(k))
-                        arg = expand_recurse(arg, parent, all_templates)
+                        arg = expand_recurse(arg, parent, True)
                         self.expand_stack.pop()
                         ht[k] = arg
 
@@ -1289,17 +1127,12 @@ class Wtp:
                         # print("TEMPLATE_FN {}: {} {} -> {}"
                         #      .format(template_fn, name, ht, repr(t)))
                     if t is None:
-                        if name in self.transient_templates:
-                            body = self.transient_templates[name]
-                        else:
-                            body = self.templates[name]
+                        body = self.read_by_title(name, self.NAMESPACE_DATA["Template"]["id"])
                         # XXX optimize by pre-encoding bodies during
                         # preprocessing
                         # (Each template is typically used many times)
                         # Determine if the template starts with a list item
-                        contains_list = (re.match(r"(?s)^[#*;:]", body)
-                                         is not None)
-                        if contains_list:
+                        if body.startswith(("#", "*", ";", ":")):
                             body = "\n" + body
                         encoded_body = self._encode(body)
                         # Expand template arguments recursively.  The arguments
@@ -1319,8 +1152,7 @@ class Wtp:
                         # XXX no real need to expand here, it will expanded on
                         # next iteration anyway (assuming parent unchanged)
                         # Otherwise expand the body
-                        t = expand_recurse(encoded_body, new_parent,
-                                           templates_to_expand)
+                        t = expand_recurse(encoded_body, new_parent, expand_all)
 
                     # If a post_template_fn has been supplied, call it now
                     # to capture or alter the expansion
@@ -1345,8 +1177,7 @@ class Wtp:
                     else:
                         # Link to another page
                         self.expand_stack.append("[[link]]")
-                        new_args = list(expand_recurse(x, parent,
-                                                       templates_to_expand)
+                        new_args = list(expand_recurse(x, parent, expand_all)
                                         for x in args)
                         self.expand_stack.pop()
                         parts.append(self._unexpanded_link(new_args, nowiki))
@@ -1356,8 +1187,7 @@ class Wtp:
                     else:
                         # Link to an external page
                         self.expand_stack.append("[extlink]")
-                        new_args = list(expand_recurse(x, parent,
-                                                       templates_to_expand)
+                        new_args = list(expand_recurse(x, parent, expand_all)
                                         for x in args)
                         self.expand_stack.pop()
                         parts.append(self._unexpanded_extlink(new_args, nowiki))
@@ -1377,14 +1207,13 @@ class Wtp:
 
         # Recursively expand the selected templates.  This is an outside-in
         # operation.
-        expanded = expand_recurse(encoded, parent, templates_to_expand)
+        expanded = expand_recurse(encoded, parent, not pre_expand)
 
         # Expand any remaining magic cookies and remove nowiki char
         expanded = self._finalize_expand(expanded)
 
         # Remove LanguageConverter markups:
         # https://www.mediawiki.org/wiki/Writing_systems/Syntax
-
         if not pre_expand and self.lang_code == "zh" and "-{" in expanded:
             expanded = expanded.replace("-{", "").replace("}-", "")
 
@@ -1428,7 +1257,8 @@ class Wtp:
         text = re.sub(MAGIC_NOWIKI_CHAR, "<nowiki />", text)
         return text
 
-    def process(self, path, page_handler, phase1_only=False):
+    def process(self, path: str, page_handler, namespace_ids: Set[int], phase1_only=False,
+                override_folders: Optional[List[Path]] = None, skip_extract_dump: bool = False):
         """Parses a WikiMedia dump file ``path`` (which should point to a
         "<project>-<date>-pages-articles.xml.bz2" file.  This calls
         ``page_handler(model, title, page)`` for each raw page.  This
@@ -1449,14 +1279,15 @@ class Wtp:
         assert isinstance(path, str)
         assert page_handler is None or callable(page_handler)
         # Process the dump and copy it to temporary file (Phase 1)
-        process_dump(self, path)
+        process_dump(self, path, namespace_ids, override_folders, skip_extract_dump)
         if phase1_only or page_handler is None:
             return []
 
         # Reprocess all the pages that we captured in Phase 1
         return self.reprocess(page_handler)
 
-    def reprocess(self, page_handler, autoload=True):
+    def reprocess(self, page_handler, autoload=True, namespace_ids: Optional[List[int]] = None,
+                  include_redirects: bool = True):
         """Reprocess all pages captured by self.process() or explicit calls to
         self.add_page().  This calls page_handler(model, title, text)
         for each page, and returns of list of their return values
@@ -1481,16 +1312,16 @@ class Wtp:
         if self.num_threads == 1:
             # Single-threaded version (without subprocessing).  This is
             # primarily intended for debugging.
-            for model, title in self.page_seq:
-                success, ret_title, t, ret = phase2_page_handler((model,
-                                                                  title))
-                assert ret_title == title
+            for page in self.get_all_pages(namespace_ids, include_redirects):
+                success, ret_title, t, ret = phase2_page_handler(page)
+                assert ret_title == page.title
                 if not success:
-                    print(ret)  # Print error in parent process - do not remove
-                    lines = ret.split("\n")
+                    # Print error in parent process - do not remove
+                    logging.error(ret)
+                    lines = ret.splitlines()
                     msg = lines[0]
                     trace = "\n".join(lines[1:])
-                    if msg.find("EXCEPTION") >= 0:
+                    if "EXCEPTION" in msg:
                         self.error(msg, trace=trace, sortid="core/1457")
                     continue
                 if ret is not None:
@@ -1505,16 +1336,13 @@ class Wtp:
             cnt = 0
             start_t = time.time()
             last_t = time.time()
-            for success, title, t, ret in \
-                pool.imap_unordered(phase2_page_handler, self.page_seq):
-                if t + 300 < time.time():
-                    print("====== REPROCESS GOT OLD RESULT ({:.1f}s): {}"
-                          .format(time.time() - t, title))
-                sys.stdout.flush()
+
+            all_page_nums = self.saved_page_nums(namespace_ids, include_redirects)
+            for success, title, t, ret in pool.imap_unordered(
+                    phase2_page_handler, self.get_all_pages(namespace_ids, include_redirects)):
                 if not success:
                     # Print error in parent process - do not remove
-                    print(ret)
-                    sys.stdout.flush()
+                    logging.error(ret)
                     continue
                 if ret is not None:
                     yield ret
@@ -1522,81 +1350,100 @@ class Wtp:
                 if (not self.quiet and
                     # cnt % 1000 == 0 and
                     time.time() - last_t > 1):
-                    remaining = len(self.page_seq) - cnt
+                    remaining = all_page_nums - cnt
                     secs = (time.time() - start_t) / cnt * remaining
-                    print("  ... {}/{} pages ({:.1%}) processed, "
-                          "{:02d}:{:02d}:{:02d} remaining"
-                          .format(cnt, len(self.page_seq),
-                                  cnt / len(self.page_seq),
-                                  int(secs / 3600),
-                                  int(secs / 60 % 60),
-                                  int(secs % 60)))
-                    sys.stdout.flush()
+                    logging.info("  ... {}/{} pages ({:.1%}) processed, "
+                                 "{:02d}:{:02d}:{:02d} remaining"
+                                 .format(cnt, all_page_nums,
+                                         cnt / all_page_nums,
+                                         int(secs / 3600),
+                                         int(secs / 60 % 60),
+                                         int(secs % 60)))
                     last_t = time.time()
+
             pool.close()
             pool.join()
 
         sys.stderr.flush()
         sys.stdout.flush()
 
-    def page_exists(self, title: str) -> bool:
-        """Returns True if the given page exists, and False if it does not
-        exist."""
-        assert isinstance(title, str)
+    def get_page(self, title: str, namespace_id: Optional[int] = None) -> Optional[Page]:
+        # " " in Lua Module name is replaced by "_" in Wiktionary Lua code when call `require`
+        title = title.replace("_", " ")
         if title.startswith("Main:"):
             title = title[5:]
-        # XXX should we canonicalize title?
-        if title in self.transient_pages:
-            return True
-        exists = title in self.page_contents
-        if not exists:
-            # Wikitionary Lua module's `mw.title.exists`
-            # attribute comes from here.
-            # Change the first letter of module name
-            # to upper case for Chinese Wiktionary
-            # for other languages change namespace prefix to local name
-            for ns_prefix in ["Module:", self.NAMESPACE_DATA["Module"]["name"]
-                              + ":"]:
+        if namespace_id is not None and namespace_id != 0:
+            local_ns_name = self.LOCAL_NS_NAME_BY_ID[namespace_id]
+            ns_prefix = local_ns_name + ":"
+            if self.lang_code == "zh" and namespace_id in {
+                    self.NAMESPACE_DATA[ns]["id"]
+                    for ns in ["Template", "Module"]
+            }:
+                # Chinese Wiktionary capitalizes the first letter of template/module
+                # page titles but uses lower case in Wikitext and Lua code
                 if title.startswith(ns_prefix):
-                    if self.lang_code == "zh":
-                        new_title = ns_prefix + title[len(ns_prefix)].upper() \
-                                    + title[len(ns_prefix) + 1:]
-                    elif ns_prefix == "Module:":
-                        new_title = self.NAMESPACE_DATA["Module"]["name"] \
-                                    + ":" + title[len(ns_prefix):]
-                    exists = new_title in self.page_contents
-                    break
-        return exists
+                    template_name = title[len(ns_prefix):]
+                    title = ns_prefix + template_name[0].upper() + template_name[1:]
+                else:
+                    title = ns_prefix + title[0].upper() + title[1:]
+            elif not title.startswith(ns_prefix):
+                # Add namespace prefix
+                title = ns_prefix + title
 
-    def read_by_title(self, title):
+        query_str = "SELECT * FROM pages WHERE title = ?"
+        if namespace_id is not None:
+            query_str += " AND namespace_id = ?"
+        query_str += " LIMIT 1"
+        for result in self.db_conn.execute(
+                query_str, (title,) if namespace_id is None else (title, namespace_id)):
+            return Page(title=result[0], namespace_id=result[1], redirect_to=result[2],
+                        need_pre_expand=result[3], body=result[4], model=result[5])
+        return None
+
+    def page_exists(self, title: str) -> bool:
+        return self.get_page(title) is not None
+
+    def get_all_pages(self, namespace_ids: Optional[List[int]] = None,
+                      include_redirects: bool = True) -> Iterable[Page]:
+        query_str = "SELECT * FROM pages"
+        if namespace_ids is not None:
+            query_str += f" WHERE namespace_id IN ({','.join('?' * len(namespace_ids))})"
+            if not include_redirects:
+                query_str += " AND redirect_to IS NULL"
+        elif not include_redirects:
+            query_str += " WHERE redirect_to IS NULL"
+
+        for result in self.db_conn.execute(query_str, namespace_ids if namespace_ids else ()):
+            yield Page(title=result[0], namespace_id=result[1], redirect_to=result[2],
+                       need_pre_expand=result[3], body=result[4], model=result[5])
+        return []
+
+    def template_exists(self, name: str) -> bool:
+        return self.get_page(name, self.NAMESPACE_DATA["Template"]["id"]) is not None
+
+    def check_template_need_expand(self, name: str, expand_names: Optional[Set[str]] = None, not_expand_names: Optional[Set[str]] = None) -> bool:
+        page = self.get_page(name, self.NAMESPACE_DATA["Template"]["id"])
+        if page is None:
+            return False
+
+        if expand_names is None and not_expand_names is not None:
+            return name not in not_expand_names and page.need_pre_expand
+        if expand_names is not None and not_expand_names is None:
+            return name in expand_names or page.need_pre_expand
+        if expand_names is not None and not_expand_names is not None:
+            return name not in not_expand_names and (name in expand_names or page.need_pre_expand)
+
+        return page.need_pre_expand
+
+    def read_by_title(self, title: str, namespace_id: Optional[int] = None) -> Optional[str]:
         """Reads the contents of the page.  Returns None if the page does
         not exist."""
-        assert isinstance(title, str)
-        if title.startswith("Main:"):
-            title = title[5:]
-        # XXX should we canonicalize title?
-        if title in self.transient_pages:
-            title, model, text = self.transient_pages[title]
-            return text
-        if title not in self.page_contents:
+        page = self.get_page(title, namespace_id)
+        if page is None:
             return None
-        # The page seems to exist
-        title, model, ofs, page_size = self.page_contents[title]
-        rawdata = ""
-        if platform.system() in ("Windows"):
-            # Optimize once multiple threads are used on Windows.
-            # Unfortunately, "os.pread" is not implemented on Windows:
-            # https://stackoverflow.com/questions/50902714/python-pread-pwrite-only-on-unix
-            tmp_ofs = self.tmp_file.tell()
-            self.tmp_file.seek(ofs)
-            rawdata = os.read(self.tmp_file.fileno(), page_size)
-            self.tmp_file.seek(tmp_ofs)
-        else:
-            # Use os.pread() so that we won't change the file offset; otherwise we
-            # might cause a race condition with parallel scanning of the temporary
-            # file.
-            rawdata = os.pread(self.tmp_file.fileno(), page_size, ofs)
-        return rawdata.decode("utf-8")
+        if page.redirect_to is not None:
+            return self.read_by_title(page.redirect_to, namespace_id)
+        return page.body if page is not None else None
 
     def parse(self, text, pre_expand=False, expand_all=False,
               additional_expand=None, do_not_pre_expand=None,
@@ -1668,8 +1515,6 @@ class Wtp:
                        post_template_fn=post_template_fn,
                        node_handler_fn=node_handler_fn)
 
-    def set_template_overrides(self, overrides):
-        self.template_overrides = overrides
 
 def overwrite_zh_template(template_name: str, expanded_template: str) -> str:
     """

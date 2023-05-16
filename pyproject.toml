@@ -35,6 +35,7 @@ classifiers = [
 dependencies = [
     "dateparser",
     "lupa @ git+https://github.com/scoder/lupa.git",
+    "lxml",
 ]
 
 [project.optional-dependencies]
