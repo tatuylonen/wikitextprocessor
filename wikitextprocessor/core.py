@@ -20,10 +20,9 @@ import html.entities
 import multiprocessing
 import sqlite3
 
-from collections import defaultdict
 from collections.abc import Iterable
 from dataclasses import dataclass
-from typing import Optional, Dict, Set, Tuple, Union, Callable, List
+from typing import Optional, Dict, Set, Tuple, Callable, List
 from pathlib import Path
 
 from .parserfns import PARSER_FUNCTIONS, call_parser_function, init_namespaces
@@ -43,7 +42,6 @@ PAIRED_HTML_TAGS = set(k for k, v in ALLOWED_HTML_TAGS.items()
 # pickleable.
 _global_ctx = None
 _global_page_handler = None
-_global_page_autoload = True
 
 
 @dataclass
@@ -802,9 +800,9 @@ class Wtp:
         pre-expansion before parsing plus those in
         ``templates_to_expand`` are expanded, ignoring those in
         ``templates_to_not_expand`` (which will preserve their name,
-        so that they can be extracted later as a node). 
+        so that they can be extracted later as a node).
         ``template_fn``, if given, will be be called as
-        template_fn(name, args_ht) to expand templates; 
+        template_fn(name, args_ht) to expand templates;
         if it is not defined or returns None, the
         default expansion will be used (it can also be used to capture
         template arguments).  If ``post_template_fn`` is given, it
@@ -1008,7 +1006,7 @@ class Wtp:
                     # Remove <noinvoke/>
 
                     tname = re.sub(r"<\s*noinclude\s*/\s*>", "", tname)
-                    
+
                     # Strip safesubst: and subst: prefixes
                     tname = tname.strip()
                     if tname[:10].lower() == "safesubst:":
@@ -1257,8 +1255,10 @@ class Wtp:
         text = re.sub(MAGIC_NOWIKI_CHAR, "<nowiki />", text)
         return text
 
-    def process(self, path: str, page_handler, namespace_ids: Set[int], phase1_only=False,
-                override_folders: Optional[List[Path]] = None, skip_extract_dump: bool = False):
+    def process(
+            self, path: str, page_handler, namespace_ids: Set[int],
+            phase1_only=False, override_folders: Optional[List[Path]] = None,
+            skip_extract_dump: bool = False):
         """Parses a WikiMedia dump file ``path`` (which should point to a
         "<project>-<date>-pages-articles.xml.bz2" file.  This calls
         ``page_handler(model, title, page)`` for each raw page.  This
@@ -1279,35 +1279,29 @@ class Wtp:
         assert isinstance(path, str)
         assert page_handler is None or callable(page_handler)
         # Process the dump and copy it to temporary file (Phase 1)
-        process_dump(self, path, namespace_ids, override_folders, skip_extract_dump)
+        process_dump(
+            self, path, namespace_ids, override_folders, skip_extract_dump)
         if phase1_only or page_handler is None:
             return []
 
         # Reprocess all the pages that we captured in Phase 1
         return self.reprocess(page_handler)
 
-    def reprocess(self, page_handler, autoload=True, namespace_ids: Optional[List[int]] = None,
+    def reprocess(self, page_handler, namespace_ids: Optional[List[int]] = None,
                   include_redirects: bool = True):
         """Reprocess all pages captured by self.process() or explicit calls to
-        self.add_page().  This calls page_handler(model, title, text)
-        for each page, and returns of list of their return values
-        (ignoring None values).  If ``autoload`` is set to False, then
-        ``text`` will be None, and the page handler must use
-        self.read_by_title(title) to read the page contents (this may be
-        useful for scanning the cache for just a few pages quickly).  This may
-        call page_handler in parallel, and thus page_handler should
-        not attempt to save anything between calls and should not
-        modify global data.  This function is not re-entrant.
+        self.add_page(). This calls page_handler(page) for each page, and
+        returns of list of their return values (ignoring None values).
+        This may call page_handler in parallel, and thus page_handler should not
+        attempt to save anything between calls and should not modify global
+        data. This function is not re-entrant.
         NOTE: THIS FUNCTION RETURNS ITERATOR AND THE RESULT MUST BE ITERATED
         FOR THIS TO DO SOMETHING."""
         assert callable(page_handler)
-        assert autoload in (True, False)
         global _global_ctx
         global _global_page_handler
-        global _global_page_autoload
         _global_ctx = self
         _global_page_handler = page_handler
-        _global_page_autoload = autoload
 
         if self.num_threads == 1:
             # Single-threaded version (without subprocessing).  This is
@@ -1421,7 +1415,10 @@ class Wtp:
     def template_exists(self, name: str) -> bool:
         return self.get_page(name, self.NAMESPACE_DATA["Template"]["id"]) is not None
 
-    def check_template_need_expand(self, name: str, expand_names: Optional[Set[str]] = None, not_expand_names: Optional[Set[str]] = None) -> bool:
+    def check_template_need_expand(
+            self, name: str, expand_names: Optional[Set[str]] = None,
+            not_expand_names: Optional[Set[str]] = None
+    ) -> bool:
         page = self.get_page(name, self.NAMESPACE_DATA["Template"]["id"])
         if page is None:
             return False
@@ -1431,11 +1428,14 @@ class Wtp:
         if expand_names is not None and not_expand_names is None:
             return name in expand_names or page.need_pre_expand
         if expand_names is not None and not_expand_names is not None:
-            return name not in not_expand_names and (name in expand_names or page.need_pre_expand)
+            return name not in not_expand_names and (
+                name in expand_names or page.need_pre_expand)
 
         return page.need_pre_expand
 
-    def read_by_title(self, title: str, namespace_id: Optional[int] = None) -> Optional[str]:
+    def read_by_title(
+            self, title: str, namespace_id: Optional[int] = None
+    ) -> Optional[str]:
         """Reads the contents of the page.  Returns None if the page does
         not exist."""
         page = self.get_page(title, namespace_id)
@@ -1455,7 +1455,7 @@ class Wtp:
         start or end or table rows).  Likewise, if ``expand_all`` is
         True, this will expand all templates that have definitions
         (usually all of them).  If ``additional_expand`` is given, it
-        should be a set of additional templates to expand, and 
+        should be a set of additional templates to expand, and
         ``do_not_pre_expand`` is the opposite and shouldn't be.  Parser
         function calls and Lua macro invocations are expanded if they
         are inside expanded templates."""

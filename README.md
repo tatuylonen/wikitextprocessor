@@ -209,7 +209,7 @@ global variables assigned before calling ``Wtp.process()`` (in Linux
 only).
 
 ```python
-def reprocess(self, page_handler, autoload=True, namespace_ids: Optional[List[int]] = None,
+def reprocess(self, page_handler, namespace_ids: Optional[List[int]] = None,
               include_redirects: bool = True):
 ```
 
@@ -219,14 +219,6 @@ file (see ``Wtp.process()``).  This can be called more than once if desired.
 
 The arguments are:
 * `page_handler` (function) - as same as the argument in `Wtp.process()`.
-  If `autoload` is set to `False`, then `page.body` will be `None`.
-* ``autoload`` (boolean) - Normally this function loads the page contents
-  automatically before calling the page handler.  If ``autoload`` is set to
-  ``False``, then this will not automatically load the contents.  This will
-  make the iteration over the pages much faster, and is useful for scanning
-  all pages when only a small fraction of them are likely to be of interest.
-  The ``Wtp.read_by_title()`` function can then be used to load the page
-  contents.
 * `namespace_ids` - as same as the argument in `Wtp.process()`.
 * `include_redirects` - redirect pages will be processed if set to `True`.
 
@@ -246,9 +238,7 @@ def read_by_title(self, title: str, namespace_id: Optional[int] = None) -> Optio
 Reads the contents of the page with the specified title from the cache
 file.  There is usually no need to call this function explicitly, as
 ``Wtp.process()`` and ``Wtp.reprocess()`` normally load the page
-automatically.  However, this can be useful if calling
-``Wtp.reprocess()`` with ``autoload`` set to ``False``.  This function
-does not automatically call ``Wtp.start_page()``.
+automatically. This function does not automatically call `Wtp.start_page()`.
 
 Arguments are:
 * `title` - the title of the page to read
