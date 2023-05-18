@@ -40,18 +40,22 @@ def lua_loader(ctx: "Wtp", modname: str) -> Optional[str]:
     # print("LUA_LOADER IN PYTHON:", modname)
     assert isinstance(modname, str)
     modname = modname.strip()
-    local_module_ns_name = ctx.NAMESPACE_DATA["Module"]["name"]
+    ns_data = ctx.NAMESPACE_DATA["Module"]
+    ns_prefix = ns_data["name"] + ":"
+    ns_alias_prefixes = tuple(alias + ":" for alias in ns_data["aliases"])
+    if modname.startswith(ns_alias_prefixes):
+        modname = ns_prefix + modname[modname.find(":") + 1:]
 
     # Local name usually not used in Lua code
-    if modname.startswith(("Module:", local_module_ns_name + ":")):
+    if modname.startswith(("Module:", ns_prefix)):
         # First try to load it as a module
-        if modname.startswith(("Module:_", local_module_ns_name + ":_")):
+        if modname.startswith(("Module:_", ns_prefix + "_")):
             # Module names starting with _ are considered internal and cannot be
             # loaded from the dump file for security reasons.  This is to ensure
             # that the sandbox always gets loaded from a local file.
             data = None
         else:
-            data = ctx.read_by_title(modname, ctx.NAMESPACE_DATA["Module"]["id"])
+            data = ctx.read_by_title(modname, ns_data["id"])
     else:
         # Try to load it from a file
         path = modname
