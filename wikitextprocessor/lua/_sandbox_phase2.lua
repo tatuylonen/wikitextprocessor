@@ -20,6 +20,8 @@ mw_python_get_page_info = nil
 mw_python_get_page_content = nil
 mw_python_fetch_language_name = nil
 mw_python_fetch_language_names = nil
+mw_wikibase_getlabel_python = nil
+mw_wikibase_getdesc_python = nil
 
 -- These are used for passing information about the current call to
 -- _lua_invoke().  The values are restred on return, as calls can be
@@ -195,10 +197,11 @@ end
 -- Python function that will be used for loading Lua modules and various
 -- other Python functions that implement some of the functionality needed
 -- for executing Scribunto code (these functions are called from Lua code).
-local function _lua_set_functions(mw_text_decode, mw_text_encode,
-                                  mw_text_jsonencode, mw_text_jsondecode,
-                                  get_page_info, get_page_content,
-                                  fetch_language_name, fetch_language_names)
+local function _lua_set_functions(
+        mw_text_decode, mw_text_encode, mw_text_jsonencode, mw_text_jsondecode,
+        get_page_info, get_page_content, fetch_language_name,
+        fetch_language_names, mw_wikibase_getlabel, mw_wikibase_getdesc
+)
    -- Note: this is exposed to the Lua sandbox and the Lua sandbox can access
    -- the functions via mw.  Thus all the Python functions provided here
    -- must be safe to call from hostile code.
@@ -211,6 +214,8 @@ local function _lua_set_functions(mw_text_decode, mw_text_encode,
    mw_python_get_page_content = get_page_content
    mw_python_fetch_language_name = fetch_language_name
    mw_python_fetch_language_names = fetch_language_names
+   mw_wikibase_getlabel_python = mw_wikibase_getlabel
+   mw_wikibase_getdesc_python = mw_wikibase_getdesc
 end
 
 

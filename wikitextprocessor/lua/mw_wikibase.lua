@@ -19,7 +19,7 @@ function mw_wikibase.getEntityUrl(id)
 end
 
 function mw_wikibase.getLabel(id)
-   return nil
+    return mw_wikibase_getlabel_python(id)
 end
 
 function mw_wikibase.getLabelWithLang(id)
@@ -35,7 +35,7 @@ function mw_wikibase.getSitelink(id, globalSiteId)
 end
 
 function mw_wikibase.getDescription(id)
-   return nil
+    return mw_wikibase_getdesc_python(id)
 end
 
 function mw_wikibase.getDescriptionWithLang(id)
