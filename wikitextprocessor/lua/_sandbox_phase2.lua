@@ -34,7 +34,13 @@ local function frame_args_index(new_args, key)
       key = i
    end
    local v = new_args._orig[key]
-   if v == nil then return nil end
+   if v == nil then
+       -- "inf" got converted to number type, convert back to string
+       v = new_args._orig[tostring(key)]
+       if v == nil then
+           return nil
+       end
+   end
    if not new_args._preprocessed[key] then
       local frame = new_args._frame
       v = frame:preprocess(v)
@@ -230,14 +236,14 @@ end
 function ipairs(t)
     local mt = getmetatable(t)
     if mt and mt.__ipairs then
-       return mt.__ipairs(t)
+        return mt.__ipairs(t)
     else
-       local function stateless_iter(tbl, i)
-	  i = i + 1
-	  local v = tbl[i]
-	  if nil~=v then return i, v end
-       end
-       return stateless_iter, t, 0
+        local function stateless_iter(tbl, i)
+            i = i + 1
+            local v = tbl[i]
+            if nil~=v then return i, v end
+        end
+        return stateless_iter, t, 0
     end
 end
 
