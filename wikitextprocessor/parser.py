@@ -1458,6 +1458,7 @@ token_re = re.compile(r"(?m)^(={2,6})\s*(([^=]|=[^=])+?)\s*(={2,6})\s*$|"
                       r"\|\+|"
                       r"\|-|"
                       r"!!|"
+                      r"\s*https?://[a-zA-Z0-9.]+(/[^][{}<>|\s]*)?|"
                       r"^[ \t]*!|"
                       r"\|\||"
                       r"\||"
@@ -1469,7 +1470,6 @@ token_re = re.compile(r"(?m)^(={2,6})\s*(([^=]|=[^=])+?)\s*(={2,6})\s*$|"
                       r"""<\s*[-a-zA-Z0-9]+\s*(\b[-a-zA-Z0-9]+(=("[^<>"]*"|"""
                         r"""'[^<>']*'|[^ \t\n"'`=<>]*))?\s*)*(/\s*)?>|"""
                       r"<\s*/\s*[-a-zA-Z0-9]+\s*>|"
-                      r"https?://[a-zA-Z0-9.]+(/[^][{}<>|\s]*)?|"
                       r"(" +
                       r"|".join(r"\b{}\b".format(x) for x in MAGIC_WORDS) +
                       r")|" +
@@ -1538,10 +1538,9 @@ def token_iter(ctx, text):
                 tp = tp.replace("\n", "")
             new_parts.append(tp)
         text = "".join(new_parts)
-    
-    lines = re.split(r"(\n+)", text)  # Lines and separators
-    parts_re = re.compile(r"(''+)")
-    for line in lines:
+
+    parts_re = re.compile(r"('{2,})")
+    for line in text.splitlines():
         parts = re.split(parts_re, line)
         state = 0  # 1=in italic 2=in bold 3=in both
         for i, part in enumerate(parts):
@@ -1627,15 +1626,21 @@ def token_iter(ctx, text):
                     yield False, part[pos:start]
                 pos = m.end()
                 token = m.group(0)
+                if len(token.strip()) == 0:
+                    continue
                 if token.startswith("=="):
                     yield True, "<" + m.group(1)
                     for x in token_iter(ctx, m.group(2)):
                         yield x
                     yield True, ">" + m.group(4)
-                elif start > 0 and part[start - 1] == "=" and token.startswith(("https://", "http://")):
+                elif (
+                    start > 0
+                    and part[start - 1] == "="
+                    and token.strip().startswith(("https://", "http://"))
+                ):
                     # treat URL in template argument as plain text
                     # otherwise it'll be converted to wikitext link: [url]
-                    yield False, token
+                    yield False, token.strip()
                 else:
                     yield True, token
             if pos != len(part):
