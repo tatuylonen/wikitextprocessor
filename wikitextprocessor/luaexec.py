@@ -642,10 +642,12 @@ def query_wikidata(item_id: str):
     )
 
     if r.ok:
+        print(f"WIKIDATA QUERY succeded: {item_id}")
         result = r.json()
         for binding in result.get("results", {}).get("bindings", []):
             return binding
     else:
+        print(f"WIKIDATA QUERY failed: {item_id}")
         return None
 
 
