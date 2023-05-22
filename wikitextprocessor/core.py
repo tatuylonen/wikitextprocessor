@@ -20,10 +20,9 @@ import html.entities
 import multiprocessing
 import sqlite3
 
-from collections import defaultdict
 from collections.abc import Iterable
 from dataclasses import dataclass
-from typing import Optional, Dict, Set, Tuple, Union, Callable, List
+from typing import Optional, Dict, Set, Tuple, Callable, List
 from pathlib import Path
 
 from .parserfns import PARSER_FUNCTIONS, call_parser_function, init_namespaces
@@ -44,7 +43,6 @@ PAIRED_HTML_TAGS = set(
 # pickleable.
 _global_ctx = None
 _global_page_handler = None
-_global_page_autoload = True
 
 
 @dataclass
@@ -1475,25 +1473,18 @@ class Wtp:
         include_redirects: bool = True,
     ):
         """Reprocess all pages captured by self.process() or explicit calls to
-        self.add_page().  This calls page_handler(model, title, text)
-        for each page, and returns of list of their return values
-        (ignoring None values).  If ``autoload`` is set to False, then
-        ``text`` will be None, and the page handler must use
-        self.read_by_title(title) to read the page contents (this may be
-        useful for scanning the cache for just a few pages quickly).  This may
-        call page_handler in parallel, and thus page_handler should
-        not attempt to save anything between calls and should not
-        modify global data.  This function is not re-entrant.
+        self.add_page(). This calls page_handler(page) for each page, and
+        returns of list of their return values (ignoring None values).
+        This may call page_handler in parallel, and thus page_handler should not
+        attempt to save anything between calls and should not modify global
+        data. This function is not re-entrant.
         NOTE: THIS FUNCTION RETURNS ITERATOR AND THE RESULT MUST BE ITERATED
         FOR THIS TO DO SOMETHING."""
         assert callable(page_handler)
-        assert autoload in (True, False)
         global _global_ctx
         global _global_page_handler
-        global _global_page_autoload
         _global_ctx = self
         _global_page_handler = page_handler
-        _global_page_autoload = autoload
 
         if self.num_threads == 1:
             # Single-threaded version (without subprocessing).  This is

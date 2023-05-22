@@ -96,7 +96,7 @@ local function prepare_frame_args(frame)
     new_frame.args = args
     prepare_frame_args(new_frame)
     return new_frame
-  end;
+  end
 end
 
 -- This function implements the {{#invoke:...}} parser function.  XXX
