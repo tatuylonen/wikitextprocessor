@@ -6,6 +6,7 @@
 import copy
 import os
 import re
+import functools
 import html
 import json
 import traceback
@@ -21,15 +22,14 @@ from .parserfns import PARSER_FUNCTIONS, call_parser_function, tag_fn
 builtin_lua_search_paths = [
     # [path, ignore_modules]
     [".", ["string", "debug"]],
-    ["mediawiki-extensions-Scribunto/includes/engines/LuaCommon/lualib",
-     []],
+    ["mediawiki-extensions-Scribunto/includes/engines/LuaCommon/lualib", []],
 ]
 
 # Determine which directory our data files are in
 lua_dir = pkg_resources.resource_filename("wikitextprocessor", "lua/")
 if not lua_dir.endswith("/"):
     lua_dir += "/"
-#print("lua_dir", lua_dir)
+# print("lua_dir", lua_dir)
 
 
 def lua_loader(ctx: "Wtp", modname: str) -> Optional[str]:
@@ -40,27 +40,31 @@ def lua_loader(ctx: "Wtp", modname: str) -> Optional[str]:
     # print("LUA_LOADER IN PYTHON:", modname)
     assert isinstance(modname, str)
     modname = modname.strip()
-    local_module_ns_name = ctx.NAMESPACE_DATA["Module"]["name"]
+    ns_data = ctx.NAMESPACE_DATA["Module"]
+    ns_prefix = ns_data["name"] + ":"
+    ns_alias_prefixes = tuple(alias + ":" for alias in ns_data["aliases"])
+    if modname.startswith(ns_alias_prefixes):
+        modname = ns_prefix + modname[modname.find(":") + 1 :]
 
     # Local name usually not used in Lua code
-    if modname.startswith(("Module:", local_module_ns_name + ":")):
+    if modname.startswith(("Module:", ns_prefix)):
         # First try to load it as a module
-        if modname.startswith(("Module:_", local_module_ns_name + ":_")):
+        if modname.startswith(("Module:_", ns_prefix + "_")):
             # Module names starting with _ are considered internal and cannot be
             # loaded from the dump file for security reasons.  This is to ensure
             # that the sandbox always gets loaded from a local file.
             data = None
         else:
-            data = ctx.read_by_title(modname, ctx.NAMESPACE_DATA["Module"]["id"])
+            data = ctx.read_by_title(modname, ns_data["id"])
     else:
         # Try to load it from a file
         path = modname
         path = re.sub(r"[\0-\037]", "", path)  # Remove control chars, e.g. \n
         path = path.replace(":", "/")
         path = path.replace(" ", "_")
-        path = re.sub(r"//+", "/", path)    # Replace multiple slashes by one
+        path = re.sub(r"//+", "/", path)  # Replace multiple slashes by one
         path = re.sub(r"\.\.+", ".", path)  # Replace .. and longer by .
-        path = re.sub(r"^//+", "", path)    # Remove initial slashes
+        path = re.sub(r"^//+", "", path)  # Remove initial slashes
         path += ".lua"
         data = None
         for prefix, exceptions in builtin_lua_search_paths:
@@ -85,7 +89,7 @@ def mw_text_decode(text, decodeNamedEntities):
     pos = 0
     for m in re.finditer(r"&(lt|gt|amp|quot|nbsp);", text):
         if pos < m.start():
-            parts.append(text[pos:m.start()])
+            parts.append(text[pos : m.start()])
         pos = m.end()
         tag = m.group(1)
         if tag == "lt":
@@ -227,27 +231,31 @@ def fetch_language_names(ctx, include):
 
 def call_set_functions(ctx, set_functions):
     # Set functions that are implemented in Python
-    set_functions(mw_text_decode,
-                  mw_text_encode,
-                  mw_text_jsonencode,
-                  lambda x, *rest:
-                  mw_text_jsondecode(ctx, x, *rest),
-                  lambda x: get_page_info(ctx, x),
-                  lambda x: get_page_content(ctx, x),
-                  lambda x: fetch_language_name(ctx, x),
-                  lambda x: fetch_language_names(ctx, x))
+    set_functions(
+        mw_text_decode,
+        mw_text_encode,
+        mw_text_jsonencode,
+        lambda x, *rest: mw_text_jsondecode(ctx, x, *rest),
+        lambda x: get_page_info(ctx, x),
+        lambda x: get_page_content(ctx, x),
+        lambda x: fetch_language_name(ctx, x),
+        lambda x: fetch_language_names(ctx, x),
+        mw_wikibase_getlabel,
+        mw_wikibase_getdescription,
+    )
 
 
 def initialize_lua(ctx):
-
     def filter_attribute_access(obj, attr_name, is_setting):
         if isinstance(attr_name, str) and not attr_name.startswith("_"):
             return attr_name
         raise AttributeError("access denied")
 
-    lua = lupa.LuaRuntime(unpack_returned_tuples=True,
-                          register_eval=False,
-                          attribute_filter=filter_attribute_access)
+    lua = lupa.LuaRuntime(
+        unpack_returned_tuples=True,
+        register_eval=False,
+        attribute_filter=filter_attribute_access,
+    )
     ctx.lua = lua
     set_namespace_data = lua.eval("function(v) NAMESPACE_DATA = v end")
     lua_namespace_data = copy.deepcopy(ctx.NAMESPACE_DATA)
@@ -255,7 +263,9 @@ def initialize_lua(ctx):
         for k, v in ns_data.items():
             if isinstance(v, list):
                 lua_namespace_data[ns_name][k] = lua.table_from(v)
-        lua_namespace_data[ns_name] = lua.table_from(lua_namespace_data[ns_name])
+        lua_namespace_data[ns_name] = lua.table_from(
+            lua_namespace_data[ns_name]
+        )
     set_namespace_data(lua.table_from(lua_namespace_data))
 
     # Load Lua sandbox Phase 1.  This is a very minimal file that only sets
@@ -293,11 +303,11 @@ def call_lua_sandbox(ctx, invoke_args, expander, parent, timeout):
     #       .format(ctx.title, invoke_args, parent))
 
     if len(invoke_args) < 2:
-        ctx.debug("#invoke {} with too few arguments"
-                  .format(invoke_args),
-                  sortid="luaexec/369")
-        return ("{{" + invoke_args[0] + ":" +
-                "|".join(invoke_args[1:]) + "}}")
+        ctx.debug(
+            "#invoke {} with too few arguments".format(invoke_args),
+            sortid="luaexec/369",
+        )
+        return "{{" + invoke_args[0] + ":" + "|".join(invoke_args[1:]) + "}}"
 
     # Initialize the Lua sandbox if not already initialized
     if ctx.lua_depth == 0:
@@ -370,8 +380,10 @@ def call_lua_sandbox(ctx, invoke_args, expander, parent, timeout):
 
         def extensionTag(frame, *args):
             if len(args) < 1:
-                ctx.debug("lua extensionTag with missing arguments",
-                          sortid="luaexec/464")
+                ctx.debug(
+                    "lua extensionTag with missing arguments",
+                    sortid="luaexec/464",
+                )
                 return ""
             dt = args[0]
             if not isinstance(dt, (str, int, float, type(None))):
@@ -391,20 +403,21 @@ def call_lua_sandbox(ctx, invoke_args, expander, parent, timeout):
                 content = str(args[1] or "")
                 attrs = args[2] or {}
             if not isinstance(attrs, str):
-                attrs = list(v if isinstance(k, int) else
-                             '{}="{}"'
-                             .format(k, html.escape(v, quote=True))
-                             for k, v in
-                             sorted(attrs.items(),
-                                    key=lambda x: str(x[0])))
+                attrs = list(
+                    v
+                    if isinstance(k, int)
+                    else '{}="{}"'.format(k, html.escape(v, quote=True))
+                    for k, v in sorted(attrs.items(), key=lambda x: str(x[0]))
+                )
             elif not attrs:
                 attrs = []
             else:
                 attrs = [attrs]
 
             ctx.expand_stack.append("extensionTag()")
-            ret = tag_fn(ctx, "#tag", [name, content] + attrs,
-                         lambda x: x)  # Already expanded
+            ret = tag_fn(
+                ctx, "#tag", [name, content] + attrs, lambda x: x
+            )  # Already expanded
             ctx.expand_stack.pop()
             # Expand any templates from the result
             ret = preprocess(frame, ret)
@@ -412,8 +425,9 @@ def call_lua_sandbox(ctx, invoke_args, expander, parent, timeout):
 
         def callParserFunction(frame, *args):
             if len(args) < 1:
-                ctx.debug("lua callParserFunction missing name",
-                          sortid="luaexec/506")
+                ctx.debug(
+                    "lua callParserFunction missing name", sortid="luaexec/506"
+                )
                 return ""
             name = args[0]
             if not isinstance(name, str):
@@ -430,14 +444,15 @@ def call_lua_sandbox(ctx, invoke_args, expander, parent, timeout):
                 if isinstance(arg, (int, float, str)):
                     new_args.append(str(arg))
                 else:
-                    for k, v in sorted(arg.items(),
-                                       key=lambda x: str(x[0])):
+                    for k, v in sorted(arg.items(), key=lambda x: str(x[0])):
                         new_args.append(str(v))
             name = ctx._canonicalize_parserfn_name(name)
             if name not in PARSER_FUNCTIONS:
-                ctx.debug("lua frame callParserFunction() undefined "
-                          "function {!r}"
-                          .format(name), sortid="luaexec/529")
+                ctx.debug(
+                    "lua frame callParserFunction() undefined "
+                    "function {!r}".format(name),
+                    sortid="luaexec/529",
+                )
                 return ""
             return call_parser_function(ctx, name, new_args, lambda x: x)
 
@@ -451,8 +466,9 @@ def call_lua_sandbox(ctx, invoke_args, expander, parent, timeout):
 
         def preprocess(frame, *args):
             if len(args) < 1:
-                ctx.debug("lua preprocess missing argument",
-                          sortid="luaexec/545")
+                ctx.debug(
+                    "lua preprocess missing argument", sortid="luaexec/545"
+                )
                 return ""
             v = args[0]
             if not isinstance(v, str):
@@ -467,13 +483,16 @@ def call_lua_sandbox(ctx, invoke_args, expander, parent, timeout):
 
         def expandTemplate(frame, *args):
             if len(args) < 1:
-                ctx.debug("lua expandTemplate missing arguments",
-                          sortid="luaexec/561")
+                ctx.debug(
+                    "lua expandTemplate missing arguments", sortid="luaexec/561"
+                )
                 return ""
             dt = args[0]
             if isinstance(dt, (int, float, str, type(None))):
-                ctx.debug("lua expandTemplate arguments should be named",
-                          sortid="luaexec/566")
+                ctx.debug(
+                    "lua expandTemplate arguments should be named",
+                    sortid="luaexec/566",
+                )
                 return ""
             title = dt["title"] or ""
             args = dt["args"] or {}
@@ -498,10 +517,12 @@ def call_lua_sandbox(ctx, invoke_args, expander, parent, timeout):
         frame["getTitle"] = lambda ctx: title
         frame["preprocess"] = preprocess
         # XXX still untested:
-        frame["newParserValue"] = \
-            lambda ctx, x: value_with_expand(ctx, "preprocess", x)
-        frame["newTemplateParserValue"] = \
-            lambda ctx, x: value_with_expand(ctx, "expand", x)
+        frame["newParserValue"] = lambda ctx, x: value_with_expand(
+            ctx, "preprocess", x
+        )
+        frame["newTemplateParserValue"] = lambda ctx, x: value_with_expand(
+            ctx, "expand", x
+        )
         # newChild set in sandbox.lua
         return lua.table_from(frame)
 
@@ -532,9 +553,12 @@ def call_lua_sandbox(ctx, invoke_args, expander, parent, timeout):
         else:
             ok, text = ret[0], ret[1]
     except UnicodeDecodeError:
-        ctx.debug("invalid unicode returned from lua by {}: parent {}"
-                  .format(invoke_args, parent),
-                  sortid="luaexec/626")
+        ctx.debug(
+            "invalid unicode returned from lua by {}: parent {}".format(
+                invoke_args, parent
+            ),
+            sortid="luaexec/626",
+        )
         ok, text = True, ""
     except lupa.LuaError as e:
         ok, text = False, e
@@ -554,9 +578,9 @@ def call_lua_sandbox(ctx, invoke_args, expander, parent, timeout):
         parts = [str(text)]
         # traceback.format_exception does not have a named keyvalue etype=
         # anymore, in latest Python versions it is positional only.
-        lst = traceback.format_exception(type(text),
-                                         value=text,
-                                         tb=text.__traceback__)
+        lst = traceback.format_exception(
+            type(text), value=text, tb=text.__traceback__
+        )
         for x in lst:
             parts.append("\t" + x.strip())
         text = "\n".join(parts)
@@ -570,22 +594,66 @@ def call_lua_sandbox(ctx, invoke_args, expander, parent, timeout):
         # Ignore this error - it is an error but a clear error in Wiktionary
         # rather than in the extractor.
         return ""
-    elif "attempt to index a nil value (local 'lang')" in text and \
-         "in function 'Module:links.getLinkPage'" in text:
+    elif (
+        "attempt to index a nil value (local 'lang')" in text
+        and "in function 'Module:links.getLinkPage'" in text
+    ):
         # Ignore this error - happens when an unknown language code is passed
         # to various templates (a Wiktionary error, not extractor error)
         return ""
     else:
         if "check deprecated lang param usage" in ctx.expand_stack:
-            ctx.debug("LUA error but likely not bug -- in #invoke {} parent {}"
-                      .format(invoke_args, parent),
-                      trace=text, sortid="luaexec/679")
+            ctx.debug(
+                "LUA error but likely not bug -- in #invoke {} parent {}".format(
+                    invoke_args, parent
+                ),
+                trace=text,
+                sortid="luaexec/679",
+            )
         else:
-            ctx.error("LUA error in #invoke {} parent {}"
-                      .format(invoke_args, parent),
-                      trace=text, sortid="luaexec/683")
+            ctx.error(
+                "LUA error in #invoke {} parent {}".format(invoke_args, parent),
+                trace=text,
+                sortid="luaexec/683",
+            )
     msg = "Lua execution error"
     if "Lua timeout error" in text:
         msg = "Lua timeout error"
-    return ('<strong class="error">{} in Module:{} function {}'
-            '</strong>'.format(msg, html.escape(modname), html.escape(modfn)))
+    return (
+        '<strong class="error">{} in Module:{} function {}'
+        "</strong>".format(msg, html.escape(modname), html.escape(modfn))
+    )
+
+
+@functools.cache
+def query_wikidata(item_id: str):
+    import requests
+
+    r = requests.get(
+        "https://query.wikidata.org/sparql",
+        params={
+            "query": "SELECT ?itemLabel ?itemDescription WHERE { VALUES ?item "
+            + f"{{ wd:{item_id} }}. "
+            + "SERVICE wikibase:label { bd:serviceParam wikibase:language"
+            + ' "[AUTO_LANGUAGE],en". }}',
+            "format": "json",
+        },
+        headers={"user-agent": "wikitextprocessor"},
+    )
+
+    if r.ok:
+        result = r.json()
+        for binding in result.get("results", {}).get("bindings", []):
+            return binding
+    else:
+        return None
+
+
+def mw_wikibase_getlabel(item_id: str) -> str:
+    item_data = query_wikidata(item_id)
+    return item_data.get("itemLabel", {}).get("value", item_id)
+
+
+def mw_wikibase_getdescription(item_id: str) -> str:
+    item_data = query_wikidata(item_id)
+    return item_data.get("itemDescription", {}).get("value", item_id)

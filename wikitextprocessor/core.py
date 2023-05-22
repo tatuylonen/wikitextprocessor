@@ -29,13 +29,14 @@ from .parserfns import PARSER_FUNCTIONS, call_parser_function, init_namespaces
 from .wikihtml import ALLOWED_HTML_TAGS
 from .luaexec import call_lua_sandbox
 from .parser import parse_encoded, NodeKind
-from .common import (MAGIC_FIRST, MAGIC_LAST, MAX_MAGICS, MAGIC_NOWIKI_CHAR)
+from .common import MAGIC_FIRST, MAGIC_LAST, MAX_MAGICS, MAGIC_NOWIKI_CHAR
 from .dumpparser import process_dump
 from .node_expand import to_wikitext, to_html, to_text
 
 # Set of HTML tags that need an explicit end tag.
-PAIRED_HTML_TAGS = set(k for k, v in ALLOWED_HTML_TAGS.items()
-                       if not v.get("no-end-tag"))
+PAIRED_HTML_TAGS = set(
+    k for k, v in ALLOWED_HTML_TAGS.items() if not v.get("no-end-tag")
+)
 
 # Warning: this function is not re-entrant.  We store ctx and page_handler
 # in global variables during dump processing, because they may not be
@@ -77,10 +78,12 @@ def phase2_page_handler(page: Page) -> Tuple[bool, str, float, Tuple[str, str]]:
             ret = _global_page_handler(page)
             return True, page.title, start_t, ret
         except Exception as e:
-            lst = traceback.format_exception(type(e), value=e,
-                                             tb=e.__traceback__)
-            msg = ("=== EXCEPTION while parsing page \"{}\":\n".format(page.title) +
-                   "".join(lst))
+            lst = traceback.format_exception(
+                type(e), value=e, tb=e.__traceback__
+            )
+            msg = '=== EXCEPTION while parsing page "{}":\n'.format(
+                page.title
+            ) + "".join(lst)
             return False, page.title, start_t, msg
 
 
@@ -89,32 +92,33 @@ class Wtp:
     parser functions and Lua macros.  The indended usage pattern is to
     initialize this context once (this holds template and module definitions),
     and then using the context for processing many pages."""
+
     __slots__ = (
-        "db_path",	 # Database path
-        "db_conn",       # Database connection
-        "cookies",	 # Mapping from magic cookie -> expansion data
-        "debugs",	 # List of debug messages (cleared for each new page)
-        "errors",	 # List of error messages (cleared for each new page)
-        "fullpage",	 # The unprocessed text of the current page (or None)
-        "lua",		 # Lua runtime or None if not yet initialized
-        "lua_depth",     # Recursion depth in Lua calls
-        "lua_invoke",	 # Lua function used to invoke a Lua module
-        "lua_reset_env", # Function to reset Lua environment
-        "lua_path",	 # Path to Lua modules
-        "num_threads",   # Number of parallel threads to use
-        "quiet",	 # If True, don't print any messages during processing
-        "rev_ht",	 # Mapping from text to magic cookie
-        "expand_stack",	 # Saved stack before calling Lua function
-        "title",         # current page title
-        "warnings",	 # List of warning messages (cleared for each new page)
+        "db_path",  # Database path
+        "db_conn",  # Database connection
+        "cookies",  # Mapping from magic cookie -> expansion data
+        "debugs",  # List of debug messages (cleared for each new page)
+        "errors",  # List of error messages (cleared for each new page)
+        "fullpage",  # The unprocessed text of the current page (or None)
+        "lua",  # Lua runtime or None if not yet initialized
+        "lua_depth",  # Recursion depth in Lua calls
+        "lua_invoke",  # Lua function used to invoke a Lua module
+        "lua_reset_env",  # Function to reset Lua environment
+        "lua_path",  # Path to Lua modules
+        "num_threads",  # Number of parallel threads to use
+        "quiet",  # If True, don't print any messages during processing
+        "rev_ht",  # Mapping from text to magic cookie
+        "expand_stack",  # Saved stack before calling Lua function
+        "title",  # current page title
+        "warnings",  # List of warning messages (cleared for each new page)
         # Data for parsing
-        "beginning_of_line", # Parser at beginning of line
+        "beginning_of_line",  # Parser at beginning of line
         "wsp_beginning_of_line",  # Parser at beginning of line + whitespace
-        "linenum",	 # Current line number
-        "pre_parse",	 # XXX is pre-parsing still needed?
-        "parser_stack",	 # Parser stack
-        "section",	 # Section within page, for error messages
-        "subsection",    # Subsection within page, for error messages
+        "linenum",  # Current line number
+        "pre_parse",  # XXX is pre-parsing still needed?
+        "parser_stack",  # Parser stack
+        "section",  # Section within page, for error messages
+        "subsection",  # Subsection within page, for error messages
         "suppress_special",  # XXX never set to True???
         "data_folder",
         "NAMESPACE_DATA",
@@ -123,12 +127,18 @@ class Wtp:
         "namespaces",
         "LANGUAGES_BY_CODE",
         "lang_code",
-        "template_override_funcs"  # Python functions for overriding template expaneded text,
+        "template_override_funcs",  # Python functions for overriding template expaneded text,
     )
 
-    def __init__(self, num_threads: Optional[int] = None, db_path: Optional[Path] = None,
-                 quiet: bool = False, lang_code: str = "en", languages_by_code: Dict[str, List[str]] = {},
-                 template_override_funcs: Dict[str, Callable[List[str], str]] = {}):
+    def __init__(
+        self,
+        num_threads: Optional[int] = None,
+        db_path: Optional[Path] = None,
+        quiet: bool = False,
+        lang_code: str = "en",
+        languages_by_code: Dict[str, List[str]] = {},
+        template_override_funcs: Dict[str, Callable[List[str], str]] = {},
+    ):
         if num_threads is None and platform.system() in ("Windows", "Darwin"):
             # Default num_threads to 1 on Windows and MacOS, as they
             # apparently don't use fork() for multiprocessing.Pool()
@@ -151,7 +161,9 @@ class Wtp:
         self.expand_stack = []
         self.parser_stack = None
         self.lang_code = lang_code
-        self.data_folder = Path(pkg_resources.resource_filename("wikitextprocessor", "data/")).joinpath(lang_code)
+        self.data_folder = Path(
+            pkg_resources.resource_filename("wikitextprocessor", "data/")
+        ).joinpath(lang_code)
         self.init_namespace_data()
         self.namespaces = {}
         init_namespaces(self)
@@ -161,14 +173,17 @@ class Wtp:
 
     def create_db(self) -> None:
         if self.db_path is None:
-            temp_file = tempfile.NamedTemporaryFile(prefix="wikitextprocessor_tempdb", delete=False)
+            temp_file = tempfile.NamedTemporaryFile(
+                prefix="wikitextprocessor_tempdb", delete=False
+            )
             self.db_path = Path(temp_file.name)
             temp_file.close()
         elif isinstance(self.db_path, str):
             self.db_path = Path(self.db_path)
 
         self.db_conn = sqlite3.connect(self.db_path, check_same_thread=False)
-        self.db_conn.execute("""
+        self.db_conn.execute(
+            """
         CREATE TABLE IF NOT EXISTS pages (
         title TEXT,
         namespace_id INTEGER,
@@ -177,7 +192,8 @@ class Wtp:
         body TEXT,
         model TEXT,
         PRIMARY KEY(title, namespace_id))
-        """)
+        """
+        )
         self.db_conn.execute("PRAGMA journal_mode=WAL")
 
     def close_db_conn(self) -> None:
@@ -185,21 +201,30 @@ class Wtp:
         if self.db_path.parent.samefile(Path(tempfile.gettempdir())):
             self.db_path.unlink()
 
-    def saved_page_nums(self, namespace_ids: Optional[List[int]] = None, include_redirects: bool = True) -> int:
+    def saved_page_nums(
+        self,
+        namespace_ids: Optional[List[int]] = None,
+        include_redirects: bool = True,
+    ) -> int:
         query_str = "SELECT count(*) FROM pages"
         if namespace_ids is not None:
-            query_str += f" WHERE namespace_id IN ({','.join('?' * len(namespace_ids))})"
+            query_str += (
+                f" WHERE namespace_id IN ({','.join('?' * len(namespace_ids))})"
+            )
             if not include_redirects:
                 query_str += " AND redirect_to IS NULL"
         elif not include_redirects:
             query_str += " WHERE redirect_to IS NULL"
 
-        for result in self.db_conn.execute(query_str, namespace_ids if namespace_ids else ()):
+        for result in self.db_conn.execute(
+            query_str, namespace_ids if namespace_ids else ()
+        ):
             return result[0]
 
     def init_namespace_data(self):
-        with self.data_folder.joinpath("namespaces.json") \
-                              .open(encoding="utf-8") as f:
+        with self.data_folder.joinpath("namespaces.json").open(
+            encoding="utf-8"
+        ) as f:
             self.NAMESPACE_DATA = json.load(f)
             self.LOCAL_NS_NAME_BY_ID: Dict[int, str] = {
                 data["id"]: data["name"]
@@ -224,19 +249,25 @@ class Wtp:
         if self.parser_stack:
             titles = []
             for node in self.parser_stack:
-                if node.kind in (NodeKind.LEVEL2, NodeKind.LEVEL3,
-                                 NodeKind.LEVEL4, NodeKind.LEVEL5,
-                                 NodeKind.LEVEL6):
+                if node.kind in (
+                    NodeKind.LEVEL2,
+                    NodeKind.LEVEL3,
+                    NodeKind.LEVEL4,
+                    NodeKind.LEVEL5,
+                    NodeKind.LEVEL6,
+                ):
                     if not node.args:
                         continue
-                    lst = map(lambda x: x if isinstance(x, str) else "???",
-                              node.args[0])
+                    lst = map(
+                        lambda x: x if isinstance(x, str) else "???",
+                        node.args[0],
+                    )
                     title = "".join(lst)
                     titles.append(title.strip())
-            msg += " parsing "  + "/".join(titles)
+            msg += " parsing " + "/".join(titles)
         if trace:
             msg += "\n" + trace
-        print("{}: {}: {}".format(loc, kind,msg))
+        print("{}: {}: {}".format(loc, kind, msg))
         sys.stdout.flush()
 
     def error(self, msg, trace=None, sortid="XYZunsorted"):
@@ -250,12 +281,17 @@ class Wtp:
         # have been called. There was previously some code for
         # inspecting the stack trace here that did the same
         # thing, but it was a bit costly.
-        self.errors.append({"msg": msg, "trace": trace,
-                            "title": self.title,
-                            "section": self.section,
-                            "subsection": self.subsection,
-                            "called_from": sortid,
-                            "path": tuple(self.expand_stack)})
+        self.errors.append(
+            {
+                "msg": msg,
+                "trace": trace,
+                "title": self.title,
+                "section": self.section,
+                "subsection": self.subsection,
+                "called_from": sortid,
+                "path": tuple(self.expand_stack),
+            }
+        )
         self._fmt_errmsg("ERROR", msg, trace)
 
     def warning(self, msg, trace=None, sortid="XYZunsorted"):
@@ -265,12 +301,17 @@ class Wtp:
         assert isinstance(trace, (str, type(None)))
         assert isinstance(sortid, str)
 
-        self.warnings.append({"msg": msg, "trace": trace,
-                              "title": self.title,
-                              "section": self.section,
-                              "subsection": self.subsection,
-                              "called_from": sortid,
-                              "path": tuple(self.expand_stack)})
+        self.warnings.append(
+            {
+                "msg": msg,
+                "trace": trace,
+                "title": self.title,
+                "section": self.section,
+                "subsection": self.subsection,
+                "called_from": sortid,
+                "path": tuple(self.expand_stack),
+            }
+        )
         self._fmt_errmsg("WARNING", msg, trace)
 
     def debug(self, msg, trace=None, sortid="XYZunsorted"):
@@ -280,12 +321,17 @@ class Wtp:
         assert isinstance(trace, (str, type(None)))
         assert isinstance(sortid, str)
 
-        self.debugs.append({"msg": msg, "trace": trace,
-                            "title": self.title,
-                            "section": self.section,
-                            "subsection": self.subsection,
-                            "called_from": sortid,
-                            "path": tuple(self.expand_stack)})
+        self.debugs.append(
+            {
+                "msg": msg,
+                "trace": trace,
+                "title": self.title,
+                "section": self.section,
+                "subsection": self.subsection,
+                "called_from": sortid,
+                "path": tuple(self.expand_stack),
+            }
+        )
         self._fmt_errmsg("DEBUG", msg, trace)
 
     def to_return(self):
@@ -310,11 +356,12 @@ class Wtp:
     def _save_value(self, kind, args, nowiki):
         """Saves a value of a particular kind and returns a unique magic
         cookie for it."""
-        assert kind in ("T",  # Template {{ ... }}
-                        "A",  # Template argument {{{ ... }}}
-                        "L",  # link
-                        "E",  # external link
-                        "N",  # nowiki text
+        assert kind in (
+            "T",  # Template {{ ... }}
+            "A",  # Template argument {{{ ... }}}
+            "L",  # link
+            "E",  # external link
+            "N",  # nowiki text
         )
         assert isinstance(args, (list, tuple))
         assert nowiki in (True, False)
@@ -325,9 +372,10 @@ class Wtp:
             return self.rev_ht[v]
         idx = len(self.cookies)
         if idx >= MAX_MAGICS:
-            self.error("too many templates, arguments,"
-                       "or parser function calls",
-                       sortid="core/372")
+            self.error(
+                "too many templates, arguments," "or parser function calls",
+                sortid="core/372",
+            )
             return ""
         self.cookies.append(v)
         ch = chr(MAGIC_FIRST + idx)
@@ -340,9 +388,14 @@ class Wtp:
         in the text, from innermost to outermost."""
 
         def vbar_split(v):
-            args = list(m.group(1) for m in re.finditer(
-                r"(?si)\|((<\s*([-a-zA-z0-9]+)\b[^>]*>[^][{}]*?<\s*/\s*\3\s*>|"
-                r"[^|])*)", "|" + v))
+            args = list(
+                m.group(1)
+                for m in re.finditer(
+                    r"(?si)\|((<\s*([-a-zA-z0-9]+)\b[^>]*>[^][{}]*?<\s*/\s*\3\s*>|"
+                    r"[^|])*)",
+                    "|" + v,
+                )
+            )
             return args
 
         def repl_arg(m):
@@ -358,10 +411,12 @@ class Wtp:
             prefix = m.group(1)
             orig = m.group(2)
             args = vbar_split(orig)
-            self.debug("heuristically added missing }} to template arg {}"
-                        # a single "}" needs to be escaped as "}}" with .format
-                         .format(args[0].strip()),
-                         sortid="core/405")
+            self.debug(
+                "heuristically added missing }} to template arg {}"
+                # a single "}" needs to be escaped as "}}" with .format
+                .format(args[0].strip()),
+                sortid="core/405",
+            )
             return prefix + self._save_value("A", args, nowiki)
 
         def repl_templ(m):
@@ -380,10 +435,12 @@ class Wtp:
             prefix = m.group(1)
             v = m.group(2)
             args = vbar_split(v)
-            self.debug("heuristically added missing }} to template {}"
-                        # a single "}" needs to be escaped as "}}" with .format
-                         .format(args[0].strip()),
-                         sortid="core/427")
+            self.debug(
+                "heuristically added missing }} to template {}"
+                # a single "}" needs to be escaped as "}}" with .format
+                .format(args[0].strip()),
+                sortid="core/427",
+            )
             return prefix + self._save_value("T", args, nowiki)
 
         def repl_link(m):
@@ -416,22 +473,34 @@ class Wtp:
                 prev2 = text
                 # Encode links.
                 while True:
-                    text = re.sub(r"(?s)\[" + MAGIC_NOWIKI_CHAR +
-                                  r"?\[(([^][{}]|<[-+*a-zA-Z0-9]*>)+)\]" +
-                                  MAGIC_NOWIKI_CHAR + r"?\]",
-                                  repl_link, text)
+                    text = re.sub(
+                        r"(?s)\["
+                        + MAGIC_NOWIKI_CHAR
+                        + r"?\[(([^][{}]|<[-+*a-zA-Z0-9]*>)+)\]"
+                        + MAGIC_NOWIKI_CHAR
+                        + r"?\]",
+                        repl_link,
+                        text,
+                    )
                     if text == prev2:
                         break
                     prev2 = text
                 # Encode external links.
                 text = re.sub(r"(?s)\[([^][{}<>|]+)\]", repl_extlink, text)
                 # Encode template arguments
-                text = re.sub(r"(?s)\{" + MAGIC_NOWIKI_CHAR +
-                              r"?\{" + MAGIC_NOWIKI_CHAR +
-                              r"?\{(([^{}]|\{\|[^{}]*\|\})*?)\}" +
-                              MAGIC_NOWIKI_CHAR + r"?\}" +
-                              MAGIC_NOWIKI_CHAR + r"?\}",
-                              repl_arg, text)
+                text = re.sub(
+                    r"(?s)\{"
+                    + MAGIC_NOWIKI_CHAR
+                    + r"?\{"
+                    + MAGIC_NOWIKI_CHAR
+                    + r"?\{(([^{}]|\{\|[^{}]*\|\})*?)\}"
+                    + MAGIC_NOWIKI_CHAR
+                    + r"?\}"
+                    + MAGIC_NOWIKI_CHAR
+                    + r"?\}",
+                    repl_arg,
+                    text,
+                )
                 if text == prev2:
                     # When everything else has been done, see if we can find
                     # template arguments that have one missing closing bracket.
@@ -442,23 +511,30 @@ class Wtp:
                     # be interpreted as a template.
                     # Note: we don't want to do this for {{{!}}, as that is
                     # sometimes used inside {{#if|...}} for table start/end.
-                    text = re.sub(r"(?s)([^{])\{" + MAGIC_NOWIKI_CHAR +
-                                  r"?\{" + MAGIC_NOWIKI_CHAR +
-                                  r"?\{([^{}!]*?)\}" +
-                                  MAGIC_NOWIKI_CHAR + r"?\}",
-                                  repl_arg_err, text)
+                    text = re.sub(
+                        r"(?s)([^{])\{"
+                        + MAGIC_NOWIKI_CHAR
+                        + r"?\{"
+                        + MAGIC_NOWIKI_CHAR
+                        + r"?\{([^{}!]*?)\}"
+                        + MAGIC_NOWIKI_CHAR
+                        + r"?\}",
+                        repl_arg_err,
+                        text,
+                    )
                     if text != prev2:
                         continue
                     break
             # Replace template invocation
-            text = re.sub(r"(?si)\{" + MAGIC_NOWIKI_CHAR +
-                          r"?\{(("
-                          r"\{\|[^{}]*?\|\}|"
-                          r"\}[^{}]|"
-                          r"[^{}](\{[^{}|])?"
-                          r")+?)\}" +
-                          MAGIC_NOWIKI_CHAR + r"?\}",
-                          repl_templ, text)
+            text = re.sub(
+                r"(?si)\{" + MAGIC_NOWIKI_CHAR + r"?\{(("
+                r"\{\|[^{}]*?\|\}|"
+                r"\}[^{}]|"
+                r"[^{}](\{[^{}|])?"
+                r")+?)\}" + MAGIC_NOWIKI_CHAR + r"?\}",
+                repl_templ,
+                text,
+            )
             # We keep looping until there is no change during the iteration
             if text == prev:
                 # When everything else has been done, see if we can find
@@ -466,19 +542,23 @@ class Wtp:
                 # This is so common in Wiktionary that I'm suspecting it
                 # might be allowed by the MediaWiki parser.  We must allow
                 # tables {| ... |} inside these.
-                text = re.sub(r"(?s)([^{])\{" + MAGIC_NOWIKI_CHAR +
-                              r"?\{(([^{}]|\{\|[^{}]*\|\}|\}[^{}])+?)\}",
-                              repl_templ_err, text)
+                text = re.sub(
+                    r"(?s)([^{])\{"
+                    + MAGIC_NOWIKI_CHAR
+                    + r"?\{(([^{}]|\{\|[^{}]*\|\}|\}[^{}])+?)\}",
+                    repl_templ_err,
+                    text,
+                )
                 if text != prev:
                     continue
                 break
             prev = text
         # Replace any remaining braces etc by corresponding character entities
-        #text = re.sub(r"\{([&|])", r"&lbrace;\1", text)
-        #text = re.sub(r"\{([&|])", r"&lbrace;\1", text)
-        #text = re.sub(r"[^|]\}", r"\1&rbrace;", text)
-        #text = re.sub(r"[^|]\}", r"\1&rbrace;", text)
-        #text = re.sub(r"\|", "&vert;", text)
+        # text = re.sub(r"\{([&|])", r"&lbrace;\1", text)
+        # text = re.sub(r"\{([&|])", r"&lbrace;\1", text)
+        # text = re.sub(r"[^|]\}", r"\1&rbrace;", text)
+        # text = re.sub(r"[^|]\}", r"\1&rbrace;", text)
+        # text = re.sub(r"\|", "&vert;", text)
         return text
 
     def _template_to_body(self, title, text):
@@ -489,8 +569,9 @@ class Wtp:
         # Remove all comments
         text = re.sub(r"(?s)<!\s*--.*?--\s*>", "", text)
         # Remove all text inside <noinclude> ... </noinclude>
-        text = re.sub(r"(?is)<\s*noinclude\s*>.*?<\s*/\s*noinclude\s*>",
-                      "", text)
+        text = re.sub(
+            r"(?is)<\s*noinclude\s*>.*?<\s*/\s*noinclude\s*>", "", text
+        )
         # Handle <noinclude> without matching </noinclude> by removing the
         # rest of the file.  <noinclude/> is handled specially elsewhere, as
         # it appears to be used as a kludge to prevent normal interpretation
@@ -500,10 +581,14 @@ class Wtp:
         text = re.sub(r"(?s)<!\s*--.*", "", text)
         # <onlyinclude> tags, if present, include the only text that will be
         # transcluded.  All other text is ignored.
-        onlys = list(re.finditer(r"(?is)<\s*onlyinclude\s*>(.*?)"
-                                 r"<\s*/\s*onlyinclude\s*>|"
-                                 r"<\s*onlyinclude\s*/\s*>",
-                                 text))
+        onlys = list(
+            re.finditer(
+                r"(?is)<\s*onlyinclude\s*>(.*?)"
+                r"<\s*/\s*onlyinclude\s*>|"
+                r"<\s*onlyinclude\s*/\s*>",
+                text,
+            )
+        )
         if onlys:
             text = "".join(m.group(1) or "" for m in onlys)
         # Remove <includeonly>.  They mark text that is not visible on the page
@@ -512,9 +597,15 @@ class Wtp:
         text = re.sub(r"(?is)<\s*(/\s*)?includeonly\s*(/\s*)?>", "", text)
         return text
 
-    def add_page(self, title: str, namespace_id: int, body: Optional[str] = None,
-                 redirect_to: Optional[str] = None, need_pre_expand: bool = False,
-                 model: str = "wikitext") -> None:
+    def add_page(
+        self,
+        title: str,
+        namespace_id: int,
+        body: Optional[str] = None,
+        redirect_to: Optional[str] = None,
+        need_pre_expand: bool = False,
+        model: str = "wikitext",
+    ) -> None:
         """Collects information about the page and save page text to a
         SQLite database file."""
         ns_prefix = self.LOCAL_NS_NAME_BY_ID.get(namespace_id) + ":"
@@ -524,15 +615,20 @@ class Wtp:
         if title.startswith("Main:"):
             title = title[5:]
 
-        if namespace_id == self.NAMESPACE_DATA.get("Template", {}).get("id") and redirect_to is None:
+        if (
+            namespace_id == self.NAMESPACE_DATA.get("Template", {}).get("id")
+            and redirect_to is None
+        ):
             body = self._template_to_body(title, body)
 
-        self.db_conn.execute("""INSERT INTO pages (title, namespace_id, body,
+        self.db_conn.execute(
+            """INSERT INTO pages (title, namespace_id, body,
         redirect_to, need_pre_expand, model) VALUES (?, ?, ?, ?, ?, ?)
         ON CONFLICT(title, namespace_id) DO UPDATE SET
         body=excluded.body, redirect_to=excluded.redirect_to,
         need_pre_expand=excluded.need_pre_expand, model=excluded.model""",
-                             (title, namespace_id, body, redirect_to, need_pre_expand, model))
+            (title, namespace_id, body, redirect_to, need_pre_expand, model),
+        )
 
     def _analyze_template(self, name: str, body: str) -> Tuple[Set[str], bool]:
         """Analyzes a template body and returns a set of the canonicalized
@@ -555,15 +651,18 @@ class Wtp:
         while True:
             unpaired_text = re.sub(
                 r"(?s)(^|\n)\{\|([^\n]|\n+[^{|]|\n+\|[^}]|\n+\{[^|])*?\n+\|\}",
-                r"", prev)
+                r"",
+                prev,
+            )
             if unpaired_text == prev:
                 break
             prev = unpaired_text
-        #print("unpaired_text {!r}".format(unpaired_text))
+        # print("unpaired_text {!r}".format(unpaired_text))
 
         # Determine if the template contains an unpaired table
-        contains_unpaired_table = re.search(r"(?s)(^|\n)(\{\||\|\})",
-                                            unpaired_text) is not None
+        contains_unpaired_table = (
+            re.search(r"(?s)(^|\n)(\{\||\|\})", unpaired_text) is not None
+        )
 
         # Determine if the template contains table element tokens
         # outside paired table start/end.  We only try to look for
@@ -571,24 +670,26 @@ class Wtp:
         # template argument on its own line starting with a "|".
         outside = unpaired_text
         while True:
-            #print("=== OUTSIDE ITER")
+            # print("=== OUTSIDE ITER")
             prev = outside
             while True:
-                newt = re.sub(r"(?s)\{\{\{([^{}]|\}[^}]|\}\}[^}])*?\}\}\}",
-                              "", prev)
+                newt = re.sub(
+                    r"(?s)\{\{\{([^{}]|\}[^}]|\}\}[^}])*?\}\}\}", "", prev
+                )
                 if newt == prev:
                     break
                 prev = newt
-            #print("After arg elim: {!r}".format(newt))
+            # print("After arg elim: {!r}".format(newt))
             newt = re.sub(r"(?s)\{\{([^{}]|\}[^}])*?\}\}", "", newt)
-            #print("After templ elim: {!r}".format(newt))
+            # print("After templ elim: {!r}".format(newt))
             if newt == outside:
                 break
             outside = newt
         # Check if the template contains certain table elements
         m = re.search(r"(?s)(^|\n)(\|\+|\|-|\!)", outside)
-        m2 = re.match(r"(?si)\s*(<includeonly>|<!\s*--.*?--\s*>)(\|\||!!)",
-                      outside)
+        m2 = re.match(
+            r"(?si)\s*(<includeonly>|<!\s*--.*?--\s*>)(\|\||!!)", outside
+        )
         contains_table_element = m is not None or m2 is not None
         # if contains_table_element:
         #     print("contains_table_element {!r} at {}"
@@ -598,8 +699,11 @@ class Wtp:
 
         # Check for unpaired HTML tags
         tag_cnts = collections.defaultdict(int)
-        for m in re.finditer(r"(?si)<\s*(/\s*)?({})\b\s*[^>]*(/\s*)?>"
-                             r"".format("|".join(PAIRED_HTML_TAGS)), outside):
+        for m in re.finditer(
+            r"(?si)<\s*(/\s*)?({})\b\s*[^>]*(/\s*)?>"
+            r"".format("|".join(PAIRED_HTML_TAGS)),
+            outside,
+        ):
             start_slash = m.group(1)
             tagname = m.group(2)
             end_slash = m.group(3)
@@ -617,13 +721,18 @@ class Wtp:
         # Chinese Wiktionary uses templates for language and POS headings
         # Language templates: https://zh.wiktionary.org/wiki/Category:语言模板
         # POS templates: https://zh.wiktionary.org/wiki/Category:詞類模板
-        is_chinese_heading = (self.lang_code == "zh" and
-                              name.startswith(("-", "=")))
+        is_chinese_heading = self.lang_code == "zh" and name.startswith(
+            ("-", "=")
+        )
 
         # Determine whether this template should be pre-expanded
-        pre_expand = (contains_list or contains_unpaired_table or
-                      contains_table_element or contains_unbalanced_html or
-                      is_chinese_heading)
+        pre_expand = (
+            contains_list
+            or contains_unpaired_table
+            or contains_table_element
+            or contains_unbalanced_html
+            or is_chinese_heading
+        )
 
         # if pre_expand:
         #     print(name,
@@ -637,8 +746,9 @@ class Wtp:
         # Determine which other templates are called from unpaired text.
         # None of the flags we currently gather propagate outside a paired
         # table start/end.
-        for m in re.finditer(r"(?s)(^|[^{])(\{\{)?\{\{([^{]*?)(\||\}\})",
-                             unpaired_text):
+        for m in re.finditer(
+            r"(?s)(^|[^{])(\{\{)?\{\{([^{]*?)(\||\}\})", unpaired_text
+        ):
             name = m.group(3)
             name = re.sub(r"(?si)<\s*nowiki\s*/\s*>", "", name)
             if not name:
@@ -657,15 +767,23 @@ class Wtp:
         template_ns = self.NAMESPACE_DATA.get("Template", {})
         template_ns_id = template_ns.get("id")
         template_ns_local_name = template_ns.get("name")
-        self.add_page(f"{template_ns_local_name}:!", template_ns_id, "|")  # magic word
-        self.add_page(f"{template_ns_local_name}:((", template_ns_id, "&lbrace;&lbrace;")  # {{((}} -> {{
-        self.add_page(f"{template_ns_local_name}:))", template_ns_id, "&rbrace;&rbrace;")  # {{))}} -> }}
+        self.add_page(
+            f"{template_ns_local_name}:!", template_ns_id, "|"
+        )  # magic word
+        self.add_page(
+            f"{template_ns_local_name}:((", template_ns_id, "&lbrace;&lbrace;"
+        )  # {{((}} -> {{
+        self.add_page(
+            f"{template_ns_local_name}:))", template_ns_id, "&rbrace;&rbrace;"
+        )  # {{))}} -> }}
 
         expand_stack = []
         included_map = collections.defaultdict(set)
 
         for page in self.get_all_pages([template_ns_id], False):
-            used_templates, pre_expand = self._analyze_template(page.title, page.body)
+            used_templates, pre_expand = self._analyze_template(
+                page.title, page.body
+            )
             for used_template in used_templates:
                 included_map[used_template].add(page.title)
             if pre_expand:
@@ -687,7 +805,7 @@ class Wtp:
                 template = self.get_page(template_title, template_ns_id)
                 if template.need_pre_expand:
                     continue
-                #print("propagating EXP {} -> {}".format(name, inc))
+                # print("propagating EXP {} -> {}".format(name, inc))
                 self.set_template_pre_expand(template.title)
                 expand_stack.append(template)
 
@@ -704,7 +822,9 @@ class Wtp:
         self.db_conn.commit()
 
     def set_template_pre_expand(self, name: str) -> None:
-        self.db_conn.execute("UPDATE pages SET need_pre_expand = 1 WHERE title = ?", (name,))
+        self.db_conn.execute(
+            "UPDATE pages SET need_pre_expand = 1 WHERE title = ?", (name,)
+        )
 
     def start_page(self, title: str) -> None:
         """Starts a new page for expanding Wikitext.  This saves the title and
@@ -740,19 +860,19 @@ class Wtp:
 
     def _unexpanded_template(self, args, nowiki):
         """Formats an unexpanded template (whose arguments may have been
-            partially or fully expanded)."""
+        partially or fully expanded)."""
         if nowiki:
-            return ("&lbrace;&lbrace;" +
-                    "&vert;".join(args) +
-                    "&rbrace;&rbrace;")
+            return "&lbrace;&lbrace;" + "&vert;".join(args) + "&rbrace;&rbrace;"
         return "{{" + "|".join(args) + "}}"
 
     def _unexpanded_arg(self, args, nowiki):
         """Formats an unexpanded template argument reference."""
         if nowiki:
-            return ("&lbrace;&lbrace;&lbrace;" +
-                    "&vert;".join(args) +
-                    "&rbrace;&rbrace;&rbrace;")
+            return (
+                "&lbrace;&lbrace;&lbrace;"
+                + "&vert;".join(args)
+                + "&rbrace;&rbrace;&rbrace;"
+            )
         return "{{{" + "|".join(args) + "}}}"
 
     def _unexpanded_link(self, args, nowiki):
@@ -778,19 +898,28 @@ class Wtp:
             text = m.group(1)
             return self._save_value("N", (text,), False)
 
-        text = re.sub(r"(?si)<\s*nowiki\s*>(.*?)<\s*/\s*nowiki\s*>",
-                      _nowiki_sub_fn, text)
+        text = re.sub(
+            r"(?si)<\s*nowiki\s*>(.*?)<\s*/\s*nowiki\s*>", _nowiki_sub_fn, text
+        )
         text = re.sub(r"(?si)<\s*nowiki\s*/\s*>", MAGIC_NOWIKI_CHAR, text)
         text = re.sub(r"(?s)<!\s*--.*?--\s*>", "", text)
         # print("PREPROCESSED_TEXT: {!r}".format(text))
         return text
 
-    def expand(self, text, parent=None, pre_expand=False,
-               template_fn=None, post_template_fn=None,
-               templates_to_expand=None,
-               templates_to_not_expand=None,
-               expand_parserfns=True, expand_invoke=True, quiet=False,
-               timeout=None):
+    def expand(
+        self,
+        text,
+        parent=None,
+        pre_expand=False,
+        template_fn=None,
+        post_template_fn=None,
+        templates_to_expand=None,
+        templates_to_not_expand=None,
+        expand_parserfns=True,
+        expand_invoke=True,
+        quiet=False,
+        timeout=None,
+    ):
         """Expands templates and parser functions (and optionally Lua macros)
         from ``text`` (which is from page with title ``title``).
         ``templates_to_expand`` should be None to expand all
@@ -811,8 +940,9 @@ class Wtp:
         replace the template expansion.  This returns the text with
         the given templates expanded."""
         assert isinstance(text, str)
-        assert parent is None or (isinstance(parent, (list, tuple)) and
-                                  len(parent) == 2)
+        assert parent is None or (
+            isinstance(parent, (list, tuple)) and len(parent) == 2
+        )
         assert pre_expand in (True, False)
         assert template_fn is None or callable(template_fn)
         assert post_template_fn is None or callable(post_template_fn)
@@ -853,9 +983,9 @@ class Wtp:
                 assert isinstance(argmap, dict)
                 parts = []
                 pos = 0
-                for m in re.finditer(r"[{:c}-{:c}]"
-                                     .format(MAGIC_FIRST, MAGIC_LAST),
-                                     coded):
+                for m in re.finditer(
+                    r"[{:c}-{:c}]".format(MAGIC_FIRST, MAGIC_LAST), coded
+                ):
                     new_pos = m.start()
                     if new_pos > pos:
                         parts.append(coded[pos:new_pos])
@@ -872,19 +1002,23 @@ class Wtp:
                     if kind == "T":
                         # Template transclusion or parser function call.
                         # Expand its arguments.
-                        new_args = tuple(map(lambda x: expand_args(x, argmap),
-                                             args))
+                        new_args = tuple(
+                            map(lambda x: expand_args(x, argmap), args)
+                        )
                         parts.append(self._save_value(kind, new_args, nowiki))
                         continue
                     if kind == "A":
                         # Template argument reference
                         if len(args) > 2:
-                            self.debug("too many args ({}) in argument "
-                                       "reference: {!r}"
-                                       .format(len(args), args),
-                                       sortid="core/1021")
+                            self.debug(
+                                "too many args ({}) in argument "
+                                "reference: {!r}".format(len(args), args),
+                                sortid="core/1021",
+                            )
                         self.expand_stack.append("ARG-NAME")
-                        k = expand_recurse(expand_args(args[0], argmap), parent, True).strip()
+                        k = expand_recurse(
+                            expand_args(args[0], argmap), parent, True
+                        ).strip()
                         self.expand_stack.pop()
                         if k.isdigit():
                             k = int(k)
@@ -925,22 +1059,23 @@ class Wtp:
                         continue
                     if kind == "L":
                         # Link to another page
-                        new_args = list(expand_args(x, argmap)
-                                        for x in args)
+                        new_args = list(expand_args(x, argmap) for x in args)
                         parts.append(self._unexpanded_link(new_args, nowiki))
                         continue
                     if kind == "E":
                         # Link to another page
-                        new_args = list(expand_args(x, argmap)
-                                        for x in args)
+                        new_args = list(expand_args(x, argmap) for x in args)
                         parts.append(self._unexpanded_extlink(new_args, nowiki))
                         continue
                     if kind == "N":
                         parts.append(ch)
                         continue
-                    self.error("expand_arg: unsupported cookie kind {!r} in {}"
-                               .format(kind, m.group(0)),
-                               sortid="core/1062")
+                    self.error(
+                        "expand_arg: unsupported cookie kind {!r} in {}".format(
+                            kind, m.group(0)
+                        ),
+                        sortid="core/1062",
+                    )
                     parts.append(m.group(0))
                 parts.append(coded[pos:])
                 return "".join(parts)
@@ -969,9 +1104,9 @@ class Wtp:
             # Main code of expand_recurse()
             parts = []
             pos = 0
-            for m in re.finditer(r"[{:c}-{:c}]"
-                                 .format(MAGIC_FIRST, MAGIC_LAST),
-                                 coded):
+            for m in re.finditer(
+                r"[{:c}-{:c}]".format(MAGIC_FIRST, MAGIC_LAST), coded
+            ):
                 new_pos = m.start()
                 if new_pos > pos:
                     parts.append(coded[pos:new_pos])
@@ -990,12 +1125,16 @@ class Wtp:
                     # Template transclusion or parser function call
                     # Limit recursion depth
                     if len(self.expand_stack) >= 100:
-                        self.error("too deep recursion during template "
-                                   "expansion", sortid="core/1115")
+                        self.error(
+                            "too deep recursion during template " "expansion",
+                            sortid="core/1115",
+                        )
                         parts.append(
                             '<strong class="error">too deep recursion '
-                            'while expanding template {}</strong>'
-                            .format(self._unexpanded_template(args, True)))
+                            "while expanding template {}</strong>".format(
+                                self._unexpanded_template(args, True)
+                            )
+                        )
                         continue
 
                     # Expand template/parserfn name
@@ -1020,11 +1159,12 @@ class Wtp:
                         # It might be a parser function call
                         fn_name = self._canonicalize_parserfn_name(tname[:ofs])
                         # Check if it is a recognized parser function name
-                        if (fn_name in PARSER_FUNCTIONS or
-                            fn_name.startswith("#")):
-                            ret = expand_parserfn(fn_name,
-                                                  (tname[ofs + 1:].lstrip(),) +
-                                                  args[1:])
+                        if fn_name in PARSER_FUNCTIONS or fn_name.startswith(
+                            "#"
+                        ):
+                            ret = expand_parserfn(
+                                fn_name, (tname[ofs + 1 :].lstrip(),) + args[1:]
+                            )
                             parts.append(ret)
                             continue
 
@@ -1045,33 +1185,42 @@ class Wtp:
                     # Check for undefined templates
                     if not self.template_exists(name):
                         # XXX tons of these in enwiktionary-20201201 ???
-                        #self.debug("undefined template {!r}.format(tname),
+                        # self.debug("undefined template {!r}.format(tname),
                         #           sortid="core/1171")
-                        parts.append('<strong class="error">Template:{}'
-                                     '</strong>'
-                                     .format(html.escape(name)))
+                        parts.append(
+                            '<strong class="error">Template:{}'
+                            "</strong>".format(html.escape(name))
+                        )
                         continue
 
                     if name in self.template_override_funcs and not nowiki:
                         # print("Name in template_overrides: {}".format(name))
-                        new_args = list(expand_recurse(x, parent, expand_all)
-                                        for x in args)
-                        parts.append(self.template_override_funcs[name](new_args,))
+                        new_args = list(
+                            expand_recurse(x, parent, expand_all) for x in args
+                        )
+                        parts.append(
+                            self.template_override_funcs[name](
+                                new_args,
+                            )
+                        )
                         continue
 
                     # If this template is not one of those we want to expand,
                     # return it unexpanded (but with arguments possibly
                     # expanded)
                     if not expand_all and not self.check_template_need_expand(
-                            name, templates_to_expand, templates_to_not_expand):
+                        name, templates_to_expand, templates_to_not_expand
+                    ):
                         # Note: we will still expand parser functions in its
                         # arguments, because those parser functions could
                         # refer to its parent frame and fail if expanded
                         # after eliminating the intermediate templates.
-                        new_args = list(expand_recurse(x, parent, expand_all)
-                                        for x in args)
-                        parts.append(self._unexpanded_template(new_args,
-                                                               nowiki))
+                        new_args = list(
+                            expand_recurse(x, parent, expand_all) for x in args
+                        )
+                        parts.append(
+                            self._unexpanded_template(new_args, nowiki)
+                        )
                         continue
 
                     # Construct and expand template arguments
@@ -1080,9 +1229,11 @@ class Wtp:
                     num = 1
                     for i in range(1, len(args)):
                         arg = str(args[i])
-                        m = re.match(r"""(?s)^\s*([^][&<>="']+?)\s*="""
-                                     """\s*(.*?)\s*$""",
-                                     arg)
+                        m = re.match(
+                            r"""(?s)^\s*([^][&<>="']+?)\s*="""
+                            """\s*(.*?)\s*$""",
+                            arg,
+                        )
                         if m:
                             # Note: Whitespace is stripped by the regexp
                             # around named parameter names and values per
@@ -1092,10 +1243,11 @@ class Wtp:
                             if k.isdigit():
                                 k = int(k)
                                 if k < 1 or k > 1000:
-                                    self.debug("invalid argument number {} "
-                                               "for template {!r}"
-                                               .format(k, name),
-                                               sortid="core/1211")
+                                    self.debug(
+                                        "invalid argument number {} "
+                                        "for template {!r}".format(k, name),
+                                        sortid="core/1211",
+                                    )
                                     k = 1000
                                 if num <= k:
                                     num = k + 1
@@ -1125,7 +1277,9 @@ class Wtp:
                         # print("TEMPLATE_FN {}: {} {} -> {}"
                         #      .format(template_fn, name, ht, repr(t)))
                     if t is None:
-                        body = self.read_by_title(name, self.NAMESPACE_DATA["Template"]["id"])
+                        body = self.read_by_title(
+                            name, self.NAMESPACE_DATA["Template"]["id"]
+                        )
                         # XXX optimize by pre-encoding bodies during
                         # preprocessing
                         # (Each template is typically used many times)
@@ -1143,7 +1297,11 @@ class Wtp:
                             if tname.startswith(prefix + ":"):
                                 break
                         else:
-                            new_title = self.NAMESPACE_DATA["Template"]["name"] + ":" + new_title
+                            new_title = (
+                                self.NAMESPACE_DATA["Template"]["name"]
+                                + ":"
+                                + new_title
+                            )
                         new_parent = (new_title, ht)
                         # print("expanding template body for {} {}"
                         #       .format(name, ht))
@@ -1175,8 +1333,9 @@ class Wtp:
                     else:
                         # Link to another page
                         self.expand_stack.append("[[link]]")
-                        new_args = list(expand_recurse(x, parent, expand_all)
-                                        for x in args)
+                        new_args = list(
+                            expand_recurse(x, parent, expand_all) for x in args
+                        )
                         self.expand_stack.pop()
                         parts.append(self._unexpanded_link(new_args, nowiki))
                 elif kind == "E":
@@ -1185,16 +1344,20 @@ class Wtp:
                     else:
                         # Link to an external page
                         self.expand_stack.append("[extlink]")
-                        new_args = list(expand_recurse(x, parent, expand_all)
-                                        for x in args)
+                        new_args = list(
+                            expand_recurse(x, parent, expand_all) for x in args
+                        )
                         self.expand_stack.pop()
                         parts.append(self._unexpanded_extlink(new_args, nowiki))
                 elif kind == "N":
                     parts.append(ch)
                 else:
-                    self.error("expand: unsupported cookie kind {!r} in {}"
-                               .format(kind, m.group(0)),
-                               sortid="core/1334")
+                    self.error(
+                        "expand: unsupported cookie kind {!r} in {}".format(
+                            kind, m.group(0)
+                        ),
+                        sortid="core/1334",
+                    )
                     parts.append(m.group(0))
             parts.append(coded[pos:])
             return "".join(parts)
@@ -1237,16 +1400,19 @@ class Wtp:
                 return self._unexpanded_extlink(args, nowiki)
             if kind == "N":
                 return "<nowiki>" + args[0] + "</nowiki>"
-            self.error("magic_repl: unsupported cookie kind {!r}"
-                       .format(kind), sortid="core/1373")
+            self.error(
+                "magic_repl: unsupported cookie kind {!r}".format(kind),
+                sortid="core/1373",
+            )
             return ""
 
         # Keep expanding magic cookies until they have all been expanded.
         # We might get them from, e.g., unexpanded_template()
         while True:
             prev = text
-            text = re.sub(r"[{:c}-{:c}]".format(MAGIC_FIRST, MAGIC_LAST),
-                          magic_repl, text)
+            text = re.sub(
+                r"[{:c}-{:c}]".format(MAGIC_FIRST, MAGIC_LAST), magic_repl, text
+            )
             if prev == text:
                 break
 
@@ -1256,9 +1422,15 @@ class Wtp:
         return text
 
     def process(
-            self, path: str, page_handler, namespace_ids: Set[int],
-            phase1_only=False, override_folders: Optional[List[Path]] = None,
-            skip_extract_dump: bool = False):
+        self,
+        path: str,
+        page_handler,
+        namespace_ids: Set[int],
+        phase1_only=False,
+        override_folders: Optional[List[Path]] = None,
+        skip_extract_dump: bool = False,
+        save_pages_path: Optional[Path] = None,
+    ):
         """Parses a WikiMedia dump file ``path`` (which should point to a
         "<project>-<date>-pages-articles.xml.bz2" file.  This calls
         ``page_handler(model, title, page)`` for each raw page.  This
@@ -1280,15 +1452,26 @@ class Wtp:
         assert page_handler is None or callable(page_handler)
         # Process the dump and copy it to temporary file (Phase 1)
         process_dump(
-            self, path, namespace_ids, override_folders, skip_extract_dump)
+            self,
+            path,
+            namespace_ids,
+            override_folders,
+            skip_extract_dump,
+            save_pages_path=save_pages_path,
+        )
         if phase1_only or page_handler is None:
             return []
 
         # Reprocess all the pages that we captured in Phase 1
         return self.reprocess(page_handler)
 
-    def reprocess(self, page_handler, namespace_ids: Optional[List[int]] = None,
-                  include_redirects: bool = True):
+    def reprocess(
+        self,
+        page_handler,
+        autoload=True,
+        namespace_ids: Optional[List[int]] = None,
+        include_redirects: bool = True,
+    ):
         """Reprocess all pages captured by self.process() or explicit calls to
         self.add_page(). This calls page_handler(page) for each page, and
         returns of list of their return values (ignoring None values).
@@ -1331,9 +1514,13 @@ class Wtp:
             start_t = time.time()
             last_t = time.time()
 
-            all_page_nums = self.saved_page_nums(namespace_ids, include_redirects)
+            all_page_nums = self.saved_page_nums(
+                namespace_ids, include_redirects
+            )
             for success, title, t, ret in pool.imap_unordered(
-                    phase2_page_handler, self.get_all_pages(namespace_ids, include_redirects)):
+                phase2_page_handler,
+                self.get_all_pages(namespace_ids, include_redirects),
+            ):
                 if not success:
                     # Print error in parent process - do not remove
                     logging.error(ret)
@@ -1341,18 +1528,25 @@ class Wtp:
                 if ret is not None:
                     yield ret
                 cnt += 1
-                if (not self.quiet and
+                if (
+                    not self.quiet
+                    and
                     # cnt % 1000 == 0 and
-                    time.time() - last_t > 1):
+                    time.time() - last_t > 1
+                ):
                     remaining = all_page_nums - cnt
                     secs = (time.time() - start_t) / cnt * remaining
-                    logging.info("  ... {}/{} pages ({:.1%}) processed, "
-                                 "{:02d}:{:02d}:{:02d} remaining"
-                                 .format(cnt, all_page_nums,
-                                         cnt / all_page_nums,
-                                         int(secs / 3600),
-                                         int(secs / 60 % 60),
-                                         int(secs % 60)))
+                    logging.info(
+                        "  ... {}/{} pages ({:.1%}) processed, "
+                        "{:02d}:{:02d}:{:02d} remaining".format(
+                            cnt,
+                            all_page_nums,
+                            cnt / all_page_nums,
+                            int(secs / 3600),
+                            int(secs / 60 % 60),
+                            int(secs % 60),
+                        )
+                    )
                     last_t = time.time()
 
             pool.close()
@@ -1361,7 +1555,9 @@ class Wtp:
         sys.stderr.flush()
         sys.stdout.flush()
 
-    def get_page(self, title: str, namespace_id: Optional[int] = None) -> Optional[Page]:
+    def get_page(
+        self, title: str, namespace_id: Optional[int] = None
+    ) -> Optional[Page]:
         # " " in Lua Module name is replaced by "_" in Wiktionary Lua code when call `require`
         title = title.replace("_", " ")
         if title.startswith("Main:"):
@@ -1370,14 +1566,15 @@ class Wtp:
             local_ns_name = self.LOCAL_NS_NAME_BY_ID[namespace_id]
             ns_prefix = local_ns_name + ":"
             if self.lang_code == "zh" and namespace_id in {
-                    self.NAMESPACE_DATA[ns]["id"]
-                    for ns in ["Template", "Module"]
+                self.NAMESPACE_DATA[ns]["id"] for ns in ["Template", "Module"]
             }:
                 # Chinese Wiktionary capitalizes the first letter of template/module
                 # page titles but uses lower case in Wikitext and Lua code
                 if title.startswith(ns_prefix):
-                    template_name = title[len(ns_prefix):]
-                    title = ns_prefix + template_name[0].upper() + template_name[1:]
+                    template_name = title[len(ns_prefix) :]
+                    title = (
+                        ns_prefix + template_name[0].upper() + template_name[1:]
+                    )
                 else:
                     title = ns_prefix + title[0].upper() + title[1:]
             elif not title.startswith(ns_prefix):
@@ -1389,35 +1586,61 @@ class Wtp:
             query_str += " AND namespace_id = ?"
         query_str += " LIMIT 1"
         for result in self.db_conn.execute(
-                query_str, (title,) if namespace_id is None else (title, namespace_id)):
-            return Page(title=result[0], namespace_id=result[1], redirect_to=result[2],
-                        need_pre_expand=result[3], body=result[4], model=result[5])
+            query_str,
+            (title,) if namespace_id is None else (title, namespace_id),
+        ):
+            return Page(
+                title=result[0],
+                namespace_id=result[1],
+                redirect_to=result[2],
+                need_pre_expand=result[3],
+                body=result[4],
+                model=result[5],
+            )
         return None
 
     def page_exists(self, title: str) -> bool:
         return self.get_page(title) is not None
 
-    def get_all_pages(self, namespace_ids: Optional[List[int]] = None,
-                      include_redirects: bool = True) -> Iterable[Page]:
+    def get_all_pages(
+        self,
+        namespace_ids: Optional[List[int]] = None,
+        include_redirects: bool = True,
+    ) -> Iterable[Page]:
         query_str = "SELECT * FROM pages"
         if namespace_ids is not None:
-            query_str += f" WHERE namespace_id IN ({','.join('?' * len(namespace_ids))})"
+            query_str += (
+                f" WHERE namespace_id IN ({','.join('?' * len(namespace_ids))})"
+            )
             if not include_redirects:
                 query_str += " AND redirect_to IS NULL"
         elif not include_redirects:
             query_str += " WHERE redirect_to IS NULL"
 
-        for result in self.db_conn.execute(query_str, namespace_ids if namespace_ids else ()):
-            yield Page(title=result[0], namespace_id=result[1], redirect_to=result[2],
-                       need_pre_expand=result[3], body=result[4], model=result[5])
+        for result in self.db_conn.execute(
+            query_str, namespace_ids if namespace_ids else ()
+        ):
+            yield Page(
+                title=result[0],
+                namespace_id=result[1],
+                redirect_to=result[2],
+                need_pre_expand=result[3],
+                body=result[4],
+                model=result[5],
+            )
         return []
 
     def template_exists(self, name: str) -> bool:
-        return self.get_page(name, self.NAMESPACE_DATA["Template"]["id"]) is not None
+        return (
+            self.get_page(name, self.NAMESPACE_DATA["Template"]["id"])
+            is not None
+        )
 
     def check_template_need_expand(
-            self, name: str, expand_names: Optional[Set[str]] = None,
-            not_expand_names: Optional[Set[str]] = None
+        self,
+        name: str,
+        expand_names: Optional[Set[str]] = None,
+        not_expand_names: Optional[Set[str]] = None,
     ) -> bool:
         page = self.get_page(name, self.NAMESPACE_DATA["Template"]["id"])
         if page is None:
@@ -1429,12 +1652,13 @@ class Wtp:
             return name in expand_names or page.need_pre_expand
         if expand_names is not None and not_expand_names is not None:
             return name not in not_expand_names and (
-                name in expand_names or page.need_pre_expand)
+                name in expand_names or page.need_pre_expand
+            )
 
         return page.need_pre_expand
 
     def read_by_title(
-            self, title: str, namespace_id: Optional[int] = None
+        self, title: str, namespace_id: Optional[int] = None
     ) -> Optional[str]:
         """Reads the contents of the page.  Returns None if the page does
         not exist."""
@@ -1445,9 +1669,16 @@ class Wtp:
             return self.read_by_title(page.redirect_to, namespace_id)
         return page.body if page is not None else None
 
-    def parse(self, text, pre_expand=False, expand_all=False,
-              additional_expand=None, do_not_pre_expand=None,
-              template_fn=None, post_template_fn=None):
+    def parse(
+        self,
+        text,
+        pre_expand=False,
+        expand_all=False,
+        additional_expand=None,
+        do_not_pre_expand=None,
+        template_fn=None,
+        post_template_fn=None,
+    ):
         """Parses the given text into a parse tree (WikiNode tree).  If
         ``pre_expand`` is True, then before parsing this will expand
         those templates that have been detected to potentially
@@ -1470,14 +1701,18 @@ class Wtp:
 
         # Expand some or all templates in the text as requested
         if expand_all:
-            text = self.expand(text, template_fn=template_fn,
-                               post_template_fn=post_template_fn)
+            text = self.expand(
+                text, template_fn=template_fn, post_template_fn=post_template_fn
+            )
         elif pre_expand or additional_expand:
-            text = self.expand(text, pre_expand=pre_expand,
-                               templates_to_expand=additional_expand,
-                               templates_to_not_expand=do_not_pre_expand,
-                               template_fn=template_fn,
-                               post_template_fn=post_template_fn)
+            text = self.expand(
+                text,
+                pre_expand=pre_expand,
+                templates_to_expand=additional_expand,
+                templates_to_not_expand=do_not_pre_expand,
+                template_fn=template_fn,
+                post_template_fn=post_template_fn,
+            )
 
         # print("parse:", repr(text))
 
@@ -1501,19 +1736,37 @@ class Wtp:
         v = to_wikitext(node, node_handler_fn=node_handler_fn)
         return v
 
-    def node_to_html(self, node, template_fn=None, post_template_fn=None,
-                     node_handler_fn=None):
+    def node_to_html(
+        self,
+        node,
+        template_fn=None,
+        post_template_fn=None,
+        node_handler_fn=None,
+    ):
         """Converts the given parse tree node to HTML."""
-        return to_html(self, node, template_fn=template_fn,
-                       post_template_fn=post_template_fn,
-                       node_handler_fn=node_handler_fn)
+        return to_html(
+            self,
+            node,
+            template_fn=template_fn,
+            post_template_fn=post_template_fn,
+            node_handler_fn=node_handler_fn,
+        )
 
-    def node_to_text(self, node, template_fn=None, post_template_fn=None,
-                     node_handler_fn=None):
+    def node_to_text(
+        self,
+        node,
+        template_fn=None,
+        post_template_fn=None,
+        node_handler_fn=None,
+    ):
         """Converts the given parse tree node to plain text."""
-        return to_text(self, node, template_fn=template_fn,
-                       post_template_fn=post_template_fn,
-                       node_handler_fn=node_handler_fn)
+        return to_text(
+            self,
+            node,
+            template_fn=template_fn,
+            post_template_fn=post_template_fn,
+            node_handler_fn=node_handler_fn,
+        )
 
 
 def overwrite_zh_template(template_name: str, expanded_template: str) -> str:
@@ -1526,12 +1779,16 @@ def overwrite_zh_template(template_name: str, expanded_template: str) -> str:
     elif template_name.startswith(("-", "=")):
         if "<h2>" in expanded_template:
             # Remove <h2> tag: https://zh.wiktionary.org/wiki/Template:-la-
-            lang_heading = re.search(r"<h2>([^<]+)</h2>", expanded_template).group(1)
+            lang_heading = re.search(
+                r"<h2>([^<]+)</h2>", expanded_template
+            ).group(1)
             expanded_template = f"=={lang_heading}=="
         elif "==" in expanded_template and " " in expanded_template:
             # Remove image from template like "-abbr-" and "=a="
             # which expanded to "[[Category:英語形容詞|wide]]\n===[[Image:Open book 01.png|30px]] [[形容詞]]===\n"
-            heading = re.search(r"=+([^=]+)=+", expanded_template.strip()).group(1)
+            heading = re.search(
+                r"=+([^=]+)=+", expanded_template.strip()
+            ).group(1)
             heading = heading.split()[-1]
             equal_sign_count = 0
             for char in expanded_template:  # count "=" number
