@@ -97,6 +97,8 @@ def process_dump(
     file with some preprocessing.  The Wtp.reprocess() must then be
     called to actually process the data."""
 
+    logging.info(f"skip_extract_dump: {skip_extract_dump}, save_pages_path:"
+                 f" {str(save_pages_path)}")
     # Run Phase 1 in a single thread; this mostly just extracts pages into
     # a temporary file.
     if not skip_extract_dump:
@@ -147,7 +149,7 @@ def save_pages_to_file(ctx: "Wtp", directory: Path) -> None:
         if ".." in title:
             title = title.replace(".", "__dot__")
         if page.namespace_id == 0:
-            file_path = directory.joinpath(f"Words/{title}.txt")
+            file_path = directory.joinpath(f"Words/{title[0:2]}/{title}.txt")
         else:
             file_path = directory.joinpath(f'{title.replace(":", "/", 1)}.txt')
 
