@@ -32,16 +32,12 @@ _mw_pageTitle = "<unassigned>"
 local function frame_args_index(new_args, key)
    -- print("frame_args_index", key)
    local i = tonumber(key)
-   if i ~= nil then
+   if key ~= "inf" and key ~= "nan" and i ~= nil then
       key = i
    end
    local v = new_args._orig[key]
    if v == nil then
-       -- "inf" got converted to number type, convert back to string
-       v = new_args._orig[tostring(key)]
-       if v == nil then
-           return nil
-       end
+       return nil
    end
    if not new_args._preprocessed[key] then
       local frame = new_args._frame
