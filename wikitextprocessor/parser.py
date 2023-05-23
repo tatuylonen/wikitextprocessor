@@ -1626,8 +1626,6 @@ def token_iter(ctx, text):
                     yield False, part[pos:start]
                 pos = m.end()
                 token = m.group(0)
-                if len(token.strip()) == 0:
-                    continue
                 if token.startswith("=="):
                     yield True, "<" + m.group(1)
                     for x in token_iter(ctx, m.group(2)):
