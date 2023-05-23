@@ -1539,8 +1539,9 @@ def token_iter(ctx, text):
             new_parts.append(tp)
         text = "".join(new_parts)
 
+    lines = re.split(r"(\n+)", text)  # Lines and separators
     parts_re = re.compile(r"('{2,})")
-    for line in text.splitlines():
+    for line in lines:
         parts = re.split(parts_re, line)
         state = 0  # 1=in italic 2=in bold 3=in both
         for i, part in enumerate(parts):
@@ -1626,8 +1627,6 @@ def token_iter(ctx, text):
                     yield False, part[pos:start]
                 pos = m.end()
                 token = m.group(0)
-                if len(token.strip()) == 0:
-                    continue
                 if token.startswith("=="):
                     yield True, "<" + m.group(1)
                     for x in token_iter(ctx, m.group(2)):
