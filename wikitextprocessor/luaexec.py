@@ -232,35 +232,35 @@ def fetch_language_names(ctx, include):
 
 
 def call_set_functions(ctx, set_functions):
-    def debug_mw_text_jsondecode(x, *rest):
-        mw_text_jsondecode(ctx, x, *rest)
+    # def debug_mw_text_jsondecode(x, *rest):
+    #     mw_text_jsondecode(ctx, x, *rest)
 
-    def debug_get_page_info(x):
-        get_page_info(ctx, x)
+    # def debug_get_page_info(x):
+    #     get_page_info(ctx, x)
 
-    def debug_get_page_content(x):
-        get_page_content(ctx, x)
+    # def debug_get_page_content(x):
+    #     get_page_content(ctx, x)
 
-    def debug_fetch_language_name(x):
-        fetch_language_name(ctx, x)
+    # def debug_fetch_language_name(x):
+    #     fetch_language_name(ctx, x)
 
-    def debug_fetch_language_names(x):
-        fetch_language_names(ctx, x)
+    # def debug_fetch_language_names(x):
+    #     fetch_language_names(ctx, x)
     # Set functions that are implemented in Python
     set_functions(
         mw_text_decode,
         mw_text_encode,
         mw_text_jsonencode,
-        # lambda x, *rest: mw_text_jsondecode(ctx, x, *rest),
-        # lambda x: get_page_info(ctx, x),
-        # lambda x: get_page_content(ctx, x),
-        # lambda x: fetch_language_name(ctx, x),
-        # lambda x: fetch_language_names(ctx, x),
-        debug_mw_text_jsondecode,
-        debug_get_page_info,
-        debug_get_page_content,
-        debug_fetch_language_name,
-        debug_fetch_language_names,
+        lambda x, *rest: mw_text_jsondecode(ctx, x, *rest),
+        lambda x: get_page_info(ctx, x),
+        lambda x: get_page_content(ctx, x),
+        lambda x: fetch_language_name(ctx, x),
+        lambda x: fetch_language_names(ctx, x),
+        # debug_mw_text_jsondecode,
+        # debug_get_page_info,
+        # debug_get_page_content,
+        # debug_fetch_language_name,
+        # debug_fetch_language_names,
         mw_wikibase_getlabel,
         mw_wikibase_getdescription,
     )
