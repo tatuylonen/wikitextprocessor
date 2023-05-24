@@ -147,7 +147,9 @@ function mw_title.makeTitle(namespace, title, fragment, interwiki)
    if title:find("/%./") or title:find("/%.%./") then return nil end
    if title:sub(-2) == "/." or title:sub(-3) == "/.." then return nil end
    if #title > 255 then return nil end
-   if title:sub(1, 1) == " " or title:sub(-1) == " " then return nil end
+   if title:sub(1, 1) == " " or title:sub(-1) == " " then
+       title = title:gsub("^%s*(.-)%s*$", "%1")
+   end
    if title:find("  ") then return nil end
    if title:find("~~~~") then return nil end
    local prefixes = {
