@@ -126,6 +126,8 @@ def process_dump(
 def overwrite_pages(ctx: "Wtp", folder_paths: List[Path]) -> None:
     for folder_path in folder_paths:
         for file_path in folder_path.iterdir():
+            if file_path.name().startswith("."):
+                continue
             with file_path.open(encoding="utf-8") as f:
                 first_line = f.readline()
                 if not first_line.startswith("TITLE: "):
