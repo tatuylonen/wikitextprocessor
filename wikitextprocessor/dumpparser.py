@@ -97,10 +97,12 @@ def process_dump(
     file with some preprocessing.  The Wtp.reprocess() must then be
     called to actually process the data."""
 
-    logging.info(f"skip_extract_dump: {skip_extract_dump}, save_pages_path:"
-                 f" {str(save_pages_path)}")
+    logging.info(
+        f"skip_extract_dump: {skip_extract_dump}, save_pages_path:"
+        f" {str(save_pages_path)}"
+    )
     # Run Phase 1 in a single thread; this mostly just extracts pages into
-    # a temporary file.
+    # a SQLite database file.
     if not skip_extract_dump:
         process_input(
             path,
@@ -110,20 +112,35 @@ def process_dump(
         if save_pages_path is not None:
             save_pages_to_file(ctx, save_pages_path)
 
-    if overwrite_folders is not None:
-        overwrite_pages(ctx, overwrite_folders)
+    analyze_and_overwrite_pages(ctx, overwrite_folders)
 
-    # Analyze which templates should be expanded before parsing
-    if not skip_extract_dump or (
-        skip_extract_dump and overwrite_folders is not None
-    ):
-        logging.info(
-            "Analyzing which templates should be expanded before parsing"
-        )
+
+def analyze_and_overwrite_pages(
+    ctx: "Wtp", overwrite_folders: Optional[List[Path]]
+) -> None:
+    if overwrite_folders is not None:
+        if overwrite_pages(ctx, overwrite_folders, False):
+            # has template
+            ctx.backup_db()
+            overwrite_pages(ctx, overwrite_folders, True)
+            ctx.analyze_templates()
+        else:
+            if not ctx.has_analyzed_templates():
+                ctx.analyze_templates()
+            ctx.backup_db()
+            overwrite_pages(ctx, overwrite_folders, True)
+    elif not ctx.has_analyzed_templates():
         ctx.analyze_templates()
 
 
-def overwrite_pages(ctx: "Wtp", folder_paths: List[Path]) -> None:
+def overwrite_pages(
+    ctx: "Wtp", folder_paths: List[Path], do_overwrite: bool
+) -> bool:
+    """
+    Read text from passed paths and overwrite the correspond pages in database.
+    If `do_overwrite` is `False`, do not write to database and returns `True` if
+    the overwritten pages include template.
+    """
     for folder_path in folder_paths:
         print(folder_path)
         for file_path in folder_path.iterdir():
@@ -141,9 +158,21 @@ def overwrite_pages(ctx: "Wtp", folder_paths: List[Path]) -> None:
                 title = first_line[7:].strip()
                 local_ns_name = title[: title.find(":")]
                 ns_id = ctx.NS_ID_BY_LOCAL_NAME.get(local_ns_name, 0)
-                module_ns_id = ctx.NAMESPACE_DATA.get("Module", {}).get("id")
-                model = "Scribunto" if ns_id == module_ns_id else "wikitext"
-                ctx.add_page(title, ns_id, f.read(), model=model)
+                if do_overwrite:
+                    module_ns_id = ctx.NAMESPACE_DATA.get("Module", {}).get(
+                        "id"
+                    )
+                    model = "Scribunto" if ns_id == module_ns_id else "wikitext"
+                    ctx.add_page(title, ns_id, f.read(), model=model)
+                else:
+                    template_ns_id = ctx.NAMESPACE_DATA.get("Template", {}).get(
+                        "id"
+                    )
+                    if template_ns_id == ns_id:
+                        return True
+
+    ctx.db_conn.commit()
+    return False
 
 
 def save_pages_to_file(ctx: "Wtp", directory: Path) -> None:

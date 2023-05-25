@@ -181,6 +181,10 @@ class Wtp:
         elif isinstance(self.db_path, str):
             self.db_path = Path(self.db_path)
 
+        if self.backup_db_path.exists():
+            self.db_path.unlink(True)
+            self.backup_db_path.rename(self.db_path)
+
         self.db_conn = sqlite3.connect(self.db_path, check_same_thread=False)
         self.db_conn.execute(
             """
@@ -196,10 +200,28 @@ class Wtp:
         )
         self.db_conn.execute("PRAGMA journal_mode=WAL")
 
+    @property
+    def backup_db_path(self) -> Path:
+        return self.db_path.with_stem(self.db_path.stem + "_backup")
+
+    def backup_db(self) -> None:
+        self.backup_db_path.unlink(True)
+        backup_conn = sqlite3.connect(self.backup_db_path)
+        with backup_conn:
+            self.db_conn.backup(backup_conn)
+        backup_conn.close()
+
     def close_db_conn(self) -> None:
         self.db_conn.close()
         if self.db_path.parent.samefile(Path(tempfile.gettempdir())):
-            self.db_path.unlink()
+            self.db_path.unlink(True)
+
+    def has_analyzed_templates(self) -> bool:
+        for (result,) in self.db_conn.execute(
+                "SELECT count(*) > 0 FROM pages WHERE need_pre_expand = 1"
+        ):
+            return result == 1
+        return False
 
     def saved_page_nums(
         self,
@@ -763,6 +785,9 @@ class Wtp:
         tags.  Such templates generally need to be expanded before
         parsing the page."""
 
+        logging.info(
+            "Analyzing which templates should be expanded before parsing"
+        )
         # Add/overwrite templates
         template_ns = self.NAMESPACE_DATA.get("Template", {})
         template_ns_id = template_ns.get("id")
