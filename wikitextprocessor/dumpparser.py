@@ -125,6 +125,7 @@ def process_dump(
 
 def overwrite_pages(ctx: "Wtp", folder_paths: List[Path]) -> None:
     for folder_path in folder_paths:
+        print(folder_path)
         for file_path in folder_path.iterdir():
             if file_path.name.startswith("."):
                 continue
