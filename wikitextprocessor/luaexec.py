@@ -526,6 +526,18 @@ def call_lua_sandbox(ctx, invoke_args, expander, parent, timeout):
             ctx.expand_stack.pop()
             return ret
 
+        def debugGetParent(ctx):
+            return pframe
+
+        def debugGetTitle(ctx):
+            return title
+
+        def debugNewParserValue(ctx, x):
+            return value_with_expand(ctx, "preprocess", x)
+
+        def debugNewTemplateParserValue(ctx, x):
+            return value_with_expand(ctx, "expand", x)
+
         # Create frame object as dictionary with default value None
         frame = {}
         frame["args"] = frame_args
@@ -534,16 +546,20 @@ def call_lua_sandbox(ctx, invoke_args, expander, parent, timeout):
         frame["extensionTag"] = extensionTag
         frame["expandTemplate"] = expandTemplate
         # getArgument is set in sandbox.lua
-        frame["getParent"] = lambda ctx: pframe
-        frame["getTitle"] = lambda ctx: title
+        frame["getParent"] = debugGetParent
+        frame["getTitle"] = debugGetTitle
+        # frame["getParent"] = lambda ctx: pframe
+        # frame["getTitle"] = lambda ctx: title
         frame["preprocess"] = preprocess
         # XXX still untested:
-        frame["newParserValue"] = lambda ctx, x: value_with_expand(
-            ctx, "preprocess", x
-        )
-        frame["newTemplateParserValue"] = lambda ctx, x: value_with_expand(
-            ctx, "expand", x
-        )
+        frame["newParserValue"] = debugNewParserValue
+        frame["newTemplateParserValue"] = debugNewTemplateParserValue
+        # frame["newParserValue"] = lambda ctx, x: value_with_expand(
+        #     ctx, "preprocess", x
+        # )
+        # frame["newTemplateParserValue"] = lambda ctx, x: value_with_expand(
+        #     ctx, "expand", x
+        # )
         # newChild set in sandbox.lua
         return lua.table_from(frame)
 
