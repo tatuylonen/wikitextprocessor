@@ -321,6 +321,22 @@ local function _lua_reset_env()
        time = os.time,
     }
 
+   -- package is not really used anywhere in the Wiktionary module
+   -- codebase, EXCEPT ja-translit uses package.loaders as a test
+   -- to check whether something can be loaded..?
+   -- Just to take care of this special case, we create a new
+   -- package table (inserted into the env["package"] slot later below,
+   -- with a new loaders table (not a function, but a list of functions)
+   -- where only the second entry returns a function that returns the
+   -- result of trying to get a new loader...
+    local modloader = function(modpath)
+      return new_loader(modpath)
+    end
+
+   local new_package = {
+      loaders = {nil, modloader}
+   }
+
     -- Cause most packages to be reloaded
     for k, v in pairs(package.loaded) do
        if retained_modules[k] == nil then
@@ -379,6 +395,7 @@ local function _lua_reset_env()
     env["_new_loader"] = new_loader
     env["_cached_mod"] = _cached_mod
     env["_save_mod"] = _save_mod
+    env["package"] = new_package
     -- namespace
     env["NAMESPACE_DATA"] = NAMESPACE_DATA
     return env
