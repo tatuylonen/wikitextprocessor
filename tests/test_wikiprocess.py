@@ -6,8 +6,8 @@ import os
 import math
 import time
 import unittest
-import platform
 
+from pathlib import Path
 from typing import List, Tuple
 
 from wikitextprocessor import Wtp
@@ -3184,54 +3184,40 @@ return export
         return _G["os"].clock == nil""")
 
     def test_dbfile1(self):
-        path = "/tmp/cachefiletest1"
-        try:
-            os.remove(path)
-            os.remove(path + ".json")
-        except FileNotFoundError:
-            pass
-        ctx = Wtp(db_path=path)
-        ctx.add_page("Template:testmod", 10, "test content")
-        ctx.analyze_templates()
-        ctx.start_page("Tt")
-        ret = ctx.expand("a{{testmod}}b")
-        self.assertEqual(ret, "atest contentb")
-        # Now create a new context with the same cachefile but do not add page
-        ctx = Wtp(db_path=path)
-        ctx.start_page("Tt")
-        ret = ctx.expand("a{{testmod}}b")
-        self.assertEqual(ret, "atest contentb")
-        try:
-            os.remove(path)
-            os.remove(path + ".json")
-        except FileNotFoundError:
-            pass
+        path = Path("/tmp/dbfiletest1")
+        path.unlink(True)
+        ctx1 = Wtp(db_path=path)
+        ctx1.add_page("Template:testmod", 10, "test content")
+        ctx1.analyze_templates()
+        ctx1.start_page("Tt")
+        ret1 = ctx1.expand("a{{testmod}}b")
+        self.assertEqual(ret1, "atest contentb")
+        # Now create a new context with the same db but do not add page
+        ctx2 = Wtp(db_path=path)
+        ctx2.start_page("Tt")
+        ret2 = ctx2.expand("a{{testmod}}b")
+        self.assertEqual(ret2, "atest contentb")
+        ctx1.close_db_conn()
+        ctx2.close_db_conn()
 
     def test_dbfile2(self):
-        path = "/tmp/cachefiletest1"
-        try:
-            os.remove(path)
-            os.remove(path + ".json")
-        except FileNotFoundError:
-            pass
-        ctx = Wtp(db_path=path)
-        ctx.add_page("Template:testmod", 10, "test content")
-        ctx.analyze_templates()
-        ctx.start_page("Tt")
-        ret = ctx.expand("a{{testmod}}b")
-        self.assertEqual(ret, "atest contentb")
-        # Now create a new context with the same cachefile but do not add page
-        ctx = Wtp(db_path=path)
-        ctx.add_page("Template:testmod", 10, "test content 2")
-        ctx.analyze_templates()
-        ctx.start_page("Tt")
-        ret = ctx.expand("a{{testmod}}b")
-        self.assertEqual(ret, "atest content 2b")
-        try:
-            os.remove(path)
-            os.remove(path + ".json")
-        except FileNotFoundError:
-            pass
+        path = Path("/tmp/dbfiletest2")
+        path.unlink(True)
+        ctx1 = Wtp(db_path=path)
+        ctx1.add_page("Template:testmod", 10, "test content")
+        ctx1.analyze_templates()
+        ctx1.start_page("Tt")
+        ret1 = ctx1.expand("a{{testmod}}b")
+        self.assertEqual(ret1, "atest contentb")
+        # Now create a new context with the same db and update page
+        ctx2 = Wtp(db_path=path)
+        ctx2.add_page("Template:testmod", 10, "test content 2")
+        ctx2.analyze_templates()
+        ctx2.start_page("Tt")
+        ret2 = ctx2.expand("a{{testmod}}b")
+        self.assertEqual(ret2, "atest content 2b")
+        ctx1.close_db_conn()
+        ctx2.close_db_conn()
 
     def test_lua_max_time1(self):
         t = time.time()
