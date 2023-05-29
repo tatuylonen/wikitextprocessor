@@ -9,7 +9,7 @@ local _python_loader = nil
 local env = {}
 
 local loader_cache = {}
-local value_cache = {}
+local loaddata_cache = {}
 local _orig_package = package
 
 -- This function loads new a new module, whether built-in or defined in the
@@ -93,8 +93,8 @@ local function new_loadData(modname)
    -- If the module is in value cache (loaded by mw.loadData), just use its
    -- value as-is
    -- print("new_loadData", modname)
-   if value_cache[modname] ~= nil then
-      return value_cache[modname]
+   if loaddata_cache[modname] ~= nil then
+      return loaddata_cache[modname]
    end
    -- Load the module and create initialization function
    local fn, msg = new_loader(modname)
@@ -103,7 +103,7 @@ local function new_loadData(modname)
 
    -- If caching data (for mw.loadData), save the value.  This is kept
    -- across Lua environment resets.
-   value_cache[modname] = ret
+   loaddata_cache[modname] = ret
    return ret
 end
 
@@ -401,6 +401,10 @@ local function _lua_reset_env()
     return env
 end
 
+local function _clear_loadData_cache ()
+    loaddata_cache = {}
+end
+
 -- Switch to the sandbox environment
 assert(io ~= nil)  -- We should not be in the sandbox now
 _lua_reset_env()
@@ -409,4 +413,4 @@ _lua_reset_env()
 _lua_reset_env()
 -- Now we should be in the sandbox environment
 
-return _lua_set_python_loader
+return { _lua_set_python_loader, _clear_loadData_cache }
