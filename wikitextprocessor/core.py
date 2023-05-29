@@ -1614,18 +1614,23 @@ class Wtp:
         if namespace_id is not None:
             query_str += " AND namespace_id = ?"
         query_str += " LIMIT 1"
-        for result in self.db_conn.execute(
-            query_str,
-            (title,) if namespace_id is None else (title, namespace_id),
-        ):
-            return Page(
-                title=result[0],
-                namespace_id=result[1],
-                redirect_to=result[2],
-                need_pre_expand=result[3],
-                body=result[4],
-                model=result[5],
-            )
+        try:
+            for result in self.db_conn.execute(
+                query_str,
+                (title,) if namespace_id is None else (title, namespace_id),
+            ):
+                return Page(
+                    title=result[0],
+                    namespace_id=result[1],
+                    redirect_to=result[2],
+                    need_pre_expand=result[3],
+                    body=result[4],
+                    model=result[5],
+                )
+        except sqlite3.ProgrammingError as e:
+            raise sqlite3.ProgrammingError(
+                        f"{' '.join(e.args)}"
+                        f" Current database file path: {self.db_path}") from e
         return None
 
     def page_exists(self, title: str) -> bool:

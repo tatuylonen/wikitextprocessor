@@ -98,8 +98,11 @@ def process_dump(
     called to actually process the data."""
 
     logging.info(
-        f"skip_extract_dump: {skip_extract_dump}, save_pages_path:"
-        f" {str(save_pages_path)}"
+        f"skip_extract_dump: {skip_extract_dump}, save_pages_path: "
+        f"{str(save_pages_path)}"
+    )
+    logging.info(
+        f"dump file path: {path}"
     )
     # Run Phase 1 in a single thread; this mostly just extracts pages into
     # a SQLite database file.
