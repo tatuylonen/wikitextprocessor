@@ -142,7 +142,6 @@ def overwrite_pages(
     the overwritten pages include template.
     """
     for folder_path in folder_paths:
-        print(folder_path)
         for file_path in folder_path.iterdir():
             if file_path.name.startswith("."):
                 continue

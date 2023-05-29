@@ -213,6 +213,19 @@ local _orig_unpack = unpack
 local _orig_xpcall = xpcall
 local _orig_new_require = new_require
 
+   -- package is not really used anywhere in the Wiktionary module
+   -- codebase, EXCEPT ja-translit uses package.loaders as a test
+   -- to check whether something can be loaded..?
+   -- Just to take care of this special case, we create a new
+   -- package table (inserted into the env["package"] slot later below,
+   -- with a new loaders table (not a function, but a list of functions)
+   -- where only the second entry returns a function that returns the
+   -- result of trying to get a new loader...
+
+   local new_package = {
+      loaders = {nil, new_loader}
+   }
+
 local retained_modules = {
    coroutine = true,
    math = true,
@@ -320,22 +333,6 @@ local function _lua_reset_env()
        difftime = os.difftime,
        time = os.time,
     }
-
-   -- package is not really used anywhere in the Wiktionary module
-   -- codebase, EXCEPT ja-translit uses package.loaders as a test
-   -- to check whether something can be loaded..?
-   -- Just to take care of this special case, we create a new
-   -- package table (inserted into the env["package"] slot later below,
-   -- with a new loaders table (not a function, but a list of functions)
-   -- where only the second entry returns a function that returns the
-   -- result of trying to get a new loader...
-    local modloader = function(modpath)
-      return new_loader(modpath)
-    end
-
-   local new_package = {
-      loaders = {nil, modloader}
-   }
 
     -- Cause most packages to be reloaded
     for k, v in pairs(package.loaded) do
