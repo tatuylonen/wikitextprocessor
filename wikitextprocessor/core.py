@@ -103,7 +103,8 @@ class Wtp:
         "lua",  # Lua runtime or None if not yet initialized
         "lua_depth",  # Recursion depth in Lua calls
         "lua_invoke",  # Lua function used to invoke a Lua module
-        "lua_reset_env",  # Function to reset Lua environment
+        "lua_reset_env",  # Lua function to reset Lua environment
+        "lua_clear_loaddata_cache",  # Lua function to clear mw.loadData() cache
         "lua_path",  # Path to Lua modules
         "num_threads",  # Number of parallel threads to use
         "quiet",  # If True, don't print any messages during processing
@@ -155,6 +156,7 @@ class Wtp:
         self.lua = None
         self.lua_invoke = None
         self.lua_reset_env = None
+        self.lua_clear_loaddata_cache = None
         self.lua_depth = 0
         self.quiet = quiet
         self.rev_ht = {}
@@ -867,6 +869,8 @@ class Wtp:
         self.cookies = []
         self.rev_ht = {}
         self.expand_stack = [title]
+        if self.lua_clear_loaddata_cache is not None:
+            self.lua_clear_loaddata_cache()
 
     def start_section(self, title):
         """Starts processing a new section of the current page.  Calling this
