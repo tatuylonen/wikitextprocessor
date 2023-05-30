@@ -529,7 +529,10 @@ def call_lua_sandbox(ctx, invoke_args, expander, parent, timeout):
             ctx.expand_stack.pop()
             return ret
 
-        def debugGetParent(ctx):
+        def debugGetParent(ctx, *args):
+            print("Test")
+            if args:
+                print(f"GETPARENT DEBUG: {repr(args)}")
             return pframe
 
         def debugGetTitle(ctx):
