@@ -87,8 +87,8 @@ local function prepare_frame_args(frame)
     local title = (o and o.title) or ""
     local args = (o and o.args) or {}
     local new_frame = mw.clone(x)
-    new_frame.getParent = function() return x end
-    new_frame.getTitle = function() return title end
+    new_frame.getParent = function(ctx) return x end
+    new_frame.getTitle = function(ctx) return title end
     new_frame.args = args
     prepare_frame_args(new_frame)
     return new_frame
