@@ -216,7 +216,9 @@ class Wtp:
     def close_db_conn(self) -> None:
         self.db_conn.close()
         if self.db_path.parent.samefile(Path(tempfile.gettempdir())):
-            self.db_path.unlink(True)
+            for path in self.db_path.parent.glob(self.db_path.name + "*"):
+                # also remove SQLite -wal and -shm file
+                path.unlink(True)
 
     def has_analyzed_templates(self) -> bool:
         for (result,) in self.db_conn.execute(
