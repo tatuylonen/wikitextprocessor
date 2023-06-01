@@ -1502,6 +1502,7 @@ class Wtp:
         autoload=True,
         namespace_ids: Optional[List[int]] = None,
         include_redirects: bool = True,
+        search_pattern: str = None,
     ):
         """Reprocess all pages captured by self.process() or explicit calls to
         self.add_page(). This calls page_handler(page) for each page, and
@@ -1520,7 +1521,8 @@ class Wtp:
         if self.num_threads == 1:
             # Single-threaded version (without subprocessing).  This is
             # primarily intended for debugging.
-            for page in self.get_all_pages(namespace_ids, include_redirects):
+            for page in self.get_all_pages(namespace_ids, include_redirects,
+                                           search_pattern=search_pattern):
                 success, ret_title, t, ret = phase2_page_handler(page)
                 assert ret_title == page.title
                 if not success:
@@ -1550,7 +1552,8 @@ class Wtp:
             )
             for success, title, t, ret in pool.imap_unordered(
                 phase2_page_handler,
-                self.get_all_pages(namespace_ids, include_redirects),
+                self.get_all_pages(namespace_ids, include_redirects,
+                                   search_pattern=search_pattern),
             ):
                 if not success:
                     # Print error in parent process - do not remove
@@ -1642,19 +1645,33 @@ class Wtp:
         self,
         namespace_ids: Optional[List[int]] = None,
         include_redirects: bool = True,
+        search_pattern: str = None,
     ) -> Iterable[Page]:
         query_str = "SELECT * FROM pages"
+        and_strs = []
+
         if namespace_ids is not None:
-            query_str += (
-                f" WHERE namespace_id IN ({','.join('?' * len(namespace_ids))})"
+            and_strs.append(
+                f"namespace_id IN ({','.join('?' * len(namespace_ids))})"
             )
-            if not include_redirects:
-                query_str += " AND redirect_to IS NULL"
-        elif not include_redirects:
-            query_str += " WHERE redirect_to IS NULL"
+        if not include_redirects:
+            and_strs.append("redirect_to IS NULL")
+        if search_pattern:
+            and_strs.append(f'body LIKE ?')
+
+        if and_strs:
+            placeholders = []
+            if namespace_ids:
+                placeholders.extend(namespace_ids)
+            if search_pattern:
+                placeholders.append(search_pattern)
+            query_str += " WHERE " + " AND ".join(and_strs)
+        else:
+            placeholders = tuple()
+        print(f"Getting all pages for query: '{query_str}'")
 
         for result in self.db_conn.execute(
-            query_str, namespace_ids if namespace_ids else ()
+            query_str, placeholders,
         ):
             yield Page(
                 title=result[0],
