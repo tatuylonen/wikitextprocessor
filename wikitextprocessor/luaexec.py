@@ -235,16 +235,20 @@ def call_set_functions(ctx, set_functions):
     def debug_mw_text_jsondecode(x, *rest):
         return mw_text_jsondecode(ctx, x, *rest)
 
-    def debug_get_page_info(x):
+    def debug_get_page_info(x, *args):
+        print(f"LAMBDA GET_PAGE_INFO DEBUG: {repr(args)}")
         return get_page_info(ctx, x)
 
-    def debug_get_page_content(x):
+    def debug_get_page_content(x, *args):
+        print(f"LAMBDA GET_PAGE_CONTENT DEBUG: {repr(args)}")
         return get_page_content(ctx, x)
 
-    def debug_fetch_language_name(x):
+    def debug_fetch_language_name(x, *args):
+        print(f"LAMBDA FETCH_LANGUAGE_NAME DEBUG: {repr(args)}")
         return fetch_language_name(ctx, x)
 
-    def debug_fetch_language_names(x):
+    def debug_fetch_language_names(x, *args):
+        print(f"LAMBDA FETCH_LANGUAGE_NAMES DEBUG: {repr(args)}")
         return fetch_language_names(ctx, x)
     # Set functions that are implemented in Python
     set_functions(
@@ -531,10 +535,12 @@ def call_lua_sandbox(ctx, invoke_args, expander, parent, timeout):
 
         def debugGetParent(ctx, *args):
             if args:
-                print(f"GETPARENT DEBUG: {repr(args)}")
+                print(f"LAMBDA GETPARENT DEBUG (title: {title}): {repr(args)}")
             return pframe
 
-        def debugGetTitle(ctx):
+        def debugGetTitle(ctx, *args):
+            if args:
+                print(f"LAMBDA GETTITLE DEBUG: (title: {title}): {repr(args)}")
             return title
 
         def debugNewParserValue(ctx, x):
