@@ -3184,16 +3184,14 @@ return export
         return _G["os"].clock == nil""")
 
     def test_dbfile1(self):
-        path = Path("/tmp/dbfiletest1")
-        path.unlink(True)
-        ctx1 = Wtp(db_path=path)
+        ctx1 = Wtp()
         ctx1.add_page("Template:testmod", 10, "test content")
         ctx1.analyze_templates()
         ctx1.start_page("Tt")
         ret1 = ctx1.expand("a{{testmod}}b")
         self.assertEqual(ret1, "atest contentb")
         # Now create a new context with the same db but do not add page
-        ctx2 = Wtp(db_path=path)
+        ctx2 = Wtp(db_path=ctx1.db_path)
         ctx2.start_page("Tt")
         ret2 = ctx2.expand("a{{testmod}}b")
         self.assertEqual(ret2, "atest contentb")
@@ -3201,16 +3199,14 @@ return export
         ctx2.close_db_conn()
 
     def test_dbfile2(self):
-        path = Path("/tmp/dbfiletest2")
-        path.unlink(True)
-        ctx1 = Wtp(db_path=path)
+        ctx1 = Wtp()
         ctx1.add_page("Template:testmod", 10, "test content")
         ctx1.analyze_templates()
         ctx1.start_page("Tt")
         ret1 = ctx1.expand("a{{testmod}}b")
         self.assertEqual(ret1, "atest contentb")
         # Now create a new context with the same db and update page
-        ctx2 = Wtp(db_path=path)
+        ctx2 = Wtp(db_path=ctx1.db_path)
         ctx2.add_page("Template:testmod", 10, "test content 2")
         ctx2.analyze_templates()
         ctx2.start_page("Tt")
