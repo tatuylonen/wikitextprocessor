@@ -1519,6 +1519,13 @@ class Wtp:
         _global_page_handler = page_handler
 
         if self.num_threads == 1:
+            cnt = 0
+            start_t = time.time()
+            last_t = time.time()
+
+            all_page_nums = self.saved_page_nums(
+                namespace_ids, include_redirects
+            )
             # Single-threaded version (without subprocessing).  This is
             # primarily intended for debugging.
             for page in self.get_all_pages(namespace_ids, include_redirects,
@@ -1536,6 +1543,27 @@ class Wtp:
                     continue
                 if ret is not None:
                     yield ret
+                cnt += 1
+                if (
+                    not self.quiet
+                    and
+                    # cnt % 1000 == 0 and
+                    time.time() - last_t > 1
+                ):
+                    remaining = all_page_nums - cnt
+                    secs = (time.time() - start_t) / cnt * remaining
+                    logging.info(
+                        "  ... {}/{} pages ({:.1%}) processed, "
+                        "{:02d}:{:02d}:{:02d} remaining".format(
+                            cnt,
+                            all_page_nums,
+                            cnt / all_page_nums,
+                            int(secs / 3600),
+                            int(secs / 60 % 60),
+                            int(secs % 60),
+                        )
+                    )
+                    last_t = time.time()
         else:
             # Process pages using multiple parallel processes (the normal
             # case)
