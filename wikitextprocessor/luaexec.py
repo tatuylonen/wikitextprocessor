@@ -237,22 +237,30 @@ def call_set_functions(ctx, set_functions):
 
     def debug_get_page_info(x, *args):
         if args:
-            print(f"LAMBDA GET_PAGE_INFO DEBUG: {repr(args)}")
+            import traceback
+            traceback.print(stack)
+            print(f"LAMBDA GET_PAGE_INFO DEBUG: {repr(args)}, {ctx.title=}")
         return get_page_info(ctx, x)
 
     def debug_get_page_content(x, *args):
         if args:
-            print(f"LAMBDA GET_PAGE_CONTENT DEBUG: {repr(args)}")
+            import traceback
+            traceback.print(stack)
+            print(f"LAMBDA GET_PAGE_CONTENT DEBUG: {repr(args)}, {ctx.title=}")
         return get_page_content(ctx, x)
 
     def debug_fetch_language_name(x, *args):
         if args:
-            print(f"LAMBDA FETCH_LANGUAGE_NAME DEBUG: {repr(args)}")
+            import traceback
+            traceback.print(stack)
+            print(f"LAMBDA FETCH_LANGUAGE_NAME DEBUG: {repr(args)}, {ctx.title=}")
         return fetch_language_name(ctx, x)
 
     def debug_fetch_language_names(x, *args):
         if args:
-            print(f"LAMBDA FETCH_LANGUAGE_NAMES DEBUG: {repr(args)}")
+            import traceback
+            traceback.print(stack)
+            print(f"LAMBDA FETCH_LANGUAGE_NAMES DEBUG: {repr(args)}, {ctx.title=}")
         return fetch_language_names(ctx, x)
     # Set functions that are implemented in Python
     set_functions(
