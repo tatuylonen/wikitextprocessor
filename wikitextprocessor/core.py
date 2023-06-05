@@ -1675,7 +1675,9 @@ class Wtp:
         include_redirects: bool = True,
         search_pattern: str = None,
     ) -> Iterable[Page]:
-        query_str = "SELECT * FROM pages"
+        query_str = "SELECT title, namespace_id, redirect_to, " \
+                    "need_pre_expand, body, model" \
+                    " FROM pages"
         and_strs = []
 
         if namespace_ids is not None:
@@ -1696,6 +1698,7 @@ class Wtp:
             query_str += " WHERE " + " AND ".join(and_strs)
         else:
             placeholders = tuple()
+        query_str += " ORDER BY title ASC"
         print(f"Getting all pages for query: '{query_str}'")
 
         for result in self.db_conn.execute(
