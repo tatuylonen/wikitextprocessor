@@ -552,12 +552,14 @@ def call_lua_sandbox(ctx, invoke_args, expander, parent, timeout):
 
         def debugGetParent(ctx, *args):
             if args:
-                print(f"LAMBDA GETPARENT DEBUG (title: {title}): {repr(args)}")
+                print(f"LAMBDA GETPARENT DEBUG (title: {title}): {repr(args)}"
+                      f", process: {multiprocessing.current_process().name}")
             return pframe
 
         def debugGetTitle(ctx, *args):
             if args:
-                print(f"LAMBDA GETTITLE DEBUG: (title: {title}): {repr(args)}")
+                print(f"LAMBDA GETTITLE DEBUG: (title: {title}): {repr(args)}"
+                      f", process: {multiprocessing.current_process().name}")
             return title
 
         def debugNewParserValue(ctx, x):
