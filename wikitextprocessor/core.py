@@ -41,8 +41,8 @@ PAIRED_HTML_TAGS = set(
 # Warning: this function is not re-entrant.  We store ctx and page_handler
 # in global variables during dump processing, because they may not be
 # pickleable.
-_global_ctx = None
-_global_page_handler = None
+_global_ctx: "Wtp"
+_global_page_handler: Callable
 
 
 @dataclass
@@ -55,7 +55,7 @@ class Page:
     model: Optional[str]
 
 
-def phase2_page_handler(page: Page) -> Tuple[bool, str, float, Tuple[str, str]]:
+def phase2_page_handler(page: Page) -> Tuple[bool, str, float, str, str]:
     """Helper function for calling the Phase2 page handler (see
     reprocess()).  This is a global function in order to make this
     pickleable.  The implication is that process() and reprocess() are not

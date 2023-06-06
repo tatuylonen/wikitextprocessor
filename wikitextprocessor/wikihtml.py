@@ -24,7 +24,9 @@
 # close-next lists tags that automatically close this tag.  Closing a
 # parent tag will also silently close them.  Otherwise a missing end tag
 # results in an error message.
-ALLOWED_HTML_TAGS = {
+from typing import Dict, Any
+
+ALLOWED_HTML_TAGS: Dict[str, Any] = {
     "a": {
         "parents": ["phrasing"],
         "content": ["flow"]},

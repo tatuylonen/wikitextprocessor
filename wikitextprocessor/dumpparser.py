@@ -11,12 +11,12 @@ import sys
 
 from collections.abc import Callable
 from pathlib import Path
-from typing import Optional, Set, List
+from typing import Optional, Set, List, IO
 
 
 def process_input(
     path: str,
-    page_cb: Callable[[str, str], None],
+    page_cb: Callable[[str, int], None],
     namespace_ids: Set[int],
 ) -> None:
     """Processes the entire input once, calling chunk_fn for each chunk.

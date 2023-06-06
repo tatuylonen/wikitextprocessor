@@ -153,7 +153,11 @@ def lst_fn(ctx, fn_name, args, expander):
     return "".join(parts)
 
 
-def tag_fn(ctx: "Wtp", fn_name: str, args: List[str], expander: Callable[[str], str]) -> str:
+def tag_fn(ctx: "Wtp",
+           fn_name: str,
+           args: List[str],
+           expander: Callable[[str], str]
+          ) -> str:
     """Implements #tag parser function."""
     tag = expander(args[0]).lower() if args else ""
     if tag not in ALLOWED_HTML_TAGS and tag != "nowiki":
@@ -177,13 +181,13 @@ def tag_fn(ctx: "Wtp", fn_name: str, args: List[str], expander: Callable[[str], 
                 value = '"' + html.escape(value, quote=True) + '"'
             attrs.append('{}={}'.format(name, value))
     if attrs:
-        attrs = " " + " ".join(attrs)
+        attrs_str = " " + " ".join(attrs)
     else:
-        attrs = ""
+        attrs_str = ""
     if not content:
-        ret = "<{}{} />".format(tag, attrs)
+        ret = "<{}{} />".format(tag, attrs_str)
     else:
-        ret = "<{}{}>{}</{}>".format(tag, attrs, content, tag)
+        ret = "<{}{}>{}</{}>".format(tag, attrs_str, content, tag)
     if tag == "nowiki":
         if len(args) == 0:
             ret = MAGIC_NOWIKI_CHAR
