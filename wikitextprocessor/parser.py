@@ -1467,9 +1467,9 @@ token_re = re.compile(r"(?m)^(={2,6})\s*(([^=]|=[^=])+?)\s*(={2,6})\s*$|"
                       r"[ \t]+\n*|"
                       r":|"   # sometimes special when not beginning of line
                       r"<<[-a-zA-Z0-9/]*>>|"
-                      r"""<\s*[-a-zA-Z0-9]+\s*(\b[-a-zA-Z0-9]+(=("[^<>"]*"|"""
+                      r"""<[-a-zA-Z0-9]+\s*(\b[-a-zA-Z0-9]+(=("[^<>"]*"|"""
                         r"""'[^<>']*'|[^ \t\n"'`=<>]*))?\s*)*(/\s*)?>|"""
-                      r"<\s*/\s*[-a-zA-Z0-9]+\s*>|"
+                      r"</[-a-zA-Z0-9]+\s*>|"
                       r"(" +
                       r"|".join(r"\b{}\b".format(x) for x in MAGIC_WORDS) +
                       r")|" +
