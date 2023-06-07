@@ -22,7 +22,7 @@ import sqlite3
 
 from collections.abc import Iterable
 from dataclasses import dataclass
-from typing import Optional, Dict, Set, Tuple, Callable, List
+from typing import Optional, Dict, Set, Tuple, Callable, List, Union
 from pathlib import Path
 
 from .parserfns import PARSER_FUNCTIONS, call_parser_function, init_namespaces
@@ -57,11 +57,12 @@ class Page:
 
 def phase2_page_handler(
                         page: Page
-                       ) -> Tuple[bool,
-                                  str,
-                                  float,
+                       ) -> Tuple[bool,  # operation success
+                                  str,   # title
+                                  float, # start time
+                                  # ([results], {error data})
                                   Optional[Tuple[List, Dict]],
-                                  Optional[str]]:
+                                  Optional[str]]:  # error message
     """Helper function for calling the Phase2 page handler (see
     reprocess()).  This is a global function in order to make this
     pickleable.  The implication is that process() and reprocess() are not
@@ -147,7 +148,7 @@ class Wtp:
         languages_by_code: Dict[str, List[str]] = {},
         template_override_funcs: Dict[str, Callable[[List[str]], str]] = {},
     ):
-        if num_threads is None or platform.system() in ("Windows", "Darwin"):
+        if platform.system() in ("Windows", "Darwin"):
             # Default num_threads to 1 on Windows and MacOS, as they
             # apparently don't use fork() for multiprocessing.Pool()
             self.num_threads = 1
@@ -1697,7 +1698,7 @@ class Wtp:
             and_strs.append(f'body LIKE ?')
 
         if and_strs:
-            placeholders: List[int | str] = []
+            placeholders: List[Union[int, str]] = []
             if namespace_ids:
                 placeholders.extend(namespace_ids)
             if search_pattern:
