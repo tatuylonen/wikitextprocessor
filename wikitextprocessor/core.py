@@ -140,7 +140,7 @@ class Wtp:
         languages_by_code: Dict[str, List[str]] = {},
         template_override_funcs: Dict[str, Callable[List[str], str]] = {},
     ):
-        if num_threads is None and platform.system() in ("Windows", "Darwin"):
+        if num_threads is None or platform.system() in ("Windows", "Darwin"):
             # Default num_threads to 1 on Windows and MacOS, as they
             # apparently don't use fork() for multiprocessing.Pool()
             self.num_threads = 1
