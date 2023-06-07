@@ -42,7 +42,7 @@ PAIRED_HTML_TAGS = set(
 # in global variables during dump processing, because they may not be
 # pickleable.
 _global_ctx: "Wtp"
-_global_page_handler: Callable
+_global_page_handler: Callable[["Page"], Tuple[str, Dict]]
 
 
 @dataclass
@@ -55,7 +55,13 @@ class Page:
     model: Optional[str]
 
 
-def phase2_page_handler(page: Page) -> Tuple[bool, str, float, str, str]:
+def phase2_page_handler(
+                        page: Page
+                       ) -> Tuple[bool,
+                                  str,
+                                  float,
+                                  Optional[Tuple[List, Dict]],
+                                  Optional[str]]:
     """Helper function for calling the Phase2 page handler (see
     reprocess()).  This is a global function in order to make this
     pickleable.  The implication is that process() and reprocess() are not
@@ -75,8 +81,8 @@ def phase2_page_handler(page: Page) -> Tuple[bool, str, float, str, str]:
 
         ctx.start_page(page.title)
         try:
-            ret = _global_page_handler(page)
-            return True, page.title, start_t, ret
+            ret  = _global_page_handler(page)
+            return True, page.title, start_t, ret, None
         except Exception as e:
             lst = traceback.format_exception(
                 type(e), value=e, tb=e.__traceback__
@@ -84,7 +90,7 @@ def phase2_page_handler(page: Page) -> Tuple[bool, str, float, str, str]:
             msg = '=== EXCEPTION while parsing page "{}":\n'.format(
                 page.title
             ) + "".join(lst)
-            return False, page.title, start_t, msg
+            return False, page.title, start_t, ([], {}), msg
 
 
 class Wtp:
@@ -138,7 +144,7 @@ class Wtp:
         quiet: bool = False,
         lang_code: str = "en",
         languages_by_code: Dict[str, List[str]] = {},
-        template_override_funcs: Dict[str, Callable[List[str], str]] = {},
+        template_override_funcs: Dict[str, Callable[[List[str]], str]] = {},
     ):
         if num_threads is None or platform.system() in ("Windows", "Darwin"):
             # Default num_threads to 1 on Windows and MacOS, as they
@@ -1530,12 +1536,12 @@ class Wtp:
             # primarily intended for debugging.
             for page in self.get_all_pages(namespace_ids, include_redirects,
                                            search_pattern=search_pattern):
-                success, ret_title, t, ret = phase2_page_handler(page)
+                success, ret_title, t, ret, err = phase2_page_handler(page)
                 assert ret_title == page.title
                 if not success:
                     # Print error in parent process - do not remove
                     logging.error(ret)
-                    lines = ret.splitlines()
+                    lines = err.splitlines()
                     msg = lines[0]
                     trace = "\n".join(lines[1:])
                     if "EXCEPTION" in msg:
@@ -1578,14 +1584,14 @@ class Wtp:
             all_page_nums = self.saved_page_nums(
                 namespace_ids, include_redirects
             )
-            for success, title, t, ret in pool.imap_unordered(
+            for success, title, t, ret, err in pool.imap_unordered(
                 phase2_page_handler,
                 self.get_all_pages(namespace_ids, include_redirects,
                                    search_pattern=search_pattern),
             ):
                 if not success:
                     # Print error in parent process - do not remove
-                    logging.error(ret)
+                    logging.error(err)
                     continue
                 if ret is not None:
                     yield ret

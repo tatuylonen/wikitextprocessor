@@ -38,6 +38,10 @@ def process_input(
     else:
         wikt_f = open(path, "rb")
 
+    if not wikt_f:
+        logging.error("File or stdout is None??")
+        return
+
     namespace_str = "http://www.mediawiki.org/xml/export-0.10/"
     namespaces = {None: namespace_str}
 
