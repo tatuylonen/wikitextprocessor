@@ -87,8 +87,9 @@ def phase2_page_handler(
             lst = traceback.format_exception(
                 type(e), value=e, tb=e.__traceback__
             )
-            msg = '=== EXCEPTION while parsing page "{}":\n'.format(
-                page.title
+            msg = '=== EXCEPTION while parsing page "{}":\n ' \
+                  'in process {}'.format(
+                page.title, multiprocessing.current_process().name,
             ) + "".join(lst)
             return False, page.title, start_t, ([], {}), msg
 
@@ -157,8 +158,8 @@ class Wtp:
         self.errors = []
         self.warnings = []
         self.debugs = []
-        self.section = None
-        self.subsection = None
+        self.section: Optional[str] = None
+        self.subsection: Optional[str] = None
         self.lua = None
         self.lua_invoke = None
         self.lua_reset_env = None
@@ -640,7 +641,7 @@ class Wtp:
     ) -> None:
         """Collects information about the page and save page text to a
         SQLite database file."""
-        ns_prefix = self.LOCAL_NS_NAME_BY_ID.get(namespace_id) + ":"
+        ns_prefix = self.LOCAL_NS_NAME_BY_ID.get(namespace_id, "") + ":"
         if namespace_id != 0 and not title.startswith(ns_prefix):
             title = ns_prefix + title
 
@@ -1696,7 +1697,7 @@ class Wtp:
             and_strs.append(f'body LIKE ?')
 
         if and_strs:
-            placeholders = []
+            placeholders: List[int | str] = []
             if namespace_ids:
                 placeholders.extend(namespace_ids)
             if search_pattern:
