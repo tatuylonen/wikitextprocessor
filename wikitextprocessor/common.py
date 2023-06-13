@@ -34,6 +34,7 @@ _nowiki_map = {
     "}": "&rbrace;",
     '"': "&quot;",
     "'": "&apos;",
+    "_": "&#95;",  # wikitext __MAGIC_WORDS__
 }
 _nowiki_re = re.compile("|".join(re.escape(x) for x in _nowiki_map.keys()))
 

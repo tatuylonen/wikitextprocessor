@@ -29,7 +29,8 @@ from .parserfns import PARSER_FUNCTIONS, call_parser_function, init_namespaces
 from .wikihtml import ALLOWED_HTML_TAGS
 from .luaexec import call_lua_sandbox
 from .parser import parse_encoded, NodeKind
-from .common import MAGIC_FIRST, MAGIC_LAST, MAX_MAGICS, MAGIC_NOWIKI_CHAR
+from .common import (MAGIC_FIRST, MAGIC_LAST, MAX_MAGICS,
+                     MAGIC_NOWIKI_CHAR, nowiki_quote)
 from .dumpparser import process_dump
 from .node_expand import to_wikitext, to_html, to_text
 
@@ -407,7 +408,7 @@ class Wtp:
         idx = len(self.cookies)
         if idx >= MAX_MAGICS:
             self.error(
-                "too many templates, arguments," "or parser function calls",
+                "too many templates, arguments, or parser function calls",
                 sortid="core/372",
             )
             return ""
@@ -497,7 +498,7 @@ class Wtp:
         # template, argument, or parser function call first.  We also encode
         # links as they affect the interpretation of templates.
         # As a preprocessing step, remove comments from the text.
-        text = re.sub(r"(?s)<!\s*--.*?--\s*>", "", text)
+        text = re.sub(r"(?s)<!--.*?-->", "", text)
         while True:
             prev = text
             # Encode template arguments.  We repeat this until there are
@@ -938,10 +939,10 @@ class Wtp:
             return self._save_value("N", (text,), False)
 
         text = re.sub(
-            r"(?si)<\s*nowiki\s*>(.*?)<\s*/\s*nowiki\s*>", _nowiki_sub_fn, text
+            r"(?si)<nowiki\s*>(.*?)</nowiki\s*>", _nowiki_sub_fn, text
         )
-        text = re.sub(r"(?si)<\s*nowiki\s*/\s*>", MAGIC_NOWIKI_CHAR, text)
-        text = re.sub(r"(?s)<!\s*--.*?--\s*>", "", text)
+        text = re.sub(r"(?si)<nowiki\s*/>", MAGIC_NOWIKI_CHAR, text)
+        text = re.sub(r"(?s)<!\--.*?-->", "", text)
         # print("PREPROCESSED_TEXT: {!r}".format(text))
         return text
 
@@ -1438,7 +1439,7 @@ class Wtp:
             if kind == "E":
                 return self._unexpanded_extlink(args, nowiki)
             if kind == "N":
-                return "<nowiki>" + args[0] + "</nowiki>"
+                return "<nowiki>" + nowiki_quote(args[0]) + "</nowiki>"
             self.error(
                 "magic_repl: unsupported cookie kind {!r}".format(kind),
                 sortid="core/1373",
@@ -1458,6 +1459,7 @@ class Wtp:
         # Convert the special <nowiki /> character back to <nowiki />.
         # This is done at the end of normal expansion.
         text = re.sub(MAGIC_NOWIKI_CHAR, "<nowiki />", text)
+        # print("    _finalize_expand:{!r}".format(text))
         return text
 
     def process(
