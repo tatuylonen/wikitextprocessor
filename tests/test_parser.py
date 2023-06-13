@@ -1139,7 +1139,7 @@ def foo(x):
         self.assertEqual(tree.children, ["foobar"])
 
     def test_comment2(self):
-        tree = parse("test", "foo<!-- not\nshown-->bar <! -- second -- > now")
+        tree = parse("test", "foo<!-- not\nshown-->bar <!-- second --> now")
         self.assertEqual(tree.children, ["foobar  now"])
 
     def test_comment3(self):

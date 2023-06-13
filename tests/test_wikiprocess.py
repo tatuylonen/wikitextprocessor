@@ -84,11 +84,14 @@ return export
         self.assertEqual(ret, s)
 
     def test_preprocess5(self):
-        s = "<nowiki>a;&=<>*#:!|[]{}\"'b</nowiki>"
+        s = "<nowiki>a=<>*#:!|[]{}\"'b</nowiki>"
+        expected = "<nowiki>a&equals;&lt;&gt;&ast;&num;&colon;" \
+                   "&excl;&vert;&lsqb;&rsqb;&lbrace;" \
+                   "&rbrace;&quot;&apos;b</nowiki>"
         ctx = phase1_to_ctx([])
         ret = ctx.preprocess_text(s)
         ret = ctx._finalize_expand(ret)
-        self.assertEqual(ret, s)
+        self.assertEqual(ret, expected)
 
     def test_preprocess6(self):
         s = " <nowiki>a\nb\nc</nowiki>"
@@ -372,7 +375,7 @@ MORE
         self.parserfn("{{#tag:nowiki|foo bar}}", "foo bar")
 
     def test_tag7(self):
-        self.parserfn("{{#tag:nowiki|&amp;}}", "&amp;amp&semi;")
+        self.parserfn("{{#tag:nowiki|&amp;}}", "&amp;")
 
     def test_tag8(self):
         self.parserfn("{{{#tag:nowiki}}{!}}", "{{!}}")

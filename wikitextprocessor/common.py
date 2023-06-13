@@ -18,8 +18,8 @@ MAX_MAGICS = MAGIC_LAST - MAGIC_FIRST + 1
 
 # Mappings performed for text inside <nowiki>...</nowiki>
 _nowiki_map = {
-    ";": "&semi;",
-    "&": "&amp;",
+    # ";": "&semi;",
+    # "&": "&amp;",
     "=": "&equals;",
     "<": "&lt;",
     ">": "&gt;",
