@@ -79,15 +79,16 @@ return export
     def test_preprocess4(self):
         ctx = phase1_to_ctx([])
         s = "a<nowiki>&amp;</nowiki>b"
+        expected = "a&amp;b"
         ret = ctx.preprocess_text(s)
         ret = ctx._finalize_expand(ret)
-        self.assertEqual(ret, s)
+        self.assertEqual(ret, expected)
 
     def test_preprocess5(self):
         s = "<nowiki>a=<>*#:!|[]{}\"'b</nowiki>"
-        expected = "<nowiki>a&equals;&lt;&gt;&ast;&num;&colon;" \
+        expected = "a&equals;&lt;&gt;&ast;&num;&colon;" \
                    "&excl;&vert;&lsqb;&rsqb;&lbrace;" \
-                   "&rbrace;&quot;&apos;b</nowiki>"
+                   "&rbrace;&quot;&apos;b"
         ctx = phase1_to_ctx([])
         ret = ctx.preprocess_text(s)
         ret = ctx._finalize_expand(ret)
@@ -95,10 +96,11 @@ return export
 
     def test_preprocess6(self):
         s = " <nowiki>a\nb\nc</nowiki>"
+        expected = " a\nb\nc"
         ctx = phase1_to_ctx([])
         ret = ctx.preprocess_text(s)
         ret = ctx._finalize_expand(ret)
-        self.assertEqual(ret, s)
+        self.assertEqual(ret, expected)
 
     def test_basic(self):
         self.parserfn("Some text", "Some text")

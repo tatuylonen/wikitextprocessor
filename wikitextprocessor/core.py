@@ -1439,7 +1439,7 @@ class Wtp:
             if kind == "E":
                 return self._unexpanded_extlink(args, nowiki)
             if kind == "N":
-                return "<nowiki>" + nowiki_quote(args[0]) + "</nowiki>"
+                return nowiki_quote(args[0])
             self.error(
                 "magic_repl: unsupported cookie kind {!r}".format(kind),
                 sortid="core/1373",
