@@ -29,8 +29,14 @@ from .parserfns import PARSER_FUNCTIONS, call_parser_function, init_namespaces
 from .wikihtml import ALLOWED_HTML_TAGS
 from .luaexec import call_lua_sandbox
 from .parser import parse_encoded, NodeKind
-from .common import (MAGIC_FIRST, MAGIC_LAST, MAX_MAGICS,
-                     MAGIC_NOWIKI_CHAR, nowiki_quote)
+from .common import (
+    MAGIC_FIRST,
+    MAGIC_LAST,
+    MAX_MAGICS,
+    MAGIC_NOWIKI_CHAR,
+    MAGIC_ZH_PLACEHOLDER_CHAR,
+    nowiki_quote
+)
 from .dumpparser import process_dump
 from .node_expand import to_wikitext, to_html, to_text
 
@@ -499,6 +505,9 @@ class Wtp:
         # links as they affect the interpretation of templates.
         # As a preprocessing step, remove comments from the text.
         text = re.sub(r"(?s)<!--.*?-->", "", text)
+        # replace `-{}-`, otherwise templates have `-{}-` in arguments can't
+        # be encoded
+        text = text.replace("-{}-", MAGIC_ZH_PLACEHOLDER_CHAR)
         while True:
             prev = text
             # Encode template arguments.  We repeat this until there are
@@ -1415,8 +1424,15 @@ class Wtp:
 
         # Remove LanguageConverter markups:
         # https://www.mediawiki.org/wiki/Writing_systems/Syntax
-        if not pre_expand and self.lang_code == "zh" and "-{" in expanded:
+        if not pre_expand and self.lang_code == "zh":
             expanded = expanded.replace("-{", "").replace("}-", "")
+            if (
+                expanded != MAGIC_ZH_PLACEHOLDER_CHAR
+                and MAGIC_ZH_PLACEHOLDER_CHAR in expanded
+            ):
+                # remove magic string for `-{}-`
+                # but not replace expanded template arguemnt
+                expanded = expanded.replace(MAGIC_ZH_PLACEHOLDER_CHAR, "")
 
         return expanded
 
