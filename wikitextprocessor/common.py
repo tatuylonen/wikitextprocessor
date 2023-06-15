@@ -8,15 +8,27 @@ import re
 # Character range used for marking magic sequences.  This package
 # assumes that these characters do not occur on Wikitext pages.  These
 # characters are in the Unicode private use area U+100000..U+10FFFF.
-MAGIC_NOWIKI = 0x0010203d  # Used for <nowiki />
+MAGIC_NUMBER = 0x0010203d
+# Instead of doing `MAGIC_NUMBER + 1` manually
+mnum = iter(range((MAGIC_NUMBER, MAGIC_NUMBER + 100) # 100 is a convenient
+                                                     # upper bound
+
+MAGIC_NOWIKI = next(mnum)  # Used for <nowiki />
 MAGIC_NOWIKI_CHAR = chr(MAGIC_NOWIKI)
-MAGIC_SINGLE_QUOTE = 0x0010203e
+
+# Used to replace single quotes inside HTML double-quoted attributes:
+# <tag attr="something with 'single quotes', like this" />
+MAGIC_SINGLE_QUOTE = next(mnum) 
 MAGIC_SQUOTE_CHAR = chr(MAGIC_SINGLE_QUOTE)
+
 # replace `-{}-` in Chinese Wiktionary template `ja-romanization of` to fix
 # encode template bug
-MAGIC_ZH_PLACEHOLDER = 0x0010203f
+MAGIC_ZH_PLACEHOLDER = next(mnum) 
 MAGIC_ZH_PLACEHOLDER_CHAR = chr(MAGIC_ZH_PLACEHOLDER)
-MAGIC_FIRST = 0x00102040
+
+# Magic characters used to store templates and other expandable
+# text while the stuff around them are being parsed.
+MAGIC_FIRST = next(mnum) 
 MAGIC_LAST = 0x0010fff0
 MAX_MAGICS = MAGIC_LAST - MAGIC_FIRST + 1
 
