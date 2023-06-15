@@ -10,7 +10,7 @@ import re
 # characters are in the Unicode private use area U+100000..U+10FFFF.
 MAGIC_NUMBER = 0x0010203d
 # Instead of doing `MAGIC_NUMBER + 1` manually
-mnum = iter(range((MAGIC_NUMBER, MAGIC_NUMBER + 100) # 100 is a convenient
+mnum = iter(range(MAGIC_NUMBER, MAGIC_NUMBER + 100)) # 100 is a convenient
                                                      # upper bound
 
 MAGIC_NOWIKI = next(mnum)  # Used for <nowiki />
