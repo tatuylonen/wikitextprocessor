@@ -549,7 +549,6 @@ def subtitle_end_fn(ctx, token):
     if ctx.pre_parse:
         return text_fn(ctx, token)
 
-    close_begline_lists(ctx)
     kind = subtitle_to_kind[token[1:]]
 
     # Keep popping formats until we get to the subtitle node
