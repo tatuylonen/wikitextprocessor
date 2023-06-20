@@ -398,14 +398,17 @@ def close_begline_lists(ctx):
     if not ctx.beginning_of_line:
         return
     node = ctx.parser_stack[-1]
-    while node.kind in (NodeKind.LIST, NodeKind.LIST_ITEM):
-        _parser_pop(ctx, False)
+    while _parser_have(ctx, NodeKind.LIST):
+    # while node.kind in (NodeKind.LIST, NodeKind.LIST_ITEM):
+        _parser_pop(ctx, True)
         node = ctx.parser_stack[-1]
 
 
 def text_fn(ctx, token):
     """Inserts the token as raw text into the parse tree."""
     node = ctx.parser_stack[-1]
+
+    close_begline_lists(ctx)
 
     # Convert certain characters from the token into HTML entities
     # XXX this breaks tags inside templates, e.g. <math> in
@@ -497,6 +500,7 @@ def hline_fn(ctx, token):
     # Pop nodes from the stack until we reach a LEVEL2 subtitle or a
     # table element.  We also won't pop HTML nodes as they might appear
     # in template definitions.
+    close_begline_lists(ctx)
     while True:
         node = ctx.parser_stack[-1]
         if node.kind in (NodeKind.ROOT, NodeKind.LEVEL2,
@@ -516,6 +520,7 @@ def subtitle_start_fn(ctx, token):
     if ctx.pre_parse:
         return text_fn(ctx, token)
 
+    close_begline_lists(ctx)
     kind = subtitle_to_kind[token[1:]]
     level = kind_to_level[kind]
 
@@ -544,6 +549,7 @@ def subtitle_end_fn(ctx, token):
     if ctx.pre_parse:
         return text_fn(ctx, token)
 
+    close_begline_lists(ctx)
     kind = subtitle_to_kind[token[1:]]
 
     # Keep popping formats until we get to the subtitle node
@@ -567,6 +573,7 @@ def italic_fn(ctx, token):
     """Processes an italic start/end token ('')."""
     if ctx.pre_parse:
         return text_fn(ctx, token)
+    close_begline_lists(ctx)
 
     node = ctx.parser_stack[-1]
 
@@ -599,6 +606,7 @@ def bold_fn(ctx, token):
     if ctx.pre_parse:
         return text_fn(ctx, token)
 
+    close_begline_lists(ctx)
     node = ctx.parser_stack[-1]
 
     if node.kind in (NodeKind.TEMPLATE, NodeKind.TEMPLATE_ARG):
@@ -630,6 +638,7 @@ def elink_start_fn(ctx, token):
     if ctx.pre_parse:
         return text_fn(ctx, token)
 
+    close_begline_lists(ctx)
     _parser_push(ctx, NodeKind.URL)
 
 
@@ -638,6 +647,7 @@ def elink_end_fn(ctx, token):
     if ctx.pre_parse:
         return text_fn(ctx, token)
 
+    close_begline_lists(ctx)
     if not _parser_have(ctx, NodeKind.URL):
         return text_fn(ctx, token)
     while True:
@@ -654,6 +664,7 @@ def elink_end_fn(ctx, token):
 def url_fn(ctx, token):
     """Processes an URL written as URL in the text (an external link is
     automatically generated)."""
+    close_begline_lists(ctx)
     if ctx.pre_parse:
         return text_fn(ctx, token)
 
