@@ -12,6 +12,7 @@ import sys
 from collections.abc import Callable
 from pathlib import Path
 from typing import Optional, Set, List, IO
+import unicodedata
 
 
 def process_input(
@@ -180,12 +181,27 @@ def overwrite_pages(
     ctx.db_conn.commit()
     return False
 
+def get_exfat_invalid_chars() -> Set[str]:
+    return set(map(chr, range(0x00, 0x20))) | set(
+        ['/','\\',':','*','?','\"','<','>','|']
+    )
+
+def invalid_char_to_charname(char: str) -> str:
+    default_name= f"__0x{ord(char):X}__"
+    return f"__{unicodedata.name(char, default_name).replace(' ','')}__".lower()
+
+def replace_invalid_substrings(s: str) -> str:
+    s = s.replace("//", "__slashslash__")
+    if ".." in s:
+        s = s.replace(".", "__dot__")
+    for char in get_exfat_invalid_chars():
+        s = s.replace(char, invalid_char_to_charname(char))
+    return s
+
 
 def save_pages_to_file(ctx: "Wtp", directory: Path) -> None:
     for page in ctx.get_all_pages():
-        title = page.title.replace("//", "__slashslash__")
-        if ".." in title:
-            title = title.replace(".", "__dot__")
+        title = replace_invalid_substrings(page.title)
         if page.namespace_id == 0:
             file_path = directory.joinpath(f"Words/{title[0:2]}/{title}.txt")
         else:
