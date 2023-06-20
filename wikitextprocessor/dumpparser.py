@@ -190,7 +190,7 @@ def invalid_char_to_charname(char: str) -> str:
     default_name= f"__0x{ord(char):X}__"
     return f"__{unicodedata.name(char, default_name).replace(' ','')}__".lower()
 
-def replace_invalid_substrings(s: str) -> str:
+def replace_invalid_title_substrings(s: str) -> str:
     s = s.replace("//", "__slashslash__")
     if ".." in s:
         s = s.replace(".", "__dot__")
@@ -201,7 +201,7 @@ def replace_invalid_substrings(s: str) -> str:
 
 def save_pages_to_file(ctx: "Wtp", directory: Path) -> None:
     for page in ctx.get_all_pages():
-        title = replace_invalid_substrings(page.title)
+        title = replace_invalid_title_substrings(page.title)
         if page.namespace_id == 0:
             file_path = directory.joinpath(f"Words/{title[0:2]}/{title}.txt")
         else:
