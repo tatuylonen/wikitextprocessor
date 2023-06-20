@@ -611,25 +611,25 @@ class Wtp:
         assert isinstance(title, str)
         assert isinstance(text, str)
         # Remove all comments
-        text = re.sub(r"(?s)<!\s*--.*?--\s*>", "", text)
+        text = re.sub(r"(?s)<!--.*?-->", "", text)
         # Remove all text inside <noinclude> ... </noinclude>
         text = re.sub(
-            r"(?is)<\s*noinclude\s*>.*?<\s*/\s*noinclude\s*>", "", text
+            r"(?is)<noinclude\s*>.*?</noinclude\s*>", "", text
         )
         # Handle <noinclude> without matching </noinclude> by removing the
         # rest of the file.  <noinclude/> is handled specially elsewhere, as
         # it appears to be used as a kludge to prevent normal interpretation
         # of e.g. [[ ... ]] by placing it between the brackets.
-        text = re.sub(r"(?is)<\s*noinclude\s*>.*", "", text)
+        text = re.sub(r"(?is)<noinclude\s*>.*", "", text)
         # Apparently unclosed <!-- at the end of a template body is ignored
-        text = re.sub(r"(?s)<!\s*--.*", "", text)
+        text = re.sub(r"(?s)<!--.*", "", text)
         # <onlyinclude> tags, if present, include the only text that will be
         # transcluded.  All other text is ignored.
         onlys = list(
             re.finditer(
-                r"(?is)<\s*onlyinclude\s*>(.*?)"
-                r"<\s*/\s*onlyinclude\s*>|"
-                r"<\s*onlyinclude\s*/\s*>",
+                r"(?is)<onlyinclude\s*>(.*?)"
+                r"</onlyinclude\s*>|"
+                r"<onlyinclude\s*/>",
                 text,
             )
         )
@@ -732,7 +732,7 @@ class Wtp:
         # Check if the template contains certain table elements
         m = re.search(r"(?s)(^|\n)(\|\+|\|-|\!)", outside)
         m2 = re.match(
-            r"(?si)\s*(<includeonly>|<!\s*--.*?--\s*>)(\|\||!!)", outside
+            r"(?si)\s*(<includeonly>|<!--.*?-->)(\|\||!!)", outside
         )
         contains_table_element = m is not None or m2 is not None
         # if contains_table_element:
