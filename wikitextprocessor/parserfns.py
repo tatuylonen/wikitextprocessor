@@ -596,7 +596,7 @@ class Namespace:
         "talk",
     )
 
-    def __init__(self, aliases=[], canonicalName="",
+    def __init__(self, aliases=None, canonicalName="",
                  defaultContentModel="wikitext", hasGenderDistinction=True,
                  id=None, isCapitalized=False, isContent=False,
                  isIncludable=False,
@@ -604,6 +604,8 @@ class Namespace:
                  name="", subject=None, talk=None):
         assert name
         assert id is not None
+        if aliases is None:
+            aliases = []
         self.aliases = aliases
         self.canonicalName = canonicalName
         self.defaultContentModel = defaultContentModel
