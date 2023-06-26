@@ -5,6 +5,7 @@
 import hashlib
 import logging
 import os
+from psutil import disk_partitions
 import shutil
 import subprocess
 import sys
@@ -181,7 +182,19 @@ def overwrite_pages(
     ctx.db_conn.commit()
     return False
 
-def get_exfat_invalid_chars() -> Set[str]:
+def path_is_on_windows_partition(path: Path) -> bool:
+    """
+    Return True if the path is on an exFAT or NTFS partition.
+    """
+    path_matching_fstypes = [
+        part.fstype for part in disk_partitions() 
+        if str(path.resolve()).startswith(part.mountpoint)
+    ]
+    path_fstype = sorted(path_matching_fstypes, key=len)[-1]
+    return path_fstype == "exfat" or path_fstype == "fuseblk"
+
+
+def get_windows_invalid_chars() -> Set[str]:
     return set(map(chr, range(0x00, 0x20))) | set(
         ['/','\\',':','*','?','\"','<','>','|']
     )
@@ -194,14 +207,19 @@ def replace_invalid_substrings(s: str) -> str:
     s = s.replace("//", "__slashslash__")
     if ".." in s:
         s = s.replace(".", "__dot__")
-    for char in get_exfat_invalid_chars():
-        s = s.replace(char, invalid_char_to_charname(char))
     return s
 
+def replace_invalid_windows_characters(s: str)-> str:
+    for char in get_windows_invalid_chars():
+        s = s.replace(char, invalid_char_to_charname(char))
+    return s
 
 def save_pages_to_file(ctx: "Wtp", directory: Path) -> None:
     for page in ctx.get_all_pages():
         title = replace_invalid_substrings(page.title)
+        if(path_is_on_windows_partition(directory)):
+            title = replace_invalid_windows_characters(title)
+
         if page.namespace_id == 0:
             file_path = directory.joinpath(f"Words/{title[0:2]}/{title}.txt")
         else:
