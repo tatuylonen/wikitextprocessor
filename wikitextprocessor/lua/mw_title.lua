@@ -199,14 +199,22 @@ function mw_title.makeTitle(namespace, title, fragment, interwiki)
          break
       end
    end
-   local root = mw.ustring.gsub(title, "/.*$", "")
-   -- XXX Breaks "A/B" local parent = mw.ustring.gsub(title, "/[^/]*$", "")
-   -- XXX How do we know what is a subpage?  The current kludge works for
-   -- most Wiktionary pages.
-   local parent = mw.ustring.gsub(title, "/translations$", "")
-   -- XXX local subpage = mw.ustring.gsub(title, "^.*/", "")
-   local subpage = mw.ustring.gsub(title, ".*/translations$", "translations")
-   subpage = mw.ustring.gsub(subpage, "^[^/]*-[^/]*/([^/]*)$", "%1")
+
+   -- Copided from: https://github.com/wikimedia/mediawiki-extensions-Scribunto/blob/2ee5768ef565965cf5a5057233c557b281aaa837/includes/Engines/LuaCommon/lualib/mw.title.lua#L85
+   local firstSlash, lastSlash = string.match(title, '^[^/]*().*()/[^/]*$')
+   local isSubpage, rootText, baseText, subpageText
+   if firstSlash then
+       isSubpage = true
+       rootText = string.sub(title, 1, firstSlash - 1)
+       baseText = string.sub(title, 1, lastSlash - 1)
+       subpageText = string.sub(title, lastSlash + 1)
+   else
+       isSubpage = false
+       rootText = title
+       baseText = title
+       subpageText = title
+   end
+
    local fullName
    if ns.name == "Main" then
       fullName = title
@@ -247,9 +255,9 @@ function mw_title.makeTitle(namespace, title, fragment, interwiki)
       text = title,
       prefixedText = ns.name .. ":" .. title,
       fullText = withFrag,
-      rootText = root,
-      baseText = parent,
-      subpageText = subpage,
+      rootText = rootText,
+      baseText = baseText,
+      subpageText = subpageText,
       exists = exists,
       -- XXX file: see https://www.mediawiki.org/wiki/Extension:Scribunto/Lua_reference_manual
       file = nil,
@@ -258,7 +266,7 @@ function mw_title.makeTitle(namespace, title, fragment, interwiki)
       isLocal = interwiki == nil,   -- ???
       isRedirect = redirectTo ~= nil,
       isSpecialPage = ns.name == NAMESPACE_DATA.Special.name,
-      isSubpage = title ~= base,
+      isSubpage = isSubpage,
       isTalkPage = ns.isTalk,
       _redirectTarget = redirectTo,
    }

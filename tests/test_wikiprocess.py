@@ -2899,7 +2899,7 @@ return export
         return t.rootText""")
 
     def test_mw_title30a(self):
-        self.scribunto("Test/foo/bar", r"""
+        self.scribunto("Test/foo", r"""
         local t = mw.title.makeTitle(3, "Test/foo/bar", "Frag")
         return t.baseText""")
 
@@ -2909,7 +2909,7 @@ return export
         return t.baseText""")
 
     def test_mw_title31a(self):
-        self.scribunto("Test/foo/bar", r"""
+        self.scribunto("bar", r"""
         local t = mw.title.makeTitle(3, "Test/foo/bar", "Frag")
         return t.subpageText""")
 
@@ -3009,7 +3009,7 @@ return export
         return t.contentModel""")
 
     def test_mw_title47(self):
-        self.scribunto("Test/foo/bar", r"""
+        self.scribunto("Test/foo", r"""
         local t = mw.title.makeTitle("Main", "Test/foo/bar", "Frag")
         return t.basePageTitle.fullText""")
 

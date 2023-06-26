@@ -384,7 +384,8 @@ def _parser_pop(ctx, warn_unclosed):
     # chilren list.
     ctx.parser_stack.pop()
 
-def _parser_have(ctx, kind):
+
+def _parser_have(ctx: "Wtp", kind: NodeKind) -> bool:
     """Returns True if any node on the stack is of the given kind."""
     assert isinstance(kind, NodeKind)
     for node in ctx.parser_stack:
@@ -393,22 +394,45 @@ def _parser_have(ctx, kind):
     return False
 
 
-def close_begline_lists(ctx):
+def close_begline_lists(ctx: "Wtp") -> None:
     """Closes currently open list if at the beginning of a line."""
     if not ctx.beginning_of_line:
         return
-    node = ctx.parser_stack[-1]
     while _parser_have(ctx, NodeKind.LIST):
-    # while node.kind in (NodeKind.LIST, NodeKind.LIST_ITEM):
         _parser_pop(ctx, True)
-        node = ctx.parser_stack[-1]
+
+
+def pop_until_nth_list(ctx: "Wtp", list_token: str) -> None:
+    """
+    Pop nodes in the parser stack until the correct depth.
+    """
+    if not ctx.beginning_of_line:
+        return
+    list_count = len(list_token)
+    passed_nodes = 0
+    for node in ctx.parser_stack:
+        passed_nodes += 1
+        if node.kind == NodeKind.LIST:
+            list_count -= 1
+        if list_count == 0:
+            break
+
+    if list_token.startswith((":", ";")):
+        # pop until target list node's item child node is at the stack top
+        # in order to add a new nested list node
+        passed_nodes += 1
+
+    # pop until the stack top is the taregt list node
+    for _ in range(len(ctx.parser_stack) - passed_nodes):
+        _parser_pop(ctx, True)
 
 
 def text_fn(ctx, token):
     """Inserts the token as raw text into the parse tree."""
-    node = ctx.parser_stack[-1]
+    if token != "\n":
+        close_begline_lists(ctx)
 
-    close_begline_lists(ctx)
+    node = ctx.parser_stack[-1]
 
     # Convert certain characters from the token into HTML entities
     # XXX this breaks tags inside templates, e.g. <math> in
@@ -1229,6 +1253,7 @@ def list_fn(ctx, token):
         # For example, italics or bold must be contained in a single list item.
         _parser_pop(ctx, True)
 
+    pop_until_nth_list(ctx, token)
     # If not already in a list, create a new list.
     node = ctx.parser_stack[-1]
     if node.kind != NodeKind.LIST:
