@@ -9,11 +9,15 @@ import datetime
 import urllib.parse
 import dateparser
 
-from typing import List
+from typing import TYPE_CHECKING, Callable, List
 from collections.abc import Callable
 
 from .wikihtml import ALLOWED_HTML_TAGS
 from .common import nowiki_quote, MAGIC_NOWIKI_CHAR
+
+if TYPE_CHECKING:
+    # Reached only by mypy or other type-checker
+    from core import Wtp
 
 # Suppress some warnings that are out of our control
 import warnings
@@ -21,43 +25,53 @@ warnings.filterwarnings("ignore",
                         r".*The localize method is no longer necessary.*")
 
 # The host to which generated URLs will point
-SERVER_NAME = "dummy.host"
+SERVER_NAME: str = "dummy.host"
 
 
-def capitalizeFirstOnly(s):
+def capitalizeFirstOnly(s: str) -> str:
     if s:
         s = s[0].upper() + s[1:]
     return s
 
 
-def if_fn(ctx, fn_name, args, expander):
+def if_fn(ctx: "Wtp", fn_name: str,
+          args: List[str],
+          expander: Callable[[str], str]
+         ) -> str:
     """Implements #if parser function."""
     # print(f"if_fn: {args}")  # XXX remove me
-    arg0 = args[0] if args else ""
-    arg1 = args[1] if len(args) >= 2 else ""
-    arg2 = args[2] if len(args) >= 3 else ""
-    v = expander(arg0).strip()
+    arg0: str = args[0] if args else ""
+    arg1: str = args[1] if len(args) >= 2 else ""
+    arg2: str = args[2] if len(args) >= 3 else ""
+    v: str = expander(arg0).strip()
     if v:
         return expander(arg1).strip()
     return expander(arg2).strip()
 
 
-def ifeq_fn(ctx, fn_name, args, expander):
+def ifeq_fn(ctx: "Wtp", fn_name: str,
+            args: List[str],
+            expander: Callable[[str], str]
+            ) -> str:
     """Implements #ifeq parser function."""
-    arg0 = args[0] if args else ""
-    arg1 = args[1] if len(args) >= 2 else ""
-    arg2 = args[2] if len(args) >= 3 else ""
-    arg3 = args[3] if len(args) >= 4 else ""
+    arg0: str = args[0] if args else ""
+    arg1: str = args[1] if len(args) >= 2 else ""
+    arg2: str = args[2] if len(args) >= 3 else ""
+    arg3: str = args[3] if len(args) >= 4 else ""
     if expander(arg0).strip() == expander(arg1).strip():
         return expander(arg2).strip()
     return expander(arg3).strip()
 
 
-def iferror_fn(ctx, fn_name, args, expander):
+def iferror_fn(ctx: "Wtp", fn_name: str,
+            args: List[str],
+            expander: Callable[[str], str]
+            ) -> str:
+
     """Implements the #iferror parser function."""
-    arg0 = expander(args[0]) if args else ""
-    arg1 = args[1] if len(args) >= 2 else None
-    arg2 = args[2] if len(args) >= 3 else None
+    arg0: str = expander(args[0]) if args else ""
+    arg1: Optional[str] = args[1] if len(args) >= 2 else None
+    arg2: Optional[str] = args[2] if len(args) >= 3 else None
     if re.search(r'<[^>]*?\sclass="error"', arg0):
         if arg1 is None:
             return ""
@@ -67,14 +81,17 @@ def iferror_fn(ctx, fn_name, args, expander):
     return expander(arg2).strip()
 
 
-def ifexpr_fn(ctx, fn_name, args, expander):
+def ifexpr_fn(ctx: "Wtp", fn_name: str,
+              args: List[str],
+              expander: Callable[[str], str]
+              ) -> str:
     """Implements #ifexpr parser function."""
-    arg0 = args[0] if args else "0"
-    arg1 = args[1] if len(args) >= 2 else ""
-    arg2 = args[2] if len(args) >= 3 else ""
-    cond = expr_fn(ctx, fn_name, [arg0], expander)
+    arg0: str = args[0] if args else "0"
+    arg1: str = args[1] if len(args) >= 2 else ""
+    arg2: str = args[2] if len(args) >= 3 else ""
+    cond: str = expr_fn(ctx, fn_name, [arg0], expander)
     try:
-        ret = int(cond)
+        ret: int = int(cond)
     except ValueError:
         ret = 0
     if ret:
@@ -82,7 +99,10 @@ def ifexpr_fn(ctx, fn_name, args, expander):
     return expander(arg2).strip()
 
 
-def ifexist_fn(ctx, fn_name, args, expander):
+def ifexist_fn(ctx: "Wtp", fn_name: str,
+               args: List[str],
+               expander: Callable[[str], str]
+               ) -> str:
     """Implements #ifexist parser function."""
     arg0 = args[0] if args else ""
     arg1 = args[1] if len(args) >= 2 else ""
