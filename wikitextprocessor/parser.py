@@ -429,8 +429,7 @@ def pop_until_nth_list(ctx: "Wtp", list_token: str) -> None:
 
 def text_fn(ctx, token):
     """Inserts the token as raw text into the parse tree."""
-    if token != "\n":
-        close_begline_lists(ctx)
+    close_begline_lists(ctx)
 
     node = ctx.parser_stack[-1]
 

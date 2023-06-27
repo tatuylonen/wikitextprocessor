@@ -14,16 +14,19 @@ import unicodedata
 import pkg_resources
 import multiprocessing # XXX debug, remove me
 
-from typing import Optional
+from typing import Optional, TYPE_CHECKING, List, Tuple
 
 import lupa.lua51 as lupa
 from .parserfns import PARSER_FUNCTIONS, call_parser_function, tag_fn
 
+if TYPE_CHECKING:
+    from .core import Wtp
+
 # List of search paths for Lua libraries.
-builtin_lua_search_paths = [
+builtin_lua_search_paths: List[Tuple[str, List[str]]] = [
     # [path, ignore_modules]
-    [".", ["string", "debug"]],
-    ["mediawiki-extensions-Scribunto/includes/engines/LuaCommon/lualib", []],
+    (".", ["string", "debug"]),
+    ("mediawiki-extensions-Scribunto/includes/engines/LuaCommon/lualib", []),
 ]
 
 # Determine which directory our data files are in
