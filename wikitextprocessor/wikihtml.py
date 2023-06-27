@@ -26,7 +26,7 @@
 # results in an error message.
 from typing import Union, Dict, List
 
-ALLOWED_HTML_TAGS: Dict[str, Union[List[str], bool]] = {
+ALLOWED_HTML_TAGS: Dict[str, Dict[str, Union[List[str], bool]]] = {
     "a": {
         "parents": ["phrasing"],
         "content": ["flow"]},

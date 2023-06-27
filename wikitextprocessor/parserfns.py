@@ -9,7 +9,7 @@ import datetime
 import urllib.parse
 import dateparser
 
-from typing import TYPE_CHECKING, Callable, List
+from typing import TYPE_CHECKING, List, Optional
 from collections.abc import Callable
 
 from .wikihtml import ALLOWED_HTML_TAGS
@@ -17,7 +17,7 @@ from .common import nowiki_quote, MAGIC_NOWIKI_CHAR
 
 if TYPE_CHECKING:
     # Reached only by mypy or other type-checker
-    from core import Wtp
+    from .core import Wtp
 
 # Suppress some warnings that are out of our control
 import warnings

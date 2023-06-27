@@ -22,7 +22,13 @@ import sqlite3
 
 from collections.abc import Iterable
 from dataclasses import dataclass
-from typing import Optional, Dict, Set, Tuple, Callable, List, Union
+from typing import (Optional, Dict, Set, Tuple, Callable, List, Union,
+                    Protocol, TYPE_CHECKING, Any)
+# When type-checking lupa stuff, just use Any; because lupa doesn't
+# have type hints itself, this is the simplest way around it, especially
+# if we don't want to add a dozillion asserts deep into often-run
+# functions, just to check if something exists or not. Don't bother even
+# with Optional[Any] because of this.
 from pathlib import Path
 
 from .parserfns import PARSER_FUNCTIONS, call_parser_function, init_namespaces
@@ -40,6 +46,9 @@ from .common import (
 from .dumpparser import process_dump
 from .node_expand import to_wikitext, to_html, to_text
 
+if TYPE_CHECKING:
+    import lupa.lua51 as lupa
+    
 # Set of HTML tags that need an explicit end tag.
 PAIRED_HTML_TAGS = set(
     k for k, v in ALLOWED_HTML_TAGS.items() if not v.get("no-end-tag")
@@ -168,7 +177,7 @@ class Wtp:
         self.debugs = []
         self.section: Optional[str] = None
         self.subsection: Optional[str] = None
-        self.lua = None
+        self.lua: Any = None
         self.lua_invoke = None
         self.lua_reset_env = None
         self.lua_clear_loaddata_cache = None
@@ -271,7 +280,7 @@ class Wtp:
                 data["id"]: data["name"]
                 for data in self.NAMESPACE_DATA.values()
             }
-            self.NS_ID_BY_LOCAL_NAME: Dict[int, str] = {
+            self.NS_ID_BY_LOCAL_NAME: Dict[str, int] = {
                 data["name"]: data["id"]
                 for data in self.NAMESPACE_DATA.values()
             }
@@ -1516,6 +1525,7 @@ class Wtp:
             namespace_ids,
             override_folders,
             skip_extract_dump,
+            # Does not take the page_handler passed into process
             save_pages_path=save_pages_path,
         )
         if phase1_only or page_handler is None:

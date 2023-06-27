@@ -11,12 +11,26 @@ import sys
 
 from collections.abc import Callable
 from pathlib import Path
-from typing import Optional, Set, List, IO
+from typing import Optional, Set, List, IO, TYPE_CHECKING, Protocol
 
+if TYPE_CHECKING:
+    from .core import Wtp
+
+class DumpPageHandler(Protocol):
+    def __call__(
+        self,
+        title: str,
+        namespace_id: int,
+        body: Optional[str] = None,
+        redirect_to: Optional[str] = None,
+        need_pre_expand: bool = False,
+        model:Optional[str] = None,
+    ) -> None:
+        ...
 
 def process_input(
     path: str,
-    page_cb: Callable[[str, int], None],
+    page_cb: DumpPageHandler,
     namespace_ids: Set[int],
 ) -> None:
     """Processes the entire input once, calling chunk_fn for each chunk.
@@ -201,7 +215,10 @@ def save_pages_to_file(ctx: "Wtp", directory: Path) -> None:
         file_path.parent.mkdir(parents=True, exist_ok=True)
         with file_path.open("w", encoding="utf-8") as f:
             f.write(f"TITLE: {page.title}\n")
-            f.write(page.body if page.body is not None else page.redirect_to)
+            if page.body:
+                f.write(page.body)
+            elif page.redirect_to:
+                f.write(page.redirect_to)
 
 
 # XXX parse <namespaces> and use that in both Python and Lua code
