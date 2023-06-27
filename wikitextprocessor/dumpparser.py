@@ -186,12 +186,13 @@ def path_is_on_windows_partition(path: Path) -> bool:
     """
     Return True if the path is on an exFAT or NTFS partition.
     """
-    path_matching_fstypes = [
-        part.fstype for part in disk_partitions() 
+    path_matching_fstypes_mountpoints = [
+        (part.fstype, part.mountpoint) for part in disk_partitions() 
         if str(path.resolve()).startswith(part.mountpoint)
     ]
-    path_fstype = sorted(path_matching_fstypes, key=len)[-1]
-    return path_fstype == "exfat" or path_fstype == "fuseblk"
+    #we want the more specific (i.e. longer) matching mountpoint
+    path_fstype = sorted(path_matching_fstypes_mountpoints, key=lambda x: len(x[1]))[-1][0].lower()
+    return path_fstype == "exfat" or path_fstype == "fuseblk" or path_fstype == "ntfs"
 
 
 def get_windows_invalid_chars() -> Set[str]:
