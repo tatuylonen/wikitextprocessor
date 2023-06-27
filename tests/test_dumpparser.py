@@ -13,7 +13,7 @@ class DumpParserTests(unittest.TestCase):
     @patch('pathlib.Path.resolve', new = lambda x: x)
     def test_path_is_on_windows_partition_nix(self, mock_disk_partitions):
         partitions = [
-            sdisktype("ext4", "/"),
+            sdisktype("fakelongfsname", "/"),
             sdisktype("ext4", "/home"),
             sdisktype("exfat", "/mnt/windows0"),
             sdisktype("fuseblk", "/mnt/windows1"),
