@@ -229,7 +229,7 @@ function mw_title.makeTitle(namespace, title, fragment, interwiki)
    end
 
    -- mw_title.python_get_page_info is set in lua_set_fns
-   local dt = mw_python_get_page_info(ns.name .. ":" .. title)
+   local dt = mw_python_get_page_info(ns.name .. ":" .. title, ns.id)
    local id = dt.id
    local exists = dt.exists
    local redirectTo = dt.redirectTo
