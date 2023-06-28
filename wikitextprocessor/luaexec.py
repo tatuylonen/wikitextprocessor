@@ -192,13 +192,13 @@ def mw_text_jsonencode(s, *rest):
     return json.dumps(value, sort_keys=True)
 
 
-def get_page_info(ctx: "Wtp", title: str):
+def get_page_info(ctx: "Wtp", title: str, namespace_id: int):
     """Retrieves information about a page identified by its table (with
     namespace prefix.  This returns a lua table with fields "id", "exists",
     and "redirectTo".  This is used for retrieving information about page
     titles."""
     page_id = 0  # XXX collect required info in phase 1
-    page = ctx.get_page(title)
+    page = ctx.get_page(title, namespace_id)
     # whether the page exists and what its id might be
     dt = {
         "id": page_id,
@@ -239,13 +239,13 @@ def call_set_functions(ctx, set_functions):
     def debug_mw_text_jsondecode(x, *rest):
         return mw_text_jsondecode(ctx, x, *rest)
 
-    def debug_get_page_info(x, *args):
+    def debug_get_page_info(title, ns_id, *args):
         if args:
             print(f"LAMBDA GET_PAGE_INFO DEBUG:"
                   f" {repr(args)},"
                   f" {ctx.title=},"
                   f" {multiprocessing.current_process().name}")
-        return get_page_info(ctx, x)
+        return get_page_info(ctx, title, ns_id)
 
     def debug_get_page_content(x, *args):
         if args:
