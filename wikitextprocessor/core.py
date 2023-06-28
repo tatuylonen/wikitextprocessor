@@ -23,7 +23,7 @@ import sqlite3
 from collections.abc import Iterable
 from dataclasses import dataclass
 from typing import (Optional, Dict, Set, Tuple, Callable, List, Union,
-                    Protocol, TYPE_CHECKING, Any)
+                    Protocol, TYPE_CHECKING, Any, TypedDict, )
 # When type-checking lupa stuff, just use Any; because lupa doesn't
 # have type hints itself, this is the simplest way around it, especially
 # if we don't want to add a dozillion asserts deep into often-run
@@ -48,17 +48,36 @@ from .node_expand import to_wikitext, to_html, to_text
 
 if TYPE_CHECKING:
     import lupa.lua51 as lupa
+    from .parser import WikiNode
     
 # Set of HTML tags that need an explicit end tag.
 PAIRED_HTML_TAGS = set(
     k for k, v in ALLOWED_HTML_TAGS.items() if not v.get("no-end-tag")
 )
 
+PageData = List[dict]
+
+StatsData = TypedDict('StatsData',
+                      { 'num_pages': int,
+                        'language_counts': int,
+                        'pos_counts': int,
+                        'section_counts': int
+                      }, total=False)
+
+class ErrorMessageData(TypedDict):
+    msg: str
+    trace: str
+    title: str
+    section: str
+    subsection: str
+    called_from: str
+    path: Tuple[str, ...]
+
 # Warning: this function is not re-entrant.  We store ctx and page_handler
 # in global variables during dump processing, because they may not be
 # pickleable.
 _global_ctx: "Wtp"
-_global_page_handler: Callable[["Page"], Tuple[str, Dict]]
+_global_page_handler: Callable[["Page"], Tuple[PageData, StatsData]]
 
 
 @dataclass
@@ -77,7 +96,7 @@ def phase2_page_handler(
                                   str,   # title
                                   float, # start time
                                   # ([results], {error data})
-                                  Optional[Tuple[List, Dict]],
+                                  Optional[Tuple[PageData, StatsData]],
                                   Optional[str]]:  # error message
     """Helper function for calling the Phase2 page handler (see
     reprocess()).  This is a global function in order to make this
@@ -157,7 +176,7 @@ class Wtp:
 
     def __init__(
         self,
-        num_threads: Optional[int] = None,
+        num_threads: int = 1,
         db_path: Optional[Path] = None,
         quiet: bool = False,
         lang_code: str = "en",
@@ -172,9 +191,9 @@ class Wtp:
             self.num_threads = num_threads
         self.db_path = db_path
         self.cookies = []
-        self.errors = []
-        self.warnings = []
-        self.debugs = []
+        self.errors: List[ErrorMessageData] = []
+        self.warnings: List[ErrorMessageData] = []
+        self.debugs: List[ErrorMessageData] = []
         self.section: Optional[str] = None
         self.subsection: Optional[str] = None
         self.lua: Any = None
@@ -184,8 +203,8 @@ class Wtp:
         self.lua_depth = 0
         self.quiet = quiet
         self.rev_ht = {}
-        self.expand_stack = []
-        self.parser_stack = None
+        self.expand_stack: List[str] = []  # XXX: this has a confusing name
+        self.parser_stack: List["WikiNode"] = []
         self.lang_code = lang_code
         self.data_folder = Path(
             pkg_resources.resource_filename("wikitextprocessor", "data/")
@@ -196,6 +215,7 @@ class Wtp:
         self.LANGUAGES_BY_CODE = languages_by_code
         self.create_db()
         self.template_override_funcs = template_override_funcs
+        self.beginning_of_line: bool = False
 
     def create_db(self) -> None:
         if self.db_path is None:

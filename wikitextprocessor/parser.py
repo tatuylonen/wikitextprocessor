@@ -9,6 +9,10 @@ from .parserfns import PARSER_FUNCTIONS
 from .wikihtml import ALLOWED_HTML_TAGS
 from .common import (MAGIC_NOWIKI_CHAR, MAGIC_FIRST, MAGIC_LAST, nowiki_quote,
                      MAGIC_SQUOTE_CHAR)
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from .core import Wtp
 
 
 # Set of tags that can be parents of "flow" parents
