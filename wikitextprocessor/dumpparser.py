@@ -5,6 +5,7 @@
 import hashlib
 import logging
 import os
+from psutil import disk_partitions
 import shutil
 import subprocess
 import sys
@@ -12,6 +13,7 @@ import sys
 from collections.abc import Callable
 from pathlib import Path
 from typing import Optional, Set, List, IO, TYPE_CHECKING, Protocol
+import unicodedata
 
 if TYPE_CHECKING:
     from .core import Wtp
@@ -194,12 +196,45 @@ def overwrite_pages(
     ctx.db_conn.commit()
     return False
 
+def path_is_on_windows_partition(path: Path) -> bool:
+    """
+    Return True if the path is on an exFAT or NTFS partition.
+    """
+    path_matching_fstypes_mountpoints = [
+        part for part in disk_partitions() 
+        if str(path.resolve()).startswith(part.mountpoint)
+    ]
+    #we want the more specific (i.e. longer) matching mountpoint
+    path_fstype = sorted(path_matching_fstypes_mountpoints, key=lambda x: len(x.mountpoint))[-1].fstype.lower()
+    return path_fstype == "exfat" or path_fstype == "fuseblk" or path_fstype == "ntfs"
+
+
+def get_windows_invalid_chars() -> Set[str]:
+    return set(map(chr, range(0x00, 0x20))) | set(
+        ['/','\\',':','*','?','\"','<','>','|']
+    )
+
+def invalid_char_to_charname(char: str) -> str:
+    default_name= f"__0x{ord(char):X}__"
+    return f"__{unicodedata.name(char, default_name).replace(' ','')}__".lower()
+
+def replace_invalid_substrings(s: str) -> str:
+    s = s.replace("//", "__slashslash__")
+    if ".." in s:
+        s = s.replace(".", "__dot__")
+    return s
+
+def replace_invalid_windows_characters(s: str)-> str:
+    for char in get_windows_invalid_chars():
+        s = s.replace(char, invalid_char_to_charname(char))
+    return s
 
 def save_pages_to_file(ctx: "Wtp", directory: Path) -> None:
     for page in ctx.get_all_pages():
-        title = page.title.replace("//", "__slashslash__")
-        if ".." in title:
-            title = title.replace(".", "__dot__")
+        title = replace_invalid_substrings(page.title)
+        if(path_is_on_windows_partition(directory)):
+            title = replace_invalid_windows_characters(title)
+
         if page.namespace_id == 0:
             file_path = directory.joinpath(f"Words/{title[0:2]}/{title}.txt")
         else:
