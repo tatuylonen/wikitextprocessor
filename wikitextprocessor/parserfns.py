@@ -642,7 +642,7 @@ class Namespace:
         self.talk = talk
 
 
-def init_namespaces(ctx):
+def init_namespaces(ctx: "Wtp"):
     # These duplicate definitions in lua/mw_site.lua
     for ns_can_name, ns_data in ctx.NAMESPACE_DATA.items():
         ctx.namespaces[ns_data["id"]] = Namespace(

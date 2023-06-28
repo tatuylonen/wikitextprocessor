@@ -23,7 +23,8 @@ import sqlite3
 from collections.abc import Iterable
 from dataclasses import dataclass
 from typing import (Optional, Dict, Set, Tuple, Callable, List, Union,
-                    Protocol, TYPE_CHECKING, Any, TypedDict, )
+                    DefaultDict,
+                    Protocol, TYPE_CHECKING, Any, TypedDict, Iterable, )
 # When type-checking lupa stuff, just use Any; because lupa doesn't
 # have type hints itself, this is the simplest way around it, especially
 # if we don't want to add a dozillion asserts deep into often-run
@@ -49,6 +50,7 @@ from .node_expand import to_wikitext, to_html, to_text
 if TYPE_CHECKING:
     import lupa.lua51 as lupa
     from .parser import WikiNode
+    from .parserfns import Namespace
     
 # Set of HTML tags that need an explicit end tag.
 PAIRED_HTML_TAGS = set(
@@ -72,6 +74,8 @@ class ErrorMessageData(TypedDict):
     subsection: str
     called_from: str
     path: Tuple[str, ...]
+
+CookieData = Tuple[str, Iterable, bool]
 
 # Warning: this function is not re-entrant.  We store ctx and page_handler
 # in global variables during dump processing, because they may not be
@@ -190,7 +194,7 @@ class Wtp:
         else:
             self.num_threads = num_threads
         self.db_path = db_path
-        self.cookies = []
+        self.cookies: List[CookieData] = []
         self.errors: List[ErrorMessageData] = []
         self.warnings: List[ErrorMessageData] = []
         self.debugs: List[ErrorMessageData] = []
@@ -202,7 +206,7 @@ class Wtp:
         self.lua_clear_loaddata_cache = None
         self.lua_depth = 0
         self.quiet = quiet
-        self.rev_ht = {}
+        self.rev_ht: Dict[CookieData, str] = {}
         self.expand_stack: List[str] = []  # XXX: this has a confusing name
         self.parser_stack: List["WikiNode"] = []
         self.lang_code = lang_code
@@ -210,7 +214,7 @@ class Wtp:
             pkg_resources.resource_filename("wikitextprocessor", "data/")
         ).joinpath(lang_code)
         self.init_namespace_data()
-        self.namespaces = {}
+        self.namespaces: Dict[int, Namespace] = {}
         init_namespaces(self)
         self.LANGUAGES_BY_CODE = languages_by_code
         self.create_db()
@@ -248,6 +252,7 @@ class Wtp:
 
     @property
     def backup_db_path(self) -> Path:
+        assert self.db_path
         return self.db_path.with_stem(self.db_path.stem + "_backup")
 
     def backup_db(self) -> None:
@@ -258,6 +263,7 @@ class Wtp:
         backup_conn.close()
 
     def close_db_conn(self) -> None:
+        assert self.db_path
         self.db_conn.close()
         if self.db_path.parent.samefile(Path(tempfile.gettempdir())):
             for path in self.db_path.parent.glob(self.db_path.name + "*"):
@@ -290,6 +296,8 @@ class Wtp:
             query_str, namespace_ids if namespace_ids else ()
         ):
             return result[0]
+
+        return 0  # Mainly to satisfy the type checker
 
     def init_namespace_data(self):
         with self.data_folder.joinpath("namespaces.json").open(
@@ -423,7 +431,7 @@ class Wtp:
             name = name.lower()  # Parser function names are case-insensitive
         return name
 
-    def _save_value(self, kind, args, nowiki):
+    def _save_value(self, kind: str, args: Iterable, nowiki: bool) -> str:
         """Saves a value of a particular kind and returns a unique magic
         cookie for it."""
         assert kind in (
@@ -771,7 +779,7 @@ class Wtp:
         #     print(repr(outside))
 
         # Check for unpaired HTML tags
-        tag_cnts = collections.defaultdict(int)
+        tag_cnts: DefaultDict[str, int] = collections.defaultdict(int)
         for m in re.finditer(
             r"(?si)<\s*(/\s*)?({})\b\s*[^>]*(/\s*)?>"
             r"".format("|".join(PAIRED_HTML_TAGS)),
@@ -853,18 +861,19 @@ class Wtp:
             f"{template_ns_local_name}:))", template_ns_id, "&rbrace;&rbrace;"
         )  # {{))}} -> }}
 
-        expand_stack = []
+        expand_stack: List[Page] = []
         included_map = collections.defaultdict(set)
 
         for page in self.get_all_pages([template_ns_id], False):
-            used_templates, pre_expand = self._analyze_template(
-                page.title, page.body
-            )
-            for used_template in used_templates:
-                included_map[used_template].add(page.title)
-            if pre_expand:
-                self.set_template_pre_expand(page.title)
-                expand_stack.append(page)
+            if page.body:
+                used_templates, pre_expand = self._analyze_template(
+                    page.title, page.body
+                )
+                for used_template in used_templates:
+                    included_map[used_template].add(page.title)
+                if pre_expand:
+                    self.set_template_pre_expand(page.title)
+                    expand_stack.append(page)
 
         # XXX consider encoding template bodies here (also need to save related
         # cookies).  This could speed up their expansion, where the first
@@ -879,7 +888,8 @@ class Wtp:
                 continue
             for template_title in included_map[page.title]:
                 template = self.get_page(template_title, template_ns_id)
-                if template.need_pre_expand:
+
+                if  not template or template.need_pre_expand:
                     continue
                 # print("propagating EXP {} -> {}".format(name, inc))
                 self.set_template_pre_expand(template.title)
@@ -1307,17 +1317,17 @@ class Wtp:
                     num = 1
                     for i in range(1, len(args)):
                         arg = str(args[i])
-                        m = re.match(
+                        m2 = re.match(
                             r"""(?s)^\s*([^][&<>="']+?)\s*="""
                             """\s*(.*?)\s*$""",
                             arg,
                         )
-                        if m:
+                        if m2:
                             # Note: Whitespace is stripped by the regexp
                             # around named parameter names and values per
                             # https://en.wikipedia.org/wiki/Help:Template
                             # (but not around unnamed parameters)
-                            k, arg = m.groups()
+                            k, arg = m2.groups()
                             if k.isdigit():
                                 k = int(k)
                                 if k < 1 or k > 1000:
@@ -1358,6 +1368,7 @@ class Wtp:
                         body = self.read_by_title(
                             name, self.NAMESPACE_DATA["Template"]["id"]
                         )
+                        assert body
                         # XXX optimize by pre-encoding bodies during
                         # preprocessing
                         # (Each template is typically used many times)
@@ -1398,7 +1409,7 @@ class Wtp:
                             t = t2
 
                     if self.lang_code == "zh":
-                        t = overwrite_zh_template(name, t)
+                        t = overwrite_zh_template(self, name, t)
 
                     assert isinstance(t, str)
                     self.expand_stack.pop()  # template name
@@ -1593,7 +1604,8 @@ class Wtp:
                 if not success:
                     # Print error in parent process - do not remove
                     logging.error(ret)
-                    lines = err.splitlines()
+                    lines = err.splitlines() if err else [
+                                "NO ERROR MESSAGE FROM phase2_page_handler"]
                     msg = lines[0]
                     trace = "\n".join(lines[1:])
                     if "EXCEPTION" in msg:
@@ -1755,7 +1767,7 @@ class Wtp:
                 placeholders.append(search_pattern)
             query_str += " WHERE " + " AND ".join(and_strs)
         else:
-            placeholders = tuple()
+            placeholders = []
         query_str += " ORDER BY title ASC"
         print(f"Getting all pages for query: '{query_str}'")
 
@@ -1911,7 +1923,7 @@ class Wtp:
         )
 
 
-def overwrite_zh_template(template_name: str, expanded_template: str) -> str:
+def overwrite_zh_template(ctx: Wtp, template_name: str, expanded_template: str) -> str:
     """
     Modify some expanded Chinese Wiktionary templates to standard heading format
     """
@@ -1921,25 +1933,35 @@ def overwrite_zh_template(template_name: str, expanded_template: str) -> str:
     elif template_name.startswith(("-", "=")):
         if "<h2>" in expanded_template:
             # Remove <h2> tag: https://zh.wiktionary.org/wiki/Template:-la-
-            lang_heading = re.search(
+            rs = re.search(
                 r"<h2>([^<]+)</h2>", expanded_template
-            ).group(1)
-            expanded_template = f"=={lang_heading}=="
+            )
+            if rs: 
+                # Technically the search could still fail
+                lang_heading = rs.group(1)
+                expanded_template = f"=={lang_heading}=="
+            else:
+                ctx.error("'<h2>' in heading template but failed to find "
+                            "matching '</h2>'",
+                            sortid="core/1944/20230628")
         elif "==" in expanded_template and " " in expanded_template:
             # Remove image from template like "-abbr-" and "=a="
             # which expanded to "[[Category:英語形容詞|wide]]\n===[[Image:Open book 01.png|30px]] [[形容詞]]===\n"
-            heading = re.search(
-                r"=+([^=]+)=+", expanded_template.strip()
-            ).group(1)
-            heading = heading.split()[-1]
-            equal_sign_count = 0
-            for char in expanded_template:  # count "=" number
-                if char == "=":
-                    equal_sign_count += 1
-                elif equal_sign_count > 0:
-                    break
-            expanded_template = "=" * equal_sign_count
-            expanded_template = expanded_template + heading + expanded_template
+            rs = re.search(
+                r"=+([^=]+)=+", expanded_template.strip())
+            if rs:
+                heading = rs.group(1).split()[-1]
+                equal_sign_count = 0
+                for char in expanded_template:  # count "=" number
+                    if char == "=":
+                        equal_sign_count += 1
+                    elif equal_sign_count > 0:
+                        break
+                expanded_template = "=" * equal_sign_count
+                expanded_template = expanded_template + heading + expanded_template
+            else:
+                ctx.error("failed to remove image from heading template",
+                           sortid="core/1963/20230628")
     elif template_name == "CC-CEDICT":
         # Avoid pasring this license template
         expanded_template = ""
