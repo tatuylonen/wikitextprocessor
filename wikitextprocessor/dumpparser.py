@@ -12,7 +12,8 @@ import sys
 
 from collections.abc import Callable
 from pathlib import Path
-from typing import Optional, Set, List, IO, TYPE_CHECKING, Protocol
+from typing import (Optional, Set, List, IO, TYPE_CHECKING, Protocol, Dict,
+                   Union,)
 import unicodedata
 
 if TYPE_CHECKING:
@@ -45,62 +46,75 @@ def process_input(
     # process to maximize concurrency).  This requires the ``buffer`` program.
     from lxml import etree
 
-    if path.endswith(".bz2"):
-        bzcat_command = (
-            "lbzcat" if shutil.which("lbzcat") is not None else "bzcat"
-        )
-        subp = subprocess.Popen([bzcat_command, path], stdout=subprocess.PIPE)
-        wikt_f = subp.stdout
-    else:
-        wikt_f = open(path, "rb")
-
-    if not wikt_f:
-        logging.error("File or stdout is None??")
-        return
-
-    namespace_str = "http://www.mediawiki.org/xml/export-0.10/"
-    namespaces = {None: namespace_str}
-
-    page_nums = 0
-    for _, page_element in etree.iterparse(
-        wikt_f, tag=f"{{{namespace_str}}}page"
-    ):
-        title = page_element.findtext("title", "", namespaces)
-        namespace_id = int(page_element.findtext("ns", "0", namespaces))
-        if (
-            namespace_id not in namespace_ids
-            or title.endswith("/documentation")
-            or "/testcases" in title
-        ):
-            page_element.clear(keep_tail=True)
-            continue
-
-        text = None
-        redirect_to = None
-        model = page_element.findtext("revision/model", "", namespaces)
-        if (
-            redirect_element := page_element.find(
-                "redirect", namespaces=namespaces
+    def pick_stream() -> Union[IO[bytes], None]:
+        if path.endswith(".bz2"):
+            bzcat_command: str = (
+                "lbzcat" if shutil.which("lbzcat") is not None else "bzcat"
             )
-        ) is not None:
-            redirect_to = redirect_element.get("title", "")
+            subp: subprocess.Popen[bytes] = \
+                subprocess.Popen([bzcat_command, path], stdout=subprocess.PIPE)
+            return subp.stdout
         else:
-            if model not in {"wikitext", "Scribunto", "json"}:
-                # ignore css, javascript and sanitized-css pages
+            return open(path, "rb")
+
+    with pick_stream() as wikt_f:
+        if not wikt_f:
+            logging.error("File or stdout is None??")
+            return
+
+        namespace_str: str = "http://www.mediawiki.org/xml/export-0.10/"
+        namespaces: Dict[None, str] = {None: namespace_str}
+
+        page_nums: int = 0
+        page_element: etree._Element  # preannotate to make type-checker happy
+        for _, page_element in etree.iterparse(
+            wikt_f, tag=f"{{{namespace_str}}}page"
+        ):
+            title: str = page_element.findtext("title", "", namespaces)
+            namespace_id: int = int(page_element.findtext("ns",
+                                                          "0",
+                                                          namespaces)
+                                    )
+            if (namespace_id not in namespace_ids
+                or title.endswith("/documentation")
+                or "/testcases" in title
+            ):
                 page_element.clear(keep_tail=True)
                 continue
-            text = page_element.findtext("revision/text", "", namespaces)
 
-        page_cb(
-            title, namespace_id, body=text, redirect_to=redirect_to, model=model
-        )
-        page_element.clear(keep_tail=True)
-        page_nums += 1
-        if page_nums % 10000 == 0:
-            logging.info(f"  ... {page_nums} raw pages collected")
+            text: Optional[str] = None
+            redirect_to: Optional[str] = None
+            model: Optional[str] = page_element.findtext("revision/model",
+                                                         "",
+                                                         namespaces)
+            redirect_element: Optional[etree._Element]  # can't annotate walrus
+            if (
+                redirect_element := page_element.find(
+                    "redirect", namespaces=namespaces
+                )
+            ) is not None:
+                redirect_to = redirect_element.get("title", "")
+                # redirect_to existing implies a redirection, but having a 
+                # .get default to "" is a bit weird: redirect to empty string?
+                # But you can't use None either..?
+            else:
+                if model not in {"wikitext", "Scribunto", "json"}:
+                    # ignore css, javascript and sanitized-css pages
+                    page_element.clear(keep_tail=True)
+                    continue
+                text = page_element.findtext("revision/text", "", namespaces)
 
-    wikt_f.close()
-
+            page_cb(
+                title,
+                namespace_id,
+                body=text,
+                redirect_to=redirect_to,
+                model=model
+            )
+            page_element.clear(keep_tail=True)
+            page_nums += 1
+            if page_nums % 10000 == 0:
+                logging.info(f"  ... {page_nums} raw pages collected")
 
 def process_dump(
     ctx: "Wtp",
@@ -230,17 +244,21 @@ def replace_invalid_windows_characters(s: str)-> str:
     return s
 
 def save_pages_to_file(ctx: "Wtp", directory: Path) -> None:
+    on_windows: bool = path_is_on_windows_partition(path)
+    name_max_length: int = os.pathconf("/", "PC_NAME_MAX")
+    page: Page
     for page in ctx.get_all_pages():
-        title = replace_invalid_substrings(page.title)
-        if(path_is_on_windows_partition(directory)):
+        title: str = replace_invalid_substrings(page.title)
+        if on_windows:
             title = replace_invalid_windows_characters(title)
 
         if page.namespace_id == 0:
-            file_path = directory.joinpath(f"Words/{title[0:2]}/{title}.txt")
+            file_path: Path = directory.joinpath(
+                                        f"Words/{title[0:2]}/{title}.txt")
         else:
             file_path = directory.joinpath(f'{title.replace(":", "/", 1)}.txt')
 
-        if len(file_path.name.encode()) > os.pathconf("/", "PC_NAME_MAX"):
+        if len(file_path.name.encode()) > name_max_length:
             file_path = file_path.with_stem(
                 file_path.stem[:50]
                 + "_"
