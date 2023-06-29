@@ -58,4 +58,4 @@ wikitextprocessor = [
 ]
 
 [mypy]
-mypy_path = typestubs
+mypy_path = "typestubs"
