@@ -10,14 +10,13 @@ import shutil
 import subprocess
 import sys
 
-from collections.abc import Callable
 from pathlib import Path
 from typing import (Optional, Set, List, IO, TYPE_CHECKING, Protocol, Dict,
-                   Union,)
+                   )
 import unicodedata
 
 if TYPE_CHECKING:
-    from .core import Wtp
+    from .core import Wtp, Page
 
 class DumpPageHandler(Protocol):
     def __call__(
@@ -46,16 +45,18 @@ def process_input(
     # process to maximize concurrency).  This requires the ``buffer`` program.
     from lxml import etree
 
-    def pick_stream() -> Union[IO[bytes], None]:
+    def pick_stream() -> IO[bytes]:
         if path.endswith(".bz2"):
             bzcat_command: str = (
                 "lbzcat" if shutil.which("lbzcat") is not None else "bzcat"
             )
             subp: subprocess.Popen[bytes] = \
                 subprocess.Popen([bzcat_command, path], stdout=subprocess.PIPE)
-            return subp.stdout
-        else:
-            return open(path, "rb")
+            if subp.stdout:
+                return subp.stdout
+            else:
+                print("subprocess.Popen.stdout = None! Opening file directly.")
+        return open(path, "rb")
 
     with pick_stream() as wikt_f:
         if not wikt_f:
@@ -122,7 +123,7 @@ def process_dump(
     namespace_ids: Set[int],
     overwrite_folders: Optional[List[Path]] = None,
     skip_extract_dump: bool = False,
-    page_handler: Optional[Callable[[str, int], None]] = None,
+    page_handler: Optional[DumpPageHandler] = None,
     save_pages_path: Optional[Path] = None,
 ) -> None:
     """Parses a WikiMedia dump file ``path`` (which should point to a
@@ -138,12 +139,32 @@ def process_dump(
     logging.info(
         f"dump file path: {path}"
     )
+
+    def add_page_wrapper(ctx: Wtp) -> DumpPageHandler:
+        """Method to wrap ctx.add_page into a function that can be
+        used with the type-checking Protocol DumpPageHandler.
+        Because ctx.add_page is a method, even though it's method
+        signature (and "Callable" form) look like they should be
+        right, mypy doesn't accept it as a DumpPageHandler."""
+        def _add_page_wrapper(title: str,
+                              namespace_id: int,
+                              body: Optional[str] = None,
+                              redirect_to: Optional[str] = None,
+                              need_pre_expand: bool = False,
+                              model:Optional[str] = None,
+                              ) -> None:
+            ctx.add_page(title, namespace_id, body, redirect_to,
+                         need_pre_expand, model)
+        return _add_page_wrapper
+
+    wrapped_add_page = add_page_wrapper(ctx)
+
     # Run Phase 1 in a single thread; this mostly just extracts pages into
     # a SQLite database file.
     if not skip_extract_dump:
         process_input(
             path,
-            page_handler if page_handler is not None else ctx.add_page,
+            page_handler if page_handler is not None else wrapped_add_page,
             namespace_ids,
         )
         if save_pages_path is not None:

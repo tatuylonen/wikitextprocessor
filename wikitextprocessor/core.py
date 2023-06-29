@@ -687,10 +687,12 @@ class Wtp:
         body: Optional[str] = None,
         redirect_to: Optional[str] = None,
         need_pre_expand: bool = False,
-        model: str = "wikitext",
+        model: Optional[str] = "wikitext",
     ) -> None:
         """Collects information about the page and save page text to a
         SQLite database file."""
+        if model is None:
+            model = "wikitext"
         ns_prefix = self.LOCAL_NS_NAME_BY_ID.get(namespace_id, "") + ":"
         if namespace_id != 0 and not title.startswith(ns_prefix):
             title = ns_prefix + title
