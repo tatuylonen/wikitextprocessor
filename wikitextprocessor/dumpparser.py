@@ -219,8 +219,11 @@ def path_is_on_windows_partition(path: Path) -> bool:
         if str(path.resolve()).startswith(part.mountpoint)
     ]
     #we want the more specific (i.e. longer) matching mountpoint
-    path_fstype = sorted(path_matching_fstypes_mountpoints, key=lambda x: len(x.mountpoint))[-1].fstype.lower()
-    return path_fstype == "exfat" or path_fstype == "fuseblk" or path_fstype == "ntfs"
+    path_fstype = sorted(path_matching_fstypes_mountpoints,
+                         key=lambda x: len(x.mountpoint))[-1].fstype.lower()
+    return (path_fstype == "exfat"
+            or path_fstype == "fuseblk"
+            or path_fstype == "ntfs")
 
 
 def get_windows_invalid_chars() -> Set[str]:
@@ -244,9 +247,9 @@ def replace_invalid_windows_characters(s: str)-> str:
     return s
 
 def save_pages_to_file(ctx: "Wtp", directory: Path) -> None:
-    on_windows: bool = path_is_on_windows_partition(path)
+    on_windows: bool = path_is_on_windows_partition(directory)
     name_max_length: int = os.pathconf("/", "PC_NAME_MAX")
-    page: Page
+    page: "Page"
     for page in ctx.get_all_pages():
         title: str = replace_invalid_substrings(page.title)
         if on_windows:
