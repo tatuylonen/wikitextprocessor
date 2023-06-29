@@ -36,6 +36,7 @@ dependencies = [
     "dateparser",
     "lupa @ git+https://github.com/scoder/lupa.git",
     "lxml",
+    "types-lxml",
     "psutil",
     "requests",
 ]
@@ -55,3 +56,6 @@ wikitextprocessor = [
     "lua/mediawiki-extensions-Scribunto/includes/engines/LuaCommon/lualib/luabit/*.lua",
     "data/*/*",
 ]
+
+[mypy]
+mypy_path = typestubs
