@@ -180,7 +180,9 @@ class Wtp:
 
     def __init__(
         self,
-        num_threads: int = 1,
+        num_threads: int = None, # Wiktwords args double-sets this as None,
+                                 # if you're wondering why setting this to 1
+                                 # doesn't lead to expected bugs.
         db_path: Optional[Path] = None,
         quiet: bool = False,
         lang_code: str = "en",
@@ -1368,36 +1370,38 @@ class Wtp:
                         body = self.read_by_title(
                             name, self.NAMESPACE_DATA["Template"]["id"]
                         )
-                        assert body
-                        # XXX optimize by pre-encoding bodies during
-                        # preprocessing
-                        # (Each template is typically used many times)
-                        # Determine if the template starts with a list item
-                        if body.startswith(("#", "*", ";", ":")):
-                            body = "\n" + body
-                        encoded_body = self._encode(body)
-                        # Expand template arguments recursively.  The arguments
-                        # are already expanded.
-                        encoded_body = expand_args(encoded_body, ht)
-                        # Expand the body using the calling template/page as
-                        # the parent frame for any parserfn calls
-                        new_title = tname.strip()
-                        for prefix in self.NAMESPACE_DATA:
-                            if tname.startswith(prefix + ":"):
-                                break
-                        else:
-                            new_title = (
-                                self.NAMESPACE_DATA["Template"]["name"]
-                                + ":"
-                                + new_title
-                            )
-                        new_parent = (new_title, ht)
-                        # print("expanding template body for {} {}"
-                        #       .format(name, ht))
-                        # XXX no real need to expand here, it will expanded on
-                        # next iteration anyway (assuming parent unchanged)
-                        # Otherwise expand the body
-                        t = expand_recurse(encoded_body, new_parent, expand_all)
+                        if body:
+                            # XXX optimize by pre-encoding bodies during
+                            # preprocessing
+                            # (Each template is typically used many times)
+                            # Determine if the template starts with a list item
+                            if body.startswith(("#", "*", ";", ":")):
+                                body = "\n" + body
+                            encoded_body = self._encode(body)
+                            # Expand template arguments recursively. 
+                            # The arguments are already expanded.
+                            encoded_body = expand_args(encoded_body, ht)
+                            # Expand the body using the calling template/page
+                            # as the parent frame for any parserfn calls
+                            new_title = tname.strip()
+                            for prefix in self.NAMESPACE_DATA:
+                                if tname.startswith(prefix + ":"):
+                                    break
+                            else:
+                                new_title = (
+                                    self.NAMESPACE_DATA["Template"]["name"]
+                                    + ":"
+                                    + new_title
+                                )
+                            new_parent = (new_title, ht)
+                            # print("expanding template body for {} {}"
+                            #       .format(name, ht))
+                            # XXX no real need to expand here, it will expanded
+                            #  on next iteration anyway (assuming parent 
+                            # unchanged). Otherwise expand the body
+                            t = expand_recurse(encoded_body,
+                                               new_parent,
+                                               expand_all)
 
                     # If a post_template_fn has been supplied, call it now
                     # to capture or alter the expansion
@@ -1637,6 +1641,7 @@ class Wtp:
         else:
             # Process pages using multiple parallel processes (the normal
             # case)
+            print(f"Starting multiprocessing with {self.num_threads = }")
             if self.num_threads is None:
                 pool = multiprocessing.Pool()
             else:
