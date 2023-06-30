@@ -55,7 +55,8 @@ def process_input(
             if subp.stdout:
                 return subp.stdout
             else:
-                print("subprocess.Popen.stdout = None! Opening file directly.")
+                logging.error("subprocess.Popen.stdout = None!"
+                              "Opening file directly.")
         return open(path, "rb")
 
     with pick_stream() as wikt_f:

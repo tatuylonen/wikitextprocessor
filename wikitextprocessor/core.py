@@ -106,8 +106,8 @@ def phase2_page_handler(
     pickleable.  The implication is that process() and reprocess() are not
     re-entrant (i.e., cannot be called safely from multiple threads or
     recursively)"""
-    ctx = _global_ctx
-    start_t = time.time()
+    ctx: "Wtp" = _global_ctx
+    start_t: float = time.time()
 
     # Helps debug extraction hangs. This writes the path of each file being
     # processed into /tmp/wiktextract*/wiktextract-*.  Once a hang
@@ -120,7 +120,7 @@ def phase2_page_handler(
 
         ctx.start_page(page.title)
         try:
-            ret  = _global_page_handler(page)
+            ret: Tuple[PageData, StatsData]  = _global_page_handler(page)
             return True, page.title, start_t, ret, None
         except Exception as e:
             lst = traceback.format_exception(
@@ -302,7 +302,7 @@ class Wtp:
 
         return 0  # Mainly to satisfy the type checker
 
-    def init_namespace_data(self):
+    def init_namespace_data(self) -> None:
         with self.data_folder.joinpath("namespaces.json").open(
             encoding="utf-8"
         ) as f:
@@ -316,7 +316,10 @@ class Wtp:
                 for data in self.NAMESPACE_DATA.values()
             }
 
-    def _fmt_errmsg(self, kind, msg, trace):
+    def _fmt_errmsg(self, kind: str,
+                    msg: str,
+                    trace: Optional[str]
+                   ) -> None:
         assert isinstance(kind, str)
         assert isinstance(msg, str)
         assert isinstance(trace, (str, type(None)))
@@ -1180,7 +1183,10 @@ class Wtp:
                     return "{{" + fn_name + ":" + "|".join(args) + "}}"
                 # Call parser function
                 self.expand_stack.append(fn_name)
-                expander = lambda arg: expand_recurse(arg, parent, True)
+
+                def expander(arg):
+                    expand_recurse(arg, parent, True)
+
                 if fn_name == "#invoke":
                     if not expand_invoke:
                         return "{{#invoke:" + "|".join(args) + "}}"
@@ -1578,7 +1584,7 @@ class Wtp:
         autoload=True,
         namespace_ids: Optional[List[int]] = None,
         include_redirects: bool = True,
-        search_pattern: str = None,
+        search_pattern: Optional[str] = None,
     ):
         """Reprocess all pages captured by self.process() or explicit calls to
         self.add_page(). This calls page_handler(page) for each page, and
@@ -1698,7 +1704,8 @@ class Wtp:
     def get_page(
         self, title: str, namespace_id: Optional[int] = None
     ) -> Optional[Page]:
-        # " " in Lua Module name is replaced by "_" in Wiktionary Lua code when call `require`
+        # " " in Lua Module name is replaced by "_" in Wiktionary Lua code
+        # when call `require`
         title = title.replace("_", " ")
         if title.startswith("Main:"):
             title = title[5:]
@@ -1751,7 +1758,7 @@ class Wtp:
         self,
         namespace_ids: Optional[List[int]] = None,
         include_redirects: bool = True,
-        search_pattern: str = None,
+        search_pattern: Optional[str]= None,
     ) -> Iterable[Page]:
         query_str = "SELECT title, namespace_id, redirect_to, " \
                     "need_pre_expand, body, model" \
@@ -1765,7 +1772,7 @@ class Wtp:
         if not include_redirects:
             and_strs.append("redirect_to IS NULL")
         if search_pattern:
-            and_strs.append(f'body LIKE ?')
+            and_strs.append("body LIKE ?")
 
         if and_strs:
             placeholders: List[Union[int, str]] = []
@@ -1954,7 +1961,9 @@ def overwrite_zh_template(ctx: Wtp, template_name: str, expanded_template: str) 
                             sortid="core/1944/20230628")
         elif "==" in expanded_template and " " in expanded_template:
             # Remove image from template like "-abbr-" and "=a="
-            # which expanded to "[[Category:英語形容詞|wide]]\n===[[Image:Open book 01.png|30px]] [[形容詞]]===\n"
+            # which expanded to
+            # "[[Category:英語形容詞|wide]]\n===[[Image:Open book 01.png|30px]]
+            #  [[形容詞]]===\n"
             rs = re.search(
                 r"=+([^=]+)=+", expanded_template.strip())
             if rs:
