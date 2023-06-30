@@ -36,13 +36,15 @@ dependencies = [
     "dateparser",
     "lupa @ git+https://github.com/scoder/lupa.git",
     "lxml",
-    "types-lxml",
     "psutil",
     "requests",
 ]
 
 [project.optional-dependencies]
-dev = ["nose2[coverage_plugin]"]
+dev = [
+    "nose2[coverage_plugin]",
+    "types-lxml",
+]
 
 [project.urls]
 homepage = "https://github.com/tatuylonen/wikitextprocessor"
@@ -60,5 +62,6 @@ wikitextprocessor = [
     "data/*/*",
 ]
 
-[mypy]
-mypy_path = "typestubs"
+[[tool.mypy.overrides]]
+module = ["lupa.*"]
+ignore_missing_imports = true
