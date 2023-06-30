@@ -47,6 +47,9 @@ dev = ["nose2[coverage_plugin]"]
 [project.urls]
 homepage = "https://github.com/tatuylonen/wikitextprocessor"
 
+[tool.setuptools]
+packages = [ "wikitextprocessor" ]
+
 [tool.setuptools.package-data]
 wikitextprocessor = [
     "lua/*.lua",
