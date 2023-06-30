@@ -3,7 +3,10 @@
 # Copyright (c) 2020-2021 Tatu Ylonen.  See file LICENSE and https://ylonen.org
 
 import unittest
-from wikitextprocessor import Wtp
+
+from unittest.mock import patch
+
+from wikitextprocessor import Wtp, Page
 from wikitextprocessor.parser import WikiNode
 
 
@@ -26,7 +29,6 @@ def parse(title, text, **kwargs):
 
 
 class NodeExpTests(unittest.TestCase):
-
     def backcvt(self, text, expected):
         root, ctx = parse_with_ctx("test", text)
         self.assertEqual(ctx.errors, [])
@@ -85,16 +87,15 @@ class NodeExpTests(unittest.TestCase):
         self.backcvt("abc\n*a\n* b\ndef", "abc\n*a\n* b\ndef")
 
     def test_list3(self):
-        self.backcvt("abc\n*a\n*# c\n*# d\n* b\ndef",
-                     "abc\n*a\n*# c\n*# d\n* b\ndef")
+        self.backcvt(
+            "abc\n*a\n*# c\n*# d\n* b\ndef", "abc\n*a\n*# c\n*# d\n* b\ndef"
+        )
 
     def test_list4(self):
-        self.backcvt("abc\n*a\n**b\n*:c\n",
-                     "abc\n*a\n**b\n*:c\n")
+        self.backcvt("abc\n*a\n**b\n*:c\n", "abc\n*a\n**b\n*:c\n")
 
     def test_pre1(self):
-        self.backcvt("a<pre>foo\n  bar</pre>b",
-                     "a<pre>foo\n  bar</pre>b")
+        self.backcvt("a<pre>foo\n  bar</pre>b", "a<pre>foo\n  bar</pre>b")
 
     def test_preformatted1(self):
         self.backcvt(" a\n b", " a\n b")
@@ -145,8 +146,10 @@ class NodeExpTests(unittest.TestCase):
         self.backcvt("https://wikipedia.org/", "[https://wikipedia.org/]")
 
     def test_url3(self):
-        self.backcvt("https://wikipedia.org/x/y?a=7%255",
-                     "[https://wikipedia.org/x/y?a=7%255]")
+        self.backcvt(
+            "https://wikipedia.org/x/y?a=7%255",
+            "[https://wikipedia.org/x/y?a=7%255]",
+        )
 
     def test_table1(self):
         self.backcvt("{| |}", "\n{| \n\n|}\n")
@@ -158,12 +161,14 @@ class NodeExpTests(unittest.TestCase):
         self.backcvt("{|\n|+\ncapt\n|}", "\n{| \n\n|+ \n\ncapt\n\n|}\n")
 
     def test_tablerowcell1(self):
-        self.backcvt("{|\n|- a=1\n| cell\n|}",
-                     '\n{| \n\n|- a="1"\n\n| cell\n\n\n|}\n')
+        self.backcvt(
+            "{|\n|- a=1\n| cell\n|}", '\n{| \n\n|- a="1"\n\n| cell\n\n\n|}\n'
+        )
 
     def test_tablerowhdr1(self):
-        self.backcvt("{|\n|- a=1\n! cell\n|}",
-                     '\n{| \n\n|- a="1"\n\n! cell\n\n\n|}\n')
+        self.backcvt(
+            "{|\n|- a=1\n! cell\n|}", '\n{| \n\n|- a="1"\n\n! cell\n\n\n|}\n'
+        )
 
     def test_magicword1(self):
         self.backcvt("a\n__TOC__\nb", "a\n\n__TOC__\n\nb")
@@ -172,8 +177,9 @@ class NodeExpTests(unittest.TestCase):
         self.backcvt("a<b>foo</b>b", "a<b>foo</b>b")
 
     def test_html2(self):
-        self.backcvt('a<span class="bar">foo</span>b',
-                     'a<span class="bar">foo</span>b')
+        self.backcvt(
+            'a<span class="bar">foo</span>b', 'a<span class="bar">foo</span>b'
+        )
 
     def test_italic1(self):
         self.backcvt("''i''", "''i''")
@@ -195,3 +201,15 @@ class NodeExpTests(unittest.TestCase):
 
     def test_text5(self):
         self.totext("foo<ref x=1>bar</ref> z", "foo z")
+
+    @patch(
+        "wikitextprocessor.Wtp.get_page",
+        new=lambda a, b, c: Page(
+            "Template:blank template", 10, None, False, "", "wikitext"
+        ),
+    )
+    def test_blank_template(self) -> None:
+        """
+        Test the case when a template's body is an empty string in the database.
+        """
+        self.totext("{{blank template}}", "")
