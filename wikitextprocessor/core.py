@@ -50,7 +50,7 @@ from .node_expand import to_wikitext, to_html, to_text
 if TYPE_CHECKING:
     from .parser import WikiNode
     from .parserfns import Namespace
-    
+
 # Set of HTML tags that need an explicit end tag.
 PAIRED_HTML_TAGS = set(
     k for k, v in ALLOWED_HTML_TAGS.items() if not v.get("no-end-tag")
@@ -1373,7 +1373,7 @@ class Wtp:
                         body = self.read_by_title(
                             name, self.NAMESPACE_DATA["Template"]["id"]
                         )
-                        if body:
+                        if body is not None:
                             # XXX optimize by pre-encoding bodies during
                             # preprocessing
                             # (Each template is typically used many times)
@@ -1381,7 +1381,7 @@ class Wtp:
                             if body.startswith(("#", "*", ";", ":")):
                                 body = "\n" + body
                             encoded_body = self._encode(body)
-                            # Expand template arguments recursively. 
+                            # Expand template arguments recursively.
                             # The arguments are already expanded.
                             encoded_body = expand_args(encoded_body, ht)
                             # Expand the body using the calling template/page
@@ -1400,7 +1400,7 @@ class Wtp:
                             # print("expanding template body for {} {}"
                             #       .format(name, ht))
                             # XXX no real need to expand here, it will expanded
-                            #  on next iteration anyway (assuming parent 
+                            #  on next iteration anyway (assuming parent
                             # unchanged). Otherwise expand the body
                             t = expand_recurse(encoded_body,
                                                new_parent,
@@ -1944,7 +1944,7 @@ def overwrite_zh_template(ctx: Wtp, template_name: str, expanded_template: str) 
             rs = re.search(
                 r"<h2>([^<]+)</h2>", expanded_template
             )
-            if rs: 
+            if rs:
                 # Technically the search could still fail
                 lang_heading = rs.group(1)
                 expanded_template = f"=={lang_heading}=="
