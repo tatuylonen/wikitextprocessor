@@ -11,8 +11,9 @@ from typing import Iterator, Dict
 # characters are in the Unicode private use area U+100000..U+10FFFF.
 MAGIC_NUMBER: int = 0x0010203d
 # Instead of doing `MAGIC_NUMBER + 1` manually
-mnum: Iterator[int] = iter(range(MAGIC_NUMBER, MAGIC_NUMBER + 100)) # 100 is a convenient
-                                                     # upper bound
+mnum: Iterator[int] = iter(range(MAGIC_NUMBER, MAGIC_NUMBER + 100))
+                                                # 100 is a convenient
+                                                # upper bound
 
 MAGIC_NOWIKI: int = next(mnum)  # Used for <nowiki />
 MAGIC_NOWIKI_CHAR: str = chr(MAGIC_NOWIKI)

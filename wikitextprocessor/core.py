@@ -24,7 +24,7 @@ from collections.abc import Iterable
 from dataclasses import dataclass
 from typing import (Optional, Dict, Set, Tuple, Callable, List, Union,
                     DefaultDict,
-                    Protocol, TYPE_CHECKING, Any, TypedDict, Iterable, )
+                    TYPE_CHECKING, Any, TypedDict, )
 # When type-checking lupa stuff, just use Any; because lupa doesn't
 # have type hints itself, this is the simplest way around it, especially
 # if we don't want to add a dozillion asserts deep into often-run
@@ -48,7 +48,6 @@ from .dumpparser import process_dump
 from .node_expand import to_wikitext, to_html, to_text
 
 if TYPE_CHECKING:
-    import lupa.lua51 as lupa
     from .parser import WikiNode
     from .parserfns import Namespace
     
@@ -175,14 +174,16 @@ class Wtp:
         "namespaces",
         "LANGUAGES_BY_CODE",
         "lang_code",
-        "template_override_funcs",  # Python functions for overriding template expaneded text,
+        "template_override_funcs",  # Python functions for overriding
+                                    # template expanded text
     )
 
     def __init__(
         self,
-        num_threads: int = None, # Wiktwords args double-sets this as None,
-                                 # if you're wondering why setting this to 1
-                                 # doesn't lead to expected bugs.
+        num_threads: Optional[int] = None, # Wiktwords args double-sets this
+                                           # as None, if you're wondering why
+                                           # setting this to 1 doesn't lead to
+                                           # expected bugs.
         db_path: Optional[Path] = None,
         quiet: bool = False,
         lang_code: str = "en",
@@ -192,7 +193,7 @@ class Wtp:
         if platform.system() in ("Windows", "Darwin"):
             # Default num_threads to 1 on Windows and MacOS, as they
             # apparently don't use fork() for multiprocessing.Pool()
-            self.num_threads = 1
+            self.num_threads: Optional[int] = 1
         else:
             self.num_threads = num_threads
         self.db_path = db_path

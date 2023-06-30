@@ -140,7 +140,7 @@ def process_dump(
         f"dump file path: {path}"
     )
 
-    def add_page_wrapper(ctx: Wtp) -> DumpPageHandler:
+    def add_page_wrapper(ctx: "Wtp") -> DumpPageHandler:
         """Method to wrap ctx.add_page into a function that can be
         used with the type-checking Protocol DumpPageHandler.
         Because ctx.add_page is a method, even though it's method
