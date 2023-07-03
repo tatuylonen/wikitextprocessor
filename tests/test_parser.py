@@ -1533,7 +1533,7 @@ def foo(x):
         # would still have an outer node for the #if and the HTML would
         # be just the string '<b>ppp</b>'.
         tree = parse("test",
-                     """{{#if:x|[[foo|<b>ppp</b>]] bar}}""", 
+                     """{{#if:x|[[foo|<b>ppp</b>]] bar}}""",
                      expand_all=True)
         # print_tree(tree, 2)
         self.assertEqual(tree.kind, NodeKind.ROOT)
@@ -2056,6 +2056,26 @@ def foo(x):
         with open("tests/fi-gradation.txt", "r") as f:
             tree, ctx = parse_with_ctx("fi-gradation", f.read(), pre_expand=True)
             self.assertEqual(ctx.errors, [])
+
+    def test_new_line_template_argument(self):
+        # new line characters in template arguments shouldn't pop the parser
+        # stack to break the template node.
+        origin_wikitext = """
+#* {{quote-web
+|en
+|date=August 01, 1980
+|origdate=1 May 1980
+|last=Chiang
+|first=Ching-kuo
+|authorlink=Chiang Ching-kuo
+|title=President Chiang Ching-kuo continues his period of mourning and finds that visits to countryside and people give him renewed strength
+|archiveurl=https://web.archive.org/web/20200517074534/https://taiwantoday.tw/print.php?unit=4&post=5149
+|archivedate=17 May 2020
+|work={{w|Taiwan Today}}
+|text=My personal success or failure is insignificant; the rise or fall of the nation is my responsibility and must not be shirked. Upon introspection, I feel I am firmer than ever in confidence that the Communists will be defeated. These are feelings which will comfort '''Father's''' soul in Heaven.}}
+        """
+        tree, ctx = parse_with_ctx("test_page", origin_wikitext)
+        self.assertEqual(origin_wikitext, ctx.node_to_wikitext(tree))
 
 # XXX implement <nowiki/> marking for links, templates
 #  - https://en.wikipedia.org/wiki/Help:Wikitext#Nowiki
