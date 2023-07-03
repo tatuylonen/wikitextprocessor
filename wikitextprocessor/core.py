@@ -161,6 +161,7 @@ class Wtp:
         # Data for parsing
         "beginning_of_line",  # Parser at beginning of line
         "wsp_beginning_of_line",  # Parser at beginning of line + whitespace
+        "begline_enabled",  # in magic_fn, beginning_of_line = False
         "linenum",  # Current line number
         "pre_parse",  # XXX is pre-parsing still needed?
         "parser_stack",  # Parser stack
@@ -223,6 +224,7 @@ class Wtp:
         self.create_db()
         self.template_override_funcs = template_override_funcs
         self.beginning_of_line: bool = False
+        self.begline_enabled: int = 0
 
     def create_db(self) -> None:
         if self.db_path is None:

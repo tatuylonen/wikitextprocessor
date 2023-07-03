@@ -400,7 +400,7 @@ def _parser_have(ctx: "Wtp", kind: NodeKind) -> bool:
 
 def close_begline_lists(ctx: "Wtp") -> None:
     """Closes currently open list if at the beginning of a line."""
-    if not ctx.beginning_of_line:
+    if not (ctx.beginning_of_line and ctx.begline_enabled):
         return
     while _parser_have(ctx, NodeKind.LIST):
         _parser_pop(ctx, True)
@@ -410,7 +410,7 @@ def pop_until_nth_list(ctx: "Wtp", list_token: str) -> None:
     """
     Pop nodes in the parser stack until the correct depth.
     """
-    if not ctx.beginning_of_line:
+    if not (ctx.beginning_of_line and ctx.begline_enabled):
         return
     list_count = len(list_token)
     passed_nodes = 0
@@ -464,7 +464,7 @@ def text_fn(ctx, token):
             return
 
     # Some nodes are automatically popped on newline/text
-    if ctx.beginning_of_line:
+    if (ctx.beginning_of_line and ctx.begline_enabled):
         while True:
             node = ctx.parser_stack[-1]
             if node.kind == NodeKind.LIST_ITEM:
@@ -722,8 +722,9 @@ def magic_fn(ctx, token):
         return text_fn(ctx, token)
     kind, args, nowiki = ctx.cookies[idx]
     # print("MAGIC_FN:", kind, args, nowiki)
-    ctx.beginning_of_line = False
+
     if kind == "T":
+        ctx.begline_enabled += 1
         if nowiki:
             process_text(ctx, "&lbrace;&lbrace;" +
                          "&vert;".join(args) +
@@ -736,7 +737,6 @@ def magic_fn(ctx, token):
         process_text(ctx, args[0])
         for arg in args[1:]:
             # prevent new lines in template arguments pop parser stack
-            ctx.beginning_of_line = False
             vbar_fn(ctx, "|")
             process_text(ctx, arg)
 
@@ -748,6 +748,7 @@ def magic_fn(ctx, token):
                 _parser_pop(ctx, False)
                 break
             _parser_pop(ctx, True)
+        ctx.begline_enabled -= 1
 
     elif kind == "A":
         if nowiki:
@@ -833,7 +834,7 @@ def magic_fn(ctx, token):
         ctx.error("magic_fn: unsupported cookie kind {!r}"
                    .format(kind), sortid="parser/780")
 
-
+    
 def colon_fn(ctx, token):
     """Handler for a special colon ":" within a template call.  This indicates
     that it is actually a parser function call.  This is called from list_fn()
@@ -995,7 +996,7 @@ def table_hdr_cell_fn(ctx, token):
             _parser_push(ctx, NodeKind.TABLE_HEADER_CELL)
             return
         if node.kind == NodeKind.TABLE_CAPTION:
-            if ctx.beginning_of_line:
+            if (ctx.beginning_of_line and ctx.begline_enabled):
                 _parser_pop(ctx, False)
                 _parser_push(ctx, NodeKind.TABLE_ROW)
                 _parser_push(ctx, NodeKind.TABLE_HEADER_CELL)
@@ -1007,7 +1008,7 @@ def table_hdr_cell_fn(ctx, token):
             # Inside nested HTML, interpret ! and !! as normal text
             return text_fn(ctx, token)
         if (node.kind == NodeKind.TABLE_CELL and
-            not ctx.beginning_of_line and
+            not (ctx.beginning_of_line and ctx.begline_enabled) and
             not ctx.wsp_beginning_of_line):
             # Inside a cell, ! and !! are normal text unless at the beginning
             # of a line
@@ -1046,7 +1047,7 @@ def table_cell_fn(ctx, token):
 
     if (token == "|" and
         not ctx.wsp_beginning_of_line and
-        not ctx.beginning_of_line):
+        not (ctx.beginning_of_line and ctx.begline_enabled)):
         # This might separate attributes for captions, header cells, and
         # data cells
         _parser_merge_str_children(ctx)
@@ -1108,7 +1109,7 @@ def double_vbar_fn(ctx, token):
     # If it is at the beginning of a line, interpret it as starting a new
     # cell, without any HTML attributes.  We do this by emitting two individual
     # vbars.
-    if ctx.beginning_of_line:
+    if (ctx.beginning_of_line and ctx.begline_enabled):
         vbar_fn(ctx, "|")
         vbar_fn(ctx, "|")
         return
@@ -1180,7 +1181,7 @@ def list_fn(ctx, token):
     # particularly the case for colon, which is recognized as a token also
     # in the middle of a line.  Some of these cases were handled above; some
     # are handled here.
-    if not ctx.beginning_of_line:
+    if not (ctx.beginning_of_line and ctx.begline_enabled):
         node = ctx.parser_stack[-1]
         if (token == ":" and node.kind == NodeKind.LIST_ITEM and
             node.args.endswith(";") and "head" not in node.attrs):
@@ -1735,7 +1736,8 @@ def process_text(ctx, text):
                 else:
                     text_fn(ctx, token)
         ctx.linenum += token.count("\n")
-        ctx.wsp_beginning_of_line = ctx.beginning_of_line and token.isspace()
+        ctx.wsp_beginning_of_line = (ctx.beginning_of_line  and
+                                          token.isspace())
         ctx.beginning_of_line = token[-1] == "\n"
 
 
