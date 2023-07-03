@@ -735,6 +735,8 @@ def magic_fn(ctx, token):
         # Process arguments
         process_text(ctx, args[0])
         for arg in args[1:]:
+            # prevent new lines in template arguments pop parser stack
+            ctx.beginning_of_line = False
             vbar_fn(ctx, "|")
             process_text(ctx, arg)
 
