@@ -60,5 +60,5 @@ wikitextprocessor = [
     "data/*/*",
 ]
 
-[mypy]
+[tool.mypy]
 mypy_path = "typestubs"

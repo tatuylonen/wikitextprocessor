@@ -1184,9 +1184,8 @@ class Wtp:
                 # Call parser function
                 self.expand_stack.append(fn_name)
 
-                # def expander(arg):
-                #     expand_recurse(arg, parent, True)
-                expander = lambda arg: expand_recurse(arg, parent, True)
+                def expander(arg):
+                    return expand_recurse(arg, parent, True)
 
                 if fn_name == "#invoke":
                     if not expand_invoke:
