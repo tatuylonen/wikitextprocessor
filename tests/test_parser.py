@@ -920,6 +920,7 @@ dasfasddasfdas
         self.assertEqual(b.children, ["item1"])
 
     def test_liststart2(self):
+        # Lists should not be parsed inside template arguments
         tree = parse("test", "{{Foo|\n#item1}}")
         self.assertEqual(len(tree.children), 1)
         t = tree.children[0]
@@ -928,16 +929,7 @@ dasfasddasfdas
         self.assertEqual(len(t.args), 2)
         a, b = t.args
         self.assertEqual(a, ["Foo"])
-        self.assertIsInstance(b, list)
-        ba, bb = b
-        self.assertEqual(ba, "\n")
-        self.assertEqual(bb.kind, NodeKind.LIST)
-        self.assertEqual(bb.args, "#")
-        self.assertEqual(len(bb.children), 1)
-        bba = bb.children[0]
-        self.assertEqual(bba.kind, NodeKind.LIST_ITEM)
-        self.assertEqual(bba.args, "#")
-        self.assertEqual(bba.children, ["item1"])
+        self.assertEqual(b, ["\n#item1"])
 
     def test_link1(self):
         tree = parse("test", "a [[Main Page]] b")

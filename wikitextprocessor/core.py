@@ -132,6 +132,22 @@ def phase2_page_handler(
             ) + "".join(lst)
             return False, page.title, start_t, ([], {}), msg
 
+class BegLineDisableManager(object):
+    """A 'context manager'-style object to use with `with` that increments
+    and decrements a counter used as a flag to see whether the parser
+    should care about tokens at the beginning of a line, used in magic_fn
+    to disable parsing when just looping through arguments"""
+    def __init__(self, ctx: "Wtp"):
+        self.ctx = ctx
+
+    def __enter__(self):
+        self.ctx.begline_disable_counter += 1
+        self.ctx.begline_enabled = False
+
+    def __exit__(self, exc_type, exc_value, trace):
+        self.ctx.begline_disable_counter -= 1
+        if self.ctx.begline_disable_counter < 1:
+            self.ctx.begline_enabled = True
 
 class Wtp:
     """Context used for processing wikitext and for expanding templates,
@@ -162,6 +178,8 @@ class Wtp:
         "beginning_of_line",  # Parser at beginning of line
         "wsp_beginning_of_line",  # Parser at beginning of line + whitespace
         "begline_enabled",  # in magic_fn, beginning_of_line = False
+        "begline_disable_counter",
+        "begline_disabled",  # context-managerish thing for begline_en..
         "linenum",  # Current line number
         "pre_parse",  # XXX is pre-parsing still needed?
         "parser_stack",  # Parser stack
@@ -224,7 +242,9 @@ class Wtp:
         self.create_db()
         self.template_override_funcs = template_override_funcs
         self.beginning_of_line: bool = False
-        self.begline_enabled: int = 0
+        self.begline_enabled: bool = True
+        self.begline_disable_counter: int = 0
+        self.begline_disabled = BegLineDisableManager(self)
 
     def create_db(self) -> None:
         if self.db_path is None:

@@ -722,9 +722,9 @@ def magic_fn(ctx, token):
         return text_fn(ctx, token)
     kind, args, nowiki = ctx.cookies[idx]
     # print("MAGIC_FN:", kind, args, nowiki)
+    ctx.beginning_of_line = False
 
     if kind == "T":
-        ctx.begline_enabled += 1
         if nowiki:
             process_text(ctx, "&lbrace;&lbrace;" +
                          "&vert;".join(args) +
@@ -733,12 +733,13 @@ def magic_fn(ctx, token):
         # Template tranclusion or parser function call
         _parser_push(ctx, NodeKind.TEMPLATE)
 
-        # Process arguments
-        process_text(ctx, args[0])
-        for arg in args[1:]:
-            # prevent new lines in template arguments pop parser stack
-            vbar_fn(ctx, "|")
-            process_text(ctx, arg)
+        with ctx.begline_disabled:
+            # Process arguments
+            process_text(ctx, args[0])
+            for arg in args[1:]:
+                # prevent new lines in template arguments pop parser stack
+                vbar_fn(ctx, "|")
+                process_text(ctx, arg)
 
         while True:
             node = ctx.parser_stack[-1]
@@ -748,7 +749,6 @@ def magic_fn(ctx, token):
                 _parser_pop(ctx, False)
                 break
             _parser_pop(ctx, True)
-        ctx.begline_enabled -= 1
 
     elif kind == "A":
         if nowiki:
@@ -760,10 +760,11 @@ def magic_fn(ctx, token):
         _parser_push(ctx, NodeKind.TEMPLATE_ARG)
 
         # Process arguments
-        process_text(ctx, args[0])
-        for arg in args[1:]:
-            vbar_fn(ctx, "|")
-            process_text(ctx, arg)
+        with ctx.begline_disabled:
+            process_text(ctx, args[0])
+            for arg in args[1:]:
+                vbar_fn(ctx, "|")
+                process_text(ctx, arg)
 
         while True:
             node = ctx.parser_stack[-1]
@@ -783,10 +784,11 @@ def magic_fn(ctx, token):
         _parser_push(ctx, NodeKind.LINK)
 
         # Process arguments
-        process_text(ctx, args[0])
-        for arg in args[1:]:
-            vbar_fn(ctx, "|")
-            process_text(ctx, arg)
+        with ctx.begline_disabled:
+            process_text(ctx, args[0])
+            for arg in args[1:]:
+                vbar_fn(ctx, "|")
+                process_text(ctx, arg)
 
         while True:
             node = ctx.parser_stack[-1]
@@ -804,10 +806,11 @@ def magic_fn(ctx, token):
             _parser_push(ctx, NodeKind.URL)
 
             # Process arguments
-            process_text(ctx, args[0])
-            for arg in args[1:]:
-                vbar_fn(ctx, "|")
-                process_text(ctx, arg)
+            with ctx.begline_disabled:
+                process_text(ctx, args[0])
+                for arg in args[1:]:
+                    vbar_fn(ctx, "|")
+                    process_text(ctx, arg)
 
             # The URL could have been popped if the content does not look like
             # a URL.
