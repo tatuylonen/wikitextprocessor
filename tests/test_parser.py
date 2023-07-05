@@ -20,6 +20,7 @@ def parse_with_ctx(title, text, **kwargs):
 
 def parse(title, text, **kwargs):
     root, ctx = parse_with_ctx(title, text, **kwargs)
+    ctx.close_db_conn()
     assert isinstance(root, WikiNode)
     assert isinstance(ctx, Wtp)
     return root
@@ -2062,6 +2063,49 @@ def foo(x):
         t = b.children[0]
         assert(t.children == [])
         assert(t.args == [['  foo\n'], ['bar\n'], ['baz\n']])
+
+    def test_empty_language_converter_template_argument(self):
+        """
+        Test `Wtp._encode()` when template argument uses "-{}-" as empty
+        string placeholder.
+        -{}- syntax doc: https://www.mediawiki.org/wiki/Writing_systems/Syntax
+        example template: https://zh.wiktionary.org/wiki/Template:Ja-romanization_of
+        GitHub issue #59
+        """
+        tree = parse(
+            "test_page",
+            "{{#invoke:form of/templates|form_of_t|-{}-|withcap=1|lang=ja|noprimaryentrycat=}}"
+        )
+        parser_fn_node = tree.children[0]
+        self.assertTrue(isinstance(parser_fn_node, WikiNode))
+        self.assertEqual(parser_fn_node.kind, NodeKind.PARSER_FN)
+        self.assertEqual(
+            parser_fn_node.args,
+            [
+                ["#invoke"],
+                ["form of/templates"],
+                ["form_of_t"],
+                ["-{}-"],
+                ["withcap=1"],
+                ["lang=ja"],
+                ["noprimaryentrycat="],
+            ],
+        )
+
+    def test_unused_pinyin_template_argument(self):
+        # GitHub issue #72
+        tree = parse(
+            "test_page",
+            "{{zh-x|約 有 6 '''%'''{pā} 的 臺灣人 血型 是 A{ēi}B{bī}型。|}}"
+        )
+        template_node = tree.children[0]
+        self.assertTrue(isinstance(template_node, WikiNode))
+        self.assertEqual(template_node.kind, NodeKind.TEMPLATE)
+        self.assertEqual(
+            template_node.args,
+            [['zh-x'], ["約 有 6 '''%'''{pā} 的 臺灣人 血型 是 A{ēi}B{bī}型。"], []]
+        )
+
 
 # XXX implement <nowiki/> marking for links, templates
 #  - https://en.wikipedia.org/wiki/Help:Wikitext#Nowiki

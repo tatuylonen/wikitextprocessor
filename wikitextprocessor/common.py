@@ -20,17 +20,12 @@ MAGIC_NOWIKI_CHAR: str = chr(MAGIC_NOWIKI)
 
 # Used to replace single quotes inside HTML double-quoted attributes:
 # <tag attr="something with 'single quotes', like this" />
-MAGIC_SINGLE_QUOTE: int = next(mnum) 
+MAGIC_SINGLE_QUOTE: int = next(mnum)
 MAGIC_SQUOTE_CHAR: str = chr(MAGIC_SINGLE_QUOTE)
-
-# replace `-{}-` in Chinese Wiktionary template `ja-romanization of` to fix
-# encode template bug
-MAGIC_ZH_PLACEHOLDER: int = next(mnum) 
-MAGIC_ZH_PLACEHOLDER_CHAR: str = chr(MAGIC_ZH_PLACEHOLDER)
 
 # Magic characters used to store templates and other expandable
 # text while the stuff around them are being parsed.
-MAGIC_FIRST: int = next(mnum) 
+MAGIC_FIRST: int = next(mnum)
 MAGIC_LAST: int = 0x0010fff0
 MAX_MAGICS = MAGIC_LAST - MAGIC_FIRST + 1
 
