@@ -618,18 +618,18 @@ class Wtp:
                 text = re.sub(r"\[([^][{}<>|]+)\]", repl_extlink, text)
                 # Encode template arguments: {{{arg}}}, {{{..{|..|}..}}}
                 text = re.sub(
-                    r"{"
+                    r"\{"
                     + MAGIC_NOWIKI_CHAR
-                    + r"?{"
+                    + r"?\{"
                     + MAGIC_NOWIKI_CHAR
-                    + r"?{(("
+                    + r"?\{(("
                     + r"[^{}]|" # No curly brackets (except inside cookies)
-                    + r"{\|[^{}]*\|}" # Outermost table brackets accepted?
-                    + r")*?)}"
+                    + r"\{\|[^{}]*\|\}" # Outermost table brackets accepted?
+                    + r")*?)\}"
                     + MAGIC_NOWIKI_CHAR
-                    + r"?}"
+                    + r"?\}"
                     + MAGIC_NOWIKI_CHAR
-                    + r"?}",
+                    + r"?\}",
                     repl_arg,
                     text,
                 )
@@ -661,12 +661,12 @@ class Wtp:
                     break
             # Replace template invocation
             text = re.sub(
-                r"{" + MAGIC_NOWIKI_CHAR + r"?{((?:"
-                r"[^{}](?:{[^{}|])?|"  # lone possible {???
-                r"{\|[^{}]*?\|}|"  # Outer table tokens
-                r"}(?=[^{}])|" # lone `}`, (?=...) is not consumed (lookahead)
-                r"-{}-|"  # GitHub issue #59 Chinese wiktionary special `-{}-`
-                r")+?)}" + MAGIC_NOWIKI_CHAR + r"?}",
+                r"\{" + MAGIC_NOWIKI_CHAR + r"?\{((?:"
+                r"[^{}](?:\{[^{}|])?|"  # lone possible { and also default "any"
+                r"\{\|[^{}]*?\|\}|"  # Outer table tokens
+                r"\}(?=[^{}])|" # lone `}`, (?=...) is not consumed (lookahead)
+                r"-\{}-|"  # GitHub issue #59 Chinese wiktionary special `-{}-`
+                r")+?)\}" + MAGIC_NOWIKI_CHAR + r"?\}",
                 repl_templ,
                 text,
             )
