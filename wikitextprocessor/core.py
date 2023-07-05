@@ -661,7 +661,7 @@ class Wtp:
                     break
             # Replace template invocation
             text = re.sub(
-                r"{" + MAGIC_NOWIKI_CHAR + r"?{(("
+                r"{" + MAGIC_NOWIKI_CHAR + r"?{((?:"
                 r"[^{}](?:{[^{}|])?|"  # lone possible {???
                 r"{\|[^{}]*?\|}|"  # Outer table tokens
                 r"}(?=[^{}])|" # lone `}`, (?=...) is not consumed (lookahead)
