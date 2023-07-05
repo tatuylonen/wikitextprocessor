@@ -22,9 +22,19 @@ import sqlite3
 
 from collections.abc import Iterable
 from dataclasses import dataclass
-from typing import (Optional, Dict, Set, Tuple, Callable, List, Union,
-                    DefaultDict,
-                    TYPE_CHECKING, Any, TypedDict, )
+from typing import (
+    Optional,
+    Dict,
+    Set,
+    Tuple,
+    Callable,
+    List,
+    Union,
+    DefaultDict,
+    TYPE_CHECKING,
+    Any,
+    TypedDict,
+)
 # When type-checking lupa stuff, just use Any; because lupa doesn't
 # have type hints itself, this is the simplest way around it, especially
 # if we don't want to add a dozillion asserts deep into often-run
@@ -41,7 +51,6 @@ from .common import (
     MAGIC_LAST,
     MAX_MAGICS,
     MAGIC_NOWIKI_CHAR,
-    MAGIC_ZH_PLACEHOLDER_CHAR,
     nowiki_quote
 )
 from .dumpparser import process_dump
@@ -57,13 +66,16 @@ PAIRED_HTML_TAGS = set(
 )
 
 PageData = List[dict]
-
-StatsData = TypedDict('StatsData',
-                      { 'num_pages': int,
-                        'language_counts': int,
-                        'pos_counts': int,
-                        'section_counts': int
-                      }, total=False)
+StatsData = TypedDict(
+    "StatsData",
+    {
+        "num_pages": int,
+        "language_counts": int,
+        "pos_counts": int,
+        "section_counts": int,
+    },
+    total=False,
+)
 
 class ErrorMessageData(TypedDict):
     msg: str
@@ -94,13 +106,14 @@ class Page:
 
 
 def phase2_page_handler(
-                        page: Page
-                       ) -> Tuple[bool,  # operation success
-                                  str,   # title
-                                  float, # start time
-                                  # ([results], {error data})
-                                  Optional[Tuple[PageData, StatsData]],
-                                  Optional[str]]:  # error message
+    page: Page,
+) -> Tuple[
+    bool,  # operation success
+    str,  # title
+    float,  # start time
+    Optional[Tuple[PageData, StatsData]], # ([results], {error data})
+    Optional[str],  # error message
+]:
     """Helper function for calling the Phase2 page handler (see
     reprocess()).  This is a global function in order to make this
     pickleable.  The implication is that process() and reprocess() are not
@@ -570,9 +583,6 @@ class Wtp:
         # links as they affect the interpretation of templates.
         # As a preprocessing step, remove comments from the text.
         text = re.sub(r"(?s)<!--.*?-->", "", text)
-        # replace `-{}-`, otherwise templates have `-{}-` in arguments can't
-        # be encoded
-        text = text.replace("-{}-", MAGIC_ZH_PLACEHOLDER_CHAR)
         while True:
             prev = text
             # Encode template arguments.  We repeat this until there are
@@ -636,11 +646,12 @@ class Wtp:
                     break
             # Replace template invocation
             text = re.sub(
-                r"(?si)\{" + MAGIC_NOWIKI_CHAR + r"?\{(("
-                r"\{\|[^{}]*?\|\}|"
-                r"\}[^{}]|"
-                r"[^{}](\{[^{}|])?"
-                r")+?)\}" + MAGIC_NOWIKI_CHAR + r"?\}",
+                r"{" + MAGIC_NOWIKI_CHAR + r"?{(("
+                r"{\|[^{}]*?\|}|"
+                r"}[^{}]|"
+                r"[^{}](?:{[^{}|])?|"
+                r"-{}-"
+                r")+?)}" + MAGIC_NOWIKI_CHAR + r"?}",
                 repl_templ,
                 text,
             )
@@ -1501,13 +1512,6 @@ class Wtp:
         # https://www.mediawiki.org/wiki/Writing_systems/Syntax
         if not pre_expand and self.lang_code == "zh":
             expanded = expanded.replace("-{", "").replace("}-", "")
-            if (
-                expanded != MAGIC_ZH_PLACEHOLDER_CHAR
-                and MAGIC_ZH_PLACEHOLDER_CHAR in expanded
-            ):
-                # remove magic string for `-{}-`
-                # but not replace expanded template arguemnt
-                expanded = expanded.replace(MAGIC_ZH_PLACEHOLDER_CHAR, "")
 
         return expanded
 

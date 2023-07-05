@@ -837,7 +837,7 @@ def magic_fn(ctx, token):
         ctx.error("magic_fn: unsupported cookie kind {!r}"
                    .format(kind), sortid="parser/780")
 
-    
+
 def colon_fn(ctx, token):
     """Handler for a special colon ":" within a template call.  This indicates
     that it is actually a parser function call.  This is called from list_fn()
