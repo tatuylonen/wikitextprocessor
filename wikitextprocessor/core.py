@@ -663,7 +663,6 @@ class Wtp:
             text = re.sub(
                 r"{" + MAGIC_NOWIKI_CHAR + r"?{(("
                 r"[^{}](?:{[^{}|])?|"  # lone possible {???
-                # r"[^{}]{[^{}]+}"  # GitHub issue #72 zh.wiktionary `A{pron}`
                 r"{\|[^{}]*?\|}|"  # Outer table tokens
                 r"}(?=[^{}])|" # lone `}`, (?=...) is not consumed (lookahead)
                 r"-{}-|"  # GitHub issue #59 Chinese wiktionary special `-{}-`

@@ -4,7 +4,7 @@
 
 import unittest
 from wikitextprocessor import Wtp
-from wikitextprocessor.parser import (print_tree, NodeKind, WikiNode)
+from wikitextprocessor.parser import print_tree, NodeKind, WikiNode
 
 
 def parse_with_ctx(title, text, **kwargs):
@@ -2105,6 +2105,21 @@ def foo(x):
             template_node.args,
             [['zh-x'], ["約 有 6 '''%'''{pā} 的 臺灣人 血型 是 A{ēi}B{bī}型。"], []]
         )
+
+    def test_template_regex_backtracking(self):
+        # backtrack regex halts at this wikitext
+        # part of page https://zh.wiktionary.org/wiki/路用
+        tree = parse(
+            "test_page",
+            """#* {{zh-x|人 準若 bat ^孔子字 到 真深，nā koh 加{ke} bat 白話字，也是 加{ke} 一項 ê 路用。|人若是對漢字了解很深，如果再加會白話字，也是多一項'''用處'''。|TW|ref='''1886'''，[http://pojbh.lib.ntnu.edu.tw/artical-12751.htm {{lang|zh|白話字ê利益}} (Pe̍h-oē-jī ê Lī-ek)]}}
+#* {{zh-x|卵白{pe̍h}質，伊 ê 成分 是 炭{Thàn}素，^水素，^酸素，窒{Chek}素，伊 ê 路用 是 會{ōe} hō͘ 人 ê 身軀 得{tit}著[着] 勢{sè}力{le̍k}，也 是 hō͘ 細胞 加{ke}添 新 %ê。|蛋白質，其成分是碳、氫、氧、氮，其'''用途'''是給人體提供能量並再生細胞。 |TW|ref='''1926'''，{{lang|zh|張基全}} (Tiuⁿ Ki-chôan)，[http://210.240.194.97/nmtl/dadwt/thak.asp?id=513&kw=%B2%BF%AF%C0 {{lang|zh|酒佮健康}} (Chiú kap Kiān-khong)]}}
+#* {{zh-x|腦海 中{tiong} 的 走馬燈，留{liû}戀 啥\什{siáⁿ} 路用？|腦海中的跑馬燈，留戀有什麼'''用'''？|TW|ref={{w2|zh|陳一郎}}，{{lang|zh|留戀什路用}}}}
+            """
+        )
+        first_zh_x_node = tree.children[0].children[0].children[1]
+        self.assertTrue(isinstance(first_zh_x_node, WikiNode))
+        self.assertEqual(first_zh_x_node.kind, NodeKind.TEMPLATE)
+        self.assertEqual(first_zh_x_node.args[0], ['zh-x'])
 
 
 # XXX implement <nowiki/> marking for links, templates
