@@ -524,19 +524,19 @@ class Wtp:
             args = vbar_split(orig)
             return self._save_value("A", args, nowiki)
 
-        def repl_arg_err(m):
-            """Replacement function for template arguments, with error."""
-            nowiki = MAGIC_NOWIKI_CHAR in m.group(0)
-            prefix = m.group(1)
-            orig = m.group(2)
-            args = vbar_split(orig)
-            self.debug(
-                "heuristically added missing }} to template arg {}"
-                # a single "}" needs to be escaped as "}}" with .format
-                .format(args[0].strip()),
-                sortid="core/405",
-            )
-            return prefix + self._save_value("A", args, nowiki)
+        # def repl_arg_err(m):
+        #     """Replacement function for template arguments, with error."""
+        #     nowiki = MAGIC_NOWIKI_CHAR in m.group(0)
+        #     prefix = m.group(1)
+        #     orig = m.group(2)
+        #     args = vbar_split(orig)
+        #     self.debug(
+        #         "heuristically added missing }} to template arg {}"
+        #         # a single "}" needs to be escaped as "}}" with .format
+        #         .format(args[0].strip()),
+        #         sortid="core/405",
+        #     )
+        #     return prefix + self._save_value("A", args, nowiki)
 
         def repl_templ(m):
             """Replacement function for templates {{name|...}} and parser
@@ -547,20 +547,20 @@ class Wtp:
             # print("REPL_TEMPL: args={}".format(args))
             return self._save_value("T", args, nowiki)
 
-        def repl_templ_err(m):
-            """Replacement function for templates {{name|...}} and parser
-            functions, with error."""
-            nowiki = MAGIC_NOWIKI_CHAR in m.group(0)
-            prefix = m.group(1)
-            v = m.group(2)
-            args = vbar_split(v)
-            self.debug(
-                "heuristically added missing }} to template {}"
-                # a single "}" needs to be escaped as "}}" with .format
-                .format(args[0].strip()),
-                sortid="core/427",
-            )
-            return prefix + self._save_value("T", args, nowiki)
+        # def repl_templ_err(m):
+        #     """Replacement function for templates {{name|...}} and parser
+        #     functions, with error."""
+        #     nowiki = MAGIC_NOWIKI_CHAR in m.group(0)
+        #     prefix = m.group(1)
+        #     v = m.group(2)
+        #     args = vbar_split(v)
+        #     self.debug(
+        #         "heuristically added missing }} to template {}"
+        #         # a single "}" needs to be escaped as "}}" with .format
+        #         .format(args[0].strip()),
+        #         sortid="core/427",
+        #     )
+        #     return prefix + self._save_value("T", args, nowiki)
 
         def repl_link(m):
             """Replacement function for links [[...]]."""
@@ -603,10 +603,9 @@ class Wtp:
                         # could you replace it with just [^][{}]*?
                         r"\["
                         + MAGIC_NOWIKI_CHAR
-                        + r"?\[(("
-                        + r"[^][{}]|" # any one char except brackets
-                        + r"<[-+*a-zA-Z0-9]*>" # this would already be included?
-                        + r")+)\]"
+                        + r"?\[("
+                        + r"[^][{}]+" # any one char except brackets
+                        + r")\]"
                         + MAGIC_NOWIKI_CHAR
                         + r"?\]",
                         repl_link,
@@ -646,28 +645,28 @@ class Wtp:
                     # sometimes used inside {{#if|...}} for table start/end.
                     # XXX rejecting all possibly erroneous arguments because
                     # they contain a ! anywhere is not ideal.
-                    text = re.sub(
-                        r"([^{]){"  # {{{{{1... is incorrect in wikitext
-                        + MAGIC_NOWIKI_CHAR
-                        + r"?{"
-                        + MAGIC_NOWIKI_CHAR
-                        + r"?{([^{}!]*?)}"
-                        + MAGIC_NOWIKI_CHAR
-                        + r"?}",
-                        repl_arg_err,
-                        text,
-                    )
-                    if text != prev2:
-                        continue
+                    # text = re.sub(
+                    #     r"([^{]){"  # {{{{{1... is incorrect in wikitext
+                    #     + MAGIC_NOWIKI_CHAR
+                    #     + r"?{"
+                    #     + MAGIC_NOWIKI_CHAR
+                    #     + r"?{([^{}!]*?)}"
+                    #     + MAGIC_NOWIKI_CHAR
+                    #     + r"?}",
+                    #     repl_arg_err,
+                    #     text,
+                    # )
+                    # if text != prev2:
+                    #     continue
                     break
             # Replace template invocation
             text = re.sub(
                 r"{" + MAGIC_NOWIKI_CHAR + r"?{(("
-                r"{\|[^{}]*?\|}|"  # Outer table tokens
-                r"}[^{}]|" # lone }????
                 r"[^{}](?:{[^{}|])?|"  # lone possible {???
+                # r"[^{}]{[^{}]+}"  # GitHub issue #72 zh.wiktionary `A{pron}`
+                r"{\|[^{}]*?\|}|"  # Outer table tokens
+                r"}(?=[^{}])|" # lone `}`, (?=...) is not consumed (lookahead)
                 r"-{}-|"  # GitHub issue #59 Chinese wiktionary special `-{}-`
-                r"[^{}]+{[^{}]+}"  # GitHub issue #72 zh.wiktionary `A{pron}`
                 r")+?)}" + MAGIC_NOWIKI_CHAR + r"?}",
                 repl_templ,
                 text,
@@ -679,18 +678,18 @@ class Wtp:
                 # This is so common in Wiktionary that I'm suspecting it
                 # might be allowed by the MediaWiki parser.  We must allow
                 # tables {| ... |} inside these.
-                text = re.sub(
-                    r"([^{])\{"  # Leave a space between ambiguous brackets
-                    + MAGIC_NOWIKI_CHAR
-                    + r"?{(("
-                    + r"[^{}]|"
-                    + r"{\|[^{}]*?\|}|"  # Table brackets
-                    + r"}[^{}])+?)}", # Missing bracket
-                    repl_templ_err,
-                    text,
-                )
-                if text != prev:
-                    continue
+                # text = re.sub(
+                #     r"([^{])\{"  # Leave a space between ambiguous brackets
+                #     + MAGIC_NOWIKI_CHAR
+                #     + r"?{(("
+                #     + r"[^{}]|"
+                #     + r"{\|[^{}]*?\|}|"  # Table brackets
+                #     + r"}[^{}])+?)}", # Missing bracket
+                #     repl_templ_err,
+                #     text,
+                # )
+                # if text != prev:
+                #     continue
                 break
             prev = text
         # Replace any remaining braces etc by corresponding character entities
