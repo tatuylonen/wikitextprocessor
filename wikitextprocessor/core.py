@@ -662,12 +662,12 @@ class Wtp:
                     break
             # Replace template invocation
             text = re.sub(
-                r"{" + MAGIC_NOWIKI_CHAR + r"?{(("
+                r"{" + MAGIC_NOWIKI_CHAR + r"?{((?:"
                 r"{\|[^{}]*?\|}|"  # Outer table tokens
                 r"}[^{}]|" # lone }????
                 r"[^{}](?:{[^{}|])?|"  # lone possible {???
                 r"-{}-|"  # GitHub issue #59 Chinese wiktionary special `-{}-`
-                r"[^{}]+{[^{}]+}"  # GitHub issue #72 zh.wiktionary `A{pron}`
+                r"[^{}]{[^{}]+}"  # GitHub issue #72 zh.wiktionary `A{pron}`
                 r")+?)}" + MAGIC_NOWIKI_CHAR + r"?}",
                 repl_templ,
                 text,
