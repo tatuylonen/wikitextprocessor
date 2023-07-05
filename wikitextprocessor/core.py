@@ -588,14 +588,25 @@ class Wtp:
             # Encode template arguments.  We repeat this until there are
             # no more matches, because otherwise we could encode the two
             # innermost braces as a template transclusion.
+            # KJ: This inside-out parsing seems to work because wikitext
+            # can't parse ambiguous stuff either:
+            # {{ {{NAMESPACE}}}}  <- parser "correctly" as a broken template
+            # {{{{NAMESPACE}}}}  <- parses incorrectly as `{{{{NAMESPACE}}}}`
+
             while True:
                 prev2 = text
                 # Encode links.
                 while True:
                     text = re.sub(
-                        r"(?s)\["
+                        # `[[something<abcd>]]`
+                        # XXX this regex seems to be too complex,
+                        # could you replace it with just [^][{}]*?
+                        r"\["
                         + MAGIC_NOWIKI_CHAR
-                        + r"?\[(([^][{}]|<[-+*a-zA-Z0-9]*>)+)\]"
+                        + r"?\[(("
+                        + r"[^][{}]|" # any one char except brackets
+                        + r"<[-+*a-zA-Z0-9]*>" # this would already be included?
+                        + r")+)\]"
                         + MAGIC_NOWIKI_CHAR
                         + r"?\]",
                         repl_link,
@@ -604,19 +615,22 @@ class Wtp:
                     if text == prev2:
                         break
                     prev2 = text
-                # Encode external links.
-                text = re.sub(r"(?s)\[([^][{}<>|]+)\]", repl_extlink, text)
-                # Encode template arguments
+                # Encode external links: [something]
+                text = re.sub(r"\[([^][{}<>|]+)\]", repl_extlink, text)
+                # Encode template arguments: {{{arg}}}, {{{..{|..|}..}}}
                 text = re.sub(
-                    r"(?s)\{"
+                    r"{"
                     + MAGIC_NOWIKI_CHAR
-                    + r"?\{"
+                    + r"?{"
                     + MAGIC_NOWIKI_CHAR
-                    + r"?\{(([^{}]|\{\|[^{}]*\|\})*?)\}"
+                    + r"?{(("
+                    + r"[^{}]|" # No curly brackets (except inside cookies)
+                    + r"{\|[^{}]*\|}" # Outermost table brackets accepted?
+                    + r")*?)}"
                     + MAGIC_NOWIKI_CHAR
-                    + r"?\}"
+                    + r"?}"
                     + MAGIC_NOWIKI_CHAR
-                    + r"?\}",
+                    + r"?}",
                     repl_arg,
                     text,
                 )
@@ -630,14 +644,16 @@ class Wtp:
                     # be interpreted as a template.
                     # Note: we don't want to do this for {{{!}}, as that is
                     # sometimes used inside {{#if|...}} for table start/end.
+                    # XXX rejecting all possibly erroneous arguments because
+                    # they contain a ! anywhere is not ideal.
                     text = re.sub(
-                        r"(?s)([^{])\{"
+                        r"([^{]){"  # {{{{{1... is incorrect in wikitext
                         + MAGIC_NOWIKI_CHAR
-                        + r"?\{"
+                        + r"?{"
                         + MAGIC_NOWIKI_CHAR
-                        + r"?\{([^{}!]*?)\}"
+                        + r"?{([^{}!]*?)}"
                         + MAGIC_NOWIKI_CHAR
-                        + r"?\}",
+                        + r"?}",
                         repl_arg_err,
                         text,
                     )
@@ -647,11 +663,11 @@ class Wtp:
             # Replace template invocation
             text = re.sub(
                 r"{" + MAGIC_NOWIKI_CHAR + r"?{(("
-                r"{\|[^{}]*?\|}|"
-                r"}[^{}]|"
-                r"[^{}](?:{[^{}|])?|"
-                r"-{}-|"  # GitHub issue #59
-                r"[^{}]+{[^{}]+}"  # GitHub issue #72
+                r"{\|[^{}]*?\|}|"  # Outer table tokens
+                r"}[^{}]|" # lone }????
+                r"[^{}](?:{[^{}|])?|"  # lone possible {???
+                r"-{}-|"  # GitHub issue #59 Chinese wiktionary special `-{}-`
+                r"[^{}]+{[^{}]+}"  # GitHub issue #72 zh.wiktionary `A{pron}`
                 r")+?)}" + MAGIC_NOWIKI_CHAR + r"?}",
                 repl_templ,
                 text,
@@ -664,9 +680,12 @@ class Wtp:
                 # might be allowed by the MediaWiki parser.  We must allow
                 # tables {| ... |} inside these.
                 text = re.sub(
-                    r"(?s)([^{])\{"
+                    r"([^{])\{"  # Leave a space between ambiguous brackets
                     + MAGIC_NOWIKI_CHAR
-                    + r"?\{(([^{}]|\{\|[^{}]*\|\}|\}[^{}])+?)\}",
+                    + r"?{(("
+                    + r"[^{}]|"
+                    + r"{\|[^{}]*?\|}|"  # Table brackets
+                    + r"}[^{}])+?)}", # Missing bracket
                     repl_templ_err,
                     text,
                 )
