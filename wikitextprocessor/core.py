@@ -650,7 +650,8 @@ class Wtp:
                 r"{\|[^{}]*?\|}|"
                 r"}[^{}]|"
                 r"[^{}](?:{[^{}|])?|"
-                r"-{}-"
+                r"-{}-|"  # GitHub issue #59
+                r"[^{}]+{[^{}]+}"  # GitHub issue #72
                 r")+?)}" + MAGIC_NOWIKI_CHAR + r"?}",
                 repl_templ,
                 text,

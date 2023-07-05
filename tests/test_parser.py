@@ -2070,6 +2070,7 @@ def foo(x):
         string placeholder.
         -{}- syntax doc: https://www.mediawiki.org/wiki/Writing_systems/Syntax
         example template: https://zh.wiktionary.org/wiki/Template:Ja-romanization_of
+        GitHub issue #59
         """
         tree = parse(
             "test_page",
@@ -2090,6 +2091,21 @@ def foo(x):
                 ["noprimaryentrycat="],
             ],
         )
+
+    def test_unused_pinyin_template_argument(self):
+        # GitHub issue #72
+        tree = parse(
+            "test_page",
+            "{{zh-x|約 有 6 '''%'''{pā} 的 臺灣人 血型 是 A{ēi}B{bī}型。|}}"
+        )
+        template_node = tree.children[0]
+        self.assertTrue(isinstance(template_node, WikiNode))
+        self.assertEqual(template_node.kind, NodeKind.TEMPLATE)
+        self.assertEqual(
+            template_node.args,
+            [['zh-x'], ["約 有 6 '''%'''{pā} 的 臺灣人 血型 是 A{ēi}B{bī}型。"], []]
+        )
+
 
 # XXX implement <nowiki/> marking for links, templates
 #  - https://en.wikipedia.org/wiki/Help:Wikitext#Nowiki
