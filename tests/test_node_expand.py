@@ -23,6 +23,7 @@ def parse_with_ctx(title, text, **kwargs):
 
 def parse(title, text, **kwargs):
     root, ctx = parse_with_ctx(title, text, **kwargs)
+    ctx.close_db_conn()
     assert isinstance(root, WikiNode)
     assert isinstance(ctx, Wtp)
     return root
@@ -34,6 +35,7 @@ class NodeExpTests(unittest.TestCase):
         self.assertEqual(ctx.errors, [])
         self.assertEqual(ctx.warnings, [])
         t = ctx.node_to_wikitext(root)
+        ctx.close_db_conn()
         self.assertEqual(t, expected)
 
     def tohtml(self, text, expected):
@@ -41,6 +43,7 @@ class NodeExpTests(unittest.TestCase):
         self.assertEqual(ctx.errors, [])
         self.assertEqual(ctx.warnings, [])
         t = ctx.node_to_html(root)
+        ctx.close_db_conn()
         self.assertEqual(t, expected)
 
     def totext(self, text, expected):
@@ -48,6 +51,7 @@ class NodeExpTests(unittest.TestCase):
         self.assertEqual(ctx.errors, [])
         self.assertEqual(ctx.warnings, [])
         t = ctx.node_to_text(root)
+        ctx.close_db_conn()
         self.assertEqual(t, expected)
 
     def test_basic1(self):
@@ -213,3 +217,39 @@ class NodeExpTests(unittest.TestCase):
         Test the case when a template's body is an empty string in the database.
         """
         self.totext("{{blank template}}", "")
+
+
+    def test_language_converter_placeholder(self) -> None:
+        # "-{}-" template argument shouldn't be cleaned before invoke Lua module
+        # GitHub issue #59
+        wtp = Wtp(lang_code="zh")
+        # https://zh.wiktionary.org/wiki/Template:Ja-romanization_of
+        wtp.add_page(
+            "Template:Ja-romanization of",
+            10,
+            "{{#invoke:form of/templates|form_of_t|-{}-|withcap=1|lang=ja}}"
+        )
+        # https://zh.wiktionary.org/wiki/Module:Form_of/templates
+        wtp.add_page(
+            "Module:Form of/templates",
+            828,
+            """
+            local export = {}
+            function export.form_of_t(frame)
+                if frame.args[1] ~= "-{}-" then
+                    error("Incorrect first parameter")
+                end
+                local template_args = frame:getParent().args
+                return "[[" .. template_args[1] .. "#日語|-{" .. template_args[1] .."}-]]</i></span> " .. frame.args[1] .. "</span>"
+            end
+            return export
+            """,
+            model="Scribunto"
+        )
+        wtp.db_conn.commit()
+        wtp.start_page("test_page")
+        self.assertEqual(
+            wtp.expand("{{ja-romanization of|まんが}}"),
+            "[[まんが#日語|まんが]]</i></span> </span>"
+        )
+        wtp.close_db_conn()
