@@ -48,6 +48,7 @@ return export
 """]])
         ctx.start_page("Tt")
         ret = ctx.expand("{{#invoke:testmod|testfn}}", timeout=timeout)
+        ctx.close_db_conn()
         self.assertEqual(len(ctx.expand_stack), 1)
         self.assertEqual(ret, expected_ret)
 
@@ -3262,6 +3263,8 @@ return export
 	               return mw.ustring.gsub("foof[[]]", ".", a);""")
 
 
+    def test_title_1_colon_e(self) -> None:
+        self.scribunto("1:e", "return mw.title.new('1:e').text")
 
 
 # XXX Test template_fn

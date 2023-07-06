@@ -1829,7 +1829,7 @@ class Wtp:
         else:
             placeholders = []
         query_str += " ORDER BY title ASC"
-        print(f"Getting all pages for query: '{query_str}'")
+        # print(f"Getting all pages for query: '{query_str}'")
 
         for result in self.db_conn.execute(
             query_str, placeholders,

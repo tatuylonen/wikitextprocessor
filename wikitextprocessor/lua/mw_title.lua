@@ -159,10 +159,10 @@ function mw_title.makeTitle(namespace, title, fragment, interwiki)
      NAMESPACE_DATA.File.name .. ":",
      NAMESPACE_DATA.Special.name .. ":",
    }
-   for v in ipairs(NAMESPACE_DATA.Project.aliases) do
+   for i, v in ipairs(NAMESPACE_DATA.Project.aliases) do
     table.insert(prefixes, v .. ":")
    end
-   for v in ipairs(NAMESPACE_DATA.File.aliases) do
+   for i, v in ipairs(NAMESPACE_DATA.File.aliases) do
     table.insert(prefixes, v .. ":")
    end
    -- XXX other disallowed prefixes, see
