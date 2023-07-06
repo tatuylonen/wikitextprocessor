@@ -1528,7 +1528,8 @@ class Wtp:
 
         # Remove LanguageConverter markups:
         # https://www.mediawiki.org/wiki/Writing_systems/Syntax
-        if not pre_expand and self.lang_code == "zh":
+        # but ignore `-{}-` template argument placeholder: #59
+        if not pre_expand and self.lang_code == "zh" and text != "-{}-":
             expanded = expanded.replace("-{", "").replace("}-", "")
 
         return expanded

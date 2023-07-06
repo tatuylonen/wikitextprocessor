@@ -2,12 +2,10 @@
 #
 # Copyright (c) 2020, 2021, 2022 Tatu Ylonen.  See file LICENSE and https://ylonen.org
 
-import os
 import math
 import time
 import unittest
 
-from pathlib import Path
 from typing import List, Tuple
 
 from wikitextprocessor import Wtp
@@ -3262,6 +3260,9 @@ return export
         self.scribunto("fOOf[[]]",
                        """a = {}; a["o"] = "O";
 	               return mw.ustring.gsub("foof[[]]", ".", a);""")
+
+
+
 
 # XXX Test template_fn
 
