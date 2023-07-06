@@ -14,7 +14,7 @@ import unicodedata
 import pkg_resources
 import multiprocessing # XXX debug, remove me
 
-from typing import Optional, TYPE_CHECKING, List, Tuple
+from typing import Optional, TYPE_CHECKING, List, Tuple, Dict, Union
 
 import lupa.lua51 as lupa
 from .parserfns import PARSER_FUNCTIONS, call_parser_function, tag_fn
@@ -71,6 +71,9 @@ def lua_loader(ctx: "Wtp", modname: str) -> Optional[str]:
         path = re.sub(r"^//+", "", path)  # Remove initial slashes
         path += ".lua"
         data = None
+
+        prefix: str
+        exceptions: List[str]
         for prefix, exceptions in builtin_lua_search_paths:
             if modname in exceptions:
                 continue
@@ -83,13 +86,13 @@ def lua_loader(ctx: "Wtp", modname: str) -> Optional[str]:
     return data
 
 
-def mw_text_decode(text, decodeNamedEntities):
+def mw_text_decode(text: str, decodeNamedEntities: bool) -> str:
     """Implements the mw.text.decode function for Lua code."""
     if decodeNamedEntities:
         return html.unescape(text)
 
     # Otherwise decode only selected entities
-    parts = []
+    parts: List[str] = []
     pos = 0
     for m in re.finditer(r"&(lt|gt|amp|quot|nbsp);", text):
         if pos < m.start():
@@ -112,14 +115,14 @@ def mw_text_decode(text, decodeNamedEntities):
     return "".join(parts)
 
 
-def mw_text_encode(text, charset):
+def mw_text_encode(text: str, charset: str) -> str:
     """Implements the mw.text.encode function for Lua code."""
-    parts = []
+    parts: List[str] = []
     for ch in str(text):
         if ch in charset:
             chn = ord(ch)
             if chn in html.entities.codepoint2name:
-                parts.append("&" + html.entities.codepoint2name.get(chn) + ";")
+                parts.append("&" + html.entities.codepoint2name[chn] + ";")
             else:
                 parts.append(ch)
         else:
@@ -127,19 +130,22 @@ def mw_text_encode(text, charset):
     return "".join(parts)
 
 
-def mw_text_jsondecode(ctx, s, *rest):
-    flags = rest[0] if rest else 0
-    value = json.loads(s)
+def mw_text_jsondecode(ctx: "Wtp", s: str, *rest):
+    flags: int = rest[0] if rest else 0
+    value: Dict = json.loads(s)
+    assert isinstance(ctx.lua, lupa.LuaRuntime)
+    # Assign locally to assure type-checker this exists
+    table_from = ctx.lua.table_from
 
-    def recurse(x):
+    def recurse(x: Union[List, Tuple, Dict]):
         if isinstance(x, (list, tuple)):
-            return ctx.lua.table_from(list(map(recurse, x)))
+            return table_from(list(map(recurse, x)))
         if not isinstance(x, dict):
             return x
         # It is a dict.
         if (flags & 1) == 1:
             # JSON_PRESERVE_KEYS flag means we don't convert keys.
-            return ctx.lua.table_from({k: recurse(v) for k, v in x.items()})
+            return table_from({k: recurse(v) for k, v in x.items()})
         # Convert numeric keys to integers and see if we can make it a
         # table with sequential integer keys.
         for k, v in list(x.items()):
@@ -149,14 +155,14 @@ def mw_text_jsondecode(ctx, s, *rest):
             else:
                 x[k] = recurse(v)
         if not all(isinstance(k, int) for k in x.keys()):
-            return ctx.lua.table_from(x)
+            return table_from(x)
         keys = list(sorted(x.keys()))
         if not all(keys[i] == i + 1 for i in range(len(keys))):
-            return ctx.lua.table_from(x)
+            return table_from(x)
         # Old unused print value? XXX remove this if you can't figure out
         # what it's for.
         # values = list(x[i + 1] for i in range(len(keys)))
-        return ctx.lua.table_from(x)
+        return table_from(x)
 
     value = recurse(value)
     return value
@@ -197,6 +203,8 @@ def get_page_info(ctx: "Wtp", title: str, namespace_id: int):
     namespace prefix.  This returns a lua table with fields "id", "exists",
     and "redirectTo".  This is used for retrieving information about page
     titles."""
+    assert ctx.lua is not None
+
     page_id = 0  # XXX collect required info in phase 1
     page = ctx.get_page(title, namespace_id)
     # whether the page exists and what its id might be

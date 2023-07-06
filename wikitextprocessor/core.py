@@ -32,8 +32,8 @@ from typing import (
     Union,
     DefaultDict,
     TYPE_CHECKING,
-    Any,
     TypedDict,
+    Any,
 )
 # When type-checking lupa stuff, just use Any; because lupa doesn't
 # have type hints itself, this is the simplest way around it, especially
@@ -59,6 +59,7 @@ from .node_expand import to_wikitext, to_html, to_text
 if TYPE_CHECKING:
     from .parser import WikiNode
     from .parserfns import Namespace
+    from lupa.lua51 import LuaRuntime, _LuaTable, LuaNumber
 
 # Set of HTML tags that need an explicit end tag.
 PAIRED_HTML_TAGS = set(
@@ -235,10 +236,12 @@ class Wtp:
         self.debugs: List[ErrorMessageData] = []
         self.section: Optional[str] = None
         self.subsection: Optional[str] = None
-        self.lua: Any = None
-        self.lua_invoke = None
-        self.lua_reset_env = None
-        self.lua_clear_loaddata_cache = None
+        self.lua: Optional["LuaRuntime"] = None
+        self.lua_invoke: Optional[Callable[[str, str, "_LuaTable",
+                                           str, Optional[LuaNumber]],
+                                           Union[bool, Any]]] = None
+        self.lua_reset_env: Optional[Callable[[], "_LuaTable"]] = None
+        self.lua_clear_loaddata_cache: Optional[Callable[[], None]] = None
         self.lua_depth = 0
         self.quiet = quiet
         self.rev_ht: Dict[CookieData, str] = {}
