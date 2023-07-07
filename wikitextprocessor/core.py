@@ -35,6 +35,7 @@ from typing import (
     TypedDict,
     Any,
 )
+
 # When type-checking lupa stuff, just use Any; because lupa doesn't
 # have type hints itself, this is the simplest way around it, especially
 # if we don't want to add a dozillion asserts deep into often-run
@@ -51,7 +52,7 @@ from .common import (
     MAGIC_LAST,
     MAX_MAGICS,
     MAGIC_NOWIKI_CHAR,
-    nowiki_quote
+    nowiki_quote,
 )
 from .dumpparser import process_dump
 from .node_expand import to_wikitext, to_html, to_text
@@ -78,6 +79,7 @@ StatsData = TypedDict(
     total=False,
 )
 
+
 class ErrorMessageData(TypedDict):
     msg: str
     trace: str
@@ -86,6 +88,7 @@ class ErrorMessageData(TypedDict):
     subsection: str
     called_from: str
     path: Tuple[str, ...]
+
 
 CookieData = Tuple[str, Iterable, bool]
 
@@ -112,7 +115,7 @@ def phase2_page_handler(
     bool,  # operation success
     str,  # title
     float,  # start time
-    Optional[Tuple[PageData, StatsData]], # ([results], {error data})
+    Optional[Tuple[PageData, StatsData]],  # ([results], {error data})
     Optional[str],  # error message
 ]:
     """Helper function for calling the Phase2 page handler (see
@@ -134,23 +137,29 @@ def phase2_page_handler(
 
         ctx.start_page(page.title)
         try:
-            ret: Tuple[PageData, StatsData]  = _global_page_handler(page)
+            ret: Tuple[PageData, StatsData] = _global_page_handler(page)
             return True, page.title, start_t, ret, None
         except Exception as e:
             lst = traceback.format_exception(
                 type(e), value=e, tb=e.__traceback__
             )
-            msg = '=== EXCEPTION while parsing page "{}":\n ' \
-                  'in process {}'.format(
-                page.title, multiprocessing.current_process().name,
-            ) + "".join(lst)
+            msg = (
+                '=== EXCEPTION while parsing page "{}":\n '
+                "in process {}".format(
+                    page.title,
+                    multiprocessing.current_process().name,
+                )
+                + "".join(lst)
+            )
             return False, page.title, start_t, ([], {}), msg
+
 
 class BegLineDisableManager(object):
     """A 'context manager'-style object to use with `with` that increments
     and decrements a counter used as a flag to see whether the parser
     should care about tokens at the beginning of a line, used in magic_fn
     to disable parsing when just looping through arguments"""
+
     def __init__(self, ctx: "Wtp"):
         self.ctx = ctx
 
@@ -162,6 +171,7 @@ class BegLineDisableManager(object):
         self.ctx.begline_disable_counter -= 1
         if self.ctx.begline_disable_counter < 1:
             self.ctx.begline_enabled = True
+
 
 class Wtp:
     """Context used for processing wikitext and for expanding templates,
@@ -237,9 +247,12 @@ class Wtp:
         self.section: Optional[str] = None
         self.subsection: Optional[str] = None
         self.lua: Optional["LuaRuntime"] = None
-        self.lua_invoke: Optional[Callable[[str, str, "_LuaTable",
-                                           str, Optional[LuaNumber]],
-                                           Union[bool, Any]]] = None
+        self.lua_invoke: Optional[
+            Callable[
+                [str, str, "_LuaTable", str, Optional[LuaNumber]],
+                Union[bool, Any],
+            ]
+        ] = None
         self.lua_reset_env: Optional[Callable[[], "_LuaTable"]] = None
         self.lua_clear_loaddata_cache: Optional[Callable[[], None]] = None
         self.lua_depth = 0
@@ -313,7 +326,7 @@ class Wtp:
 
     def has_analyzed_templates(self) -> bool:
         for (result,) in self.db_conn.execute(
-                "SELECT count(*) > 0 FROM pages WHERE need_pre_expand = 1"
+            "SELECT count(*) > 0 FROM pages WHERE need_pre_expand = 1"
         ):
             return result == 1
         return False
@@ -354,10 +367,7 @@ class Wtp:
                 for data in self.NAMESPACE_DATA.values()
             }
 
-    def _fmt_errmsg(self, kind: str,
-                    msg: str,
-                    trace: Optional[str]
-                   ) -> None:
+    def _fmt_errmsg(self, kind: str, msg: str, trace: Optional[str]) -> None:
         assert isinstance(kind, str)
         assert isinstance(msg, str)
         assert isinstance(trace, (str, type(None)))
@@ -607,7 +617,7 @@ class Wtp:
                         r"\["
                         + MAGIC_NOWIKI_CHAR
                         + r"?\[("
-                        + r"[^][{}]+" # any one char except brackets
+                        + r"[^][{}]+"  # any one char except brackets
                         + r")\]"
                         + MAGIC_NOWIKI_CHAR
                         + r"?\]",
@@ -626,8 +636,8 @@ class Wtp:
                     + r"?\{"
                     + MAGIC_NOWIKI_CHAR
                     + r"?\{(("
-                    + r"[^{}]|" # No curly brackets (except inside cookies)
-                    + r"\{\|[^{}]*\|\}" # Outermost table brackets accepted?
+                    + r"[^{}]|"  # No curly brackets (except inside cookies)
+                    + r"\{\|[^{}]*\|\}"  # Outermost table brackets accepted?
                     + r")*?)\}"
                     + MAGIC_NOWIKI_CHAR
                     + r"?\}"
@@ -667,7 +677,7 @@ class Wtp:
                 r"\{" + MAGIC_NOWIKI_CHAR + r"?\{((?:"
                 r"[^{}](?:\{[^{}|])?|"  # lone possible { and also default "any"
                 r"\{\|[^{}]*?\|\}|"  # Outer table tokens
-                r"\}(?=[^{}])|" # lone `}`, (?=...) is not consumed (lookahead)
+                r"\}(?=[^{}])|"  # lone `}`, (?=...) is not consumed (lookahead)
                 r"-\{}-|"  # GitHub issue #59 Chinese wiktionary special `-{}-`
                 r")+?)\}" + MAGIC_NOWIKI_CHAR + r"?\}",
                 repl_templ,
@@ -710,9 +720,7 @@ class Wtp:
         # Remove all comments
         text = re.sub(r"(?s)<!--.*?-->", "", text)
         # Remove all text inside <noinclude> ... </noinclude>
-        text = re.sub(
-            r"(?is)<noinclude\s*>.*?</noinclude\s*>", "", text
-        )
+        text = re.sub(r"(?is)<noinclude\s*>.*?</noinclude\s*>", "", text)
         # Handle <noinclude> without matching </noinclude> by removing the
         # rest of the file.  <noinclude/> is handled specially elsewhere, as
         # it appears to be used as a kludge to prevent normal interpretation
@@ -830,9 +838,7 @@ class Wtp:
             outside = newt
         # Check if the template contains certain table elements
         m = re.search(r"(?s)(^|\n)(\|\+|\|-|\!)", outside)
-        m2 = re.match(
-            r"(?si)\s*(<includeonly>|<!--.*?-->)(\|\||!!)", outside
-        )
+        m2 = re.match(r"(?si)\s*(<includeonly>|<!--.*?-->)(\|\||!!)", outside)
         contains_table_element = m is not None or m2 is not None
         # if contains_table_element:
         #     print("contains_table_element {!r} at {}"
@@ -861,22 +867,6 @@ class Wtp:
         #         if v != 0:
         #             print("  {} {}".format(v, k))
 
-        # Chinese Wiktionary uses templates for language and POS headings
-        # Language templates: https://zh.wiktionary.org/wiki/Category:语言模板
-        # POS templates: https://zh.wiktionary.org/wiki/Category:詞類模板
-        is_chinese_heading = self.lang_code == "zh" and name.startswith(
-            ("-", "=")
-        )
-
-        # Determine whether this template should be pre-expanded
-        pre_expand = (
-            contains_list
-            or contains_unpaired_table
-            or contains_table_element
-            or contains_unbalanced_html
-            or is_chinese_heading
-        )
-
         # if pre_expand:
         #     print(name,
         #           {"list": contains_list,
@@ -897,6 +887,22 @@ class Wtp:
             if not name:
                 continue
             included_templates.add(name)
+
+        # Chinese Wiktionary language and POS subtitle template
+        # uses "langhd" template
+        is_chinese_heading = self.lang_code == "zh" and (
+            "langhd" in included_templates
+            or is_chinese_subtitle_template(self, name)
+        )
+
+        # Determine whether this template should be pre-expanded
+        pre_expand = (
+            contains_list
+            or contains_unpaired_table
+            or contains_table_element
+            or contains_unbalanced_html
+            or is_chinese_heading
+        )
 
         return included_templates, pre_expand
 
@@ -926,7 +932,7 @@ class Wtp:
         expand_stack: List[Page] = []
         included_map = collections.defaultdict(set)
 
-        for page in self.get_all_pages([template_ns_id], False):
+        for page in self.get_all_pages([template_ns_id]):
             if page.body:
                 used_templates, pre_expand = self._analyze_template(
                     page.title, page.body
@@ -936,6 +942,8 @@ class Wtp:
                 if pre_expand:
                     self.set_template_pre_expand(page.title)
                     expand_stack.append(page)
+            elif is_chinese_subtitle_template(self, page.title):
+                self.set_template_pre_expand(page.title)
 
         # XXX consider encoding template bodies here (also need to save related
         # cookies).  This could speed up their expansion, where the first
@@ -950,20 +958,30 @@ class Wtp:
                 continue
             for template_title in included_map[page.title]:
                 template = self.get_page(template_title, template_ns_id)
-
-                if  not template or template.need_pre_expand:
+                if not template or template.need_pre_expand:
                     continue
                 # print("propagating EXP {} -> {}".format(name, inc))
                 self.set_template_pre_expand(template.title)
                 expand_stack.append(template)
 
-        # Also set `need_pre_expand` value for redirected templates
+        # Also set `need_pre_expand` value for redirected source templates
         query_str = """
         UPDATE pages SET need_pre_expand = 1
         FROM pages AS dest
         WHERE pages.redirect_to = dest.title
         AND pages.namespace_id = dest.namespace_id
         AND dest.need_pre_expand = 1
+        AND pages.need_pre_expand = 0
+        """
+        self.db_conn.execute(query_str)
+
+        # set `need_pre_expand` value to redirected destination page
+        query_str = """
+        UPDATE pages SET need_pre_expand = 1
+        FROM pages AS source
+        WHERE pages.title = source.redirect_to
+        AND pages.namespace_id = source.namespace_id
+        AND source.need_pre_expand = 1
         AND pages.need_pre_expand = 0
         """
         self.db_conn.execute(query_str)
@@ -1462,9 +1480,9 @@ class Wtp:
                             # XXX no real need to expand here, it will expanded
                             #  on next iteration anyway (assuming parent
                             # unchanged). Otherwise expand the body
-                            t = expand_recurse(encoded_body,
-                                               new_parent,
-                                               expand_all)
+                            t = expand_recurse(
+                                encoded_body, new_parent, expand_all
+                            )
 
                     # If a post_template_fn has been supplied, call it now
                     # to capture or alter the expansion
@@ -1658,15 +1676,19 @@ class Wtp:
             )
             # Single-threaded version (without subprocessing).  This is
             # primarily intended for debugging.
-            for page in self.get_all_pages(namespace_ids, include_redirects,
-                                           search_pattern=search_pattern):
+            for page in self.get_all_pages(
+                namespace_ids, include_redirects, search_pattern=search_pattern
+            ):
                 success, ret_title, t, ret, err = phase2_page_handler(page)
                 assert ret_title == page.title
                 if not success:
                     # Print error in parent process - do not remove
                     logging.error(ret)
-                    lines = err.splitlines() if err else [
-                                "NO ERROR MESSAGE FROM phase2_page_handler"]
+                    lines = (
+                        err.splitlines()
+                        if err
+                        else ["NO ERROR MESSAGE FROM phase2_page_handler"]
+                    )
                     msg = lines[0]
                     trace = "\n".join(lines[1:])
                     if "EXCEPTION" in msg:
@@ -1712,8 +1734,11 @@ class Wtp:
             )
             for success, title, t, ret, err in pool.imap_unordered(
                 phase2_page_handler,
-                self.get_all_pages(namespace_ids, include_redirects,
-                                   search_pattern=search_pattern),
+                self.get_all_pages(
+                    namespace_ids,
+                    include_redirects,
+                    search_pattern=search_pattern,
+                ),
             ):
                 if not success:
                     # Print error in parent process - do not remove
@@ -1807,11 +1832,13 @@ class Wtp:
         self,
         namespace_ids: Optional[List[int]] = None,
         include_redirects: bool = True,
-        search_pattern: Optional[str]= None,
+        search_pattern: Optional[str] = None,
     ) -> Iterable[Page]:
-        query_str = "SELECT title, namespace_id, redirect_to, " \
-                    "need_pre_expand, body, model" \
-                    " FROM pages"
+        query_str = (
+            "SELECT title, namespace_id, redirect_to, "
+            "need_pre_expand, body, model"
+            " FROM pages"
+        )
         and_strs = []
 
         if namespace_ids is not None:
@@ -1836,7 +1863,8 @@ class Wtp:
         # print(f"Getting all pages for query: '{query_str}'")
 
         for result in self.db_conn.execute(
-            query_str, placeholders,
+            query_str,
+            placeholders,
         ):
             yield Page(
                 title=result[0],
@@ -1987,7 +2015,9 @@ class Wtp:
         )
 
 
-def overwrite_zh_template(ctx: Wtp, template_name: str, expanded_template: str) -> str:
+def overwrite_zh_template(
+    ctx: Wtp, template_name: str, expanded_template: str
+) -> str:
     """
     Modify some expanded Chinese Wiktionary templates to standard heading format
     """
@@ -1997,24 +2027,23 @@ def overwrite_zh_template(ctx: Wtp, template_name: str, expanded_template: str) 
     elif template_name.startswith(("-", "=")):
         if "<h2>" in expanded_template:
             # Remove <h2> tag: https://zh.wiktionary.org/wiki/Template:-la-
-            rs = re.search(
-                r"<h2>([^<]+)</h2>", expanded_template
-            )
+            rs = re.search(r"<h2>([^<]+)</h2>", expanded_template)
             if rs:
                 # Technically the search could still fail
                 lang_heading = rs.group(1)
                 expanded_template = f"=={lang_heading}=="
             else:
-                ctx.error("'<h2>' in heading template but failed to find "
-                            "matching '</h2>'",
-                            sortid="core/1944/20230628")
+                ctx.error(
+                    "'<h2>' in heading template but failed to find "
+                    "matching '</h2>'",
+                    sortid="core/1944/20230628",
+                )
         elif "==" in expanded_template and " " in expanded_template:
             # Remove image from template like "-abbr-" and "=a="
             # which expanded to
             # "[[Category:英語形容詞|wide]]\n===[[Image:Open book 01.png|30px]]
             #  [[形容詞]]===\n"
-            rs = re.search(
-                r"=+([^=]+)=+", expanded_template.strip())
+            rs = re.search(r"=+([^=]+)=+", expanded_template.strip())
             if rs:
                 heading = rs.group(1).split()[-1]
                 equal_sign_count = 0
@@ -2024,12 +2053,34 @@ def overwrite_zh_template(ctx: Wtp, template_name: str, expanded_template: str) 
                     elif equal_sign_count > 0:
                         break
                 expanded_template = "=" * equal_sign_count
-                expanded_template = expanded_template + heading + expanded_template
+                expanded_template = (
+                    expanded_template + heading + expanded_template
+                )
             else:
-                ctx.error("failed to remove image from heading template",
-                           sortid="core/1963/20230628")
+                ctx.error(
+                    "failed to remove image from heading template",
+                    sortid="core/1963/20230628",
+                )
     elif template_name == "CC-CEDICT":
         # Avoid pasring this license template
         expanded_template = ""
 
     return expanded_template
+
+
+def is_chinese_subtitle_template(wtp: Wtp, title: str) -> bool:
+    # Chinese Wiktionary uses templates for language and POS headings
+    # Language templates: https://zh.wiktionary.org/wiki/Category:语言模板
+    # POS templates: https://zh.wiktionary.org/wiki/Category:詞類模板
+    # and their titles are usually starts with "-" or "="
+    template_ns = wtp.NAMESPACE_DATA.get("Template", {})
+    template_ns_local_name = template_ns.get("name")
+    title_no_prefix = title.removeprefix(
+        template_ns_local_name + ":"
+    )
+    for token in ["-", "="]:
+        if title_no_prefix.startswith(token) and title_no_prefix.endswith(
+            token
+        ):
+            return True
+    return False
