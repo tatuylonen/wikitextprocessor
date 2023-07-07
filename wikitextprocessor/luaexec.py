@@ -14,13 +14,14 @@ import unicodedata
 import pkg_resources
 import multiprocessing # XXX debug, remove me
 
-from typing import Optional, TYPE_CHECKING, List, Tuple, Dict, Union
+from typing import Optional, TYPE_CHECKING, List, Tuple, Dict, Union, Any
 
 import lupa.lua51 as lupa
 from .parserfns import PARSER_FUNCTIONS, call_parser_function, tag_fn
 
 if TYPE_CHECKING:
-    from .core import Wtp
+    from .core import Wtp, Page
+    from lupa.lua51 import _LuaTable
 
 # List of search paths for Lua libraries.
 builtin_lua_search_paths: List[Tuple[str, List[str]]] = [
@@ -30,7 +31,7 @@ builtin_lua_search_paths: List[Tuple[str, List[str]]] = [
 ]
 
 # Determine which directory our data files are in
-lua_dir = pkg_resources.resource_filename("wikitextprocessor", "lua/")
+lua_dir: str = pkg_resources.resource_filename("wikitextprocessor", "lua/")
 if not lua_dir.endswith("/"):
     lua_dir += "/"
 # print("lua_dir", lua_dir)
@@ -131,7 +132,7 @@ def mw_text_encode(text: str, charset: str) -> str:
 
 
 def mw_text_jsondecode(ctx: "Wtp", s: str, *rest):
-    flags: int = rest[0] if rest else 0
+    flags = int(rest[0]) if rest else 0
     value: Dict = json.loads(s)
     assert isinstance(ctx.lua, lupa.LuaRuntime)
     # Assign locally to assure type-checker this exists
@@ -168,8 +169,8 @@ def mw_text_jsondecode(ctx: "Wtp", s: str, *rest):
     return value
 
 
-def mw_text_jsonencode(s, *rest):
-    flags = rest[0] if rest else 0
+def mw_text_jsonencode(s: Any, *rest) -> str:
+    flags = int(rest[0]) if rest else 0
 
     def recurse(x):
         if isinstance(x, (str, int, float, type(None), type(True))):
@@ -198,7 +199,7 @@ def mw_text_jsonencode(s, *rest):
     return json.dumps(value, sort_keys=True)
 
 
-def get_page_info(ctx: "Wtp", title: str, namespace_id: int):
+def get_page_info(ctx: "Wtp", title: str, namespace_id: int) -> "_LuaTable":
     """Retrieves information about a page identified by its table (with
     namespace prefix.  This returns a lua table with fields "id", "exists",
     and "redirectTo".  This is used for retrieving information about page
@@ -206,7 +207,7 @@ def get_page_info(ctx: "Wtp", title: str, namespace_id: int):
     assert ctx.lua is not None
 
     page_id = 0  # XXX collect required info in phase 1
-    page = ctx.get_page(title, namespace_id)
+    page: Optional["Page"] = ctx.get_page(title, namespace_id)
     # whether the page exists and what its id might be
     dt = {
         "id": page_id,
@@ -226,10 +227,13 @@ def get_page_content(ctx: "Wtp", title: str) -> Optional[str]:
     return ctx.read_by_title(title.strip())
 
 
-def fetch_language_name(ctx, code):
+def fetch_language_name(ctx: "Wtp", code: str) -> str:
     """This function is called from Lua code as part of the mw.language
     implementation.  This maps a language code to its name."""
-    return ctx.LANGUAGES_BY_CODE.get(code)
+    ret = ctx.LANGUAGES_BY_CODE.get(code)
+    if ret:
+        return ret[0]
+    return ""
 
 
 def fetch_language_names(ctx, include):
