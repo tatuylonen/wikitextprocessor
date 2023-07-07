@@ -1789,14 +1789,15 @@ class Wtp:
                     title=result[0],
                     namespace_id=result[1],
                     redirect_to=result[2],
-                    need_pre_expand=result[3],
+                    need_pre_expand=result[3] == 1,
                     body=result[4],
                     model=result[5],
                 )
         except sqlite3.ProgrammingError as e:
             raise sqlite3.ProgrammingError(
-                        f"{' '.join(e.args)}"
-                        f" Current database file path: {self.db_path}") from e
+                f"{' '.join(e.args)}"
+                f" Current database file path: {self.db_path}"
+            ) from e
         return None
 
     def page_exists(self, title: str) -> bool:
