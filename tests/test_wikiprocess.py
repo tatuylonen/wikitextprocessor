@@ -3262,9 +3262,37 @@ return export
                        """a = {}; a["o"] = "O";
 	               return mw.ustring.gsub("foof[[]]", ".", a);""")
 
-
     def test_title_1_colon_e(self) -> None:
         self.scribunto("1:e", "return mw.title.new('1:e').text")
+
+    def test_analyze_redirect_pre_expand_templates(self) -> None:
+        '''
+        In Chinese Wiktionary, Template:-it- redirects to Template:意大利语,
+        and this template expands to wikitext `==意大利语==`, which is a level
+        two language subtitle node for Italian words. This test checks both
+        pages should have `need_pre_expand` set to `True` in two redirect cases:
+        Template:-it- -> Template:意大利语
+        or Template:意大利语 -> Template:-it-
+        '''
+        wtp = Wtp(lang_code="zh")
+        # source page need_pre_expand is True
+        wtp.add_page("Template:意大利語", 10, body="==意大利语==")
+        wtp.add_page("Template:-it-", 10, redirect_to="Template:意大利語")
+        wtp.analyze_templates()
+        source_page = wtp.get_page("Template:-it-", 10)
+        self.assertTrue(source_page.need_pre_expand)
+        dest_page = wtp.get_page("Template:意大利語", 10)
+        self.assertTrue(dest_page.need_pre_expand)
+
+        # destination page need_pre_expand is True
+        wtp.add_page("Template:意大利語", 10, redirect_to="Template:-it-")
+        wtp.add_page("Template:-it-", 10, body="==意大利语==")
+        wtp.analyze_templates()
+        dest_page = wtp.get_page("Template:-it-", 10)
+        self.assertTrue(dest_page.need_pre_expand)
+        source_page = wtp.get_page("Template:意大利語", 10)
+        self.assertTrue(source_page.need_pre_expand)
+        wtp.close_db_conn()
 
 
 # XXX Test template_fn
