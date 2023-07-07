@@ -78,6 +78,20 @@ StatsData = TypedDict(
     },
     total=False,
 )
+NamespaceDataEntry = TypedDict(
+    "NamespaceDataEntry",
+    {
+        "aliases": List[str],
+        "content": bool,
+        "id": int,
+        "issubject": bool,
+        "istalk": bool,
+        "name": str,
+    },
+    total=True,
+)
+
+JsonValues = Union[str, int, float, list, dict, bool, None]
 
 
 class ErrorMessageData(TypedDict):
@@ -357,10 +371,10 @@ class Wtp:
         with self.data_folder.joinpath("namespaces.json").open(
             encoding="utf-8"
         ) as f:
-            self.NAMESPACE_DATA = json.load(f)
+            self.NAMESPACE_DATA: Dict[str, NamespaceDataEntry] = json.load(f)
             self.LOCAL_NS_NAME_BY_ID: Dict[int, str] = {
-                data["id"]: data["name"]
-                for data in self.NAMESPACE_DATA.values()
+                data["id"]: data["name"] for
+                data in self.NAMESPACE_DATA.values()
             }
             self.NS_ID_BY_LOCAL_NAME: Dict[str, int] = {
                 data["name"]: data["id"]
@@ -749,7 +763,7 @@ class Wtp:
     def add_page(
         self,
         title: str,
-        namespace_id: int,
+        namespace_id: Optional[int],
         body: Optional[str] = None,
         redirect_to: Optional[str] = None,
         need_pre_expand: bool = False,
@@ -759,7 +773,10 @@ class Wtp:
         SQLite database file."""
         if model is None:
             model = "wikitext"
-        ns_prefix = self.LOCAL_NS_NAME_BY_ID.get(namespace_id, "") + ":"
+        if namespace_id:
+            ns_prefix = self.LOCAL_NS_NAME_BY_ID.get(namespace_id, "") + ":"
+        else:
+            ns_prefix = ""
         if namespace_id != 0 and not title.startswith(ns_prefix):
             title = ns_prefix + title
 
@@ -767,7 +784,9 @@ class Wtp:
             title = title[5:]
 
         if (
-            namespace_id == self.NAMESPACE_DATA.get("Template", {}).get("id")
+            namespace_id == self.NAMESPACE_DATA
+                                    .get("Template", {"id": None})
+                                    .get("id")
             and redirect_to is None
         ):
             body = self._template_to_body(title, body)
@@ -916,7 +935,8 @@ class Wtp:
             "Analyzing which templates should be expanded before parsing"
         )
         # Add/overwrite templates
-        template_ns = self.NAMESPACE_DATA.get("Template", {})
+        template_ns = self.NAMESPACE_DATA.get("Template", {"id": None,
+                                                           "named": None})
         template_ns_id = template_ns.get("id")
         template_ns_local_name = template_ns.get("name")
         self.add_page(
@@ -932,7 +952,12 @@ class Wtp:
         expand_stack: List[Page] = []
         included_map = collections.defaultdict(set)
 
-        for page in self.get_all_pages([template_ns_id]):
+        if template_ns_id:
+            template_ns_id_list = [template_ns_id]
+        else:
+            template_ns_id_list = None
+
+        for page in self.get_all_pages(template_ns_id_list):
             if page.body:
                 used_templates, pre_expand = self._analyze_template(
                     page.title, page.body
@@ -2073,11 +2098,14 @@ def is_chinese_subtitle_template(wtp: Wtp, title: str) -> bool:
     # Language templates: https://zh.wiktionary.org/wiki/Category:语言模板
     # POS templates: https://zh.wiktionary.org/wiki/Category:詞類模板
     # and their titles are usually starts with "-" or "="
-    template_ns = wtp.NAMESPACE_DATA.get("Template", {})
+    template_ns = wtp.NAMESPACE_DATA.get("Template", {"name": None})
     template_ns_local_name = template_ns.get("name")
-    title_no_prefix = title.removeprefix(
-        template_ns_local_name + ":"
-    )
+    if template_ns_local_name:
+        title_no_prefix = title.removeprefix(
+            template_ns_local_name + ":"
+        )
+    else:
+        title_no_prefix = title
     for token in ["-", "="]:
         if title_no_prefix.startswith(token) and title_no_prefix.endswith(
             token

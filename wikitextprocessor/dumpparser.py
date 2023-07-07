@@ -217,15 +217,15 @@ def overwrite_pages(
                 local_ns_name = title[: title.find(":")]
                 ns_id = ctx.NS_ID_BY_LOCAL_NAME.get(local_ns_name, 0)
                 if do_overwrite:
-                    module_ns_id = ctx.NAMESPACE_DATA.get("Module", {}).get(
-                        "id"
-                    )
+                    module_ns_id = (ctx.NAMESPACE_DATA
+                                    .get("Module", {"id": None})
+                                    .get("id"))
                     model = "Scribunto" if ns_id == module_ns_id else "wikitext"
                     ctx.add_page(title, ns_id, f.read(), model=model)
                 else:
-                    template_ns_id = ctx.NAMESPACE_DATA.get("Template", {}).get(
-                        "id"
-                    )
+                    template_ns_id = (ctx.NAMESPACE_DATA
+                                        .get("Template", {"id": None})
+                                        .get("id"))
                     if template_ns_id == ns_id:
                         return True
 

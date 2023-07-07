@@ -14,13 +14,21 @@ import unicodedata
 import pkg_resources
 import multiprocessing # XXX debug, remove me
 
-from typing import Optional, TYPE_CHECKING, List, Tuple, Dict, Union, Any
+from typing import (Optional,
+                    TYPE_CHECKING,
+                    List,
+                    Tuple,
+                    Dict,
+                    Union,
+                    Any,
+                    Callable,
+                    )
 
 import lupa.lua51 as lupa
 from .parserfns import PARSER_FUNCTIONS, call_parser_function, tag_fn
 
 if TYPE_CHECKING:
-    from .core import Wtp, Page
+    from .core import Wtp, Page, NamespaceDataEntry
     from lupa.lua51 import _LuaTable
 
 # List of search paths for Lua libraries.
@@ -131,7 +139,7 @@ def mw_text_encode(text: str, charset: str) -> str:
     return "".join(parts)
 
 
-def mw_text_jsondecode(ctx: "Wtp", s: str, *rest):
+def mw_text_jsondecode(ctx: "Wtp", s: str, *rest: int) -> Dict[Any, Any]:
     flags = int(rest[0]) if rest else 0
     value: Dict = json.loads(s)
     assert isinstance(ctx.lua, lupa.LuaRuntime)
@@ -236,7 +244,7 @@ def fetch_language_name(ctx: "Wtp", code: str) -> str:
     return ""
 
 
-def fetch_language_names(ctx, include):
+def fetch_language_names(ctx: "Wtp", include: str) -> "_LuaTable":
     """This function is called from Lua code as part of the mw.language
     implementation.  This returns a list of known language names."""
     include = str(include)
@@ -244,41 +252,73 @@ def fetch_language_names(ctx, include):
         ret = ctx.LANGUAGES_BY_CODE
     else:
         ret = {"en": ctx.LANGUAGES_BY_CODE["en"]}
-    return ctx.lua.table_from(ret)
+    return ctx.lua.table_from(ret)  # type: ignore[union-attr]
+                                    # ⇑⇑ tells mypy to ignore an 'error';
+                                    # if fetch_language_names is being called,
+                                    # ctx.lua.table_from should never be None.
 
 
-def call_set_functions(ctx, set_functions):
-    def debug_mw_text_jsondecode(x, *rest):
+def call_set_functions(
+    ctx: "Wtp",
+    set_functions: Callable[[
+            Callable,  # mw_text_decode,
+            # These callables can't be type-hinted without doing a whole
+            # separate empty class with __callable__ using typing.Protocol,
+            # and the functions fed into these slots are passed straight
+            # into lua code, where the type-hinter can't see them anyhow,
+            # so it's probably not worth the effort. I realized this after
+            # an hour figuring out all the signatures and writing them
+            # in the functions and here and not understanding why the
+            # the type-checker didn't accept it...
+            Callable,  # mw_text_encode,
+            Callable,  # mw_text_jsonencode,
+            Callable,  # debug_mw_text_jsondecode,
+            Callable,  # debug_get_page_info,
+            Callable,  # debug_get_page_content,
+            Callable,  # debug_fetch_language_name,
+            Callable,  # debug_fetch_language_names,
+            Callable,  # mw_wikibase_getlabel,
+            Callable,  # mw_wikibase_getdescription,
+        ], # ->
+        None]
+) -> None:
+    def debug_mw_text_jsondecode(x: str, *rest: int) -> Dict[Any, Any]:
         return mw_text_jsondecode(ctx, x, *rest)
 
-    def debug_get_page_info(title, ns_id, *args):
-        if args:
+    def debug_get_page_info(title: str, ns_id: int, *bad_args):
+        """Debug wrapper; *bad_args are a debugging parameter list that should
+        not be populated, ever, but does; somewhere, the references to
+        these functions in particular are being scrambled and the functions
+        get parameters meant for other functions!"""
+        if bad_args:  # Somehow, the functions have been scrambled in memory
+                  # and this function is being called with too many
+                  # argument
             print(f"LAMBDA GET_PAGE_INFO DEBUG:"
-                  f" {repr(args)},"
+                  f" {repr(bad_args)},"
                   f" {ctx.title=},"
                   f" {multiprocessing.current_process().name}")
         return get_page_info(ctx, title, ns_id)
 
-    def debug_get_page_content(x, *args):
-        if args:
+    def debug_get_page_content(x: str, *bad_args: Any) -> Optional[str]:
+        if bad_args:
             print(f"LAMBDA GET_PAGE_CONTENT DEBUG:"
-                  f" {repr(args)},"
+                  f" {repr(bad_args)},"
                   f" {ctx.title=},"
                   f" {multiprocessing.current_process().name}")
         return get_page_content(ctx, x)
 
-    def debug_fetch_language_name(x, *args):
-        if args:
+    def debug_fetch_language_name(x: str, *bad_args: Any) -> str:
+        if bad_args:
             print(f"LAMBDA FETCH_LANGUAGE_NAME DEBUG:"
-                  f" {repr(args)},"
+                  f" {repr(bad_args)},"
                   f" {ctx.title=},"
                   f" {multiprocessing.current_process().name}")
         return fetch_language_name(ctx, x)
 
-    def debug_fetch_language_names(x, *args):
-        if args:
+    def debug_fetch_language_names(x: str, *bad_args: Any) -> "_LuaTable":
+        if bad_args:
             print(f"LAMBDA FETCH_LANGUAGE_NAMES DEBUG:"
-                  f" {repr(args)},"
+                  f" {repr(bad_args)},"
                   f" {ctx.title=},"
                   f" {multiprocessing.current_process().name}")
         return fetch_language_names(ctx, x)
@@ -287,11 +327,6 @@ def call_set_functions(ctx, set_functions):
         mw_text_decode,
         mw_text_encode,
         mw_text_jsonencode,
-        # lambda x, *rest: mw_text_jsondecode(ctx, x, *rest),
-        # lambda x: get_page_info(ctx, x),
-        # lambda x: get_page_content(ctx, x),
-        # lambda x: fetch_language_name(ctx, x),
-        # lambda x: fetch_language_names(ctx, x),
         debug_mw_text_jsondecode,
         debug_get_page_info,
         debug_get_page_content,
@@ -302,8 +337,8 @@ def call_set_functions(ctx, set_functions):
     )
 
 
-def initialize_lua(ctx):
-    def filter_attribute_access(obj, attr_name, is_setting):
+def initialize_lua(ctx: "Wtp"):
+    def filter_attribute_access(obj: Any, attr_name: str, is_setting: bool):
         if isinstance(attr_name, str) and not attr_name.startswith("_"):
             return attr_name
         raise AttributeError("access denied")
@@ -314,13 +349,16 @@ def initialize_lua(ctx):
         attribute_filter=filter_attribute_access,
     )
     ctx.lua = lua
-    set_namespace_data = lua.eval("function(v) NAMESPACE_DATA = v end")
+    set_namespace_data: Callable = lua.eval(
+        "function(v) NAMESPACE_DATA = v end")
     lua_namespace_data = copy.deepcopy(ctx.NAMESPACE_DATA)
+    ns_name: str
+    ns_data: NamespaceDataEntry
     for ns_name, ns_data in lua_namespace_data.items():
         for k, v in ns_data.items():
             if isinstance(v, list):
-                lua_namespace_data[ns_name][k] = lua.table_from(v)
-        lua_namespace_data[ns_name] = lua.table_from(
+                lua_namespace_data[ns_name][k] = lua.table_from(v) # type: ignore[literal-required]
+        lua_namespace_data[ns_name] = lua.table_from( # type: ignore[assignment]
             lua_namespace_data[ns_name]
         )
     set_namespace_data(lua.table_from(lua_namespace_data))
@@ -330,7 +368,7 @@ def initialize_lua(ctx):
     # bigger phase 2 of the sandbox.  This way, most of the sandbox loading
     # will benefit from caching and precompilation (when implemented).
     with open(lua_dir + "_sandbox_phase1.lua", encoding="utf-8") as f:
-        phase1_result = lua.execute(f.read())
+        phase1_result: "_LuaTable" = lua.execute(f.read())
         set_loader = phase1_result[1]
         clear_loaddata_cache = phase1_result[2]
         # Call the function that sets the Lua loader
@@ -708,10 +746,10 @@ def call_lua_sandbox(ctx, invoke_args, expander, parent, timeout):
 
 
 @functools.cache
-def query_wikidata(item_id: str):
+def query_wikidata(item_id: str) -> Optional[dict]:
     import requests
 
-    r = requests.get(
+    r: requests.Response = requests.get(
         "https://query.wikidata.org/sparql",
         params={
             "query": "SELECT ?itemLabel ?itemDescription WHERE { VALUES ?item "
@@ -724,20 +762,27 @@ def query_wikidata(item_id: str):
     )
 
     if r.ok:
-        print(f"WIKIDATA QUERY succeded: {item_id}")
         result = r.json()
+        print(f"WIKIDATA QUERY succeded: {item_id=!r}, {result=!r}")
         for binding in result.get("results", {}).get("bindings", []):
             return binding
     else:
-        print(f"WIKIDATA QUERY failed: {item_id}")
+        print(f"WIKIDATA QUERY failed: {item_id=!r}")
+        return None
+    return None
+
+
+def mw_wikibase_getlabel(item_id: str) -> Optional[str]:
+    item_data = query_wikidata(item_id)
+    if item_data is not None:
+        return item_data.get("itemLabel", {}).get("value", item_id)
+    else:
         return None
 
 
-def mw_wikibase_getlabel(item_id: str) -> str:
+def mw_wikibase_getdescription(item_id: str) -> Optional[str]:
     item_data = query_wikidata(item_id)
-    return item_data.get("itemLabel", {}).get("value", item_id)
-
-
-def mw_wikibase_getdescription(item_id: str) -> str:
-    item_data = query_wikidata(item_id)
-    return item_data.get("itemDescription", {}).get("value", item_id)
+    if item_data is not None:
+        return item_data.get("itemDescription", {}).get("value", item_id)
+    else:
+        return None
