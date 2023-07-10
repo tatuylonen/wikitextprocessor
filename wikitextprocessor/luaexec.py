@@ -22,9 +22,13 @@ from typing import (Optional,
                     Union,
                     Any,
                     Callable,
+                    Iterable,
+                    ItemsView
                     )
 
 import lupa.lua51 as lupa
+from lupa.lua51 import lua_type
+
 from .parserfns import PARSER_FUNCTIONS, call_parser_function, tag_fn
 
 if TYPE_CHECKING:
@@ -377,7 +381,8 @@ def initialize_lua(ctx: "Wtp"):
     # Then load the second phase of the sandbox.  This now goes through the
     # new loader and is evaluated in the sandbox.  This mostly implements
     # compatibility code.
-    ret = lua.eval('new_require("_sandbox_phase2")')
+    ret: "_LuaTable" = lua.eval('new_require("_sandbox_phase2")')
+    # Lua tables start indexing from 1
     set_functions = ret[1]
     ctx.lua_invoke = ret[2]
     ctx.lua_reset_env = ret[3]
@@ -387,7 +392,11 @@ def initialize_lua(ctx: "Wtp"):
     call_set_functions(ctx, set_functions)
 
 
-def call_lua_sandbox(ctx, invoke_args, expander, parent, timeout):
+def call_lua_sandbox(ctx: "Wtp",
+                     invoke_args: Iterable,
+                     expander: Callable,
+                     parent: Optional[Iterable],
+                     timeout: Union[None, float, int]):
     """Calls a function in a Lua module in the Lua sandbox.
     ``invoke_args`` is the arguments to the call; ``expander`` should
     be a function to expand an argument.  ``parent`` should be None or
@@ -430,16 +439,26 @@ def call_lua_sandbox(ctx, invoke_args, expander, parent, timeout):
     modname = expander(invoke_args[0]).strip()
     modfn = expander(invoke_args[1]).strip()
 
-    def value_with_expand(frame, fexpander, x):
-        assert isinstance(frame, dict)
+    def value_with_expand(frame: Union[Dict, "_LuaTable"],
+                          fexpander: str, text: str,
+    ) -> "_LuaTable":
+        assert isinstance(frame, dict) or lua_type(frame) == "table"
         assert isinstance(fexpander, str)
-        assert isinstance(x, str)
-        obj = {"expand": lambda obj: frame[fexpander](x)}
-        return lua.table_from(obj)
+        assert isinstance(text, str)
+        obj = {"expand": lambda obj_self: frame[fexpander](text)}
+        return lua.table_from(obj)  # type:ignore[union-attr]
 
-    def make_frame(pframe, title, args):
+    def make_frame(pframe: Union[None, Dict, "_LuaTable"],
+                   title: str,
+                   args: Union[
+                            Dict[Union[str, int], str],
+                            Tuple,
+                            List]
+    ) -> "_LuaTable":
         assert isinstance(title, str)
         assert isinstance(args, (list, tuple, dict))
+        if TYPE_CHECKING:
+            assert lua is not None
         # Convert args to a dictionary with default value None
         if isinstance(args, dict):
             frame_args = {}
@@ -452,6 +471,7 @@ def call_lua_sandbox(ctx, invoke_args, expander, parent, timeout):
             frame_args = {}
             num = 1
             for arg in args:
+                # |-separated strings in {{templates|arg=value|...}}
                 m = re.match(r"""(?s)^\s*([^<>="']+?)\s*=\s*(.*?)\s*$""", arg)
                 if m:
                     # Have argument name
@@ -459,6 +479,9 @@ def call_lua_sandbox(ctx, invoke_args, expander, parent, timeout):
                     if k.isdigit():
                         k = int(k)
                         if k < 1 or k > 1000:
+                            ctx.warning("Template argument index <1 "
+                                        f"or >1000: {k=!r}",
+                                      sortid="luaexec/477/20230710")
                             k = 1000
                         if num <= k:
                             num = k + 1
@@ -466,6 +489,9 @@ def call_lua_sandbox(ctx, invoke_args, expander, parent, timeout):
                     # No argument name
                     k = num
                     num += 1
+                if k in frame_args:
+                    ctx.warning(f"Template index already in args: {k=!r}",
+                                sortid="luaexec/488/20230710")
                 # Remove any <noinclude/> tags; they are used to prevent
                 # certain token interpretations in Wiktionary
                 # (e.g., Template:cop-fay-conj-table), whereas Lua code
@@ -476,7 +502,7 @@ def call_lua_sandbox(ctx, invoke_args, expander, parent, timeout):
                 frame_args[k] = arg
         frame_args = lua.table_from(frame_args)
 
-        def extensionTag(frame, *args):
+        def extensionTag(frame: "_LuaTable", *args: Any) -> str:
             if len(args) < 1:
                 ctx.debug(
                     "lua extensionTag with missing arguments",
@@ -485,9 +511,10 @@ def call_lua_sandbox(ctx, invoke_args, expander, parent, timeout):
                 return ""
             dt = args[0]
             if not isinstance(dt, (str, int, float, type(None))):
-                name = str(dt["name"] or "")
-                content = str(dt["content"] or "")
-                attrs = dt["args"] or {}
+                name: str = str(dt["name"] or "")
+                content: str = str(dt["content"] or "")
+                attrs: Union[Dict[Union[int, str], str],
+                             str, "_LuaTable"] = dt["args"] or {}
             elif len(args) == 1:
                 name = str(args[0])
                 content = ""
@@ -513,15 +540,15 @@ def call_lua_sandbox(ctx, invoke_args, expander, parent, timeout):
                 attrs = [attrs]
 
             ctx.expand_stack.append("extensionTag()")
-            ret = tag_fn(
-                ctx, "#tag", [name, content] + attrs, lambda x: x
+            ret: str = tag_fn(
+                ctx, "#tag", [name, content] + attrs2, lambda x: x
             )  # Already expanded
             ctx.expand_stack.pop()
             # Expand any templates from the result
             ret = preprocess(frame, ret)
             return ret
 
-        def callParserFunction(frame, *args):
+        def callParserFunction(frame: "_LuaTable", *args: Any) -> str:
             if len(args) < 1:
                 ctx.debug(
                     "lua callParserFunction missing name", sortid="luaexec/506"
@@ -554,7 +581,7 @@ def call_lua_sandbox(ctx, invoke_args, expander, parent, timeout):
                 return ""
             return call_parser_function(ctx, name, new_args, lambda x: x)
 
-        def expand_all_templates(encoded):
+        def expand_all_templates(encoded: str) -> str:
             # Expand all templates here, even if otherwise only
             # expanding some of them.  We stay quiet about undefined
             # templates here, because Wiktionary Module:ugly hacks
@@ -579,7 +606,7 @@ def call_lua_sandbox(ctx, invoke_args, expander, parent, timeout):
             ctx.expand_stack.pop()
             return ret
 
-        def expandTemplate(frame, *args):
+        def expandTemplate(frame: "_LuaTable", *args) -> str:
             if len(args) < 1:
                 ctx.debug(
                     "lua expandTemplate missing arguments", sortid="luaexec/561"
@@ -592,6 +619,8 @@ def call_lua_sandbox(ctx, invoke_args, expander, parent, timeout):
                     sortid="luaexec/566",
                 )
                 return ""
+            if TYPE_CHECKING:
+                assert isinstance(dt, (_LuaTable, Dict))
             title = dt["title"] or ""
             args = dt["args"] or {}
             new_args = [title]
@@ -603,23 +632,27 @@ def call_lua_sandbox(ctx, invoke_args, expander, parent, timeout):
             ctx.expand_stack.pop()
             return ret
 
-        def debugGetParent(ctx, *args):
+        def debugGetParent(ctx: "Wtp", *args) -> "_LuaTable":
             if args:
                 print(f"LAMBDA GETPARENT DEBUG (title: {title}): {repr(args)}"
                       f", process: {multiprocessing.current_process().name}")
+            if TYPE_CHECKING:
+                assert isinstance(pframe, _LuaTable)
             return pframe
 
-        def debugGetTitle(ctx, *args):
+        def debugGetTitle(ctx: "Wtp", *args) -> str:
             if args:
                 print(f"LAMBDA GETTITLE DEBUG: (title: {title}): {repr(args)}"
                       f", process: {multiprocessing.current_process().name}")
             return title
 
-        def debugNewParserValue(ctx, x):
-            return value_with_expand(ctx, "preprocess", x)
+        def debugNewParserValue(frame_self: "_LuaTable", text: str
+        ) -> "_LuaTable":
+            return value_with_expand(frame_self, "preprocess", text)
 
-        def debugNewTemplateParserValue(ctx, x):
-            return value_with_expand(ctx, "expand", x)
+        def debugNewTemplateParserValue(frame_self: "_LuaTable", text: str
+        ) -> "_LuaTable":
+            return value_with_expand(frame_self, "expand", text)
 
         # Create frame object as dictionary with default value None
         frame = {}
@@ -649,6 +682,8 @@ def call_lua_sandbox(ctx, invoke_args, expander, parent, timeout):
     # Create parent frame (for page being processed) and current frame
     # (for module being called)
     if parent is not None:
+        parent_title: str
+        page_args: Union["_LuaTable", Dict]
         parent_title, page_args = parent
         expanded_key_args = {}
         for k, v in page_args.items():
@@ -664,6 +699,8 @@ def call_lua_sandbox(ctx, invoke_args, expander, parent, timeout):
     # Call the Lua function in the given module
     stack_len = len(ctx.expand_stack)
     ctx.expand_stack.append("Lua:{}:{}()".format(modname, modfn))
+    if TYPE_CHECKING:
+        assert ctx.lua_invoke is not None
     try:
         ret = ctx.lua_invoke(modname, modfn, frame, ctx.title, timeout)
         if not isinstance(ret, (list, tuple)):
@@ -681,7 +718,7 @@ def call_lua_sandbox(ctx, invoke_args, expander, parent, timeout):
         )
         ok, text = True, ""
     except lupa.LuaError as e:
-        ok, text = False, e
+        ok, text = False, str(e)
     finally:
         while len(ctx.expand_stack) > stack_len:
             ctx.expand_stack.pop()

@@ -264,7 +264,7 @@ class Wtp:
         self.lua_invoke: Optional[
             Callable[
                 [str, str, "_LuaTable", str, Optional[LuaNumber]],
-                Union[bool, Any],
+                Tuple[bool, Any],
             ]
         ] = None
         self.lua_reset_env: Optional[Callable[[], "_LuaTable"]] = None
@@ -529,11 +529,11 @@ class Wtp:
         ret = ch
         return ret
 
-    def _encode(self, text):
+    def _encode(self, text: str) -> str:
         """Encode all templates, template arguments, and parser function calls
         in the text, from innermost to outermost."""
 
-        def vbar_split(v):
+        def vbar_split(v: str) -> List[str]:
             args = list(
                 m.group(1)
                 for m in re.finditer(
@@ -544,7 +544,7 @@ class Wtp:
             )
             return args
 
-        def repl_arg(m):
+        def repl_arg(m: re.Match) -> str:
             """Replacement function for template arguments."""
             nowiki = MAGIC_NOWIKI_CHAR in m.group(0)
             orig = m.group(1)
@@ -565,7 +565,7 @@ class Wtp:
         #     )
         #     return prefix + self._save_value("A", args, nowiki)
 
-        def repl_templ(m):
+        def repl_templ(m: re.Match) -> str:
             """Replacement function for templates {{name|...}} and parser
             functions."""
             nowiki = MAGIC_NOWIKI_CHAR in m.group(0)
@@ -589,7 +589,7 @@ class Wtp:
         #     )
         #     return prefix + self._save_value("T", args, nowiki)
 
-        def repl_link(m):
+        def repl_link(m: re.Match) -> str:
             """Replacement function for links [[...]]."""
             nowiki = MAGIC_NOWIKI_CHAR in m.group(0)
             orig = m.group(1)
@@ -597,7 +597,7 @@ class Wtp:
             # print("REPL_LINK: orig={!r}".format(orig))
             return self._save_value("L", args, nowiki)
 
-        def repl_extlink(m):
+        def repl_extlink(m: re.Match) -> str:
             """Replacement function for external links [...].  This is also
             used to replace bracketed sections, such as [...]."""
             nowiki = MAGIC_NOWIKI_CHAR in m.group(0)
@@ -617,7 +617,7 @@ class Wtp:
             # innermost braces as a template transclusion.
             # KJ: This inside-out parsing seems to work because wikitext
             # can't parse ambiguous stuff either:
-            # {{ {{NAMESPACE}}}}  <- parser "correctly" as a broken template
+            # {{ {{NAMESPACE}}}}  <- parses "correctly" as a broken template
             # {{{{NAMESPACE}}}}  <- parses incorrectly as `{{{{NAMESPACE}}}}`
 
             while True:
@@ -726,9 +726,8 @@ class Wtp:
         # text = re.sub(r"\|", "&vert;", text)
         return text
 
-    def _template_to_body(self, title, text):
-        """Extracts the portion to be transcluded from a template body.  This
-        returns an str."""
+    def _template_to_body(self, title: str, text: str) -> str:
+        """Extracts the portion to be transcluded from a template body."""
         assert isinstance(title, str)
         assert isinstance(text, str)
         # Remove all comments
@@ -1111,7 +1110,7 @@ class Wtp:
         expand_parserfns=True,
         expand_invoke=True,
         quiet=False,
-        timeout=None,
+        timeout: Optional[Union[int, float]]=None,
     ):
         """Expands templates and parser functions (and optionally Lua macros)
         from ``text`` (which is from page with title ``title``).
@@ -1147,7 +1146,9 @@ class Wtp:
         # Handle <nowiki> in a preprocessing step
         text = self.preprocess_text(text)
 
-        def invoke_fn(invoke_args, expander, parent):
+        def invoke_fn(invoke_args, expander,
+                      parent: Optional[Tuple[str, Union["_LuaTable", Dict]]]
+        ):
             """This is called to expand a #invoke parser function."""
             assert isinstance(invoke_args, (list, tuple))
             assert callable(expander)
