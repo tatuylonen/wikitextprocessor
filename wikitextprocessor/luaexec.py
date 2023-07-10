@@ -425,11 +425,12 @@ def call_lua_sandbox(ctx: "Wtp",
         else:
             # This is a second or later call to the Lua sandbox.
             # Reset the Lua context back to initial state.
-            ctx.lua_reset_env()
-            ret = ctx.lua.eval('new_require("_sandbox_phase2")')
-            set_functions = ret[1]
-            ctx.lua_invoke = ret[2]
-            ctx.lua_reset_env = ret[3]
+            ctx.lua_reset_env()  # type: ignore[misc]
+            phase2_ret: "_LuaTable" = ctx.lua.eval('new_require("_sandbox_phase2")')
+            # Lua tables start indexing on 1
+            set_functions = phase2_ret[1]
+            ctx.lua_invoke = phase2_ret[2]
+            ctx.lua_reset_env = phase2_ret[3]
             call_set_functions(ctx, set_functions)
 
     ctx.lua_depth += 1
@@ -500,7 +501,7 @@ def call_lua_sandbox(ctx: "Wtp",
                 arg = re.sub(r"(?si)<\s*noinclude\s*/\s*>", "", arg)
                 arg = html.unescape(arg)
                 frame_args[k] = arg
-        frame_args = lua.table_from(frame_args)
+        frame_args_lt: "_LuaTable" = lua.table_from(frame_args)  # type: ignore[union-attr]
 
         def extensionTag(frame: "_LuaTable", *args: Any) -> str:
             if len(args) < 1:
@@ -527,17 +528,23 @@ def call_lua_sandbox(ctx: "Wtp",
                 name = str(args[0] or "")
                 content = str(args[1] or "")
                 attrs = args[2] or {}
-            if not isinstance(attrs, str):
-                attrs = list(
+            if isinstance(attrs, ItemsView) or lua_type(attrs) == 'table':
+                if TYPE_CHECKING:
+                    # Because Lupa doesn't let us import _LuaTable directly,
+                    # this work-around is needed to convince the type-checker.
+                    # lua_type() is completely opaque.
+                    assert isinstance(attrs, (ItemsView, _LuaTable))
+                attrs2 = list(
                     v
                     if isinstance(k, int)
                     else '{}="{}"'.format(k, html.escape(v, quote=True))
                     for k, v in sorted(attrs.items(), key=lambda x: str(x[0]))
                 )
             elif not attrs:
-                attrs = []
+                attrs2 = []
             else:
-                attrs = [attrs]
+                assert isinstance(attrs, str)
+                attrs2 = [attrs]
 
             ctx.expand_stack.append("extensionTag()")
             ret: str = tag_fn(
@@ -554,23 +561,27 @@ def call_lua_sandbox(ctx: "Wtp",
                     "lua callParserFunction missing name", sortid="luaexec/506"
                 )
                 return ""
-            name = args[0]
-            if not isinstance(name, str):
-                new_args = name["args"]
-                if isinstance(new_args, str):
-                    new_args = {1: new_args}
+            name_or_table: Union[str, "_LuaTable", Dict] = args[0]
+            new_args: Union[Dict, List]
+            if not isinstance(name_or_table, str):
+                # name is _LuaTable
+                new_args1: Union["_LuaTable", Dict, str] = name_or_table["args"]
+                if isinstance(new_args1, str):
+                    new_args = {1: new_args1}
                 else:
-                    new_args = dict(new_args)
-                name = name["name"] or ""
+                    new_args = dict(new_args1)
+                name = str(name_or_table["name"]) or ""
             else:
                 new_args = []
-            name = str(name)
-            for arg in args[1:]:
-                if isinstance(arg, (int, float, str)):
-                    new_args.append(str(arg))
-                else:
-                    for k, v in sorted(arg.items(), key=lambda x: str(x[0])):
-                        new_args.append(str(v))
+                name = name_or_table
+                for arg in args[1:]:
+                    if isinstance(arg, (int, float, str)):
+                        new_args.append(str(arg))
+                    else:
+                        for k, v in sorted(arg.items(),
+                                           key=lambda x: str(x[0])
+                        ):
+                            new_args.append(str(v))
             name = ctx._canonicalize_parserfn_name(name)
             if name not in PARSER_FUNCTIONS:
                 ctx.debug(
@@ -589,15 +600,17 @@ def call_lua_sandbox(ctx: "Wtp",
             ret = ctx.expand(encoded, parent, quiet=True)
             return ret
 
-        def preprocess(frame, *args):
+        def preprocess(frame: "_LuaTable", *args: Any) -> str:
             if len(args) < 1:
                 ctx.debug(
                     "lua preprocess missing argument", sortid="luaexec/545"
                 )
                 return ""
-            v = args[0]
-            if not isinstance(v, str):
-                v = str(v["text"] or "")
+            candidate = args[0]
+            if not isinstance(candidate, str):
+                v = str(candidate["text"] or "")
+            else:
+                v = candidate
             # Expand all templates, in case the Lua code actually
             # inspects the output.
             v = ctx._encode(v)
@@ -622,9 +635,9 @@ def call_lua_sandbox(ctx: "Wtp",
             if TYPE_CHECKING:
                 assert isinstance(dt, (_LuaTable, Dict))
             title = dt["title"] or ""
-            args = dt["args"] or {}
+            args2 = dt["args"] or {}
             new_args = [title]
-            for k, v in sorted(args.items(), key=lambda x: str(x[0])):
+            for k, v in sorted(args2.items(), key=lambda x: str(x[0])):
                 new_args.append("{}={}".format(k, v))
             encoded = ctx._save_value("T", new_args, False)
             ctx.expand_stack.append("frame:expandTemplate()")
@@ -655,8 +668,8 @@ def call_lua_sandbox(ctx: "Wtp",
             return value_with_expand(frame_self, "expand", text)
 
         # Create frame object as dictionary with default value None
-        frame = {}
-        frame["args"] = frame_args
+        frame: Dict[str, Union["_LuaTable", Callable]] = {}
+        frame["args"] = frame_args_lt
         # argumentPairs is set in sandbox.lua
         frame["callParserFunction"] = callParserFunction
         frame["extensionTag"] = extensionTag
