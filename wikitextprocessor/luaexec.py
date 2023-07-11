@@ -714,12 +714,15 @@ def call_lua_sandbox(ctx: "Wtp",
     ctx.expand_stack.append("Lua:{}:{}()".format(modname, modfn))
     if TYPE_CHECKING:
         assert ctx.lua_invoke is not None
+    exc: Optional[Exception] = None
     try:
-        ret: Optional[Tuple[bool, str]] = ctx.lua_invoke(modname,
-                                                         modfn,
-                                                         frame,
-                                                         ctx.title,
-                                                         timeout)
+        ret: Tuple[bool, str] = ctx.lua_invoke(modname,
+                                               modfn,
+                                               frame,
+                                               ctx.title,
+                                               timeout)
+        # Lua functions returning multiple values will return a tuple
+        # as would be normal in Python.
         if not isinstance(ret, (list, tuple)):
             ok, text = ret, ""
         elif len(ret) == 1:
@@ -735,25 +738,25 @@ def call_lua_sandbox(ctx: "Wtp",
         )
         ok, text = True, ""
     except lupa.LuaError as e:
-        ok, text = False, str(e)
+        ok, text, e = False, str(e), e
     finally:
         while len(ctx.expand_stack) > stack_len:
             ctx.expand_stack.pop()
     # print("Lua call {} returned: ok={!r} text={!r}"
     #       .format(invoke_args, ok, text))
     ctx.lua_depth -= 1
-    if ok:
+    if ok:  # XXX should this be "is True" instead of checking truthiness?
         if text is None:
             text = ""
         text = str(text)
         text = unicodedata.normalize("NFC", text)
         return text
-    if isinstance(text, Exception):
-        parts = [str(text)]
+    if isinstance(exc, Exception):
+        parts = [str(exc)]
         # traceback.format_exception does not have a named keyvalue etype=
         # anymore, in latest Python versions it is positional only.
         lst = traceback.format_exception(
-            type(text), value=text, tb=text.__traceback__
+            type(exc), value=exc, tb=exc.__traceback__
         )
         for x in lst:
             parts.append("\t" + x.strip())
@@ -778,7 +781,8 @@ def call_lua_sandbox(ctx: "Wtp",
     else:
         if "check deprecated lang param usage" in ctx.expand_stack:
             ctx.debug(
-                "LUA error but likely not bug -- in #invoke {} parent {}".format(
+                "LUA error but likely not bug"
+                "-- in #invoke {} parent {}".format(
                     invoke_args, parent
                 ),
                 trace=text,
@@ -786,7 +790,8 @@ def call_lua_sandbox(ctx: "Wtp",
             )
         else:
             ctx.error(
-                "LUA error in #invoke {} parent {}".format(invoke_args, parent),
+                "LUA error in #invoke"
+                "{} parent {}".format(invoke_args, parent),
                 trace=text,
                 sortid="luaexec/683",
             )
@@ -818,7 +823,7 @@ def query_wikidata(item_id: str) -> Optional[dict]:
     if r.ok:
         result = r.json()
         print(f"WIKIDATA QUERY succeded: {item_id=!r}, {result=!r}")
-        for binding in result.get("results", {}).get("bindings", []):
+        for binding in result.get("results", {}).get("bindings", {}):
             return binding
     else:
         print(f"WIKIDATA QUERY failed: {item_id=!r}")

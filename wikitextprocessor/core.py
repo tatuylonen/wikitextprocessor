@@ -33,7 +33,6 @@ from typing import (
     DefaultDict,
     TYPE_CHECKING,
     TypedDict,
-    Any,
 )
 
 # When type-checking lupa stuff, just use Any; because lupa doesn't
