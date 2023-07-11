@@ -537,7 +537,8 @@ class Wtp:
             args = list(
                 m.group(1)
                 for m in re.finditer(
-                    r"""\|(
+                    # re.X = ignore whitespace and comments, re.I = ignore case
+                    r"""(?xi)\|(
                             (
                                 <([-a-zA-z0-9]+)\b[^>]*>  # html tag
                                     [^][{}]*?             # element contents
@@ -546,8 +547,7 @@ class Wtp:
                             |   [^|]            # everything else
                             )*
                           )""",
-                    # re.X = ignore whitespace and comments, re.I = ignore case
-                    "|" + v, flags=re.X | re.I,
+                    "|" + v,
                 )
             )
             return args
