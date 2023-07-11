@@ -537,12 +537,17 @@ class Wtp:
             args = list(
                 m.group(1)
                 for m in re.finditer(
-                    r"(?si)\|"  # vbar + (html element | rest)*
-                        r"((<([-a-zA-z0-9]+)\b[^>]*>[^][{}]*?</\3\s*>|"
-                        r"[^|]"
-                    r")*)",
-                    #  or the stuff defined in v
-                    "|" + v,
+                    r"""\|(
+                            (
+                                <([-a-zA-z0-9]+)\b[^>]*>  # html tag
+                                    [^][{}]*?             # element contents
+                                                          # (including `|`'s)
+                                    </\3\s*>              # end tag
+                            |   [^|]            # everything else
+                            )*
+                          )""",
+                    # re.X = ignore whitespace and comments, re.I = ignore case
+                    "|" + v, flags=re.X | re.I,
                 )
             )
             return args
