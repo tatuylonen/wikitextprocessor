@@ -34,12 +34,8 @@ from typing import (
     TYPE_CHECKING,
     TypedDict,
 )
+from types import TracebackType
 
-# When type-checking lupa stuff, just use Any; because lupa doesn't
-# have type hints itself, this is the simplest way around it, especially
-# if we don't want to add a dozillion asserts deep into often-run
-# functions, just to check if something exists or not. Don't bother even
-# with Optional[Any] because of this.
 from pathlib import Path
 
 from .parserfns import PARSER_FUNCTIONS, call_parser_function, init_namespaces
@@ -62,7 +58,7 @@ if TYPE_CHECKING:
     from lupa.lua51 import LuaRuntime, _LuaTable, LuaNumber
 
 # Set of HTML tags that need an explicit end tag.
-PAIRED_HTML_TAGS = set(
+PAIRED_HTML_TAGS: Set[str] = set(
     k for k, v in ALLOWED_HTML_TAGS.items() if not v.get("no-end-tag")
 )
 
@@ -75,7 +71,7 @@ StatsData = TypedDict(
         "pos_counts": int,
         "section_counts": int,
     },
-    total=False,
+    total=False,  # make fields non-obligatory
 )
 NamespaceDataEntry = TypedDict(
     "NamespaceDataEntry",
@@ -87,7 +83,7 @@ NamespaceDataEntry = TypedDict(
         "istalk": bool,
         "name": str,
     },
-    total=True,
+    total=True,  # fields are obligatory
 )
 
 JsonValues = Union[str, int, float, list, dict, bool, None]
@@ -173,14 +169,18 @@ class BegLineDisableManager(object):
     should care about tokens at the beginning of a line, used in magic_fn
     to disable parsing when just looping through arguments"""
 
-    def __init__(self, ctx: "Wtp"):
+    def __init__(self, ctx: "Wtp") -> None:
         self.ctx = ctx
 
-    def __enter__(self):
+    def __enter__(self) -> None:
         self.ctx.begline_disable_counter += 1
         self.ctx.begline_enabled = False
 
-    def __exit__(self, exc_type, exc_value, trace):
+    def __exit__(self,
+                 exc_type: type[BaseException],
+                 exc_value: BaseException,
+                 trace: TracebackType
+    ) -> None:
         self.ctx.begline_disable_counter -= 1
         if self.ctx.begline_disable_counter < 1:
             self.ctx.begline_enabled = True
@@ -240,7 +240,7 @@ class Wtp:
                                            # as None, if you're wondering why
                                            # setting this to 1 doesn't lead to
                                            # expected bugs.
-        db_path: Optional[Path] = None,
+        db_path: Optional[Union[str, Path]] = None,
         quiet: bool = False,
         lang_code: str = "en",
         languages_by_code: Dict[str, List[str]] = {},
@@ -252,7 +252,10 @@ class Wtp:
             self.num_threads: Optional[int] = 1
         else:
             self.num_threads = num_threads
-        self.db_path = db_path
+        if isinstance(db_path, str):
+            self.db_path: Optional[Path] = Path(db_path)
+        else:
+            self.db_path = db_path
         self.cookies: List[CookieData] = []
         self.errors: List[ErrorMessageData] = []
         self.warnings: List[ErrorMessageData] = []
@@ -295,8 +298,6 @@ class Wtp:
             )
             self.db_path = Path(temp_file.name)
             temp_file.close()
-        elif isinstance(self.db_path, str):
-            self.db_path = Path(self.db_path)
 
         if self.backup_db_path.exists():
             self.db_path.unlink(True)
@@ -392,7 +393,7 @@ class Wtp:
         if self.expand_stack:
             msg += " at {}".format(self.expand_stack)
         if self.parser_stack:
-            titles = []
+            titles: List[str] = []
             for node in self.parser_stack:
                 if node.kind in (
                     NodeKind.LEVEL2,
@@ -415,7 +416,10 @@ class Wtp:
         print("{}: {}: {}".format(loc, kind, msg))
         sys.stdout.flush()
 
-    def error(self, msg, trace=None, sortid="XYZunsorted"):
+    def error(self, msg: str,
+                    trace: Optional[str]=None,
+                    sortid="XYZunsorted"
+    ) -> None:
         """Prints an error message to stdout.  The error is also saved in
         self.errors."""
         assert isinstance(msg, str)
@@ -429,17 +433,20 @@ class Wtp:
         self.errors.append(
             {
                 "msg": msg,
-                "trace": trace,
+                "trace": trace or "",
                 "title": self.title,
-                "section": self.section,
-                "subsection": self.subsection,
+                "section": self.section or "",
+                "subsection": self.subsection or "",
                 "called_from": sortid,
                 "path": tuple(self.expand_stack),
             }
         )
         self._fmt_errmsg("ERROR", msg, trace)
 
-    def warning(self, msg, trace=None, sortid="XYZunsorted"):
+    def warning(self, msg: str,
+                    trace: Optional[str]=None,
+                    sortid="XYZunsorted"
+    ) -> None:
         """Prints a warning message to stdout.  The error is also saved in
         self.warnings."""
         assert isinstance(msg, str)
@@ -449,17 +456,20 @@ class Wtp:
         self.warnings.append(
             {
                 "msg": msg,
-                "trace": trace,
+                "trace": trace or "",
                 "title": self.title,
-                "section": self.section,
-                "subsection": self.subsection,
+                "section": self.section or "",
+                "subsection": self.subsection or "",
                 "called_from": sortid,
                 "path": tuple(self.expand_stack),
             }
         )
         self._fmt_errmsg("WARNING", msg, trace)
 
-    def debug(self, msg, trace=None, sortid="XYZunsorted"):
+    def debug(self, msg: str,
+                    trace: Optional[str]=None,
+                    sortid="XYZunsorted"
+    ) -> None:
         """Prints a debug message to stdout.  The error is also saved in
         self.debug."""
         assert isinstance(msg, str)
@@ -469,10 +479,10 @@ class Wtp:
         self.debugs.append(
             {
                 "msg": msg,
-                "trace": trace,
+                "trace": trace or "",
                 "title": self.title,
-                "section": self.section,
-                "subsection": self.subsection,
+                "section": self.section or "",
+                "subsection": self.subsection or "",
                 "called_from": sortid,
                 "path": tuple(self.expand_stack),
             }
@@ -733,10 +743,11 @@ class Wtp:
         # text = re.sub(r"\|", "&vert;", text)
         return text
 
-    def _template_to_body(self, title: str, text: str) -> str:
+    def _template_to_body(self, title: str, text: Optional[str]) -> str:
         """Extracts the portion to be transcluded from a template body."""
         assert isinstance(title, str)
-        assert isinstance(text, str)
+        assert isinstance(text, str), f"{text=!r} was passed " \
+                                       "into _template_to_body"
         # Remove all comments
         text = re.sub(r"(?s)<!--.*?-->", "", text)
         # Remove all text inside <noinclude> ... </noinclude>
@@ -1112,7 +1123,7 @@ class Wtp:
         pre_expand=False,
         template_fn=None,
         post_template_fn=None,
-        templates_to_expand=None,
+        templates_to_expand: Optional[Set[str]] = None,
         templates_to_not_expand=None,
         expand_parserfns=True,
         expand_invoke=True,
@@ -1145,7 +1156,7 @@ class Wtp:
         assert pre_expand in (True, False)
         assert template_fn is None or callable(template_fn)
         assert post_template_fn is None or callable(post_template_fn)
-        assert isinstance(templates_to_expand, (set, dict, type(None)))
+        assert isinstance(templates_to_expand, (set, type(None)))
         assert self.title is not None  # start_page() must have been called
         assert quiet in (False, True)
         assert timeout is None or isinstance(timeout, (int, float))

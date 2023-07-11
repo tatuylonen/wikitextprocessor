@@ -24,7 +24,7 @@
 # close-next lists tags that automatically close this tag.  Closing a
 # parent tag will also silently close them.  Otherwise a missing end tag
 # results in an error message.
-from typing import Union, Dict, List, TypedDict 
+from typing import Dict, List, TypedDict 
 
 HTMLTagData = TypedDict('HTMLTagData',
                         {"parents": List[str],
