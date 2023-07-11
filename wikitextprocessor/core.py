@@ -264,7 +264,7 @@ class Wtp:
         self.lua_invoke: Optional[
             Callable[
                 [str, str, "_LuaTable", str, Optional[LuaNumber]],
-                Tuple[bool, Any],
+                Tuple[bool, str],
             ]
         ] = None
         self.lua_reset_env: Optional[Callable[[], "_LuaTable"]] = None

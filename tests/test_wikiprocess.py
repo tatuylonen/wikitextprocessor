@@ -2515,7 +2515,7 @@ return export
         return mw.text.jsonDecode('null')""")
 
     def test_mw_jsondecode2(self):
-        self.scribunto('True', """
+        self.scribunto('true', """
         return mw.text.jsonDecode('true')""")
 
     def test_mw_jsondecode3(self):
@@ -2786,11 +2786,11 @@ return export
         return t.prefixedText""")
 
     def test_mw_title6(self):
-        self.scribunto("True", r"""
+        self.scribunto("true", r"""
         return mw.title.equals(mw.title.new("Foo"), mw.title.new("Foo"))""")
 
     def test_mw_title7(self):
-        self.scribunto("False", r"""
+        self.scribunto("false", r"""
         return mw.title.equals(mw.title.new("Foo"), mw.title.new("Bar"))""")
 
     def test_mw_title8(self):
@@ -2806,15 +2806,15 @@ return export
         return mw.title.compare(mw.title.new("Foo"), mw.title.new("Foo"))""")
 
     def test_mw_title11(self):
-        self.scribunto("False", r"""
+        self.scribunto("false", r"""
         return mw.title.new("Foo") <=  mw.title.new("Bar")""")
 
     def test_mw_title12(self):
-        self.scribunto("True", r"""
+        self.scribunto("true", r"""
         return mw.title.new("Foo") <= mw.title.new("Foo")""")
 
     def test_mw_title13(self):
-        self.scribunto("True", r"""
+        self.scribunto("true", r"""
         return mw.title.new("Foo") >  mw.title.new("Bar")""")
 
     def test_mw_title14(self):
@@ -2923,22 +2923,22 @@ return export
         return t.subpageText""")
 
     def test_mw_title32(self):
-        self.scribunto("False", r"""
+        self.scribunto("false", r"""
         local t = mw.title.makeTitle(3, "Test/foo/bar", "Frag")
         return t.canTalk""")
 
     def test_mw_title33(self):
-        self.scribunto("True", r"""
+        self.scribunto("true", r"""
         local t = mw.title.makeTitle("Main", "Test")
         return t.isContentPage""")
 
     def test_mw_title34(self):
-        self.scribunto("False", r"""
+        self.scribunto("false", r"""
         local t = mw.title.makeTitle(3, "Test/foo/bar", "Frag")
         return t.isExternal""")
 
     def test_mw_title35(self):
-        self.scribunto("False", r"""
+        self.scribunto("false", r"""
         local t = mw.title.makeTitle(3, "Test/foo/bar", "Frag")
         return t.isRedirect""")
 
@@ -2955,50 +2955,50 @@ return export
             return export"""]])
         ctx.start_page("Tt")
         ret = ctx.expand("{{#invoke:testmod|testfn}}")
-        self.assertEqual(ret, "True")
+        self.assertEqual(ret, "true")
 
     def test_mw_title37(self):
-        self.scribunto("False", r"""
+        self.scribunto("false", r"""
         local t = mw.title.makeTitle(3, "Test/foo/bar", "Frag")
         return t.isSpecialPage""")
 
     def test_mw_title38(self):
-        self.scribunto("True", r"""
+        self.scribunto("true", r"""
         local t = mw.title.makeTitle(3, "Test/foo/bar", "Frag")
         return t.isSubpage""")
 
     def test_mw_title39(self):
-        self.scribunto("True", r"""
+        self.scribunto("true", r"""
         local t = mw.title.makeTitle(3, "Test/foo/bar", "Frag")
         return t.isTalkPage""")
 
     def test_mw_title40(self):
-        self.scribunto("True", r"""
+        self.scribunto("true", r"""
         local t = mw.title.makeTitle("Main", "Test/foo/bar", "Frag")
         return t:isSubpageOf(mw.title.new("Test/foo"))""")
 
     def test_mw_title41(self):
-        self.scribunto("False", r"""
+        self.scribunto("false", r"""
         local t = mw.title.makeTitle("Main", "Test/foo/bar", "Frag")
         return t:isSubpageOf(mw.title.new("Test/foo/baz"))""")
 
     def test_mw_title42(self):
-        self.scribunto("True", r"""
+        self.scribunto("true", r"""
         local t = mw.title.makeTitle("Main", "Test/foo/bar", "Frag")
         return t:inNamespace("Main")""")
 
     def test_mw_title43(self):
-        self.scribunto("False", r"""
+        self.scribunto("false", r"""
         local t = mw.title.makeTitle("Main", "Test/foo/bar", "Frag")
         return t:inNamespace(3)""")
 
     def test_mw_title44(self):
-        self.scribunto("True", r"""
+        self.scribunto("true", r"""
         local t = mw.title.makeTitle("Main", "Test/foo/bar", "Frag")
         return t:inNamespaces("Module", "Main")""")
 
     def test_mw_title45(self):
-        self.scribunto("True", r"""
+        self.scribunto("true", r"""
         local t = mw.title.makeTitle("User talk", "Test/foo/bar", "Frag")
         return t:hasSubjectNamespace("User")""")
 
@@ -3174,17 +3174,17 @@ return export
         # For security, dangerous Lua functions should not be callable from
         # Lua modules (only expressly allowed modules and functions should be
         # available)
-        self.scribunto("True", r"""
+        self.scribunto("true", r"""
         return os.exit == nil""")
 
     def test_sandbox4(self):
-        self.scribunto("True", r"""
+        self.scribunto("true", r"""
         return _G["os"].exit == nil""")
 
     def test_sandbox5(self):
         # This is to test the other tests, to make sure an existing function is
         # properly detected
-        self.scribunto("False", r"""
+        self.scribunto("false", r"""
         return _G["os"].clock == nil""")
 
     def test_dbfile1(self):
@@ -3270,12 +3270,12 @@ return export
         In Chinese Wiktionary, Template:-it- redirects to Template:意大利语,
         and this template expands to wikitext `==意大利语==`, which is a level
         two language subtitle node for Italian words. This test checks both
-        pages should have `need_pre_expand` set to `True` in two redirect cases:
+        pages should have `need_pre_expand` set to `true` in two redirect cases:
         Template:-it- -> Template:意大利语
         or Template:意大利语 -> Template:-it-
         '''
         wtp = Wtp(lang_code="zh")
-        # source page need_pre_expand is True
+        # source page need_pre_expand is true
         wtp.add_page("Template:意大利語", 10, body="==意大利语==")
         wtp.add_page("Template:-it-", 10, redirect_to="Template:意大利語")
         wtp.analyze_templates()
@@ -3284,7 +3284,7 @@ return export
         dest_page = wtp.get_page("Template:意大利語", 10)
         self.assertTrue(dest_page.need_pre_expand)
 
-        # destination page need_pre_expand is True
+        # destination page need_pre_expand is true
         wtp.add_page("Template:意大利語", 10, redirect_to="Template:-it-")
         wtp.add_page("Template:-it-", 10, body="==意大利语==")
         wtp.analyze_templates()
@@ -3299,8 +3299,8 @@ return export
 
 # XXX test post_template_fn
 
-# XXX test expand() with expand_parserfns=False
-# XXX test expand() with expand_templates=False
+# XXX test expand() with expand_parserfns=false
+# XXX test expand() with expand_templates=false
 # XXX test expand() with template_fn (return None and return string)
 # XXX test expand() with pre_only
 # XXX test expand() with templates_to_expand as a given set

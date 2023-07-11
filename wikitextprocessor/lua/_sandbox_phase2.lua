@@ -103,6 +103,13 @@ end
 -- in calls from Python.  Python code must keep in mind that those
 -- arguments and any functions and data structures in them can be
 -- accessed, called, and modified by hostile code.
+-- 20230711: #invoke should return a string, according to documentation
+-- the return value from an invoked module function should be a string,
+-- "otherwise all values are stringified and concatenated into a single
+-- string". This doesn't exactly happen after testing it out on Wiktionary's
+-- Sandbox: nil -> "", table -> "table" (literally), function -> "function",
+-- the rest are stringified as normal and didn't test passing a thread or
+-- "userdata" which I'm still not sure what it is.
 local function _lua_invoke(mod_name, fn_name, frame, page_title, timeout)
    -- Initialize frame and parent frame
    local pframe = frame:getParent()
@@ -186,7 +193,19 @@ local function _lua_invoke(mod_name, fn_name, frame, page_title, timeout)
    -- print("Lua sandbox:", tostring(v))
    _mw_frame = saved_frame
    _mw_pageTitle = saved_pageTitle
-   return st, v
+   if type(v) == "string" then
+      return st, v
+   end
+   if type(v) == "table" then
+      return st, "table"
+   end
+   if v == nil then
+      return st, ""
+   end
+   if type(v) == "function" then
+      return st, "function"
+   end
+   return st, tostring(v)
 end
 
 -- This should be called immediately after loading the sandbox to set the

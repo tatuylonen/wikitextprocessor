@@ -715,7 +715,11 @@ def call_lua_sandbox(ctx: "Wtp",
     if TYPE_CHECKING:
         assert ctx.lua_invoke is not None
     try:
-        ret = ctx.lua_invoke(modname, modfn, frame, ctx.title, timeout)
+        ret: Optional[Tuple[bool, str]] = ctx.lua_invoke(modname,
+                                                         modfn,
+                                                         frame,
+                                                         ctx.title,
+                                                         timeout)
         if not isinstance(ret, (list, tuple)):
             ok, text = ret, ""
         elif len(ret) == 1:
