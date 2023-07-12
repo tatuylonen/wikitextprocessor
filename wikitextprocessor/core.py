@@ -833,12 +833,22 @@ class Wtp:
         # XXX should we expand other templates that produce list items???
         contains_list = body.startswith(("#", "*", ";", ":"))
 
-        # Remove paired tables
+        # Remove paired tables.
+        # What is left is unpaired tables, which is an indication that a
+        # template somewhere should be generating those table eventually,
+        # and thus needs to be pre-expanded.
         prev = body
         while True:
             unpaired_text = re.sub(
-                r"(?s)(^|\n)\{\|([^\n]|\n+[^{|]|\n+\|[^}]|\n+\{[^|])*?\n+\|\}",
-                r"",
+                r"""(?sx)  # re.X, ignore whitespace and comments
+                    (^|\n) \{\|               # start of line {|
+                        (    [^\n]            # any except newline
+                        |    \n+[^{|]         # any except { or | at line start
+                        |    \n+\|[^}]        # | + any except } at linestart
+                        |    \n+\{[^|]        # { + any except | at linestart
+                        )*?
+                    \n+\|\}                   # |}""",
+                "",
                 prev,
             )
             if unpaired_text == prev:
@@ -859,20 +869,39 @@ class Wtp:
         while True:
             # print("=== OUTSIDE ITER")
             prev = outside
+
+            # handle {{{ }}} parameters without templates inside them
             while True:
                 newt = re.sub(
-                    r"(?s)\{\{\{([^{}]|\}[^}]|\}\}[^}])*?\}\}\}", "", prev
+                    # re.X, ignore white space and comments
+                    r"""(?sx)\{\{\{                # {{{
+                                   (    [^{}]      # no {} except...
+                                   |    \}[^}]     # no }} unless...
+                                   |    \}\}[^}]   # they're definitely not }}}
+                                   )*?
+                             \}\}\}                # }}}
+                    """,
+                    "", prev
                 )
                 if newt == prev:
                     break
                 prev = newt
             # print("After arg elim: {!r}".format(newt))
-            newt = re.sub(r"(?s)\{\{([^{}]|\}[^}])*?\}\}", "", newt)
+
+            # Handle templates
+            newt = re.sub(r"""(?sx)\{\{
+                                        (    [^{}]
+                                        |    \}[^}]
+                                        )*?
+                                    \}\}""",
+                
+                          "", newt)
             # print("After templ elim: {!r}".format(newt))
             if newt == outside:
                 break
             outside = newt
         # Check if the template contains certain table elements
+        # start of line plus |+, |- or |!
         m = re.search(r"(?s)(^|\n)(\|\+|\|-|\!)", outside)
         m2 = re.match(r"(?si)\s*(<includeonly>|<!--.*?-->)(\|\||!!)", outside)
         contains_table_element = m is not None or m2 is not None
@@ -885,7 +914,7 @@ class Wtp:
         # Check for unpaired HTML tags
         tag_cnts: DefaultDict[str, int] = collections.defaultdict(int)
         for m in re.finditer(
-            r"(?si)<\s*(/\s*)?({})\b\s*[^>]*(/\s*)?>"
+            r"(?si)<(/)?({})\b\s*[^>]*(/)?>"
             r"".format("|".join(PAIRED_HTML_TAGS)),
             outside,
         ):
