@@ -3276,7 +3276,7 @@ return export
         '''
         wtp = Wtp(lang_code="zh")
         # source page need_pre_expand is true
-        wtp.add_page("Template:意大利語", 10, body="==意大利语==")
+        wtp.add_page("Template:意大利語", 10, body="{{NoEdit|==意大利语==}}")
         wtp.add_page("Template:-it-", 10, redirect_to="Template:意大利語")
         wtp.analyze_templates()
         source_page = wtp.get_page("Template:-it-", 10)
@@ -3286,7 +3286,7 @@ return export
 
         # destination page need_pre_expand is true
         wtp.add_page("Template:意大利語", 10, redirect_to="Template:-it-")
-        wtp.add_page("Template:-it-", 10, body="==意大利语==")
+        wtp.add_page("Template:-it-", 10, body="{{NoEdit|==意大利语==}}")
         wtp.analyze_templates()
         dest_page = wtp.get_page("Template:-it-", 10)
         self.assertTrue(dest_page.need_pre_expand)

@@ -918,11 +918,12 @@ class Wtp:
         for m in re.finditer(
             r"(?s)(^|[^{])(\{\{)?\{\{([^{]*?)(\||\}\})", unpaired_text
         ):
-            name = m.group(3)
-            name = re.sub(r"(?si)<\s*nowiki\s*/\s*>", "", name)
-            if not name:
-                continue
-            included_templates.add(name)
+            called_template = m.group(3)
+            called_template = re.sub(
+                r"(?si)<\s*nowiki\s*/\s*>", "", called_template
+            )
+            if len(called_template) > 0:
+                included_templates.add(called_template)
 
         # Chinese Wiktionary language and POS subtitle template
         # uses "langhd" template
