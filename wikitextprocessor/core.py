@@ -98,8 +98,14 @@ class ErrorMessageData(TypedDict):
     called_from: str
     path: Tuple[str, ...]
 
+class CollatedErrorReturnData(TypedDict):
+    errors: List[ErrorMessageData]
+    warnings: List[ErrorMessageData]
+    debugs: List[ErrorMessageData]
 
-CookieData = Tuple[str, Iterable, bool]
+CookieData = Tuple[str, Iterable[str], bool]
+
+CookieChar = str
 
 # Warning: this function is not re-entrant.  We store ctx and page_handler
 # in global variables during dump processing, because they may not be
@@ -489,7 +495,7 @@ class Wtp:
         )
         self._fmt_errmsg("DEBUG", msg, trace)
 
-    def to_return(self):
+    def to_return(self) -> CollatedErrorReturnData:
         """Returns a dictionary with errors, warnings, and debug messages
         from the context.  Note that the values are reset whenever starting
         processing a new word.  The value returned by this function is
@@ -501,16 +507,20 @@ class Wtp:
         }
 
     def _canonicalize_parserfn_name(self, name: str) -> str:
-        """Canonicalizes a parser function name by replacing underscores by spaces
-        and sequences of whitespace by a single whitespace."""
+        """Canonicalizes a parser function name by replacing underscores by
+        spaces and sequences of whitespace by a single whitespace."""
         name = re.sub(r"[\s_]+", " ", name)
         if name not in PARSER_FUNCTIONS:
             name = name.lower()  # Parser function names are case-insensitive
         return name
 
-    def _save_value(self, kind: str, args: Iterable, nowiki: bool) -> str:
+    def _save_value(self,
+                    kind: str,
+                    args: Iterable[str],
+                    nowiki: bool
+    ) -> CookieChar:
         """Saves a value of a particular kind and returns a unique magic
-        cookie for it."""
+        cookie character for it."""
         assert kind in (
             "T",  # Template {{ ... }}
             "A",  # Template argument {{{ ... }}}
@@ -522,7 +532,7 @@ class Wtp:
         assert nowiki in (True, False)
         # print("save_value", kind, args, nowiki)
         args = tuple(args)
-        v = (kind, args, nowiki)
+        v: CookieData = (kind, args, nowiki)
         if v in self.rev_ht:
             return self.rev_ht[v]
         idx = len(self.cookies)
@@ -535,8 +545,7 @@ class Wtp:
         self.cookies.append(v)
         ch = chr(MAGIC_FIRST + idx)
         self.rev_ht[v] = ch
-        ret = ch
-        return ret
+        return ch
 
     def _encode(self, text: str) -> str:
         """Encode all templates, template arguments, and parser function calls
@@ -556,12 +565,12 @@ class Wtp:
                             |   [^|]            # everything else
                             )*
                           )""",
-                    "|" + v,
+                    "|" + v,  # first/only argument needs a vbar
                 )
             )
             return args
 
-        def repl_arg(m: re.Match) -> str:
+        def repl_arg(m: re.Match) -> CookieChar:
             """Replacement function for template arguments."""
             nowiki = MAGIC_NOWIKI_CHAR in m.group(0)
             orig = m.group(1)
@@ -582,7 +591,7 @@ class Wtp:
         #     )
         #     return prefix + self._save_value("A", args, nowiki)
 
-        def repl_templ(m: re.Match) -> str:
+        def repl_templ(m: re.Match) -> CookieChar:
             """Replacement function for templates {{name|...}} and parser
             functions."""
             nowiki = MAGIC_NOWIKI_CHAR in m.group(0)
@@ -606,7 +615,7 @@ class Wtp:
         #     )
         #     return prefix + self._save_value("T", args, nowiki)
 
-        def repl_link(m: re.Match) -> str:
+        def repl_link(m: re.Match) -> CookieChar:
             """Replacement function for links [[...]]."""
             nowiki = MAGIC_NOWIKI_CHAR in m.group(0)
             orig = m.group(1)
@@ -614,7 +623,7 @@ class Wtp:
             # print("REPL_LINK: orig={!r}".format(orig))
             return self._save_value("L", args, nowiki)
 
-        def repl_extlink(m: re.Match) -> str:
+        def repl_extlink(m: re.Match) -> CookieChar:
             """Replacement function for external links [...].  This is also
             used to replace bracketed sections, such as [...]."""
             nowiki = MAGIC_NOWIKI_CHAR in m.group(0)
