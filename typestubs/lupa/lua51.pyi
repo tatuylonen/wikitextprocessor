@@ -1,4 +1,9 @@
-from typing import Any, Optional, Callable, Union, NoReturn
+from typing import (Any,
+                    Optional,
+                    Callable,
+                    Union,
+                    NoReturn,
+                    )
 
 LuaNumber = Union[int, float]
 

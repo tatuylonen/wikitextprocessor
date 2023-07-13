@@ -1407,7 +1407,7 @@ PARSER_FUNCTIONS = {
 }
 
 
-def call_parser_function(ctx, fn_name, args, expander):
+def call_parser_function(ctx, fn_name, args, expander) -> str:
     """Calls the given parser function with the given arguments."""
     assert isinstance(fn_name, str)
     assert isinstance(args, (list, tuple, dict))

@@ -32,7 +32,7 @@ from lupa.lua51 import lua_type
 from .parserfns import PARSER_FUNCTIONS, call_parser_function, tag_fn
 
 if TYPE_CHECKING:
-    from .core import Wtp, Page, NamespaceDataEntry
+    from .core import Wtp, Page, NamespaceDataEntry, ParentData
     from lupa.lua51 import _LuaTable
 
 # List of search paths for Lua libraries.
@@ -395,15 +395,16 @@ def initialize_lua(ctx: "Wtp"):
 def call_lua_sandbox(ctx: "Wtp",
                      invoke_args: Iterable,
                      expander: Callable,
-                     parent: Optional[Iterable],
-                     timeout: Union[None, float, int]):
+                     parent: Optional["ParentData"],
+                     timeout: Union[None, float, int]
+) -> str:
     """Calls a function in a Lua module in the Lua sandbox.
     ``invoke_args`` is the arguments to the call; ``expander`` should
     be a function to expand an argument.  ``parent`` should be None or
     (parent_title, parent_args) for the parent page."""
     assert isinstance(invoke_args, (list, tuple))
     assert callable(expander)
-    assert parent is None or isinstance(parent, (list, tuple))
+    assert parent is None or isinstance(parent, tuple)
     assert timeout is None or isinstance(timeout, (int, float))
 
     # print("{}: CALL_LUA_SANDBOX: {} {}"
