@@ -33,7 +33,8 @@ from typing import (
     DefaultDict,
     TYPE_CHECKING,
     TypedDict,
-    Generator
+    Generator,
+    Iterator,
 )
 from types import TracebackType
 
@@ -63,7 +64,11 @@ PAIRED_HTML_TAGS: Set[str] = set(
     k for k, v in ALLOWED_HTML_TAGS.items() if not v.get("no-end-tag")
 )
 
-PageData = List[dict]
+# PageData is the list containing all the collected data dicts about words
+# that are ultimately written down into the json-files through json.dumps.
+WordField = Union[str, int, List["WordField"], Dict[str, "WordField"]]
+WordData = Dict[str, WordField]
+ProcessResults = List[WordData]
 StatsData = TypedDict(
     "StatsData",
     {
@@ -74,6 +79,7 @@ StatsData = TypedDict(
     },
     total=False,  # make fields non-obligatory
 )
+PageHandlerReturn = Tuple[ProcessResults, StatsData]
 NamespaceDataEntry = TypedDict(
     "NamespaceDataEntry",
     {
@@ -128,7 +134,7 @@ CookieChar = str
 # in global variables during dump processing, because they may not be
 # pickleable.
 _global_ctx: "Wtp"
-_global_page_handler: Callable[["Page"], Tuple[PageData, StatsData]]
+_global_page_handler: Callable[["Page"], PageHandlerReturn]
 
 
 @dataclass
@@ -147,7 +153,7 @@ def phase2_page_handler(
     bool,  # operation success
     str,  # title
     float,  # start time
-    Optional[Tuple[PageData, StatsData]],  # ([results], {error data})
+    Optional[PageHandlerReturn],  # ([results], {error data})
     Optional[str],  # error message
 ]:
     """Helper function for calling the Phase2 page handler (see
@@ -169,7 +175,7 @@ def phase2_page_handler(
 
         ctx.start_page(page.title)
         try:
-            ret: Tuple[PageData, StatsData] = _global_page_handler(page)
+            ret: PageHandlerReturn = _global_page_handler(page)
             return True, page.title, start_t, ret, None
         except Exception as e:
             lst = traceback.format_exception(
@@ -1558,7 +1564,7 @@ class Wtp:
                         t = template_fn(urllib.parse.unquote(name), ht)
                         # print("TEMPLATE_FN {}: {} {} -> {}"
                         #      .format(template_fn, name, ht, repr(t)))
-                    else:
+                    if t is None:
                         body: Optional[str] = self.read_by_title(
                             name, self.NAMESPACE_DATA["Template"]["id"]
                         )
@@ -1713,13 +1719,15 @@ class Wtp:
     def process(
         self,
         path: str,
-        page_handler,
+        page_handler: Callable[["Page"],
+                                # -> 
+                                PageHandlerReturn],
         namespace_ids: Set[int],
         phase1_only=False,
         override_folders: Optional[List[Path]] = None,
         skip_extract_dump: bool = False,
         save_pages_path: Optional[Path] = None,
-    ):
+    ) -> Iterator[PageHandlerReturn]:
         """Parses a WikiMedia dump file ``path`` (which should point to a
         "<project>-<date>-pages-articles.xml.bz2" file.  This calls
         ``page_handler(model, title, page)`` for each raw page.  This
@@ -1750,19 +1758,19 @@ class Wtp:
             save_pages_path=save_pages_path,
         )
         if phase1_only or page_handler is None:
-            return []
+            return iter(())  # empty iterator to make the type-checker happy
 
         # Reprocess all the pages that we captured in Phase 1
         return self.reprocess(page_handler)
 
     def reprocess(
         self,
-        page_handler,
+        page_handler: Callable[["Page"], PageHandlerReturn],
         autoload=True,
         namespace_ids: Optional[List[int]] = None,
         include_redirects: bool = True,
         search_pattern: Optional[str] = None,
-    ):
+    ) -> Generator[PageHandlerReturn, None, None]:
         """Reprocess all pages captured by self.process() or explicit calls to
         self.add_page(). This calls page_handler(page) for each page, and
         returns of list of their return values (ignoring None values).
@@ -1777,14 +1785,42 @@ class Wtp:
         _global_ctx = self
         _global_page_handler = page_handler
 
-        if self.num_threads == 1:
-            cnt = 0
-            start_t = time.time()
-            last_t = time.time()
+        cnt = 0
+        start_t = time.time()
+        last_t = time.time()
 
-            all_page_nums = self.saved_page_nums(
-                namespace_ids, include_redirects
-            )
+        all_page_nums = self.saved_page_nums(
+            namespace_ids, include_redirects
+        )
+
+        def print_counter() -> None:
+            nonlocal cnt
+            nonlocal last_t
+            cnt += 1
+            if (
+                not self.quiet
+                and
+                # cnt % 1000 == 0 and
+                time.time() - last_t > 1
+            ):
+                remaining = all_page_nums - cnt
+                secs = (time.time() - start_t) / cnt * remaining
+                logging.info(
+                    "  ... {}/{} pages ({:.1%}) processed, "
+                    "{:02d}:{:02d}:{:02d} remaining".format(
+                        cnt,
+                        all_page_nums,
+                        cnt / all_page_nums,
+                        int(secs / 3600),
+                        int(secs / 60 % 60),
+                        int(secs % 60),
+                    )
+                )
+                last_t = time.time()
+            
+
+        ret: Optional[PageHandlerReturn]
+        if self.num_threads == 1:
             # Single-threaded version (without subprocessing).  This is
             # primarily intended for debugging.
             for page in self.get_all_pages(
@@ -1807,27 +1843,7 @@ class Wtp:
                     continue
                 if ret is not None:
                     yield ret
-                cnt += 1
-                if (
-                    not self.quiet
-                    and
-                    # cnt % 1000 == 0 and
-                    time.time() - last_t > 1
-                ):
-                    remaining = all_page_nums - cnt
-                    secs = (time.time() - start_t) / cnt * remaining
-                    logging.info(
-                        "  ... {}/{} pages ({:.1%}) processed, "
-                        "{:02d}:{:02d}:{:02d} remaining".format(
-                            cnt,
-                            all_page_nums,
-                            cnt / all_page_nums,
-                            int(secs / 3600),
-                            int(secs / 60 % 60),
-                            int(secs % 60),
-                        )
-                    )
-                    last_t = time.time()
+                print_counter()
         else:
             # Process pages using multiple parallel processes (the normal
             # case)
@@ -1836,13 +1852,6 @@ class Wtp:
                 pool = multiprocessing.Pool()
             else:
                 pool = multiprocessing.Pool(self.num_threads)
-            cnt = 0
-            start_t = time.time()
-            last_t = time.time()
-
-            all_page_nums = self.saved_page_nums(
-                namespace_ids, include_redirects
-            )
             for success, title, t, ret, err in pool.imap_unordered(
                 phase2_page_handler,
                 self.get_all_pages(
@@ -1857,27 +1866,7 @@ class Wtp:
                     continue
                 if ret is not None:
                     yield ret
-                cnt += 1
-                if (
-                    not self.quiet
-                    and
-                    # cnt % 1000 == 0 and
-                    time.time() - last_t > 1
-                ):
-                    remaining = all_page_nums - cnt
-                    secs = (time.time() - start_t) / cnt * remaining
-                    logging.info(
-                        "  ... {}/{} pages ({:.1%}) processed, "
-                        "{:02d}:{:02d}:{:02d} remaining".format(
-                            cnt,
-                            all_page_nums,
-                            cnt / all_page_nums,
-                            int(secs / 3600),
-                            int(secs / 60 % 60),
-                            int(secs % 60),
-                        )
-                    )
-                    last_t = time.time()
+                print_counter()
 
             pool.close()
             pool.join()
