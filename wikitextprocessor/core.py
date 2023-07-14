@@ -374,23 +374,52 @@ class Wtp:
             return result == 1
         return False
 
+    def sql_where(
+        self,
+        namespace_ids: Optional[List[int]] = None,
+        include_redirects: bool = True,
+        search_pattern: Optional[str] = None,
+    ) -> Tuple[str, List[Union[str, int]]]:
+        
+        and_strs = []
+        if namespace_ids is not None:
+            and_strs.append(
+                f"namespace_id IN ({','.join('?' * len(namespace_ids))})"
+            )
+        if not include_redirects:
+            and_strs.append("redirect_to IS NULL")
+        if search_pattern:
+            and_strs.append("body LIKE ?")
+
+        if and_strs:
+            placeholders: List[Union[int, str]] = []
+            if namespace_ids:
+                placeholders.extend(namespace_ids)
+            if search_pattern:
+                placeholders.append(search_pattern)
+            where_str = " WHERE " + " AND ".join(and_strs)
+        else:
+            placeholders = []
+
+        # print(f"{where_str=!r}, {placeholders=!r}")
+        return where_str, placeholders
+
     def saved_page_nums(
         self,
         namespace_ids: Optional[List[int]] = None,
         include_redirects: bool = True,
+        search_pattern: Optional[str] = None,
     ) -> int:
         query_str = "SELECT count(*) FROM pages"
-        if namespace_ids is not None:
-            query_str += (
-                f" WHERE namespace_id IN ({','.join('?' * len(namespace_ids))})"
-            )
-            if not include_redirects:
-                query_str += " AND redirect_to IS NULL"
-        elif not include_redirects:
-            query_str += " WHERE redirect_to IS NULL"
+
+        where_str, placeholders = self.sql_where(namespace_ids,
+                                                 include_redirects,
+                                                 search_pattern)
+
+        query_str += where_str
 
         for result in self.db_conn.execute(
-            query_str, namespace_ids if namespace_ids else ()
+            query_str, placeholders
         ):
             return result[0]
 
@@ -1790,10 +1819,10 @@ class Wtp:
         last_t = time.time()
 
         all_page_nums = self.saved_page_nums(
-            namespace_ids, include_redirects
+            namespace_ids, include_redirects, search_pattern
         )
 
-        def print_counter() -> None:
+        def process_counter() -> None:
             nonlocal cnt
             nonlocal last_t
             cnt += 1
@@ -1843,7 +1872,7 @@ class Wtp:
                     continue
                 if ret is not None:
                     yield ret
-                print_counter()
+                process_counter()
         else:
             # Process pages using multiple parallel processes (the normal
             # case)
@@ -1866,7 +1895,7 @@ class Wtp:
                     continue
                 if ret is not None:
                     yield ret
-                print_counter()
+                process_counter()
 
             pool.close()
             pool.join()
@@ -1939,27 +1968,12 @@ class Wtp:
             "need_pre_expand, body, model"
             " FROM pages"
         )
-        and_strs = []
 
-        if namespace_ids is not None:
-            and_strs.append(
-                f"namespace_id IN ({','.join('?' * len(namespace_ids))})"
-            )
-        if not include_redirects:
-            and_strs.append("redirect_to IS NULL")
-        if search_pattern:
-            and_strs.append("body LIKE ?")
+        where_str, placeholders = self.sql_where(namespace_ids,
+                                         include_redirects,
+                                         search_pattern)
 
-        if and_strs:
-            placeholders: List[Union[int, str]] = []
-            if namespace_ids:
-                placeholders.extend(namespace_ids)
-            if search_pattern:
-                placeholders.append(search_pattern)
-            query_str += " WHERE " + " AND ".join(and_strs)
-        else:
-            placeholders = []
-        query_str += " ORDER BY title ASC"
+        query_str += where_str +  " ORDER BY title ASC"
         # print("Getting all pages for query:"
         #       f"{query_str=!r}, {placeholders=!r}")
 
