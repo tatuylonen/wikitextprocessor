@@ -382,6 +382,7 @@ class Wtp:
     ) -> Tuple[str, List[Union[str, int]]]:
         
         and_strs = []
+        where_str = ""
         if namespace_ids is not None:
             and_strs.append(
                 f"namespace_id IN ({','.join('?' * len(namespace_ids))})"
