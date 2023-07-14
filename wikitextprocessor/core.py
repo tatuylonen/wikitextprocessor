@@ -1385,7 +1385,7 @@ class Wtp:
                 # apparently encode and expand the return value, similarly to
                 # template bodies (without argument expansion)
                 # XXX current implementation of preprocess() does not match!!!
-                return ret
+                return str(ret)
 
             # Main code of expand_recurse()
             parts: List[str] = []
@@ -1960,7 +1960,9 @@ class Wtp:
         else:
             placeholders = []
         query_str += " ORDER BY title ASC"
-        # print(f"Getting all pages for query: '{query_str}'")
+        # print("Getting all pages for query:"
+        #       f"{query_str=!r}, {placeholders=!r}")
+
 
         for result in self.db_conn.execute(
             query_str,
