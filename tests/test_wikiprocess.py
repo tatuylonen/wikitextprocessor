@@ -1570,7 +1570,10 @@ MORE
         # Test infinite recursion in template expansion
         self.ctx.start_page("Tt")
         ret = self.ctx.expand('{{foo}}')
-        assert ret.find('<strong class="error">too deep recursion') >= 0
+        self.assertGreaterEqual(
+            ret.find('<strong class="error">too deep recursion'),
+            0
+        )
 
     @patch(
         "wikitextprocessor.core.Wtp.get_page",
@@ -3470,7 +3473,7 @@ return export
         # For security, Python should not be callable from Lua modules
         self.ctx.start_page("Tt")
         ret = self.ctx.expand("{{#invoke:testmod|testfn}}")
-        assert ret.startswith('<strong class="error">')
+        self.assertTrue(ret.startswith('<strong class="error">'))
 
     def test_sandbox2(self):
         # For security, dangerous Lua functions should not be callable from
