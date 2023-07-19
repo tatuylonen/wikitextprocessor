@@ -48,7 +48,7 @@ class ParserTests(unittest.TestCase):
 
     def test_hdr2a(self):
         tree = self.parse("test", "==Foo==")
-        assert len(tree.children) == 1
+        self.assertEqual(len(tree.children), 1)
         child = tree.children[0]
         self.assertEqual(child.kind, NodeKind.LEVEL2)
         self.assertEqual(child.args, [["Foo"]])
@@ -56,7 +56,7 @@ class ParserTests(unittest.TestCase):
 
     def test_hdr2b(self):
         tree = self.parse("test", "== Foo:Bar ==\nZappa\n")
-        assert len(tree.children) == 1
+        self.assertEqual(len(tree.children), 1)
         child = tree.children[0]
         self.assertEqual(child.kind, NodeKind.LEVEL2)
         self.assertEqual(child.args, [["Foo:Bar"]])
@@ -64,7 +64,7 @@ class ParserTests(unittest.TestCase):
 
     def test_hdr2c(self):
         tree = self.parse("test", "=== Foo:Bar ===\nZappa\n")
-        assert len(tree.children) == 1
+        self.assertEqual(len(tree.children), 1)
         child = tree.children[0]
         self.assertEqual(child.kind, NodeKind.LEVEL3)
         self.assertEqual(child.args, [["Foo:Bar"]])
@@ -72,7 +72,7 @@ class ParserTests(unittest.TestCase):
 
     def test_hdr23a(self):
         tree = self.parse("test", "==Foo==\na\n===Bar===\nb\n===Zappa===\nc\n")
-        assert len(tree.children) == 1
+        self.assertEqual(len(tree.children), 1)
         h2 = tree.children[0]
         self.assertEqual(h2.kind, NodeKind.LEVEL2)
         self.assertEqual(len(h2.children), 3)
@@ -88,7 +88,7 @@ class ParserTests(unittest.TestCase):
 
     def test_hdr23b(self):
         tree = self.parse("test", "==Foo==\na\n===Bar===\nb\n==Zappa==\nc\n")
-        assert len(tree.children) == 2
+        self.assertEqual(len(tree.children), 2)
         h2a = tree.children[0]
         h2b = tree.children[1]
         self.assertEqual(h2a.kind, NodeKind.LEVEL2)
@@ -140,7 +140,7 @@ dasfasddasfdas
 
     def test_nowiki1(self):
         tree = self.parse("test", "==Foo==\na<nowiki>\n===Bar===\nb</nowiki>\n==Zappa==\nc\n")
-        assert len(tree.children) == 2
+        self.assertEqual(len(tree.children), 2)
         h2a = tree.children[0]
         h2b = tree.children[1]
         self.assertEqual(h2a.kind, NodeKind.LEVEL2)
@@ -153,7 +153,7 @@ dasfasddasfdas
 
     def test_nowiki2(self):
         tree = self.parse("test", "<<nowiki/>foo>")
-        assert tree.children == ["<<nowiki />foo>"]
+        self.assertEqual(tree.children, ["<<nowiki />foo>"])
 
     def test_nowiki3(self):
         tree = self.parse("test", "&<nowiki/>amp;")
@@ -365,7 +365,7 @@ dasfasddasfdas
         tree = self.parse("test", "<b <!-- bar -->>foo</b>")
         self.assertEqual(len(tree.children), 1)
         a = tree.children[0]
-        assert isinstance(a, WikiNode)
+        self.assertTrue(isinstance(a, WikiNode))
         self.assertEqual(a.kind, NodeKind.HTML)
         self.assertEqual(a.args, "b")
         self.assertEqual(a.children, ["foo"])
@@ -376,7 +376,7 @@ dasfasddasfdas
         self.assertEqual(self.ctx.errors, [])
         self.assertEqual(len(tree.children), 1)
         a = tree.children[0]
-        assert isinstance(a, WikiNode)
+        self.assertTrue(isinstance(a, WikiNode))
         self.assertEqual(a.kind, NodeKind.HTML)
         self.assertEqual(a.args, "br")
         self.assertEqual(a.children, [])
@@ -386,7 +386,7 @@ dasfasddasfdas
         self.assertEqual(self.ctx.errors, [])
         self.assertEqual(len(tree.children), 1)
         a = tree.children[0]
-        assert isinstance(a, WikiNode)
+        self.assertTrue(isinstance(a, WikiNode))
         self.assertEqual(a.kind, NodeKind.HTML)
         self.assertEqual(a.args, "wbr")
         self.assertEqual(a.children, [])
@@ -396,7 +396,7 @@ dasfasddasfdas
         self.assertEqual(self.ctx.errors, [])
         self.assertEqual(len(tree.children), 1)
         a = tree.children[0]
-        assert isinstance(a, WikiNode)
+        self.assertTrue(isinstance(a, WikiNode))
         self.assertEqual(a.kind, NodeKind.HTML)
         self.assertEqual(a.args, "tt")
         self.assertEqual(a.children,
@@ -407,7 +407,7 @@ dasfasddasfdas
         self.assertEqual(self.ctx.errors, [])
         self.assertEqual(len(tree.children), 1)
         a = tree.children[0]
-        assert isinstance(a, WikiNode)
+        self.assertTrue(isinstance(a, WikiNode))
         self.assertEqual(a.kind, NodeKind.HTML)
         self.assertEqual(a.args, "span")
         self.assertEqual(a.children, ["["])
@@ -427,7 +427,7 @@ dasfasddasfdas
         self.assertEqual(self.ctx.debugs, [])
         self.assertEqual(len(tree.children), 1)
         a = tree.children[0]
-        assert isinstance(a, WikiNode)
+        self.assertTrue(isinstance(a, WikiNode))
         self.assertEqual(a.kind, NodeKind.HTML)
         self.assertEqual(a.args, "div")
         self.assertEqual(a.children, ["foo"])
@@ -441,7 +441,7 @@ dasfasddasfdas
         self.assertEqual(self.ctx.debugs, [])
         self.assertEqual(len(tree.children), 1)
         a = tree.children[0]
-        assert isinstance(a, WikiNode)
+        self.assertTrue(isinstance(a, WikiNode))
         self.assertEqual(a.kind, NodeKind.HTML)
 
     def test_html17(self):
@@ -456,7 +456,7 @@ dasfasddasfdas
         self.assertEqual(self.ctx.debugs, [])
         self.assertEqual(len(tree.children), 1)
         a = tree.children[0]
-        assert isinstance(a, WikiNode)
+        self.assertTrue(isinstance(a, WikiNode))
         self.assertEqual(a.kind, NodeKind.HTML)
 
     def test_html18(self):
@@ -469,7 +469,7 @@ dasfasddasfdas
         self.assertEqual(self.ctx.debugs, [])
         self.assertEqual(len(tree.children), 1)
         a = tree.children[0]
-        assert isinstance(a, WikiNode)
+        self.assertTrue(isinstance(a, WikiNode))
         self.assertEqual(a.kind, NodeKind.HTML)
         self.assertEqual(a.args, "div")
         self.assertEqual(a.children, ["foo"])
@@ -2003,7 +2003,7 @@ def foo(x):
 | $1.90
 |}""")
         x = str(tree)  # This print is part of the text, do not remove
-        assert isinstance(x, str)
+        self.assertTrue(isinstance(x, str))
 
     def test_repr(self):
         tree = self.parse("test", """{| class="wikitable"
@@ -2024,7 +2024,7 @@ def foo(x):
 | $1.90
 |}""")
         x = repr(tree)
-        assert isinstance(x, str)
+        self.assertTrue(isinstance(x, str))
 
     def test_file_animal(self):
         with open("tests/animal.txt", "r") as f:
@@ -2044,16 +2044,18 @@ def foo(x):
     def test_newline_template_argument_in_list(self):
         # new line characters in template arguments shouldn't pop the parser
         # stack to break the template node.
-        origin_wikitext = """#*{{  foo
+        wikitext = """#*{{  foo
 |bar
 |baz
 }}"""
-        tree = self.parse("test_page", origin_wikitext)
-        a = tree.children[0]
-        b = a.children[0]
-        t = b.children[0]
-        assert(t.children == [])
-        assert(t.args == [['  foo\n'], ['bar\n'], ['baz\n']])
+        tree = self.parse("test_page", wikitext)
+        list_node = tree.children[0]
+        list_item_node = list_node.children[0]
+        template_node = list_item_node.children[0]
+        self.assertEqual(template_node.children, [])
+        self.assertEqual(
+            template_node.args, [['  foo\n'], ['bar\n'], ['baz\n']]
+        )
 
     def test_empty_language_converter_template_argument(self):
         """
