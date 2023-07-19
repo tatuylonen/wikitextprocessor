@@ -43,7 +43,7 @@ from pathlib import Path
 from .parserfns import PARSER_FUNCTIONS, call_parser_function, init_namespaces
 from .wikihtml import ALLOWED_HTML_TAGS
 from .luaexec import call_lua_sandbox
-from .parser import parse_encoded, NodeKind
+from .parser import parse_encoded, NodeKind, WikiNode
 from .common import (
     MAGIC_FIRST,
     MAGIC_LAST,
@@ -55,7 +55,6 @@ from .dumpparser import process_dump
 from .node_expand import to_wikitext, to_html, to_text
 
 if TYPE_CHECKING:
-    from .parser import WikiNode
     from .parserfns import Namespace
     from lupa.lua51 import LuaRuntime, _LuaTable, LuaNumber
 
@@ -141,10 +140,10 @@ _global_page_handler: Callable[["Page"], PageHandlerReturn]
 class Page:
     title: str
     namespace_id: int
-    redirect_to: Optional[str]
-    need_pre_expand: bool
-    body: Optional[str]
-    model: Optional[str]
+    redirect_to: Optional[str] = None
+    need_pre_expand: bool = False
+    body: Optional[str] = None
+    model: Optional[str] = None
 
 
 def phase2_page_handler(
@@ -380,7 +379,7 @@ class Wtp:
         include_redirects: bool = True,
         search_pattern: Optional[str] = None,
     ) -> Tuple[str, List[Union[str, int]]]:
-        
+
         and_strs = []
         where_str = ""
         if namespace_ids is not None:
@@ -956,7 +955,7 @@ class Wtp:
                                         |    \}[^}]
                                         )*?
                                     \}\}""",
-                
+
                           "", newt)
             # print("After templ elim: {!r}".format(newt))
             if newt == outside:
@@ -1750,7 +1749,7 @@ class Wtp:
         self,
         path: str,
         page_handler: Callable[["Page"],
-                                # -> 
+                                # ->
                                 PageHandlerReturn],
         namespace_ids: Set[int],
         phase1_only=False,
@@ -1847,7 +1846,7 @@ class Wtp:
                     )
                 )
                 last_t = time.time()
-            
+
 
         ret: Optional[PageHandlerReturn]
         if self.num_threads == 1:
@@ -2033,14 +2032,14 @@ class Wtp:
 
     def parse(
         self,
-        text,
+        text: str,
         pre_expand=False,
         expand_all=False,
         additional_expand=None,
         do_not_pre_expand=None,
         template_fn=None,
         post_template_fn=None,
-    ):
+    ) -> WikiNode:
         """Parses the given text into a parse tree (WikiNode tree).  If
         ``pre_expand`` is True, then before parsing this will expand
         those templates that have been detected to potentially

@@ -6,81 +6,74 @@ import math
 import time
 import unittest
 
-from typing import List, Tuple
+from typing import Optional
+from unittest.mock import patch
 
-from wikitextprocessor import Wtp
+from wikitextprocessor import Wtp, Page
 from wikitextprocessor.common import MAGIC_NOWIKI_CHAR
 
 
-def phase1_to_ctx(pages: List[Tuple[str, str, str]]) -> Wtp:
-    """Creates a context and adds the given pages to it.  ``pages`` is a
-    list or tuple of (model, title, text), where `tag` is "wikitext"
-    for templates or word page and "Scribunto" for modules, "redirects"
-    for redirect page. Title is the title of the page and text the content
-    of the page."""
-    ctx = Wtp()
-    for model, title, text in pages:
-        namespace_id = 0
-        if title.startswith("Template:"):
-            namespace_id = 10
-        elif model == "Scribunto":
-            namespace_id = 828
-
-        if model == "redirect":
-            ctx.add_page(title, namespace_id, redirect_to=text)
-        else:
-            ctx.add_page(title, namespace_id, text, model=model)
-    ctx.analyze_templates()
-    return ctx
-
-
 class WikiProcTests(unittest.TestCase):
+    def setUp(self) -> None:
+        self.ctx = Wtp()
 
-    def scribunto(self, expected_ret, body, timeout=None):
+    def tearDown(self) -> None:
+        self.ctx.close_db_conn()
+
+    def scribunto(
+        self, expected_ret: str, body: str, timeout: Optional[int] = None
+    ) -> None:
         """This runs a very basic test of scribunto code."""
-        ctx = phase1_to_ctx([
-            ["Scribunto", "Module:testmod", r"""
+        self.ctx.add_page(
+            "Module:testmod",
+            828,
+            r"""
 local export = {}
 function export.testfn(frame)
 """ + body + """
 end
 return export
-"""]])
-        ctx.start_page("Tt")
-        ret = ctx.expand("{{#invoke:testmod|testfn}}", timeout=timeout)
-        ctx.close_db_conn()
-        self.assertEqual(len(ctx.expand_stack), 1)
+""",
+            model="Scribunto"
+        )
+        self.ctx.start_page("Tt")
+        ret = self.ctx.expand("{{#invoke:testmod|testfn}}", timeout=timeout)
+        self.assertEqual(len(self.ctx.expand_stack), 1)
         self.assertEqual(ret, expected_ret)
 
-    def parserfn(self, text, expected_ret):
-        ctx = phase1_to_ctx([])
-        ctx.start_page("Tt")
-        ret = ctx.expand(text)
-        self.assertEqual(ret, expected_ret)
-        return ctx
+    def parserfn(
+            self, text: str, expected_ret: str, almost_equal: bool = False
+    ) -> None:
+        self.ctx.start_page("Tt")
+        ret = self.ctx.expand(text)
+        if almost_equal:
+            self.assertAlmostEqual(float(ret), expected_ret)
+        else:
+            self.assertEqual(ret, expected_ret)
 
     def test_preprocess1(self):
-        ctx = phase1_to_ctx([])
-        ret = ctx.preprocess_text("a<!-- foo\n -- bar\n- bar\n--- bar\n"
-                                  "-- -->b")
+        self.ctx.start_page("Tt")
+        ret = self.ctx.preprocess_text(
+            "a<!-- foo\n -- bar\n- bar\n--- bar\n-- -->b"
+        )
         self.assertEqual(ret, "ab")
 
     def test_preprocess2(self):
-        ctx = phase1_to_ctx([])
-        ret = ctx.preprocess_text("a<nowiki />b")
+        self.ctx.start_page("Tt")
+        ret = self.ctx.preprocess_text("a<nowiki />b")
         self.assertEqual(ret, "a" + MAGIC_NOWIKI_CHAR + "b")
 
     def test_preprocess3(self):
-        ctx = phase1_to_ctx([])
-        ret = ctx.preprocess_text("<nowiki />")
+        self.ctx.start_page("Tt")
+        ret = self.ctx.preprocess_text("<nowiki />")
         self.assertEqual(ret, MAGIC_NOWIKI_CHAR)
 
     def test_preprocess4(self):
-        ctx = phase1_to_ctx([])
         s = "a<nowiki>&amp;</nowiki>b"
         expected = "a&amp;b"
-        ret = ctx.preprocess_text(s)
-        ret = ctx._finalize_expand(ret)
+        self.ctx.start_page("Tt")
+        ret = self.ctx.preprocess_text(s)
+        ret = self.ctx._finalize_expand(ret)
         self.assertEqual(ret, expected)
 
     def test_preprocess5(self):
@@ -88,17 +81,17 @@ return export
         expected = "a&equals;&lt;&gt;&ast;&num;&colon;" \
                    "&excl;&vert;&lsqb;&rsqb;&lbrace;" \
                    "&rbrace;&quot;&apos;b"
-        ctx = phase1_to_ctx([])
-        ret = ctx.preprocess_text(s)
-        ret = ctx._finalize_expand(ret)
+        self.ctx.start_page("Tt")
+        ret = self.ctx.preprocess_text(s)
+        ret = self.ctx._finalize_expand(ret)
         self.assertEqual(ret, expected)
 
     def test_preprocess6(self):
         s = " <nowiki>a\nb\nc</nowiki>"
         expected = " a\nb\nc"
-        ctx = phase1_to_ctx([])
-        ret = ctx.preprocess_text(s)
-        ret = ctx._finalize_expand(ret)
+        self.ctx.start_page("Tt")
+        ret = self.ctx.preprocess_text(s)
+        ret = self.ctx._finalize_expand(ret)
         self.assertEqual(ret, expected)
 
     def test_basic(self):
@@ -130,16 +123,15 @@ return export
         self.parserfn("Some [[link|t[ext]]] x", "Some [[link|t[ext]]] x")
 
     def test_basic9(self):
-        ctx = phase1_to_ctx([
-            ["wikitext", "Template:templ", "FOO {{{1|}}}"]])
-        ctx.start_page("Tt")
-        ret = ctx.expand("Some {{templ|[[link|t[ext]]]}} x")
+        self.ctx.add_page("Template:templ", 10, "FOO {{{1|}}}")
+        self.ctx.start_page("Tt")
+        ret = self.ctx.expand("Some {{templ|[[link|t[ext]]]}} x")
         self.assertEqual(ret, "Some FOO [[link|t[ext]]] x")
 
     def test_basic10(self):
-        ctx = self.parserfn("<span>[</span>", "<span>[</span>")
-        self.assertEqual(len(ctx.errors), 0)
-        self.assertEqual(len(ctx.warnings), 0)
+        self.parserfn("<span>[</span>", "<span>[</span>")
+        self.assertEqual(len(self.ctx.errors), 0)
+        self.assertEqual(len(self.ctx.warnings), 0)
 
     def test_basic11(self):
         self.parserfn("a[[foo]]b", "a[[foo]]b")
@@ -147,41 +139,71 @@ return export
     def test_basic12(self):
         self.parserfn("a[[foo|bar]]b", "a[[foo|bar]]b")
 
-    def test_basic13(self):
-        ctx = phase1_to_ctx([
-            ["wikitext", "Template:templ", "a[[{{{1}}}|{{{2}}}]]b"]])
-        ctx.start_page("Tt")
-        ret = ctx.expand("A{{templ|x|y}}B")
+    @patch(
+        "wikitextprocessor.core.Wtp.get_page",
+        return_value=Page(
+            title="Template:templ",
+            namespace_id=10,
+            body="a[[{{{1}}}|{{{2}}}]]b",
+        )
+    )
+    def test_basic13(self, mock_get_page):
+        self.ctx.start_page("Tt")
+        ret = self.ctx.expand("A{{templ|x|y}}B")
         self.assertEqual(ret, "Aa[[x|y]]bB")
 
     def test_basic14(self):
-        ctx = phase1_to_ctx([
-            ["wikitext", "Template:templ", "a[[{{t2|z|zz-{{{1}}}}}|{{{2}}}]]b"],
-            ["wikitext", "Template:t2", "t2{{{1}}}#{{{2}}}"]])
-        ctx.start_page("Tt")
-        ret = ctx.expand("A{{templ|x|y}}B")
+        self.ctx.add_page(
+            "Template:templ", 10, "a[[{{t2|z|zz-{{{1}}}}}|{{{2}}}]]b"
+        )
+        self.ctx.add_page(
+            "Template:t2", 10, "t2{{{1}}}#{{{2}}}"
+        )
+        self.ctx.start_page("Tt")
+        ret = self.ctx.expand("A{{templ|x|y}}B")
         self.assertEqual(ret, "Aa[[t2z#zz-x|y]]bB")
 
-    def test_basic15(self):
-        ctx = phase1_to_ctx([
-            ["wikitext", "Template:templ", "a[[:{{{1}}}:{{{2}}}|({{{1}}})]]b"]])
-        ctx.start_page("Tt")
-        ret = ctx.expand("A{{templ|hu|állati|langname=Hungarian|interwiki=1}}B")
+    @patch(
+        "wikitextprocessor.core.Wtp.get_page",
+        return_value=Page(
+            title="Template:templ",
+            namespace_id=10,
+            body="a[[:{{{1}}}:{{{2}}}|({{{1}}})]]b",
+        )
+    )
+    def test_basic15(self, mock_get_page):
+        self.ctx.start_page("Tt")
+        ret = self.ctx.expand("A{{templ|hu|állati|langname=Hungarian|interwiki=1}}B")
         self.assertEqual(ret, "Aa[[:hu:állati|(hu)]]bB")
 
-    def test_basic16(self):
-        ctx = phase1_to_ctx([
-            ["wikitext", "Template:templ", "a[[:{{{1}}}:{{{2}}}|({{{1}}})]]b"]])
-        ctx.start_page("Tt")
-        ret = ctx.expand("A{{templ|hu|állati|langname=Hungarian|interwiki=1}}B")
+    @patch(
+        "wikitextprocessor.core.Wtp.get_page",
+        return_value=Page(
+            title="Template:templ",
+            namespace_id=10,
+            body="a[[:{{{1}}}:{{{2}}}|({{{1}}})]]b",
+        )
+    )
+    def test_basic16(self, mock_get_page):
+        self.ctx.start_page("Tt")
+        ret = self.ctx.expand(
+            "A{{templ|hu|állati|langname=Hungarian|interwiki=1}}B"
+        )
         self.assertEqual(ret, "Aa[[:hu:állati|(hu)]]bB")
 
-    def test_basic17(self):
-        ctx = phase1_to_ctx([
-            ["wikitext", "Template:templ",
-             'a{{#ifeq:{{{interwiki|}}}|1|[[:{{{1}}}:{{{2}}}|({{{1}}})]]}}b']])
-        ctx.start_page("Tt")
-        ret = ctx.expand("A{{templ|hu|állati|langname=Hungarian|interwiki=1}}B")
+    @patch(
+        "wikitextprocessor.core.Wtp.get_page",
+        return_value=Page(
+            title="Template:templ",
+            namespace_id=10,
+            body="a{{#ifeq:{{{interwiki|}}}|1|[[:{{{1}}}:{{{2}}}|({{{1}}})]]}}b",
+        )
+    )
+    def test_basic17(self, mock_get_page):
+        self.ctx.start_page("Tt")
+        ret = self.ctx.expand(
+            "A{{templ|hu|állati|langname=Hungarian|interwiki=1}}B"
+        )
         self.assertEqual(ret, 'Aa[[:hu:állati|(hu)]]bB')
 
     def test_if1(self):
@@ -273,11 +295,13 @@ return export
     def test_ifexist2(self):
         self.parserfn("{{#ifexist:Nonexxxx|T}}", "")
 
-    def test_ifexist3(self):
-        ctx = phase1_to_ctx([
-            ["wikitext", "Test title", "FOO"]])
-        ctx.start_page("Tt")
-        ret = ctx.expand("{{#ifexist:Test title|T|F}}")
+    @patch(
+        "wikitextprocessor.core.Wtp.get_page",
+        return_value=Page(title="Test title", namespace_id=0, body="FOO")
+    )
+    def test_ifexist3(self, mock_get_page):
+        self.ctx.start_page("Tt")
+        ret = self.ctx.expand("{{#ifexist:Test title|T|F}}")
         self.assertEqual(ret, "T")
 
     def test_switch1(self):
@@ -325,9 +349,12 @@ return export
         # string.
         self.parserfn("{{#categorytree:Foo|mode=all}}", "")
 
-    def test_lst1(self):
-        ctx = phase1_to_ctx([
-            ["wikitext", "testpage", """
+    @patch(
+        "wikitextprocessor.core.Wtp.get_page",
+        return_value=Page(
+            title="Test title",
+            namespace_id=0,
+            body="""
 <section begin=foo />
 === Test section ===
 A
@@ -343,9 +370,12 @@ MORE
 <section begin=bar />
 NOT
 <section end=bar />
-"""]])
-        ctx.start_page("Tt")
-        ret = ctx.expand("{{#lst:testpage|foo}}")
+""",
+        )
+    )
+    def test_lst1(self, mock_get_page):
+        self.ctx.start_page("Tt")
+        ret = self.ctx.expand("{{#lst:testpage|foo}}")
         self.assertEqual(ret, """
 === Test section ===
 A
@@ -382,159 +412,133 @@ MORE
         self.parserfn("{{{#tag:nowiki}}{!}}", "{{!}}")
 
     def test_fullpagename1(self):
-        ctx = phase1_to_ctx([])
-        ctx.start_page("Tt")
-        ret = ctx.expand("{{FULLPAGENAME}}")
+        self.ctx.start_page("Tt")
+        ret = self.ctx.expand("{{FULLPAGENAME}}")
         self.assertEqual(ret, "Tt")
 
     def test_fullpagename2(self):
-        ctx = phase1_to_ctx([])
-        ctx.start_page("Help:Tt/doc")
-        ret = ctx.expand("{{FULLPAGENAME}}")
+        self.ctx.start_page("Help:Tt/doc")
+        ret = self.ctx.expand("{{FULLPAGENAME}}")
         self.assertEqual(ret, "Help:Tt/doc")
 
     def test_fullpagename3(self):
-        ctx = phase1_to_ctx([])
-        ctx.start_page("Help:Tt/doc")
-        ret = ctx.expand("{{FULLPAGENAME:Template:Mark/doc}}")
+        self.ctx.start_page("Help:Tt/doc")
+        ret = self.ctx.expand("{{FULLPAGENAME:Template:Mark/doc}}")
         self.assertEqual(ret, "Template:Mark/doc")
 
     def test_pagename1(self):
-        ctx = phase1_to_ctx([])
-        ctx.start_page("Tt")
-        ret = ctx.expand("{{PAGENAME}}")
+        self.ctx.start_page("Tt")
+        ret = self.ctx.expand("{{PAGENAME}}")
         self.assertEqual(ret, "Tt")
 
     def test_pagename2(self):
-        ctx = phase1_to_ctx([])
-        ctx.start_page("Help:Tt/doc")
-        ret = ctx.expand("{{PAGENAME}}")
+        self.ctx.start_page("Help:Tt/doc")
+        ret = self.ctx.expand("{{PAGENAME}}")
         self.assertEqual(ret, "Tt/doc")
 
     def test_pagename3(self):
-        ctx = phase1_to_ctx([])
-        ctx.start_page("Help:Tt/doc")
-        ret = ctx.expand("{{PAGENAME:Template:Mark/doc}}")
+        self.ctx.start_page("Help:Tt/doc")
+        ret = self.ctx.expand("{{PAGENAME:Template:Mark/doc}}")
         self.assertEqual(ret, "Mark/doc")
 
     def test_pagenamee1(self):
-        ctx = phase1_to_ctx([])
-        ctx.start_page("Test page")
-        ret = ctx.expand("{{PAGENAMEE}}")
+        self.ctx.start_page("Test page")
+        ret = self.ctx.expand("{{PAGENAMEE}}")
         self.assertEqual(ret, "Test_page")
 
     def test_pagenamee2(self):
-        ctx = phase1_to_ctx([])
-        ctx.start_page("Help:test page/doc")
-        ret = ctx.expand("{{PAGENAMEE}}")
+        self.ctx.start_page("Help:test page/doc")
+        ret = self.ctx.expand("{{PAGENAMEE}}")
         self.assertEqual(ret, "test_page/doc")
 
     def test_rootpagenamee1(self):
-        ctx = phase1_to_ctx([])
-        ctx.start_page("Test page")
-        ret = ctx.expand("{{ROOTPAGENAMEE}}")
+        self.ctx.start_page("Test page")
+        ret = self.ctx.expand("{{ROOTPAGENAMEE}}")
         self.assertEqual(ret, "Test_page")
 
     def test_rootpagenamee2(self):
-        ctx = phase1_to_ctx([])
-        ctx.start_page("Help:test page/doc/bar/foo")
-        ret = ctx.expand("{{ROOTPAGENAMEE}}")
+        self.ctx.start_page("Help:test page/doc/bar/foo")
+        ret = self.ctx.expand("{{ROOTPAGENAMEE}}")
         self.assertEqual(ret, "test_page")
 
     def test_fullpagenamee1(self):
-        ctx = phase1_to_ctx([])
-        ctx.start_page("Test page")
-        ret = ctx.expand("{{FULLPAGENAMEE}}")
+        self.ctx.start_page("Test page")
+        ret = self.ctx.expand("{{FULLPAGENAMEE}}")
         self.assertEqual(ret, "Test_page")
 
     def test_fullpagenamee2(self):
-        ctx = phase1_to_ctx([])
-        ctx.start_page("Help:test page/doc")
-        ret = ctx.expand("{{FULLPAGENAMEE}}")
+        self.ctx.start_page("Help:test page/doc")
+        ret = self.ctx.expand("{{FULLPAGENAMEE}}")
         self.assertEqual(ret, "Help:test_page/doc")
 
     def test_basepagename1(self):
-        ctx = phase1_to_ctx([])
-        ctx.start_page("Help:Tt/doc/subdoc")
-        ret = ctx.expand("{{BASEPAGENAME}}")
+        self.ctx.start_page("Help:Tt/doc/subdoc")
+        ret = self.ctx.expand("{{BASEPAGENAME}}")
         self.assertEqual(ret, "Tt/doc")
 
     def test_basepagename2(self):
-        ctx = phase1_to_ctx([])
-        ctx.start_page("Test title")
-        ret = ctx.expand("{{BASEPAGENAME}}")
+        self.ctx.start_page("Test title")
+        ret = self.ctx.expand("{{BASEPAGENAME}}")
         self.assertEqual(ret, "Test title")
 
     def test_subpagename1(self):
-        ctx = phase1_to_ctx([])
-        ctx.start_page("Help:Tt/doc/subdoc")
-        ret = ctx.expand("{{SUBPAGENAME}}")
+        self.ctx.start_page("Help:Tt/doc/subdoc")
+        ret = self.ctx.expand("{{SUBPAGENAME}}")
         self.assertEqual(ret, "subdoc")
 
     def test_subpagename2(self):
-        ctx = phase1_to_ctx([])
-        ctx.start_page("Help:Tt/doc/subdoc")
-        ret = ctx.expand("{{SUBPAGENAME:Template:test/subtest}}")
+        self.ctx.start_page("Help:Tt/doc/subdoc")
+        ret = self.ctx.expand("{{SUBPAGENAME:Template:test/subtest}}")
         self.assertEqual(ret, "subtest")
 
     def test_subpagename3(self):
-        ctx = phase1_to_ctx([])
-        ctx.start_page("Help:Tt")
-        ret = ctx.expand("{{SUBPAGENAME}}")
+        self.ctx.start_page("Help:Tt")
+        ret = self.ctx.expand("{{SUBPAGENAME}}")
         self.assertEqual(ret, "Tt")
 
     def test_subpagename4(self):
-        ctx = phase1_to_ctx([])
-        ctx.start_page("Help:Tt")
-        ret = ctx.expand("{{SUBPAGENAME:Foo/bar}}")
+        self.ctx.start_page("Help:Tt")
+        ret = self.ctx.expand("{{SUBPAGENAME:Foo/bar}}")
         self.assertEqual(ret, "bar")
 
     def test_subpagename5(self):
-        ctx = phase1_to_ctx([])
-        ctx.start_page("Help:Tt/doc")
-        ret = ctx.expand("{{SUBPAGENAME}}")
+        self.ctx.start_page("Help:Tt/doc")
+        ret = self.ctx.expand("{{SUBPAGENAME}}")
         self.assertEqual(ret, "doc")
 
     def test_subpagename6(self):
-        ctx = phase1_to_ctx([])
-        ctx.start_page("Help:Tt")
-        ret = ctx.expand("{{SUBPAGENAME:Help:TestPage}}")
+        self.ctx.start_page("Help:Tt")
+        ret = self.ctx.expand("{{SUBPAGENAME:Help:TestPage}}")
         self.assertEqual(ret, "TestPage")
 
     def test_talkpagename1(self):
-        ctx = phase1_to_ctx([])
-        ctx.start_page("Help:Tt")
-        ret = ctx.expand("{{TALKPAGENAME}}")
+        self.ctx.start_page("Help:Tt")
+        ret = self.ctx.expand("{{TALKPAGENAME}}")
         self.assertEqual(ret, "Help talk:Tt")
 
     def test_talkpagename2(self):
-        ctx = phase1_to_ctx([])
-        ctx.start_page("Tt")
-        ret = ctx.expand("{{TALKPAGENAME}}")
+        self.ctx.start_page("Tt")
+        ret = self.ctx.expand("{{TALKPAGENAME}}")
         self.assertEqual(ret, "Talk:Tt")
 
     def test_talkpagename3(self):
-        ctx = phase1_to_ctx([])
-        ctx.start_page("X:Tt")
-        ret = ctx.expand("{{TALKPAGENAME}}")
+        self.ctx.start_page("X:Tt")
+        ret = self.ctx.expand("{{TALKPAGENAME}}")
         self.assertEqual(ret, "Talk:X:Tt")
 
     def test_namespace1(self):
-        ctx = phase1_to_ctx([])
-        ctx.start_page("Help:Tt/doc")
-        ret = ctx.expand("{{NAMESPACE}}")
+        self.ctx.start_page("Help:Tt/doc")
+        ret = self.ctx.expand("{{NAMESPACE}}")
         self.assertEqual(ret, "Help")
 
     def test_namespace2(self):
-        ctx = phase1_to_ctx([])
-        ctx.start_page("Tt/doc")
-        ret = ctx.expand("{{NAMESPACE}}")
+        self.ctx.start_page("Tt/doc")
+        ret = self.ctx.expand("{{NAMESPACE}}")
         self.assertEqual(ret, "")
 
     def test_namespace3(self):
-        ctx = phase1_to_ctx([])
-        ctx.start_page("Help:Tt/doc")
-        ret = ctx.expand("{{NAMESPACE:Template:Kk}}")
+        self.ctx.start_page("Help:Tt/doc")
+        ret = self.ctx.expand("{{NAMESPACE:Template:Kk}}")
         self.assertEqual(ret, "Template")
 
     def test_revisionid1(self):
@@ -774,7 +778,7 @@ MORE
         self.parserfn("{{#expr|cos.1}}", "0.9950041652780258")
 
     def test_expr30(self):
-        self.parserfn("{{#expr|tan.1}}", "0.10033467208545055")
+        self.parserfn("{{#expr|tan.1}}", 0.10033467208545055, True)
 
     def test_expr31(self):
         self.parserfn("{{#expr|asin.1}}", "0.1001674211615598")
@@ -912,10 +916,9 @@ MORE
         self.parserfn("{{padright:|1|xyz}}", "x")
 
     def test_time1(self):
-        ctx = phase1_to_ctx([])
-        ctx.start_page("Tt")
+        self.ctx.start_page("Tt")
         t1 = time.time()
-        ret = ctx.expand("{{#time:U}}")
+        ret = self.ctx.expand("{{#time:U}}")
         t2 = time.time()
         self.assertLessEqual(int(t1), float(ret))
         self.assertLessEqual(float(ret), t2)
@@ -1033,27 +1036,23 @@ MORE
         self.parserfn("{{#time:H|February 4, 2007 10:00||1}}", "10")
 
     def test_time36(self):
-        ctx = phase1_to_ctx([])
-        ctx.start_page("Tt")
-        ret = ctx.expand("{{#time:I}}")
+        self.ctx.start_page("Tt")
+        ret = self.ctx.expand("{{#time:I}}")
         self.assertIn(ret, ["0", "1"])
 
     def test_time37(self):
-        ctx = phase1_to_ctx([])
-        ctx.start_page("Tt")
-        ret = ctx.expand("{{#time:0}}")
+        self.ctx.start_page("Tt")
+        ret = self.ctx.expand("{{#time:0}}")
         self.assertEqual(len(ret), 5)
 
     def test_time38(self):
-        ctx = phase1_to_ctx([])
-        ctx.start_page("Tt")
-        ret = ctx.expand("{{#time:P}}")
+        self.ctx.start_page("Tt")
+        ret = self.ctx.expand("{{#time:P}}")
         self.assertEqual(len(ret), 6)
 
     def test_time39(self):
-        ctx = phase1_to_ctx([])
-        ctx.start_page("Tt")
-        ret = ctx.expand("{{#time:Z}}")
+        self.ctx.start_page("Tt")
+        ret = self.ctx.expand("{{#time:Z}}")
         self.assertLessEqual(0, int(ret))
         self.assertLess(int(ret), 24 * 3600)
 
@@ -1173,57 +1172,48 @@ MORE
         self.parserfn("{{#urldecode:x%3Ay%2Fz+k%C3%A4}}", "x:y/z kä")
 
     def test_subjectspace1(self):
-        ctx = phase1_to_ctx([])
-        ctx.start_page("Tt")
-        ret = ctx.expand("{{SUBJECTSPACE}}")
+        self.ctx.start_page("Tt")
+        ret = self.ctx.expand("{{SUBJECTSPACE}}")
         self.assertEqual(ret, "")
 
     def test_subjectspace2(self):
-        ctx = phase1_to_ctx([])
-        ctx.start_page("Reconstruction:Tt")
-        ret = ctx.expand("{{SUBJECTSPACE}}")
+        self.ctx.start_page("Reconstruction:Tt")
+        ret = self.ctx.expand("{{SUBJECTSPACE}}")
         self.assertEqual(ret, "Reconstruction")
 
     def test_subjectspace3(self):
-        ctx = phase1_to_ctx([])
-        ctx.start_page("Tt")
-        ret = ctx.expand("{{SUBJECTSPACE:Reconstruction:foo}}")
+        self.ctx.start_page("Tt")
+        ret = self.ctx.expand("{{SUBJECTSPACE:Reconstruction:foo}}")
         self.assertEqual(ret, "Reconstruction")
 
     def test_talkspace1(self):
-        ctx = phase1_to_ctx([])
-        ctx.start_page("Tt")
-        ret = ctx.expand("{{TALKSPACE}}")
+        self.ctx.start_page("Tt")
+        ret = self.ctx.expand("{{TALKSPACE}}")
         self.assertEqual(ret, "Talk")
 
     def test_talkspace2(self):
-        ctx = phase1_to_ctx([])
-        ctx.start_page("Reconstruction:Tt")
-        ret = ctx.expand("{{TALKSPACE}}")
+        self.ctx.start_page("Reconstruction:Tt")
+        ret = self.ctx.expand("{{TALKSPACE}}")
         self.assertEqual(ret, "Reconstruction talk")
 
     def test_talkspace3(self):
-        ctx = phase1_to_ctx([])
-        ctx.start_page("Tt")
-        ret = ctx.expand("{{TALKSPACE:Reconstruction:foo}}")
+        self.ctx.start_page("Tt")
+        ret = self.ctx.expand("{{TALKSPACE:Reconstruction:foo}}")
         self.assertEqual(ret, "Reconstruction talk")
 
     def test_localurl1(self):
-        ctx = phase1_to_ctx([])
-        ctx.start_page("test page")
-        ret = ctx.expand("{{localurl}}")
+        self.ctx.start_page("test page")
+        ret = self.ctx.expand("{{localurl}}")
         self.assertEqual(ret, "/wiki/test_page")
 
     def test_localurl2(self):
-        ctx = phase1_to_ctx([])
-        ctx.start_page("test page")
-        ret = ctx.expand("{{localurl|Reconstruction:another title}}")
+        self.ctx.start_page("test page")
+        ret = self.ctx.expand("{{localurl|Reconstruction:another title}}")
         self.assertEqual(ret, "/wiki/Reconstruction:another_title")
 
     def test_currentmonthname1(self):
-        ctx = phase1_to_ctx([])
-        ctx.start_page("test page")
-        ret = ctx.expand("{{CURRENTMONTHNAME}}")
+        self.ctx.start_page("test page")
+        ret = self.ctx.expand("{{CURRENTMONTHNAME}}")
         self.assertIn(ret, ["January", "February", "March", "April", "May",
                             "June", "July", "August", "September", "October",
                             "November", "December"])
@@ -1235,806 +1225,1015 @@ MORE
         self.parserfn("{{SERVERNAME}}", "dummy.host")
 
     def test_currentmonthabbrev1(self):
-        ctx = phase1_to_ctx([])
-        ctx.start_page("test page")
-        ret = ctx.expand("{{CURRENTMONTHABBREV}}")
+        self.ctx.start_page("test page")
+        ret = self.ctx.expand("{{CURRENTMONTHABBREV}}")
         self.assertIn(ret, ["Jan", "Feb", "Mar", "Apr", "May",
                             "Jun", "Jul", "Aug", "Sep", "Oct",
                             "Nov", "Dec"])
-
-    def test_template1(self):
-        ctx = phase1_to_ctx([
-            ["wikitext", "Template:testmod", "test content"]])
-        ctx.start_page("Tt")
-        ret = ctx.expand("a{{testmod}}b")
+    @patch(
+        "wikitextprocessor.core.Wtp.get_page",
+        return_value=Page(
+            title="Template:template", namespace_id=10, body="test content"
+        )
+    )
+    def test_template1(self, mock_get_page):
+        self.ctx.start_page("Tt")
+        ret = self.ctx.expand("a{{template}}b")
         self.assertEqual(ret, "atest contentb")
 
-    def test_template2(self):
-        ctx = phase1_to_ctx([
-            ["wikitext", "Template:testmod", " test content "]])
-        ctx.start_page("Tt")
-        ret = ctx.expand("a{{testmod}}b")
+    @patch(
+        "wikitextprocessor.core.Wtp.get_page",
+        return_value=Page(
+            title="Template:template", namespace_id=10, body=" test content "
+        )
+    )
+    def test_template2(self, mock_get_page):
+        self.ctx.start_page("Tt")
+        ret = self.ctx.expand("a{{template}}b")
         self.assertEqual(ret, "a test content b")
 
-    def test_template3(self):
-        ctx = phase1_to_ctx([
-            ["wikitext", "Template:testmod", "* test content\n"]])
-        ctx.start_page("Tt")
-        ret = ctx.expand("a{{testmod}}b")
+    @patch(
+        "wikitextprocessor.core.Wtp.get_page",
+        return_value=Page(
+            title="Template:template", namespace_id=10, body="* test content\n"
+        )
+    )
+    def test_template3(self, mock_get_page):
+        self.ctx.start_page("Tt")
+        ret = self.ctx.expand("a{{template}}b")
         self.assertEqual(ret, "a\n* test content\nb")
 
-    def test_template4(self):
-        ctx = phase1_to_ctx([
-            ["wikitext", "Template:testmod", "test {{{1}}} content"]])
-        ctx.start_page("Tt")
-        ret = ctx.expand("{{testmod}}")
+    @patch(
+        "wikitextprocessor.core.Wtp.get_page",
+        return_value=Page(
+            title="Template:template",
+            namespace_id=10,
+            body="test {{{1}}} content",
+        )
+    )
+    def test_template4(self, mock_get_page):
+        self.ctx.start_page("Tt")
+        ret = self.ctx.expand("{{template}}")
         self.assertEqual(ret, "test {{{1}}} content")
 
-    def test_template5(self):
-        ctx = phase1_to_ctx([
-            ["wikitext", "Template:testmod", "test {{{1}}} content"]])
-        ctx.start_page("Tt")
-        ret = ctx.expand("{{testmod|foo}}")
+    @patch(
+        "wikitextprocessor.core.Wtp.get_page",
+        return_value=Page(
+            title="Template:template",
+            namespace_id=10,
+            body="test {{{1}}} content",
+        )
+    )
+    def test_template5(self, mock_get_page):
+        self.ctx.start_page("Tt")
+        ret = self.ctx.expand("{{template|foo}}")
         self.assertEqual(ret, "test foo content")
 
-    def test_template6(self):
-        ctx = phase1_to_ctx([
-            ["wikitext", "Template:testmod", "test {{{1}}} content"]])
-        ctx.start_page("Tt")
-        ret = ctx.expand("{{testmod|}}")
+    @patch(
+        "wikitextprocessor.core.Wtp.get_page",
+        return_value=Page(
+            title="Template:template",
+            namespace_id=10,
+            body="test {{{1}}} content",
+        )
+    )
+    def test_template6(self, mock_get_page):
+        self.ctx.start_page("Tt")
+        ret = self.ctx.expand("{{template|}}")
         self.assertEqual(ret, "test  content")
 
-    def test_template7(self):
-        ctx = phase1_to_ctx([
-            ["wikitext", "Template:testmod", "test {{{1|}}} content"]])
-        ctx.start_page("Tt")
-        ret = ctx.expand("{{testmod}}")
+    @patch(
+        "wikitextprocessor.core.Wtp.get_page",
+        return_value=Page(
+            title="Template:template",
+            namespace_id=10,
+            body="test {{{1|}}} content",
+        )
+    )
+    def test_template7(self, mock_get_page):
+        self.ctx.start_page("Tt")
+        ret = self.ctx.expand("{{template}}")
         self.assertEqual(ret, "test  content")
 
-    def test_template8(self):
-        ctx = phase1_to_ctx([
-            ["wikitext", "Template:testmod", "test {{{1|def}}} content"]])
-        ctx.start_page("Tt")
-        ret = ctx.expand("{{testmod}}")
+    @patch(
+        "wikitextprocessor.core.Wtp.get_page",
+        return_value=Page(
+            title="Template:template",
+            namespace_id=10,
+            body="test {{{1|def}}} content",
+        )
+    )
+    def test_template8(self, mock_get_page):
+        self.ctx.start_page("Tt")
+        ret = self.ctx.expand("{{template}}")
         self.assertEqual(ret, "test def content")
 
-    def test_template9(self):
-        ctx = phase1_to_ctx([
-            ["wikitext", "Template:testmod", "test {{{1|def}}} content"]])
-        ctx.start_page("Tt")
-        ret = ctx.expand("{{testmod|foo}}")
+    @patch(
+        "wikitextprocessor.core.Wtp.get_page",
+        return_value=Page(
+            title="Template:template",
+            namespace_id=10,
+            body="test {{{1|def}}} content",
+        )
+    )
+    def test_template9(self, mock_get_page):
+        self.ctx.start_page("Tt")
+        ret = self.ctx.expand("{{template|foo}}")
         self.assertEqual(ret, "test foo content")
 
-    def test_template10(self):
-        ctx = phase1_to_ctx([
-            ["wikitext", "Template:testmod", "test {{{{{{1}}}}}} content"]])
-        ctx.start_page("Tt")
-        ret = ctx.expand("{{testmod|2|foo|bar}}")
+    @patch(
+        "wikitextprocessor.core.Wtp.get_page",
+        return_value=Page(
+            title="Template:template",
+            namespace_id=10,
+            body="test {{{{{{1}}}}}} content",
+        )
+    )
+    def test_template10(self, mock_get_page):
+        self.ctx.start_page("Tt")
+        ret = self.ctx.expand("{{template|2|foo|bar}}")
         self.assertEqual(ret, "test foo content")
 
-    def test_template11(self):
-        ctx = phase1_to_ctx([
-            ["wikitext", "Template:testmod", "test {{{{{{1}}}}}} content"]])
-        ctx.start_page("Tt")
-        ret = ctx.expand("{{testmod|3|foo|bar}}")
+    @patch(
+        "wikitextprocessor.core.Wtp.get_page",
+        return_value=Page(
+            title="Template:template",
+            namespace_id=10,
+            body="test {{{{{{1}}}}}} content",
+        )
+    )
+    def test_template11(self, mock_get_page):
+        self.ctx.start_page("Tt")
+        ret = self.ctx.expand("{{template|3|foo|bar}}")
         self.assertEqual(ret, "test bar content")
 
-    def test_template12(self):
-        ctx = phase1_to_ctx([
-            ["wikitext", "Template:testmod", "test {{{foo|{{{1}}}}}} content"]])
-        ctx.start_page("Tt")
-        ret = ctx.expand("{{testmod}}")
+    @patch(
+        "wikitextprocessor.core.Wtp.get_page",
+        return_value=Page(
+            title="Template:template",
+            namespace_id=10,
+            body="test {{{foo|{{{1}}}}}} content",
+        )
+    )
+    def test_template12(self, mock_get_page):
+        self.ctx.start_page("Tt")
+        ret = self.ctx.expand("{{template}}")
         self.assertEqual(ret, "test {{{1}}} content")
 
-    def test_template13(self):
-        ctx = phase1_to_ctx([
-            ["wikitext", "Template:testmod", "test {{{foo|{{{1}}}}}} content"]])
-        ctx.start_page("Tt")
-        ret = ctx.expand("{{testmod|foo=zap}}")
+    @patch(
+        "wikitextprocessor.core.Wtp.get_page",
+        return_value=Page(
+            title="Template:template",
+            namespace_id=10,
+            body="test {{{foo|{{{1}}}}}} content",
+        )
+    )
+    def test_template13(self, mock_get_page):
+        self.ctx.start_page("Tt")
+        ret = self.ctx.expand("{{template|foo=zap}}")
         self.assertEqual(ret, "test zap content")
 
-    def test_template14(self):
-        ctx = phase1_to_ctx([
-            ["wikitext", "Template:testmod", "test {{{foo|{{{1}}}}}} content"]])
-        ctx.start_page("Tt")
-        ret = ctx.expand("{{testmod|Zap}}")
+    @patch(
+        "wikitextprocessor.core.Wtp.get_page",
+        return_value=Page(
+            title="Template:template",
+            namespace_id=10,
+            body="test {{{foo|{{{1}}}}}} content",
+        )
+    )
+    def test_template14(self, mock_get_page):
+        self.ctx.start_page("Tt")
+        ret = self.ctx.expand("{{template|Zap}}")
         self.assertEqual(ret, "test Zap content")
 
-    def test_template15(self):
-        ctx = phase1_to_ctx([
-            ["wikitext", "Template:testmod", "test {{{foo|{{{1}}}}}} content"]])
-        ctx.start_page("Tt")
-        ret = ctx.expand("{{testmod|bar=kak|Zap}}")
+    @patch(
+        "wikitextprocessor.core.Wtp.get_page",
+        return_value=Page(
+            title="Template:template",
+            namespace_id=10,
+            body="test {{{foo|{{{1}}}}}} content",
+        )
+    )
+    def test_template15(self, mock_get_page):
+        self.ctx.start_page("Tt")
+        ret = self.ctx.expand("{{template|bar=kak|Zap}}")
         self.assertEqual(ret, "test Zap content")
 
-    def test_template16(self):
-        ctx = phase1_to_ctx([
-            ["wikitext", "Template:testmod",
-             "{{#if:{{{1}}}|{{#sub:{{{1}}}|0|1}}"
-             "{{testmod|{{#sub:{{{1}}}|1}}}}"
-             "{{testmod|{{#sub:{{{1}}}|1}}}}"
-             "x|}}"
-            ]])
-        ctx.start_page("Tt")
-        ret = ctx.expand("{{testmod|abc}}")
+    @patch(
+        "wikitextprocessor.core.Wtp.get_page",
+        return_value=Page(
+            title="Template:template",
+            namespace_id=10,
+            body="{{#if:{{{1}}}|{{#sub:{{{1}}}|0|1}}"
+            "{{testmod|{{#sub:{{{1}}}|1}}}}"
+            "{{testmod|{{#sub:{{{1}}}|1}}}}"
+            "x|}}",
+        )
+    )
+    def test_template16(self, mock_get_page):
+        self.ctx.start_page("Tt")
+        ret = self.ctx.expand("{{template|abc}}")
         self.assertEqual(ret, "abcxcxxbcxcxxx")
 
     def test_template17(self):
-        ctx = phase1_to_ctx([
-            ["wikitext", "Template:testmod", "a{{testmod2|{{{1}}}}}b"],
-            ["wikitext", "Template:testmod2", "x{{{1}}}y"],
-        ])
-        ctx.start_page("Tt")
-        ret = ctx.expand("{{testmod|zz}}")
+        self.ctx.add_page("Template:template1", 10, "a{{template2|{{{1}}}}}b")
+        self.ctx.add_page("Template:template2", 10, "x{{{1}}}y")
+        self.ctx.start_page("Tt")
+        ret = self.ctx.expand("{{template1|zz}}")
         self.assertEqual(ret, "axzzyb")
 
     def test_template18(self):
-        ctx = phase1_to_ctx([
-            ["wikitext", "Template:testmod", "a{{testmod2|{{{1}}}}}b"],
-            ["wikitext", "Template:testmod2", "{{#if:{{{1}}}|x|y}}"],
-        ])
-        ctx.start_page("Tt")
-        ret = ctx.expand("{{testmod|zz}}")
+        self.ctx.add_page("Template:template1", 10, "a{{template2|{{{1}}}}}b")
+        self.ctx.add_page("Template:template2", 10, "{{#if:{{{1}}}|x|y}}")
+        self.ctx.start_page("Tt")
+        ret = self.ctx.expand("{{template1|zz}}")
         self.assertEqual(ret, "axb")
 
     def test_template19(self):
-        ctx = phase1_to_ctx([
-            ["wikitext", "Template:testmod", "a{{testmod2|{{{1}}}}}b"],
-            ["wikitext", "Template:testmod2", "{{#if:{{{1}}}|x|y}}"],
-        ])
-        ctx.start_page("Tt")
-        ret = ctx.expand("{{testmod|}}")
+        self.ctx.add_page("Template:template1", 10, "a{{template2|{{{1}}}}}b")
+        self.ctx.add_page("Template:template2", 10, "{{#if:{{{1}}}|x|y}}")
+        self.ctx.start_page("Tt")
+        ret = self.ctx.expand("{{template1|}}")
         self.assertEqual(ret, "ayb")
 
     def test_template20(self):
-        ctx = phase1_to_ctx([
-            ["wikitext", "Template:testmod", "a{{testmod2|{{{1}}}}}b"],
-            ["wikitext", "Template:testmod2", "{{#if:{{{1}}}|x|y}}"],
-        ])
-        ctx.start_page("Tt")
-        ret = ctx.expand("{{testmod}}")
+        self.ctx.add_page("Template:template1", 10, "a{{template2|{{{1}}}}}b")
+        self.ctx.add_page("Template:template2", 10, "{{#if:{{{1}}}|x|y}}")
+        self.ctx.start_page("Tt")
+        ret = self.ctx.expand("{{template1}}")
         self.assertEqual(ret, "axb")  # condition expands to {{{1}}}
 
     def test_template21(self):
-        ctx = phase1_to_ctx([
-            ["wikitext", "Template:testmod", "a{{testmod2|{{{1}}}}}b"],
-            ["wikitext", "Template:testmod2", "c{{testmod3|{{{1}}}}}d"],
-            ["wikitext", "Template:testmod3", "f{{{1}}}g"],
-        ])
-        ctx.start_page("Tt")
-        ret = ctx.expand("{{testmod}}")
+        self.ctx.add_page("Template:template1", 10, "a{{template2|{{{1}}}}}b")
+        self.ctx.add_page("Template:template2", 10, "c{{template3|{{{1}}}}}d")
+        self.ctx.add_page("Template:template3", 10, "f{{{1}}}g")
+        self.ctx.start_page("Tt")
+        ret = self.ctx.expand("{{template1}}")
         self.assertEqual(ret, "acf{{{1}}}gdb")
 
     def test_template22(self):
-        ctx = phase1_to_ctx([
-            ["wikitext", "Template:testmod", "a{{testmod2|{{{1}}}}}b"],
-            ["wikitext", "Template:testmod2", "c{{testmod3|{{{1}}}}}d"],
-            ["wikitext", "Template:testmod3", "f{{{1}}}g"],
-        ])
-        ctx.start_page("Tt")
-        ret = ctx.expand("{{testmod|}}")
+        self.ctx.add_page("Template:template1", 10, "a{{template2|{{{1}}}}}b")
+        self.ctx.add_page("Template:template2", 10, "c{{template3|{{{1}}}}}d")
+        self.ctx.add_page("Template:template3", 10, "f{{{1}}}g")
+        self.ctx.start_page("Tt")
+        ret = self.ctx.expand("{{template1|}}")
         self.assertEqual(ret, "acfgdb")
 
     def test_template23(self):
-        ctx = phase1_to_ctx([
-            ["wikitext", "Template:testmod", "a{{testmod2|{{{1}}}}}b"],
-            ["wikitext", "Template:testmod2", "c{{testmod3|{{{1}}}}}d"],
-            ["wikitext", "Template:testmod3", "f{{{1}}}g"],
-        ])
-        ctx.start_page("Tt")
-        ret = ctx.expand("{{testmod|zz}}")
+        self.ctx.add_page("Template:template1", 10, "a{{template2|{{{1}}}}}b")
+        self.ctx.add_page("Template:template2", 10, "c{{template3|{{{1}}}}}d")
+        self.ctx.add_page("Template:template3", 10, "f{{{1}}}g")
+        self.ctx.start_page("Tt")
+        ret = self.ctx.expand("{{template1|zz}}")
         self.assertEqual(ret, "acfzzgdb")
 
     def test_template24a(self):
-        ctx = phase1_to_ctx([
-            ["wikitext", "Template:testmod", "a{{{1}}}b"],
-        ])
-        ctx.start_page("Tt")
-        ret = ctx.expand("{{testmod|{{!}}}}")
+        self.ctx.add_page("Template:template", 10, "a{{{1}}}b")
+        self.ctx.analyze_templates()
+        self.ctx.start_page("Tt")
+        ret = self.ctx.expand("{{template|{{!}}}}")
         self.assertEqual(ret, "a|b")
 
     def test_template24b(self):
-        ctx = phase1_to_ctx([
-            ["wikitext", "Template:testmod", "a{{{1}}}b"],
-            ["wikitext", "Template:!-", "|-"]
-        ])
-        ctx.start_page("Tt")
-        ret = ctx.expand("{{testmod|{{!-}}}}")
+        self.ctx.add_page("Template:template", 10, "a{{{1}}}b")
+        self.ctx.add_page("Template:!-", 10, "|-")
+        self.ctx.start_page("Tt")
+        ret = self.ctx.expand("{{template|{{!-}}}}")
         self.assertEqual(ret, "a|-b")
 
     def test_template24c(self):
-        ctx = phase1_to_ctx([])
-        ctx.start_page("Tt")
-        ret = ctx.expand("{{#if:true|before{{#if:true|{{!}}|false}}after}}")
+        self.ctx.analyze_templates()
+        self.ctx.start_page("Tt")
+        ret = self.ctx.expand("{{#if:true|before{{#if:true|{{!}}|false}}after}}")
         self.assertEqual(ret, "before|after")
 
     def test_template24d(self):
-        ctx = phase1_to_ctx([
-            ["wikitext", "Template:t1", "before{{#if:true|{{!}}|false}}after"],
-        ])
-        ctx.start_page("Tt")
-        ret = ctx.expand("{{#if:true|{{t1}}}}")
+        self.ctx.add_page(
+            "Template:t1", 10, "before{{#if:true|{{!}}|false}}after"
+        )
+        self.ctx.analyze_templates()
+        self.ctx.start_page("Tt")
+        ret = self.ctx.expand("{{#if:true|{{t1}}}}")
         self.assertEqual(ret, "before|after")
 
     def test_template24e(self):
-        ctx = phase1_to_ctx([
-            ["wikitext", "Template:t1", "before{{#if:true|{{!}}|false}}after"],
-        ])
-        ctx.start_page("Tt")
-        ret = ctx.expand("{|\n||first||{{t1}}||last\n|}")
+        self.ctx.add_page(
+            "Template:t1", 10, "before{{#if:true|{{!}}|false}}after"
+        )
+        self.ctx.analyze_templates()
+        self.ctx.start_page("Tt")
+        ret = self.ctx.expand("{|\n||first||{{t1}}||last\n|}")
         self.assertEqual(ret, "{|\n||first||before|after||last\n|}")
 
     def test_template24f(self):
-        ctx = phase1_to_ctx([
-            ["wikitext", "Template:row", "||bar\n{{!}} {{!}}baz\n| zap"],
-            ["wikitext", "Template:t1", "{|\n! Hdr\n{{row|foo}}\n|}"],
-        ])
-        ctx.start_page("Tt")
-        ret = ctx.expand("{{t1}}")
+        self.ctx.add_page("Template:row", 10, "||bar\n{{!}} {{!}}baz\n| zap")
+        self.ctx.add_page("Template:t1", 10, "{|\n! Hdr\n{{row|foo}}\n|}")
+        self.ctx.analyze_templates()
+        self.ctx.start_page("Tt")
+        ret = self.ctx.expand("{{t1}}")
         self.assertEqual(ret, "{|\n! Hdr\n||bar\n| |baz\n| zap\n|}")
 
     def test_template25(self):
-        ctx = phase1_to_ctx([
-            ["wikitext", "Template:testmod", "a{{{1}}}b"],
-        ])
         # This example is from
         # https://www.mediawiki.org/wiki/Extension:Scribunto/Lua_reference_manual#frame:getTitle,
         # under frame:expandTemplate examples
-        ctx.start_page("Tt")
-        ret = ctx.expand("{{testmod|{{((}}!{{))}}}}")
+        self.ctx.add_page("Template:template", 10, "a{{{1}}}b")
+        self.ctx.analyze_templates()
+        self.ctx.start_page("Tt")
+        ret = self.ctx.expand("{{template|{{((}}!{{))}}}}")
         self.assertEqual(ret, "a&lbrace;&lbrace;!&rbrace;&rbrace;b")
 
-    def test_template26(self):
-        ctx = phase1_to_ctx([
-            ["wikitext", "Template:foo", 'a{{{1}}}b'],
-        ])
+    @patch(
+        "wikitextprocessor.core.Wtp.get_page",
+        return_value=Page(
+            title="Template:foo",
+            namespace_id=10,
+            body="a{{{1}}}b",
+        ),
+    )
+    def test_template26(self, mock_get_page):
         # This tests that the "=" is not interpretated as indicating argument
         # name on the left.
-        ctx.start_page("Tt")
-        ret = ctx.expand('{{foo|<span class="foo">bar</span>}}')
+        self.ctx.start_page("Tt")
+        ret = self.ctx.expand('{{foo|<span class="foo">bar</span>}}')
         self.assertEqual(ret, 'a<span class="foo">bar</span>b')
 
-    def test_template27(self):
+    @patch(
+        "wikitextprocessor.core.Wtp.get_page",
+        return_value=Page(
+            title="Template:foo",
+            namespace_id=10,
+            body="a{{foo}}b",
+        ),
+    )
+    def test_template27(self, mock_get_page):
         # Test infinite recursion in template expansion
-        ctx = phase1_to_ctx([
-            ["wikitext", "Template:foo", "a{{foo}}b"],
-        ])
-        ctx.start_page("Tt")
-        ret = ctx.expand('{{foo}}')
+        self.ctx.start_page("Tt")
+        ret = self.ctx.expand('{{foo}}')
         assert ret.find('<strong class="error">too deep recursion') >= 0
 
-    def test_template28(self):
+    @patch(
+        "wikitextprocessor.core.Wtp.get_page",
+        return_value=Page(
+            title="Template:foo",
+            namespace_id=10,
+            body="a{{{1}}}b",
+        ),
+    )
+    def test_template28(self, mock_get_page):
         # Test | inside <math> in template argument
-        ctx = phase1_to_ctx([
-            ["wikitext", "Template:foo", "a{{{1}}}b"],
-        ])
-        ctx.start_page("Tt")
-        ret = ctx.expand('{{foo|x <math> 1 | 2 </math> y}}')
+        self.ctx.start_page("Tt")
+        ret = self.ctx.expand('{{foo|x <math> 1 | 2 </math> y}}')
         self.assertEqual(ret, "ax <math> 1 | 2 </math> yb")
 
-    def test_template29(self):
-        ctx = phase1_to_ctx([
-            ["wikitext", "Template:testmod", "a{{{zz foo|}}}b"],
-        ])
-        ctx.start_page("Tt")
-        ret = ctx.expand("{{testmod|1|zz foo=2|bar=3}}")
+    @patch(
+        "wikitextprocessor.core.Wtp.get_page",
+        return_value=Page(
+            title="Template:template",
+            namespace_id=10,
+            body="a{{{zz foo|}}}b",
+        ),
+    )
+    def test_template29(self, mock_get_page):
+        self.ctx.start_page("Tt")
+        ret = self.ctx.expand("{{template|1|zz foo=2|bar=3}}")
         self.assertEqual(ret, "a2b")
 
-    def test_template30(self):
-        ctx = phase1_to_ctx([
-            ["wikitext", "Template:t1", "[<noinclude/>[foo]]"],
-        ])
-        ctx.start_page("Tt")
-        ret = ctx.expand("{{t1}}")
+    @patch(
+        "wikitextprocessor.core.Wtp.get_page",
+        return_value=Page(
+            title="Template:t1",
+            namespace_id=10,
+            body="[<noinclude/>[foo]]",
+        ),
+    )
+    def test_template30(self, mock_get_page):
+        self.ctx.start_page("Tt")
+        ret = self.ctx.expand("{{t1}}")
         self.assertEqual(ret, "[<noinclude/>[foo]]")
 
     def test_unbalanced1(self):
-        ctx = phase1_to_ctx([])
-        ctx.start_page("Tt")
-        ret = ctx.expand("{{#switch:p|p=q|r={{tc}}|s=t}}")
+        self.ctx.start_page("Tt")
+        ret = self.ctx.expand("{{#switch:p|p=q|r={{tc}}|s=t}}")
         self.assertEqual(ret, "q")
 
     def test_unbalanced2(self):
-        ctx = phase1_to_ctx([])
-        ctx.start_page("Tt")
-        ret = ctx.expand("{{#switch:p|p=q|r={{tc}}|s=t}}")
+        self.ctx.start_page("Tt")
+        ret = self.ctx.expand("{{#switch:p|p=q|r={{tc}}|s=t}}")
         self.assertEqual(ret, "q")
 
-    def test_unbalanced3(self):
-        ctx = phase1_to_ctx([
-            ["wikitext", "Template:tc", "X"]])
-        ctx.start_page("Tt")
-        ret = ctx.expand("{{#switch:r|p=q|r={{tc}}|s=t}}")
+    @patch(
+        "wikitextprocessor.core.Wtp.get_page",
+        return_value=Page(title="Template:tc", namespace_id=10, body="X"),
+    )
+    def test_unbalanced3(self, mock_get_page):
+        self.ctx.start_page("Tt")
+        ret = self.ctx.expand("{{#switch:r|p=q|r={{tc}}|s=t}}")
         self.assertEqual(ret, "X")
 
     def test_unbalanced4(self):
-        ctx = phase1_to_ctx([])
-        ctx.start_page("Tt")
-        ret = ctx.expand("{{#switch:p|p=q|r=tc}}|s=t}}")
+        self.ctx.start_page("Tt")
+        ret = self.ctx.expand("{{#switch:p|p=q|r=tc}}|s=t}}")
         self.assertEqual(ret, "q|s=t}}")
 
-    def test_unbalanced5(self):
-        ctx = phase1_to_ctx([
-            ["wikitext", "Template:tc", "X"]])
-        ctx.start_page("Tt")
-        ret = ctx.expand("{{#switch:p|p=q|r={{tc|s=t}}")
+    @patch(
+        "wikitextprocessor.core.Wtp.get_page",
+        return_value=Page(title="Template:tc", namespace_id=10, body="X"),
+    )
+    def test_unbalanced5(self, mock_get_page):
+        self.ctx.start_page("Tt")
+        ret = self.ctx.expand("{{#switch:p|p=q|r={{tc|s=t}}")
         self.assertEqual(ret, "{{#switch:p|p=q|r=X")
 
     def test_redirect1(self):
-        ctx = phase1_to_ctx([
-            ["redirect", "Template:oldtemp", "Template:testtemp"],
-            ["wikitext", "Template:testtemp", "a{{{1}}}b"],
-        ])
-        ctx.start_page("Tt")
-        ret = ctx.expand("{{oldtemp|foo}}")
+        self.ctx.add_page(
+            "Template:oldtemp", 10, redirect_to="Template:testtemp"
+        )
+        self.ctx.add_page("Template:testtemp", 10, "a{{{1}}}b")
+        self.ctx.start_page("Tt")
+        ret = self.ctx.expand("{{oldtemp|foo}}")
         self.assertEqual(ret, "afoob")
 
-    def test_invoke1(self):
-        ctx = phase1_to_ctx([
-            ["Scribunto", "Module:testmod", """
+    @patch(
+        "wikitextprocessor.core.Wtp.get_page",
+        return_value=Page(
+            title="Module:testmod",
+            namespace_id=828,
+            body="""
 local export = {}
 function export.testfn(frame)
   return "in test"
 end
 return export
-"""]])
-        ctx.start_page("Tt")
-        ret = ctx.expand("a{{#invoke:testmod|testfn}}b")
+""",
+        ),
+    )
+    def test_invoke1(self, mock_get_page):
+        self.ctx.start_page("Tt")
+        ret = self.ctx.expand("a{{#invoke:testmod|testfn}}b")
         self.assertEqual(ret, "ain testb")
 
     def test_invoke2(self):
         self.scribunto("0", """return tostring(#frame.args)""")
 
-    def test_invoke4a(self):
-        ctx = phase1_to_ctx([
-            ["Scribunto", "Module:testmod", """
+    @patch(
+        "wikitextprocessor.core.Wtp.get_page",
+        return_value=Page(
+            title="Module:testmod",
+            namespace_id=828,
+            body="""
 local export = {}
 function export.testfn(frame)
   return frame.args[1]
 end
 return export
-"""]])
-        ctx.start_page("Tt")
-        ret = ctx.expand("{{#invoke:testmod|testfn|a|b|foo=bar}}")
+""",
+        ),
+    )
+    def test_invoke4a(self, mock_get_page):
+        self.ctx.start_page("Tt")
+        ret = self.ctx.expand("{{#invoke:testmod|testfn|a|b|foo=bar}}")
         self.assertEqual(ret, "a")
 
-    def test_invoke4b(self):
-        ctx = phase1_to_ctx([
-            ["Scribunto", "Module:testmod", """
+    @patch(
+        "wikitextprocessor.core.Wtp.get_page",
+        return_value=Page(
+            title="Module:testmod",
+            namespace_id=828,
+            body="""
 local export = {}
 function export.testfn(frame)
   return frame.args["1"]
 end
 return export
-"""]])
-        ctx.start_page("Tt")
-        ret = ctx.expand("{{#invoke:testmod|testfn|a|b|foo=bar}}")
+""",
+        ),
+    )
+    def test_invoke4b(self, mock_get_page):
+        self.ctx.start_page("Tt")
+        ret = self.ctx.expand("{{#invoke:testmod|testfn|a|b|foo=bar}}")
         self.assertEqual(ret, "a")
 
-    def test_invoke4c(self):
-        ctx = phase1_to_ctx([
-            ["Scribunto", "Module:testmod", """
+    @patch(
+        "wikitextprocessor.core.Wtp.get_page",
+        return_value=Page(
+            title="Module:testmod",
+            namespace_id=828,
+            body="""
 local export = {}
 function export.testfn(frame)
   return frame.args["foo"]
 end
 return export
-"""]])
-        ctx.start_page("Tt")
-        ret = ctx.expand("{{#invoke:testmod|testfn|a|b|foo=bar}}")
+""",
+        ),
+    )
+    def test_invoke4c(self, mock_get_page):
+        self.ctx.start_page("Tt")
+        ret = self.ctx.expand("{{#invoke:testmod|testfn|a|b|foo=bar}}")
         self.assertEqual(ret, "bar")
 
-    def test_invoke5(self):
-        ctx = phase1_to_ctx([
-            ["Scribunto", "Module:testmod", """
+    @patch(
+        "wikitextprocessor.core.Wtp.get_page",
+        return_value=Page(
+            title="Module:testmod",
+            namespace_id=828,
+            body="""
 local export = {}
 function export.testfn(frame)
   return frame.args.foo
 end
 return export
-"""]])
-        ctx.start_page("Tt")
-        ret = ctx.expand("{{#invoke:testmod|testfn|foo=bar|a}}")
+""",
+        ),
+    )
+    def test_invoke5(self, mock_get_page):
+        self.ctx.start_page("Tt")
+        ret = self.ctx.expand("{{#invoke:testmod|testfn|foo=bar|a}}")
         self.assertEqual(ret, "bar")
 
-    def test_invoke6(self):
-        ctx = phase1_to_ctx([
-            ["Scribunto", "Module:testmod", """
+    @patch(
+        "wikitextprocessor.core.Wtp.get_page",
+        return_value=Page(
+            title="Module:testmod",
+            namespace_id=828,
+            body="""
 local export = {}
 function export.testfn(frame)
   return frame.args["foo"]
 end
 return export
-"""]])
-        ctx.start_page("Tt")
-        ret = ctx.expand("{{#invoke:testmod|testfn|foo=bar|a}}")
+""",
+        ),
+    )
+    def test_invoke6(self, mock_get_page):
+        self.ctx.start_page("Tt")
+        ret = self.ctx.expand("{{#invoke:testmod|testfn|foo=bar|a}}")
         self.assertEqual(ret, "bar")
 
     def test_invoke7(self):
-        ctx = phase1_to_ctx([
-            ["wikitext", "Template:testtempl",
-             "{{#invoke:testmod|testfn|foo={{{1}}}|{{{2}}}}}"],
-            ["Scribunto", "Module:testmod", """
+        self.ctx.add_page(
+            "Template:testtempl",
+            10,
+            "{{#invoke:testmod|testfn|foo={{{1}}}|{{{2}}}}}",
+        )
+        self.ctx.add_page(
+            "Module:testmod",
+            828,
+            """
 local export = {}
 function export.testfn(frame)
   return frame.args["foo"]
 end
 return export
-"""]])
-        ctx.start_page("Tt")
-        ret = ctx.expand("{{testtempl|a|b}}")
-        self.assertEqual(ret, "a")
-
-    def test_invoke8(self):
-        ctx = phase1_to_ctx([
-            ["wikitext", "Template:testtempl",
-             "{{#invoke:testmod|testfn|foo={{{1}}}|{{{2}}}}}"],
-            ["Scribunto", "Module:testmod", """
-local export = {}
-function export.testfn(frame)
-  return frame.args["foo"]
-end
-return export
-"""]])
-        ctx.start_page("Tt")
-        ret = ctx.expand("{{testtempl|a|b}}")
+""",
+        )
+        self.ctx.start_page("Tt")
+        ret = self.ctx.expand("{{testtempl|a|b}}")
         self.assertEqual(ret, "a")
 
     def test_invoke9(self):
-        ctx = phase1_to_ctx([
-            ["wikitext", "Template:testtempl",
-             "{{#invoke:testmod|testfn|foo={{{1}}}|{{{2}}}}}"],
-            ["Scribunto", "Module:testmod", """
+        self.ctx.add_page(
+            "Template:testtempl",
+            10,
+            "{{#invoke:testmod|testfn|foo={{{1}}}|{{{2}}}}}",
+        )
+        self.ctx.add_page(
+            "Module:testmod",
+            828,
+            """
 local export = {}
 function export.testfn(frame)
   return frame.args.foo
 end
 return export
-"""]])
-        ctx.start_page("Tt")
-        ret = ctx.expand("{{testtempl|a|b}}")
+""",
+        )
+        self.ctx.start_page("Tt")
+        ret = self.ctx.expand("{{testtempl|a|b}}")
         self.assertEqual(ret, "a")
 
     def test_invoke10(self):
-        ctx = phase1_to_ctx([
-            ["wikitext", "Template:testtempl",
-             "{{#invoke:testmod|testfn|foo={{{1}}}|{{{2}}}}}"],
-            ["Scribunto", "Module:testmod", """
+        self.ctx.add_page(
+            "Template:testtempl",
+            10,
+            "{{#invoke:testmod|testfn|foo={{{1}}}|{{{2}}}}}",
+        )
+        self.ctx.add_page(
+            "Module:testmod",
+            828,
+            """
 local export = {}
 function export.testfn(frame)
   return frame.args[1]
 end
 return export
-"""]])
-        ctx.start_page("Tt")
-        ret = ctx.expand("{{testtempl|a|b}}")
+""",
+        )
+        self.ctx.start_page("Tt")
+        ret = self.ctx.expand("{{testtempl|a|b}}")
         self.assertEqual(ret, "b")
 
     def test_invoke11(self):
-        ctx = phase1_to_ctx([
-            ["wikitext", "Template:testtempl",
-             "{{#invoke:testmod|testfn}}"],
-            ["Scribunto", "Module:testmod", """
+        self.ctx.add_page(
+            "Template:testtempl", 10, "{{#invoke:testmod|testfn}}"
+        )
+        self.ctx.add_page(
+            "Module:testmod",
+            828,
+            """
 local export = {}
 function export.testfn(frame)
   return tostring(frame.args.foo)
 end
 return export
-"""]])
-        ctx.start_page("Tt")
-        ret = ctx.expand("{{testtempl}}")
+""",
+        )
+        self.ctx.start_page("Tt")
+        ret = self.ctx.expand("{{testtempl}}")
         self.assertEqual(ret, "nil")
 
     def test_invoke12(self):
         # Testing that intervening template call does not mess up arguments
         # (this was once a bug)
-        ctx = phase1_to_ctx([
-            ["wikitext", "Template:testtempl",
-             "{{templ2|{{#invoke:testmod|testfn}}}}"],
-            ["wikitext", "Template:templ2", "{{{1}}}"],
-            ["Scribunto", "Module:testmod", """
+        self.ctx.add_page(
+            "Template:testtempl", 10, "{{templ2|{{#invoke:testmod|testfn}}}}"
+        )
+        self.ctx.add_page("Template:templ2", 10, "{{{1}}}")
+        self.ctx.add_page(
+            "Module:testmod",
+            828,
+            """
 local export = {}
 function export.testfn(frame)
   return tostring(frame:getParent().args[1])
 end
 return export
-"""]])
-        ctx.start_page("Tt")
-        ret = ctx.expand("{{testtempl|arg1}}")
-        self.assertEqual(ret, "arg1")
-
-    def test_invoke13(self):
-        # Testing that intervening template call does not mess up arguments
-        # (this was once a bug)
-        ctx = phase1_to_ctx([
-            ["wikitext", "Template:testtempl",
-             "{{templ2|{{#invoke:testmod|testfn}}}}"],
-            ["wikitext", "Template:templ2", "{{{1}}}"],
-            ["Scribunto", "Module:testmod", """
-local export = {}
-function export.testfn(frame)
-  return tostring(frame:getParent().args[1])
-end
-return export
-"""]])
-        ctx.start_page("Tt")
-        ret = ctx.expand("{{testtempl|arg1}}")
+""",
+        )
+        self.ctx.start_page("Tt")
+        ret = self.ctx.expand("{{testtempl|arg1}}")
         self.assertEqual(ret, "arg1")
 
     def test_invoke14(self):
         # Testing that argument names are handled correctly if = inside HTML tag
-        ctx = phase1_to_ctx([
-            ["wikitext", "Template:testtempl",
-             """{{#invoke:testmod|testfn|<span class="foo">bar</span>}}"""],
-            ["Scribunto", "Module:testmod", """
+        self.ctx.add_page(
+            "Template:testtempl",
+            10,
+            '{{#invoke:testmod|testfn|<span class="foo">bar</span>}}',
+        )
+        self.ctx.add_page(
+            "Module:testmod",
+            828,
+            """
 local export = {}
 function export.testfn(frame)
   return tostring(frame.args[1])
 end
 return export
-"""]])
-        ctx.start_page("Tt")
-        ret = ctx.expand("{{testtempl}}")
+""",
+        )
+        self.ctx.start_page("Tt")
+        ret = self.ctx.expand("{{testtempl}}")
         self.assertEqual(ret, """<span class="foo">bar</span>""")
 
     def test_invoke15(self):
         # Testing safesubst:
-        ctx = phase1_to_ctx([
-            ["wikitext", "Template:testtempl", "{{safesubst:#invoke:testmod|testfn}}"],
-            ["Scribunto", "Module:testmod", """
+        self.ctx.add_page(
+            "Template:testtempl", 10, "{{safesubst:#invoke:testmod|testfn}}"
+        )
+        self.ctx.add_page(
+            "Module:testmod",
+            828,
+            """
 local export = {}
 function export.testfn(frame)
   return "correct"
 end
 return export
-"""]])
-        ctx.start_page("Tt")
-        ret = ctx.expand("{{testtempl}}")
-        self.assertEqual(ret, """correct""")
+""",
+        )
+        self.ctx.start_page("Tt")
+        ret = self.ctx.expand("{{testtempl}}")
+        self.assertEqual(ret, "correct")
 
     def test_invoke16(self):
         # Testing safesubst:, with space before
-        ctx = phase1_to_ctx([
-            ["wikitext", "Template:testtempl", "{{ safesubst:#invoke:testmod|testfn}}"],
-            ["Scribunto", "Module:testmod", """
+        self.ctx.add_page(
+            "Template:testtempl", 10, "{{ safesubst:#invoke:testmod|testfn}}"
+        )
+        self.ctx.add_page(
+            "Module:testmod",
+            828,
+            """
 local export = {}
 function export.testfn(frame)
   return "correct"
 end
 return export
-"""]])
-        ctx.start_page("Tt")
-        ret = ctx.expand("{{testtempl}}")
-        self.assertEqual(ret, """correct""")
+""",
+        )
+        self.ctx.start_page("Tt")
+        ret = self.ctx.expand("{{testtempl}}")
+        self.assertEqual(ret, "correct")
 
     def test_invoke17(self):
         # Testing safesubst: coming from template
-        ctx = phase1_to_ctx([
-            ["wikitext", "Template:testtempl", "{{ {{templ2}}#invoke:testmod|testfn}}"],
-            ["wikitext", "Template:templ2", "safesubst:"],
-            ["Scribunto", "Module:testmod", """
+        self.ctx.add_page(
+            "Template:testtempl", 10, "{{ {{templ2}}#invoke:testmod|testfn}}"
+        )
+        self.ctx.add_page("Template:templ2", 10, "safesubst:")
+        self.ctx.add_page(
+            "Module:testmod",
+            828,
+            """
 local export = {}
 function export.testfn(frame)
   return "correct"
 end
 return export
-"""]])
-        ctx.start_page("Tt")
-        ret = ctx.expand("{{testtempl}}")
+""")
+        self.ctx.start_page("Tt")
+        ret = self.ctx.expand("{{testtempl}}")
         self.assertEqual(ret, """correct""")
 
     def test_invoke18(self):
         # Tests whitespaces within #invoke
-        ctx = phase1_to_ctx([
-            ["wikitext", "Template:testtempl", "{{#invoke:\ntestmod\n|\ntestfn\n}}"],
-            ["Scribunto", "Module:testmod", """
+        self.ctx.add_page(
+            "Template:testtempl", 10, "{{#invoke:\ntestmod\n|\ntestfn\n}}"
+        )
+        self.ctx.add_page(
+            "Module:testmod",
+            828,
+            """
 local export = {}
 function export.testfn(frame)
   return "correct"
 end
 return export
-"""]])
-        ctx.start_page("Tt")
-        ret = ctx.expand("{{testtempl}}")
-        self.assertEqual(ret, """correct""")
+""",
+        )
+        self.ctx.start_page("Tt")
+        ret = self.ctx.expand("{{testtempl}}")
+        self.assertEqual(ret, "correct")
 
     def test_invoke19(self):
         # Tests fetching a frame argument that does not exist
-        ctx = phase1_to_ctx([
-            ["wikitext", "Template:testtempl", "{{#invoke:testmod|testfn}}"],
-            ["Scribunto", "Module:testmod", """
+        self.ctx.add_page(
+            "Template:testtempl", 10, "{{#invoke:testmod|testfn}}"
+        )
+        self.ctx.add_page(
+            "Module:testmod",
+            828,
+            """
 local export = {}
 function export.testfn(frame)
   return tostring(frame.args.nonex) .. tostring(frame:getParent().args.nonex2)
 end
 return export
-"""]])
-        ctx.start_page("Tt")
-        ret = ctx.expand("{{testtempl}}")
+""",
+        )
+        self.ctx.start_page("Tt")
+        ret = self.ctx.expand("{{testtempl}}")
         self.assertEqual(ret, """nilnil""")
 
     def test_invoke20(self):
-        ctx = phase1_to_ctx([
-            ["wikitext", "Template:testtempl", "{{#invoke:testmod|testfn}}"],
-            ["Scribunto", "Module:testmod", """
+        self.ctx.add_page(
+            "Template:testtempl", 10, "{{#invoke:testmod|testfn}}"
+        )
+        self.ctx.add_page(
+            "Module:testmod",
+            828,
+            """
 local export = {}
 function export.testfn(frame)
   local v = frame:getParent().args[1]
   if v == "a<1>" then return "yes" else return "no" end
 end
 return export
-"""]])
-        ctx.start_page("Tt")
-        ret = ctx.expand("{{testtempl|a<1>}}")
-        self.assertEqual(ret, """yes""")
+"""
+        )
+        self.ctx.start_page("Tt")
+        ret = self.ctx.expand("{{testtempl|a<1>}}")
+        self.assertEqual(ret, "yes")
 
     def test_invoke21(self):
-        ctx = phase1_to_ctx([
-            ["wikitext", "Template:testtempl", "{{#invoke:testmod|testfn}}"],
-            ["Scribunto", "Module:testmod", """
+        self.ctx.add_page(
+            "Template:testtempl", 10, "{{#invoke:testmod|testfn}}"
+        )
+        self.ctx.add_page(
+            "Module:testmod",
+            828,
+            """
 local export = {}
 function export.testfn(frame)
   local v = next(frame.args)
   if v then return "HAVE-ARGS" else return "NO-ARGS" end
 end
 return export
-"""]])
-        ctx.start_page("Tt")
-        ret = ctx.expand("{{testtempl}}")
-        self.assertEqual(ret, """NO-ARGS""")
+""",
+        )
+        self.ctx.start_page("Tt")
+        ret = self.ctx.expand("{{testtempl}}")
+        self.assertEqual(ret, "NO-ARGS")
 
     def test_invoke22(self):
-        ctx = phase1_to_ctx([
-            ["wikitext", "Template:testtempl", "{{#invoke:testmod|testfn|x}}"],
-            ["Scribunto", "Module:testmod", """
+        self.ctx.add_page(
+            "Template:testtempl", 10, "{{#invoke:testmod|testfn|x}}"
+        )
+        self.ctx.add_page(
+            "Module:testmod",
+            828,
+            """
 local export = {}
 function export.testfn(frame)
   local k, v = next(frame.args)
   return tostring(k) .. "=" .. tostring(v)
 end
 return export
-"""]])
-        ctx.start_page("Tt")
-        ret = ctx.expand("{{testtempl}}")
+""",
+        )
+        self.ctx.start_page("Tt")
+        ret = self.ctx.expand("{{testtempl}}")
         self.assertEqual(ret, """1=x""")
 
     def test_frame_parent1(self):
-        ctx = phase1_to_ctx([
-            ["wikitext", "Template:testtempl",
-             "{{#invoke:testmod|testfn}}"],
-            ["Scribunto", "Module:testmod", """
+        self.ctx.add_page(
+            "Template:testtempl", 10, "{{#invoke:testmod|testfn}}"
+        )
+        self.ctx.add_page(
+            "Module:testmod",
+            828,
+            """
 local export = {}
 function export.testfn(frame)
   return tostring(frame:getParent().args[1])
 end
 return export
-"""]])
-        ctx.start_page("Tt")
-        ret = ctx.expand("{{testtempl}}")
+""",
+        )
+        self.ctx.start_page("Tt")
+        ret = self.ctx.expand("{{testtempl}}")
         self.assertEqual(ret, "nil")
 
     def test_frame_parent2(self):
-        ctx = phase1_to_ctx([
-            ["wikitext", "Template:testtempl",
-             "{{#invoke:testmod|testfn}}"],
-            ["Scribunto", "Module:testmod", """
+        self.ctx.add_page(
+            "Template:testtempl", 10, "{{#invoke:testmod|testfn}}"
+        )
+        self.ctx.add_page(
+            "Module:testmod",
+            828,
+            """
 local export = {}
 function export.testfn(frame)
   return frame:getParent().args[1]
 end
 return export
-"""]])
-        ctx.start_page("Tt")
-        ret = ctx.expand("{{testtempl|foo|bar}}")
+""",
+        )
+        self.ctx.start_page("Tt")
+        ret = self.ctx.expand("{{testtempl|foo|bar}}")
         self.assertEqual(ret, "foo")
 
     def test_frame_parent3(self):
-        ctx = phase1_to_ctx([
-            ["wikitext", "Template:testtempl",
-             "{{#invoke:testmod|testfn}}"],
-            ["Scribunto", "Module:testmod", """
+        self.ctx.add_page(
+            "Template:testtempl", 10, "{{#invoke:testmod|testfn}}"
+        )
+        self.ctx.add_page(
+            "Module:testmod",
+            828,
+            """
 local export = {}
 function export.testfn(frame)
   return frame:getParent().args[2]
 end
 return export
-"""]])
-        ctx.start_page("Tt")
-        ret = ctx.expand("{{testtempl|foo|bar}}")
+""",
+        )
+        self.ctx.start_page("Tt")
+        ret = self.ctx.expand("{{testtempl|foo|bar}}")
         self.assertEqual(ret, "bar")
 
     def test_frame_parent4(self):
-        ctx = phase1_to_ctx([
-            ["wikitext", "Template:testtempl",
-             "{{#invoke:testmod|testfn}}"],
-            ["Scribunto", "Module:testmod", """
+        self.ctx.add_page(
+            "Template:testtempl", 10, "{{#invoke:testmod|testfn}}"
+        )
+        self.ctx.add_page(
+            "Module:testmod",
+            828,
+            """
 local export = {}
 function export.testfn(frame)
   return tostring(frame:getParent().args[3])
 end
 return export
-"""]])
-        ctx.start_page("Tt")
-        ret = ctx.expand("{{testtempl|foo|bar}}")
+""",
+        )
+        self.ctx.start_page("Tt")
+        ret = self.ctx.expand("{{testtempl|foo|bar}}")
         self.assertEqual(ret, "nil")
 
     def test_frame_parent5(self):
-        ctx = phase1_to_ctx([
-            ["wikitext", "Template:testtempl",
-             "{{#invoke:testmod|testfn}}"],
-            ["Scribunto", "Module:testmod", """
+        self.ctx.add_page(
+            "Template:testtempl", 10, "{{#invoke:testmod|testfn}}"
+        )
+        self.ctx.add_page(
+            "Module:testmod",
+            828,
+            """
 local export = {}
 function export.testfn(frame)
   return frame:getParent().args.foo
 end
 return export
-"""]])
-        ctx.start_page("Tt")
-        ret = ctx.expand("{{testtempl|foo|bar|foo=zap}}")
+""",
+        )
+        self.ctx.start_page("Tt")
+        ret = self.ctx.expand("{{testtempl|foo|bar|foo=zap}}")
         self.assertEqual(ret, "zap")
 
     def test_frame_parent6(self):
-        ctx = phase1_to_ctx([
-            ["wikitext", "Template:testtempl", "{{#invoke:testmod|testfn}}"],
-            ["wikitext", "Template:testtempl2", "foo{{{1|}}}"],
-            ["Scribunto", "Module:testmod", """
+        self.ctx.add_page(
+            "Template:testtempl", 10, "{{#invoke:testmod|testfn}}"
+        )
+        self.ctx.add_page(
+            "Template:testtempl2", 10, "foo{{{1|}}}"
+        )
+        self.ctx.add_page(
+            "Module:testmod",
+            828,
+            """
 local export = {}
 function export.testfn(frame)
   local parent = frame:getParent()
   return parent.args[1] .. parent.args[2]
 end
 return export
-"""]])
-        ctx.start_page("Tt")
-        ret = ctx.expand("{{testtempl|{{testtempl2|zz}}|yy}}")
+""",
+        )
+        self.ctx.start_page("Tt")
+        ret = self.ctx.expand("{{testtempl|{{testtempl2|zz}}|yy}}")
         self.assertEqual(ret, "foozzyy")
 
     def test_frame_parent7(self):
-        ctx = phase1_to_ctx([
-            ["wikitext", "Template:testtempl",
-             "{{#invoke:testmod|testfn}}"],
-            ["wikitext", "Template:testtempl2", "foo{{{1|}}}"],
-            ["Scribunto", "Module:testmod", """
+        self.ctx.add_page(
+            "Template:testtempl", 10, "{{#invoke:testmod|testfn}}"
+        )
+        self.ctx.add_page("Template:testtempl2", 10, "foo{{{1|}}}")
+        self.ctx.add_page(
+            "Module:testmod",
+            828,
+            """
 local export = {}
 function export.testfn(frame)
   return frame:getTitle()
 end
 return export
-"""]])
-        ctx.start_page("Tt")
-        ret = ctx.expand("{{testtempl|{{testtempl2|zz}}|yy}}")
+""",
+        )
+        self.ctx.start_page("Tt")
+        ret = self.ctx.expand("{{testtempl|{{testtempl2|zz}}|yy}}")
         self.assertEqual(ret, "testmod")
 
     def test_frame_parent8(self):
-        ctx = phase1_to_ctx([
-            ["wikitext", "Template:testtempl",
-             "{{#invoke:testmod|testfn}}"],
-            ["wikitext", "Template:testtempl2", "foo{{{1|}}}"],
-            ["Scribunto", "Module:testmod", """
+        self.ctx.add_page(
+            "Template:testtempl", 10, "{{#invoke:testmod|testfn}}"
+        )
+        self.ctx.add_page("Template:testtempl2", 10, "foo{{{1|}}}")
+        self.ctx.add_page(
+            "Module:testmod",
+            828,
+            """
 local export = {}
 function export.testfn(frame)
   return frame:getParent():getTitle()
 end
 return export
-"""]])
-        ctx.start_page("Tt")
-        ret = ctx.expand("{{testtempl|{{testtempl2|zz}}|yy}}")
+""",
+        )
+        self.ctx.start_page("Tt")
+        ret = self.ctx.expand("{{testtempl|{{testtempl2|zz}}|yy}}")
         self.assertEqual(ret, "Template:testtempl")
 
     def test_frame_parent9(self):
         # parent of parent should be nil
-        ctx = phase1_to_ctx([
-            ["wikitext", "Template:testtempl", "{{#invoke:testmod|testfn}}"],
-            ["wikitext", "Template:testtempl2", "{{testtempl}}"],
-            ["Scribunto", "Module:testmod", """
+        self.ctx.add_page(
+            "Template:testtempl", 10, "{{#invoke:testmod|testfn}}"
+        )
+        self.ctx.add_page("Template:testtempl2", 10, "{{testtempl}}")
+        self.ctx.add_page(
+            "Module:testmod",
+            828,
+            """
 local export = {}
 function export.testfn(frame)
   return frame:getParent():getParent()
 end
 return export
-"""]])
-        ctx.start_page("Tt")
-        ret = ctx.expand("{{testtempl2}}")
+""",
+        )
+        self.ctx.start_page("Tt")
+        ret = self.ctx.expand("{{testtempl2}}")
         self.assertEqual(ret, "")  # nil
 
     def test_frame_callParserFunction1(self):
@@ -2053,116 +2252,160 @@ return export
         self.scribunto("<div>content</div>", """
         return frame:callParserFunction("#tag", "div", "content")""")
 
-    def test_frame_getArgument1(self):
-        ctx = phase1_to_ctx([
-            ["Scribunto", "Module:testmod", """
+    @patch(
+        "wikitextprocessor.core.Wtp.get_page",
+        return_value=Page(
+            title="Module:testmod",
+            namespace_id=828,
+            body="""
 local export = {}
 function export.testfn(frame)
   return frame:getArgument(1).expand()
 end
 return export
-"""]])
-        ctx.start_page("Tt")
-        ret = ctx.expand("{{#invoke:testmod|testfn|a|b}}")
+            """
+        )
+    )
+    def test_frame_getArgument1(self, mock_get_page):
+        self.ctx.start_page("Tt")
+        ret = self.ctx.expand("{{#invoke:testmod|testfn|a|b}}")
         self.assertEqual(ret, "a")
 
-    def test_frame_getArgument2(self):
-        ctx = phase1_to_ctx([
-            ["Scribunto", "Module:testmod", """
+    @patch(
+        "wikitextprocessor.core.Wtp.get_page",
+        return_value=Page(
+            title="Module:testmod",
+            namespace_id=828,
+            body="""
 local export = {}
 function export.testfn(frame)
   return frame:getArgument(2).expand()
 end
 return export
-"""]])
-        ctx.start_page("Tt")
-        ret = ctx.expand("{{#invoke:testmod|testfn|a|b}}")
+            """
+        )
+    )
+    def test_frame_getArgument2(self, mock_get_page):
+        self.ctx.start_page("Tt")
+        ret = self.ctx.expand("{{#invoke:testmod|testfn|a|b}}")
         self.assertEqual(ret, "b")
 
-    def test_frame_getArgument3(self):
-        ctx = phase1_to_ctx([
-            ["Scribunto", "Module:testmod", """
+    @patch(
+        "wikitextprocessor.core.Wtp.get_page",
+        return_value=Page(
+            title="Module:testmod",
+            namespace_id=828,
+            body="""
 local export = {}
 function export.testfn(frame)
   return frame:getArgument(3)
 end
 return export
-"""]])
-        ctx.start_page("Tt")
-        ret = ctx.expand("{{#invoke:testmod|testfn|a|b}}")
+            """
+        )
+    )
+    def test_frame_getArgument3(self, mock_get_page):
+        self.ctx.start_page("Tt")
+        ret = self.ctx.expand("{{#invoke:testmod|testfn|a|b}}")
         self.assertEqual(ret, "")  # nil
 
-    def test_frame_getArgument4(self):
-        ctx = phase1_to_ctx([
-            ["Scribunto", "Module:testmod", """
+    @patch(
+        "wikitextprocessor.core.Wtp.get_page",
+        return_value=Page(
+            title="Module:testmod",
+            namespace_id=828,
+            body="""
 local export = {}
 function export.testfn(frame)
   return frame:getArgument("foo").expand()
 end
 return export
-"""]])
-        ctx.start_page("Tt")
-        ret = ctx.expand("{{#invoke:testmod|testfn|foo=bar}}")
+            """
+        )
+    )
+    def test_frame_getArgument4(self, mock_get_page):
+        self.ctx.start_page("Tt")
+        ret = self.ctx.expand("{{#invoke:testmod|testfn|foo=bar}}")
         self.assertEqual(ret, "bar")
 
-    def test_frame_getArgument5(self):
-        ctx = phase1_to_ctx([
-            ["Scribunto", "Module:testmod", """
+    @patch(
+        "wikitextprocessor.core.Wtp.get_page",
+        return_value=Page(
+            title="Module:testmod",
+            namespace_id=828,
+            body="""
 local export = {}
 function export.testfn(frame)
   return frame:getArgument{name = "foo"}.expand()
 end
 return export
-"""]])
-        ctx.start_page("Tt")
-        ret = ctx.expand("{{#invoke:testmod|testfn|foo=bar}}")
+            """
+        )
+    )
+    def test_frame_getArgument5(self, mock_get_page):
+        self.ctx.start_page("Tt")
+        ret = self.ctx.expand("{{#invoke:testmod|testfn|foo=bar}}")
         self.assertEqual(ret, "bar")
 
     def test_frame_getArgument6(self):
-        ctx = phase1_to_ctx([
-            ["wikitext", "Template:templ", "{{#invoke:testmod|testfn|a|b}}"],
-            ["Scribunto", "Module:testmod", """
+        self.ctx.add_page(
+            "Template:templ", 10, "{{#invoke:testmod|testfn|a|b}}"
+        )
+        self.ctx.add_page(
+            "Module:testmod",
+            828,
+            """
 local export = {}
 function export.testfn(frame)
   return frame:getParent():getArgument(2).expand()
 end
 return export
-"""]])
-        ctx.start_page("Tt")
-        ret = ctx.expand("{{templ|x|y}}")
+""",
+        )
+        self.ctx.start_page("Tt")
+        ret = self.ctx.expand("{{templ|x|y}}")
         self.assertEqual(ret, "y")
 
     def test_frame_preprocess1(self):
-        ctx = phase1_to_ctx([
-            ["wikitext", "Template:testtemplate", "foo{{{1}}}"],
-            ["Scribunto", "Module:testmod", """
+        self.ctx.add_page("Template:testtemplate", 10, "foo{{{1}}}")
+        self.ctx.add_page(
+            "Module:testmod",
+            828,
+            """
 local export = {}
 function export.testfn(frame)
   return frame:preprocess("a{{testtemplate|a}}b")
 end
 return export
-"""]])
-        ctx.start_page("Tt")
-        ret = ctx.expand("{{#invoke:testmod|testfn|foo=bar}}")
+"""
+        )
+        self.ctx.start_page("Tt")
+        ret = self.ctx.expand("{{#invoke:testmod|testfn|foo=bar}}")
         self.assertEqual(ret, "afooab")
 
     def test_frame_preprocess2(self):
-        ctx = phase1_to_ctx([
-            ["wikitext", "Template:testtemplate", "foo{{{1}}}"],
-            ["Scribunto", "Module:testmod", """
+        self.ctx.add_page("Template:testtemplate", 10, "foo{{{1}}}")
+        self.ctx.add_page(
+            "Module:testmod",
+            828,
+            """
 local export = {}
 function export.testfn(frame)
   return frame:preprocess{text = "a{{testtemplate|a}}b"}
 end
 return export
-"""]])
-        ctx.start_page("Tt")
-        ret = ctx.expand("{{#invoke:testmod|testfn|foo=bar}}")
+"""
+        )
+        self.ctx.start_page("Tt")
+        ret = self.ctx.expand("{{#invoke:testmod|testfn|foo=bar}}")
         self.assertEqual(ret, "afooab")
 
-    def test_frame_argumentPairs1(self):
-        ctx = phase1_to_ctx([
-            ["Scribunto", "Module:testmod", """
+    @patch(
+        "wikitextprocessor.core.Wtp.get_page",
+        return_value=Page(
+            title="Module:testmod",
+            namespace_id=828,
+            body="""
 local export = {}
 function export.testfn(frame)
   local ret = ""
@@ -2172,14 +2415,20 @@ function export.testfn(frame)
   return ret
 end
 return export
-"""]])
-        ctx.start_page("Tt")
-        ret = ctx.expand("{{#invoke:testmod|testfn|foo=bar}}")
+""",
+        ),
+    )
+    def test_frame_argumentPairs1(self, mock_get_page):
+        self.ctx.start_page("Tt")
+        ret = self.ctx.expand("{{#invoke:testmod|testfn|foo=bar}}")
         self.assertEqual(ret, "|foo=bar")
 
-    def test_frame_argumentPairs2(self):
-        ctx = phase1_to_ctx([
-            ["Scribunto", "Module:testmod", """
+    @patch(
+        "wikitextprocessor.core.Wtp.get_page",
+        return_value=Page(
+            title="Module:testmod",
+            namespace_id=828,
+            body="""
 local export = {}
 function export.testfn(frame)
   local ret = ""
@@ -2189,15 +2438,22 @@ function export.testfn(frame)
   return ret
 end
 return export
-"""]])
-        ctx.start_page("Tt")
-        ret = ctx.expand("{{#invoke:testmod|testfn|a|b}}")
+""",
+        ),
+    )
+    def test_frame_argumentPairs2(self, mock_get_page):
+        self.ctx.start_page("Tt")
+        ret = self.ctx.expand("{{#invoke:testmod|testfn|a|b}}")
         self.assertEqual(ret, "|1=a|2=b")
 
     def test_frame_argumentPairs3(self):
-        ctx = phase1_to_ctx([
-            ["wikitext", "Template:templ", "{{#invoke:testmod|testfn|a|b}}"],
-            ["Scribunto", "Module:testmod", """
+        self.ctx.add_page(
+            "Template:templ", 10, "{{#invoke:testmod|testfn|a|b}}"
+        )
+        self.ctx.add_page(
+            "Module:testmod",
+            828,
+            """
 local export = {}
 function export.testfn(frame)
   local ret = ""
@@ -2207,51 +2463,61 @@ function export.testfn(frame)
   return ret
 end
 return export
-"""]])
-        ctx.start_page("Tt")
-        ret = ctx.expand("{{templ|x|y}}")
+""",
+        )
+        self.ctx.start_page("Tt")
+        ret = self.ctx.expand("{{templ|x|y}}")
         self.assertEqual(ret, "|1=x|2=y")
 
     def test_frame_expandTemplate1(self):
-        ctx = phase1_to_ctx([
-            ["wikitext", "Template:templ", "a{{{1}}}b{{{2}}}c{{{k}}}d"],
-            ["Scribunto", "Module:testmod", """
+        self.ctx.add_page("Template:templ", 10, "a{{{1}}}b{{{2}}}c{{{k}}}d")
+        self.ctx.add_page(
+            "Module:testmod",
+            828,
+            """
 local export = {}
 function export.testfn(frame)
   return frame:expandTemplate{title="templ", args={"foo", "bar", k=4}}
 end
 return export
-"""]])
-        ctx.start_page("Tt")
-        ret = ctx.expand("{{#invoke:testmod|testfn}}")
+""",
+        )
+        self.ctx.start_page("Tt")
+        ret = self.ctx.expand("{{#invoke:testmod|testfn}}")
         self.assertEqual(ret, "afoobbarc4d")
 
     def test_frame_expandTemplate2(self):
-        ctx = phase1_to_ctx([
-            ["wikitext", "Template:templ", "a{{{1}}}b"],
-            ["Scribunto", "Module:testmod", """
+        self.ctx.add_page("Template:templ", 10, "a{{{1}}}b")
+        self.ctx.add_page(
+            "Module:testmod",
+            828,
+            """
 local export = {}
 function export.testfn(frame)
   return frame:expandTemplate{title="templ", args={"|"}}
 end
 return export
-"""]])
-        ctx.start_page("Tt")
-        ret = ctx.expand("{{#invoke:testmod|testfn}}")
+""",
+        )
+        self.ctx.start_page("Tt")
+        ret = self.ctx.expand("{{#invoke:testmod|testfn}}")
         self.assertEqual(ret, "a|b")
 
     def test_frame_expandTemplate3(self):
-        ctx = phase1_to_ctx([
-            ["wikitext", "Template:templ", "a{{{1}}}b"],
-            ["Scribunto", "Module:testmod", """
+        self.ctx.add_page("Template:templ", 10, "a{{{1}}}b")
+        self.ctx.add_page(
+            "Module:testmod",
+            828,
+            """
 local export = {}
 function export.testfn(frame)
   return frame:expandTemplate{title="templ", args={"{{!}}"}}
 end
 return export
-"""]])
-        ctx.start_page("Tt")
-        ret = ctx.expand("{{#invoke:testmod|testfn}}")
+""",
+        )
+        self.ctx.start_page("Tt")
+        ret = self.ctx.expand("{{#invoke:testmod|testfn}}")
         self.assertEqual(ret, "a{{!}}b")
 
     def test_frame_extensionTag1(self):
@@ -2725,18 +2991,24 @@ return export
         self.scribunto("foo=b+ar&x=1", """
         return mw.uri.buildQueryString({foo="b ar", x=1})""")
 
-    def test_mw_uri12(self):
-        ctx = phase1_to_ctx([
-            ["Scribunto", "Module:testmod", r"""
+    @patch(
+        "wikitextprocessor.core.Wtp.get_page",
+        return_value=Page(
+            title="Module:testmod",
+            namespace_id=828,
+            body=r"""
 local export = {}
 function export.testfn(frame)
    local q = mw.uri.parseQueryString("a=1&b=a+b&c")
    return tostring(q.a) .. tostring(q.b) .. tostring(q.c) .. tostring(q.d)
 end
 return export
-"""]])
-        ctx.start_page("Tt")
-        ret = ctx.expand("{{#invoke:testmod|testfn}}")
+"""
+        ),
+    )
+    def test_mw_uri12(self, mock_get_page):
+        self.ctx.start_page("Tt")
+        ret = self.ctx.expand("{{#invoke:testmod|testfn}}")
         self.assertEqual(ret, "1a bfalsenil")
 
     def test_mw_uri13(self):
@@ -2752,17 +3024,20 @@ return export
         return mw.uri.fullUrl("Example", {action="edit"})""")
 
     def test_mw_title1(self):
-        ctx = phase1_to_ctx([
-            ["wikitext", "Template:templ", "{{#invoke:testmod|testfn}}"],
-            ["Scribunto", "Module:testmod", r"""
+        self.ctx.add_page("Template:templ", 10, "{{#invoke:testmod|testfn}}")
+        self.ctx.add_page(
+            "Module:testmod",
+            828,
+            r"""
 local export = {}
 function export.testfn(frame)
    return mw.title.getCurrentTitle().fullText
 end
 return export
-"""]])
-        ctx.start_page("Tt")
-        ret = ctx.expand("{{templ}}")
+""",
+        )
+        self.ctx.start_page("Tt")
+        ret = self.ctx.expand("{{templ}}")
         self.assertEqual(ret, "Tt")
 
     def test_mw_title2(self):
@@ -2944,17 +3219,20 @@ return export
 
     def test_mw_title36(self):
         # test for redirect that exists
-        ctx = phase1_to_ctx([
-            ["redirect", "Main:Foo", "Main:Bar"],
-            ["Scribunto", "Module:testmod", """
+        self.ctx.add_page("Main:Foo", 0, redirect_to="Main:Bar")
+        self.ctx.add_page(
+            "Module:testmod",
+            828,
+            """
             local export = {}
             function export.testfn(frame)
             local t = mw.title.makeTitle("Main", "Foo", "Frag")
             return t.isRedirect
             end
-            return export"""]])
-        ctx.start_page("Tt")
-        ret = ctx.expand("{{#invoke:testmod|testfn}}")
+            return export""",
+        )
+        self.ctx.start_page("Tt")
+        ret = self.ctx.expand("{{#invoke:testmod|testfn}}")
         self.assertEqual(ret, "true")
 
     def test_mw_title37(self):
@@ -3029,17 +3307,20 @@ return export
 
     def test_mw_title51(self):
         # test for redirect target
-        ctx = phase1_to_ctx([
-            ["redirect", "Main:Foo", "Main:Bar"],
-            ["Scribunto", "Module:testmod", """
+        self.ctx.add_page("Main:Foo", 0, redirect_to="Main:Bar")
+        self.ctx.add_page(
+            "Module:testmod",
+            828,
+            """
             local export = {}
             function export.testfn(frame)
                local t = mw.title.makeTitle("Main", "Foo", "Frag")
                return t.redirectTarget.fullText
             end
-            return export"""]])
-        ctx.start_page("Tt")
-        ret = ctx.expand("{{#invoke:testmod|testfn}}")
+            return export"""
+        )
+        self.ctx.start_page("Tt")
+        ret = self.ctx.expand("{{#invoke:testmod|testfn}}")
         self.assertEqual(ret, "Bar")
 
     def test_mw_title52(self):
@@ -3070,9 +3351,11 @@ return export
 
     def test_mw_title57(self):
         # test for redirect target
-        ctx = phase1_to_ctx([
-            ["Main", "Tt", "RAWCONTENT"],
-            ["Scribunto", "Module:testmod", """
+        self.ctx.add_page("Tt", 0, "RAWCONTENT")
+        self.ctx.add_page(
+            "Module:testmod",
+            828,
+            """
             local export = {}
             function export.testfn(frame)
                local t = mw.title.getCurrentTitle().text
@@ -3080,38 +3363,46 @@ return export
                local c = t2:getContent()
                return c
             end
-            return export"""]])
-        ctx.start_page("Tt")
-        ret = ctx.expand("{{#invoke:testmod|testfn}}")
+            return export""",
+        )
+        self.ctx.start_page("Tt")
+        ret = self.ctx.expand("{{#invoke:testmod|testfn}}")
         self.assertEqual(ret, "RAWCONTENT")
 
     def test_mw_title58(self):
         self.scribunto("Tt", """
         return mw.title.getCurrentTitle().text""")
 
-    def test_mw_title59(self):
-        # Turns out some modules save information betweem calls - at least
-        # page title.  Thus it is necessary to reload modules for each page.
-        # This tests that change in title when moving to next page is
-        # properly reflected to modules.
-        ctx = phase1_to_ctx([
-            ["Scribunto", "Module:testmod", """
+    @patch(
+        "wikitextprocessor.core.Wtp.get_page",
+        return_value=Page(
+            title="Module:testmod",
+            namespace_id=828,
+            body="""
             local title = mw.title.getCurrentTitle().text
             local export = {}
             function export.testfn(frame)
                return title
             end
-            return export"""]])
+            return export""",
+        )
+    )
+    def test_mw_title59(self, mock_get_page):
+        # Turns out some modules save information betweem calls - at least
+        # page title.  Thus it is necessary to reload modules for each page.
+        # This tests that change in title when moving to next page is
+        # properly reflected to modules.
+
         # First invocation to the module
-        ctx.start_page("pt1")
-        ret = ctx.expand("{{#invoke:testmod|testfn}}")
+        self.ctx.start_page("pt1")
+        ret = self.ctx.expand("{{#invoke:testmod|testfn}}")
         self.assertEqual(ret, "pt1")
         # Call again within same page, title should remain
-        ret = ctx.expand("{{#invoke:testmod|testfn}}")
+        ret = self.ctx.expand("{{#invoke:testmod|testfn}}")
         self.assertEqual(ret, "pt1")
         # Second invocation to the module with a different page
-        ctx.start_page("pt2")
-        ret = ctx.expand("{{#invoke:testmod|testfn}}")
+        self.ctx.start_page("pt2")
+        ret = self.ctx.expand("{{#invoke:testmod|testfn}}")
         self.assertEqual(ret, "pt2")
 
     def test_mw_clone1(self):
@@ -3122,17 +3413,23 @@ return export
         x.foo[1] = "AA"
         return x[1] .. v[1] .. x.foo[1] .. v.foo[1]""")
 
-    def test_mw_clone99(self):
-        ctx = phase1_to_ctx([
-            ["Scribunto", "Module:testmod", """
+    @patch(
+        "wikitextprocessor.core.Wtp.get_page",
+        return_value=Page(
+            title="Module:testmod",
+            namespace_id=828,
+            body="""
             local export = {}
             function export.testfn(frame)
                local c = mw.clone(frame.args)
                return c[1] .. c.foo .. tostring(c.nonex)
             end
-            return export"""]])
-        ctx.start_page("Tt")
-        ret = ctx.expand("{{#invoke:testmod|testfn|a|foo=bar}}")
+            return export"""
+        ),
+    )
+    def test_mw_clone99(self, mock_get_page):
+        self.ctx.start_page("Tt")
+        ret = self.ctx.expand("{{#invoke:testmod|testfn|a|foo=bar}}")
         self.assertEqual(ret, "abarnil")
 
     def test_table_getn(self):
@@ -3155,19 +3452,24 @@ return export
         self.scribunto("0004", r"""
         return string.format("%.4X", 4.7)""")
 
-    def test_sandbox1(self):
-        # For security, Python should not be callable from Lua modules
-        body = r"""return python.eval("1")"""
-        ctx = phase1_to_ctx([
-            ["Scribunto", "Module:testmod", r"""
+    @patch(
+        "wikitextprocessor.core.Wtp.get_page",
+        return_value=Page(
+            title="Module:testmod",
+            namespace_id=828,
+            body=r"""
 local export = {}
 function export.testfn(frame)
-""" + body + """
+    return python.eval("1")
 end
 return export
-"""]])
-        ctx.start_page("Tt")
-        ret = ctx.expand("{{#invoke:testmod|testfn}}")
+"""
+        ),
+    )
+    def test_sandbox1(self, mock_get_page):
+        # For security, Python should not be callable from Lua modules
+        self.ctx.start_page("Tt")
+        ret = self.ctx.expand("{{#invoke:testmod|testfn}}")
         assert ret.startswith('<strong class="error">')
 
     def test_sandbox2(self):
@@ -3188,36 +3490,32 @@ return export
         return _G["os"].clock == nil""")
 
     def test_dbfile1(self):
-        ctx1 = Wtp()
-        ctx1.add_page("Template:testmod", 10, "test content")
-        ctx1.analyze_templates()
-        ctx1.start_page("Tt")
-        ret1 = ctx1.expand("a{{testmod}}b")
+        self.ctx.add_page("Template:testmod", 10, "test content")
+        self.ctx.analyze_templates()
+        self.ctx.start_page("Tt")
+        ret1 = self.ctx.expand("a{{testmod}}b")
         self.assertEqual(ret1, "atest contentb")
         # Now create a new context with the same db but do not add page
-        ctx2 = Wtp(db_path=ctx1.db_path)
-        ctx2.start_page("Tt")
-        ret2 = ctx2.expand("a{{testmod}}b")
+        new_ctx = Wtp(db_path=self.ctx.db_path)
+        new_ctx.start_page("Tt")
+        ret2 = new_ctx.expand("a{{testmod}}b")
+        new_ctx.close_db_conn()
         self.assertEqual(ret2, "atest contentb")
-        ctx1.close_db_conn()
-        ctx2.close_db_conn()
 
     def test_dbfile2(self):
-        ctx1 = Wtp()
-        ctx1.add_page("Template:testmod", 10, "test content")
-        ctx1.analyze_templates()
-        ctx1.start_page("Tt")
-        ret1 = ctx1.expand("a{{testmod}}b")
+        self.ctx.add_page("Template:testmod", 10, "test content")
+        self.ctx.analyze_templates()
+        self.ctx.start_page("Tt")
+        ret1 = self.ctx.expand("a{{testmod}}b")
         self.assertEqual(ret1, "atest contentb")
         # Now create a new context with the same db and update page
-        ctx2 = Wtp(db_path=ctx1.db_path)
-        ctx2.add_page("Template:testmod", 10, "test content 2")
-        ctx2.analyze_templates()
-        ctx2.start_page("Tt")
-        ret2 = ctx2.expand("a{{testmod}}b")
+        new_ctx = Wtp(db_path=self.ctx.db_path)
+        new_ctx.add_page("Template:testmod", 10, "test content 2")
+        new_ctx.analyze_templates()
+        new_ctx.start_page("Tt")
+        ret2 = new_ctx.expand("a{{testmod}}b")
+        new_ctx.close_db_conn()
         self.assertEqual(ret2, "atest content 2b")
-        ctx1.close_db_conn()
-        ctx2.close_db_conn()
 
     def test_lua_max_time1(self):
         t = time.time()
@@ -3232,12 +3530,11 @@ return export
         self.assertLess(time.time() - t, 10)
 
     def test_link_backforth1(self):
-        ctx = phase1_to_ctx([])
-        ctx.start_page("Tt")
+        self.ctx.start_page("Tt")
         v = ("([[w:Jurchen script|Jurchen script]]: , Image: "
              "[[FIle:Da (Jurchen script).png|25px]])")
-        node = ctx.parse(v)
-        t = ctx.node_to_wikitext(node)
+        node = self.ctx.parse(v)
+        t = self.ctx.node_to_wikitext(node)
         self.assertEqual(v, t)
 
     def test_mw_wikibase_getEntityUrl1(self):
@@ -3274,25 +3571,24 @@ return export
         Template:-it- -> Template:意大利语
         or Template:意大利语 -> Template:-it-
         '''
-        wtp = Wtp(lang_code="zh")
+        self.ctx.lang_code = "zh"
         # source page need_pre_expand is true
-        wtp.add_page("Template:意大利語", 10, body="{{NoEdit|==意大利语==}}")
-        wtp.add_page("Template:-it-", 10, redirect_to="Template:意大利語")
-        wtp.analyze_templates()
-        source_page = wtp.get_page("Template:-it-", 10)
+        self.ctx.add_page("Template:意大利語", 10, body="{{NoEdit|==意大利语==}}")
+        self.ctx.add_page("Template:-it-", 10, redirect_to="Template:意大利語")
+        self.ctx.analyze_templates()
+        source_page = self.ctx.get_page("Template:-it-", 10)
         self.assertTrue(source_page.need_pre_expand)
-        dest_page = wtp.get_page("Template:意大利語", 10)
+        dest_page = self.ctx.get_page("Template:意大利語", 10)
         self.assertTrue(dest_page.need_pre_expand)
 
         # destination page need_pre_expand is true
-        wtp.add_page("Template:意大利語", 10, redirect_to="Template:-it-")
-        wtp.add_page("Template:-it-", 10, body="{{NoEdit|==意大利语==}}")
-        wtp.analyze_templates()
-        dest_page = wtp.get_page("Template:-it-", 10)
+        self.ctx.add_page("Template:意大利語", 10, redirect_to="Template:-it-")
+        self.ctx.add_page("Template:-it-", 10, body="{{NoEdit|==意大利语==}}")
+        self.ctx.analyze_templates()
+        dest_page = self.ctx.get_page("Template:-it-", 10)
         self.assertTrue(dest_page.need_pre_expand)
-        source_page = wtp.get_page("Template:意大利語", 10)
+        source_page = self.ctx.get_page("Template:意大利語", 10)
         self.assertTrue(source_page.need_pre_expand)
-        wtp.close_db_conn()
 
 
 # XXX Test template_fn

@@ -7,51 +7,37 @@ import unittest
 from unittest.mock import patch
 
 from wikitextprocessor import Wtp, Page
-from wikitextprocessor.parser import WikiNode
-
-
-def parse_with_ctx(title, text, **kwargs):
-    assert isinstance(title, str)
-    assert isinstance(text, str)
-    ctx = Wtp()
-    ctx.analyze_templates()
-    ctx.start_page(title)
-    root = ctx.parse(text, **kwargs)
-    # print("parse_with_ctx: root", type(root), root)
-    return root, ctx
-
-
-def parse(title, text, **kwargs):
-    root, ctx = parse_with_ctx(title, text, **kwargs)
-    ctx.close_db_conn()
-    assert isinstance(root, WikiNode)
-    assert isinstance(ctx, Wtp)
-    return root
 
 
 class NodeExpTests(unittest.TestCase):
+    def setUp(self):
+        self.ctx = Wtp()
+
+    def tearDown(self):
+        self.ctx.close_db_conn()
+
     def backcvt(self, text, expected):
-        root, ctx = parse_with_ctx("test", text)
-        self.assertEqual(ctx.errors, [])
-        self.assertEqual(ctx.warnings, [])
-        t = ctx.node_to_wikitext(root)
-        ctx.close_db_conn()
+        self.ctx.start_page("test")
+        root = self.ctx.parse(text)
+        self.assertEqual(self.ctx.errors, [])
+        self.assertEqual(self.ctx.warnings, [])
+        t = self.ctx.node_to_wikitext(root)
         self.assertEqual(t, expected)
 
     def tohtml(self, text, expected):
-        root, ctx = parse_with_ctx("test", text)
-        self.assertEqual(ctx.errors, [])
-        self.assertEqual(ctx.warnings, [])
-        t = ctx.node_to_html(root)
-        ctx.close_db_conn()
+        self.ctx.start_page("test")
+        root = self.ctx.parse(text)
+        self.assertEqual(self.ctx.errors, [])
+        self.assertEqual(self.ctx.warnings, [])
+        t = self.ctx.node_to_html(root)
         self.assertEqual(t, expected)
 
     def totext(self, text, expected):
-        root, ctx = parse_with_ctx("test", text)
-        self.assertEqual(ctx.errors, [])
-        self.assertEqual(ctx.warnings, [])
-        t = ctx.node_to_text(root)
-        ctx.close_db_conn()
+        self.ctx.start_page("test")
+        root = self.ctx.parse(text)
+        self.assertEqual(self.ctx.errors, [])
+        self.assertEqual(self.ctx.warnings, [])
+        t = self.ctx.node_to_text(root)
         self.assertEqual(t, expected)
 
     def test_basic1(self):
@@ -208,11 +194,11 @@ class NodeExpTests(unittest.TestCase):
 
     @patch(
         "wikitextprocessor.Wtp.get_page",
-        new=lambda a, b, c: Page(
+        return_value=Page(
             "Template:blank template", 10, None, False, "", "wikitext"
         ),
     )
-    def test_blank_template(self) -> None:
+    def test_blank_template(self, mock_get_page) -> None:
         """
         Test the case when a template's body is an empty string in the database.
         """
@@ -222,15 +208,15 @@ class NodeExpTests(unittest.TestCase):
     def test_language_converter_placeholder(self) -> None:
         # "-{}-" template argument shouldn't be cleaned before invoke Lua module
         # GitHub issue #59
-        wtp = Wtp(lang_code="zh")
+        self.ctx.lang_code = "zh"
         # https://zh.wiktionary.org/wiki/Template:Ja-romanization_of
-        wtp.add_page(
+        self.ctx.add_page(
             "Template:Ja-romanization of",
             10,
             "{{#invoke:form of/templates|form_of_t|-{}-|withcap=1|lang=ja}}"
         )
         # https://zh.wiktionary.org/wiki/Module:Form_of/templates
-        wtp.add_page(
+        self.ctx.add_page(
             "Module:Form of/templates",
             828,
             """
@@ -246,10 +232,9 @@ class NodeExpTests(unittest.TestCase):
             """,
             model="Scribunto"
         )
-        wtp.db_conn.commit()
-        wtp.start_page("test_page")
+        self.ctx.db_conn.commit()
+        self.ctx.start_page("test_page")
         self.assertEqual(
-            wtp.expand("{{ja-romanization of|まんが}}"),
+            self.ctx.expand("{{ja-romanization of|まんが}}"),
             "[[まんが#日語|まんが]]</i></span> </span>"
         )
-        wtp.close_db_conn()

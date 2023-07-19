@@ -1,7 +1,8 @@
-import unittest
 import collections
-from wikitextprocessor import Wtp
 import platform
+import unittest
+
+from wikitextprocessor import Wtp
 
 
 def page_cb(page):
@@ -11,13 +12,20 @@ def page_cb(page):
 
 
 class LongTests(unittest.TestCase):
+    def setUp(self):
+        self.ctx = Wtp()
+
+    def tearDown(self):
+        self.ctx.close_db_conn()
 
     def runonce(self, num_threads):
         # Just parse through the data and make sure that we find some words
         path = "tests/test-pages-articles.xml.bz2"
         print("Parsing test data")
-        ctx = Wtp(num_threads=num_threads)
-        ret = ctx.process(path, page_cb, {0, 4, 10, 14, 100, 110, 118, 828})
+        self.ctx.num_threads = num_threads
+        ret = self.ctx.process(
+            path, page_cb, {0, 4, 10, 14, 100, 110, 118, 828}
+        )
         titles = collections.defaultdict(int)
         redirects = collections.defaultdict(int)
         for title, redirect_to in ret:
@@ -26,18 +34,24 @@ class LongTests(unittest.TestCase):
                 redirects[redirect_to] += 1
 
         print("Test data parsing complete")
-        assert sum(redirects.values()) > 0
-        assert len(titles) > 100
-        assert all(x == 1 for x in titles.values())
-        assert len(redirects) > 1
+        self.assertGreater(sum(redirects.values()), 0)
+        self.assertGreater(len(titles), 100)
+        self.assertTrue(all(x == 1 for x in titles.values()))
+        self.assertGreater(len(redirects), 1)
 
     def test_long_singlethread(self):
         self.runonce(1)
 
-    @unittest.skipIf(platform.system() in ["Darwin", "Windows"], "Multiprocess only works on Linux")
+    @unittest.skipIf(
+        platform.system() != "Linux",
+        "Multiprocess only works on Linux",
+    )
     def test_long_twothread(self):
         self.runonce(2)
 
-    @unittest.skipIf(platform.system() in ["Darwin", "Windows"], "Multiprocess only works on Linux")
+    @unittest.skipIf(
+        platform.system() != "Linux",
+        "Multiprocess only works on Linux",
+    )
     def test_long_multiprocessing(self):
         self.runonce(None)

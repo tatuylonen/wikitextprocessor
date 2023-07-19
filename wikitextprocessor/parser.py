@@ -1,15 +1,17 @@
 # Simple WikiMedia markup (WikiText) syntax parser
 #
 # Copyright (c) 2020-2022 Tatu Ylonen.  See file LICENSE and https://ylonen.org
-
-import re
 import enum
 import html
+import re
+
+from collections.abc import Iterator
+from typing import TYPE_CHECKING, Tuple
+
 from .parserfns import PARSER_FUNCTIONS
 from .wikihtml import ALLOWED_HTML_TAGS
 from .common import (MAGIC_NOWIKI_CHAR, MAGIC_FIRST, MAGIC_LAST, nowiki_quote,
                      MAGIC_SQUOTE_CHAR)
-from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
     from .core import Wtp
@@ -1564,7 +1566,7 @@ def bold_follows(parts, i):
     return False
 
 
-def token_iter(ctx, text):
+def token_iter(ctx: "Wtp", text: str) -> Iterator[Tuple[bool, str]]:
     """Tokenizes MediaWiki page content.  This yields (is_token, text) for
     each token.  ``is_token`` is False for text and True for other tokens.
     Wikitext bold and italic are interpreted WITHIN A SINGLE LINE.  It seems
@@ -1692,7 +1694,7 @@ def token_iter(ctx, text):
                 yield False, part[pos:]
 
 
-def process_text(ctx, text):
+def process_text(ctx: "Wtp", text: str) -> None:
     """Tokenizes ``text`` and processes each token in sequence.  This can be
     called recursively (which we do to process tokens inside templates and
     certain other structures)."""
@@ -1744,7 +1746,7 @@ def process_text(ctx, text):
         ctx.beginning_of_line = token[-1] == "\n"
 
 
-def parse_encoded(ctx, text):
+def parse_encoded(ctx: "Wtp", text: str) -> WikiNode:
     """Parses the text, which should already have been encoded using magic
     characters (see Wtp._encode()).  Parses the encoded string and returns
     the parse tree."""
