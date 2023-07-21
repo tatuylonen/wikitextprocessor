@@ -74,4 +74,4 @@ mypy_path = "typestubs"
 [tool.coverage.run]
 branch = true
 concurrency = ["multiprocessing"]
-omit = ["tests/*", "get_namespaces.py"]
+omit = ["tests/*"]
