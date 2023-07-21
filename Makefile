@@ -2,11 +2,8 @@
 # Run "make clean" to remove automatically generated files
 
 test:
-	rm -rf .coverage*
-	python -m nose2 --output-buffer --with-coverage --coverage-report=html --coverage-config=tests/testcov.conf --pretty-assert
-	rm -rf htmlcov
-	mv -f htmlcov.new htmlcov
-
+	rm -rf .coverage htmlcov
+	python -m nose2 --output-buffer --pretty-assert --with-coverage --coverage-report=html
 clean:
 	rm -rf __pycache__
-	rm -rf .coverage* htmlcov*
+	rm -rf .coverage htmlcov
