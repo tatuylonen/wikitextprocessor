@@ -47,7 +47,10 @@ dependencies = [
 ]
 
 [project.optional-dependencies]
-dev = ["nose2[coverage_plugin]"]
+dev = [
+    "nose2[coverage_plugin]",
+    "tomli; python_version <= '3.10'",  # for coverage parsing TOML file
+]
 
 [project.urls]
 homepage = "https://github.com/tatuylonen/wikitextprocessor"
@@ -67,3 +70,8 @@ wikitextprocessor = [
 
 [tool.mypy]
 mypy_path = "typestubs"
+
+[tool.coverage.run]
+branch = true
+concurrency = ["multiprocessing"]
+omit = ["tests/*"]

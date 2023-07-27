@@ -1,6 +1,5 @@
 import argparse
 import json
-import sys
 from pathlib import Path
 
 import requests
@@ -67,9 +66,11 @@ def main():
     data_folder = Path(f"wikitextprocessor/data/{args.lang_code}")
     if not data_folder.exists():
         data_folder.mkdir()
-    with data_folder.joinpath("namespaces.json").open("w", encoding="utf-8") as f:
+    with data_folder.joinpath("namespaces.json").open(
+        "w", encoding="utf-8"
+    ) as f:
         json.dump(json_dict, f, ensure_ascii=False, indent=2)
 
 
 if __name__ == "__main__":
-    sys.exit(main())
+    main()
