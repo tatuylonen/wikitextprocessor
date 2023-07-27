@@ -231,6 +231,11 @@ local function _lua_set_functions(
    mw_python_fetch_language_names = fetch_language_names
    mw_wikibase_getlabel_python = mw_wikibase_getlabel
    mw_wikibase_getdesc_python = mw_wikibase_getdesc
+
+   -- This is set in https://github.com/wikimedia/mediawiki-extensions-Scribunto/blob/4aa17cb80c72998b9cead27e5be1ca39d8a0cfed/includes/Engines/LuaCommon/lualib/mw.language.lua#L27-L28
+   -- and used in https://en.wiktionary.org/wiki/Module:languages
+   string.uupper = mw.ustring.upper
+   string.ulower = mw.ustring.lower
 end
 
 
