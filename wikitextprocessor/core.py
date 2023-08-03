@@ -1649,9 +1649,6 @@ class Wtp:
                         if t2 is not None:
                             t = t2
 
-                    if self.lang_code == "zh" and t:
-                        t = overwrite_zh_template(self, name, t)
-
                     assert isinstance(t, str) # No body
                     self.expand_stack.pop()  # template name
                     parts.append(t)
@@ -2138,59 +2135,6 @@ class Wtp:
             post_template_fn=post_template_fn,
             node_handler_fn=node_handler_fn,
         )
-
-
-def overwrite_zh_template(
-    ctx: Wtp, template_name: str, expanded_template: str
-) -> str:
-    """
-    Modify some expanded Chinese Wiktionary templates to standard heading format
-    """
-    if template_name == "=n=":
-        # The template "NoEdit" used in "=n=" couldn't be expanded correctly
-        return "===名词==="
-    elif template_name.startswith(("-", "=")):
-        if "<h2>" in expanded_template:
-            # Remove <h2> tag: https://zh.wiktionary.org/wiki/Template:-la-
-            rs = re.search(r"<h2>([^<]+)</h2>", expanded_template)
-            if rs:
-                # Technically the search could still fail
-                lang_heading = rs.group(1)
-                expanded_template = f"=={lang_heading}=="
-            else:
-                ctx.error(
-                    "'<h2>' in heading template but failed to find "
-                    "matching '</h2>'",
-                    sortid="core/1944/20230628",
-                )
-        elif "==" in expanded_template and " " in expanded_template:
-            # Remove image from template like "-abbr-" and "=a="
-            # which expanded to
-            # "[[Category:英語形容詞|wide]]\n===[[Image:Open book 01.png|30px]]
-            #  [[形容詞]]===\n"
-            rs = re.search(r"=+([^=]+)=+", expanded_template.strip())
-            if rs:
-                heading = rs.group(1).split()[-1]
-                equal_sign_count = 0
-                for char in expanded_template:  # count "=" number
-                    if char == "=":
-                        equal_sign_count += 1
-                    elif equal_sign_count > 0:
-                        break
-                expanded_template = "=" * equal_sign_count
-                expanded_template = (
-                    expanded_template + heading + expanded_template
-                )
-            else:
-                ctx.error(
-                    "failed to remove image from heading template",
-                    sortid="core/1963/20230628",
-                )
-    elif template_name == "CC-CEDICT":
-        # Avoid pasring this license template
-        expanded_template = ""
-
-    return expanded_template
 
 
 def is_chinese_subtitle_template(wtp: Wtp, title: str) -> bool:
