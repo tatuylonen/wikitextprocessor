@@ -462,9 +462,8 @@ class Wtp:
                 ):
                     if not node.args:
                         continue
-                    lst = map(
-                        lambda x: x if isinstance(x, str) else "???",
-                        node.args[0],
+                    lst = (
+                        x if isinstance(x, str) else "???" for x in node.args[0]
                     )
                     title = "".join(lst)
                     titles.append(title.strip())
@@ -1062,6 +1061,8 @@ class Wtp:
         )  # {{))}} -> }}
 
         expand_stack: List[Page] = []
+        # the keys of included_map are template names without
+        # the namespace prefix
         included_map: DefaultDict[str, Set[str]] = collections.defaultdict(set)
 
         if template_ns_id:
@@ -1091,9 +1092,20 @@ class Wtp:
         # refer to them
         while len(expand_stack) > 0:
             page = expand_stack.pop()
-            if page.title not in included_map:
-                continue
-            for template_title in included_map[page.title]:
+            title_no_ns_perfix = page.title.removeprefix(
+                template_ns_local_name + ":"
+            )
+            if title_no_ns_perfix not in included_map:
+                if self.lang_code == "zh":
+                    title_no_ns_perfix = (
+                        title_no_ns_perfix[0].lower() + title_no_ns_perfix[1:]
+                    )
+                    if title_no_ns_perfix not in included_map:
+                        continue
+                else:
+                    continue
+
+            for template_title in included_map[title_no_ns_perfix]:
                 template = self.get_page(template_title, template_ns_id)
                 if not template or template.need_pre_expand:
                     continue
@@ -1313,9 +1325,7 @@ class Wtp:
                     if kind == "T":
                         # Template transclusion or parser function call.
                         # Expand its arguments.
-                        new_args = tuple(
-                            map(lambda x: expand_args(x, argmap), args)
-                        )
+                        new_args = tuple(expand_args(x, argmap) for x in args)
                         parts.append(self._save_value(kind, new_args, nowiki))
                         continue
                     if kind == "A":
