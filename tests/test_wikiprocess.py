@@ -5,11 +5,10 @@
 import math
 import time
 import unittest
-
 from typing import Optional
 from unittest.mock import patch
 
-from wikitextprocessor import Wtp, Page
+from wikitextprocessor import Page, Wtp
 from wikitextprocessor.common import MAGIC_NOWIKI_CHAR
 
 
@@ -30,11 +29,13 @@ class WikiProcTests(unittest.TestCase):
             r"""
 local export = {}
 function export.testfn(frame)
-""" + body + """
+"""
+            + body
+            + """
 end
 return export
 """,
-            model="Scribunto"
+            model="Scribunto",
         )
         self.ctx.start_page("Tt")
         ret = self.ctx.expand("{{#invoke:testmod|testfn}}", timeout=timeout)
@@ -42,7 +43,7 @@ return export
         self.assertEqual(ret, expected_ret)
 
     def parserfn(
-            self, text: str, expected_ret: str, almost_equal: bool = False
+        self, text: str, expected_ret: str, almost_equal: bool = False
     ) -> None:
         self.ctx.start_page("Tt")
         ret = self.ctx.expand(text)
@@ -78,9 +79,11 @@ return export
 
     def test_preprocess5(self):
         s = "<nowiki>a=<>*#:!|[]{}\"'b</nowiki>"
-        expected = "a&equals;&lt;&gt;&ast;&num;&colon;" \
-                   "&excl;&vert;&lsqb;&rsqb;&lbrace;" \
-                   "&rbrace;&quot;&apos;b"
+        expected = (
+            "a&equals;&lt;&gt;&ast;&num;&colon;"
+            "&excl;&vert;&lsqb;&rsqb;&lbrace;"
+            "&rbrace;&quot;&apos;b"
+        )
         self.ctx.start_page("Tt")
         ret = self.ctx.preprocess_text(s)
         ret = self.ctx._finalize_expand(ret)
@@ -104,14 +107,17 @@ return export
         self.parserfn("Some {{{unknown_arg}}} x", "Some {{{unknown_arg}}} x")
 
     def test_basic4(self):
-        self.parserfn("Some {{unknown template}} x",
-                      'Some <strong class="error">Template:unknown template'
-                      '</strong> x')
+        self.parserfn(
+            "Some {{unknown template}} x",
+            'Some <strong class="error">Template:unknown template'
+            "</strong> x",
+        )
 
     def test_basic5(self):
-        self.parserfn("Some {{unknown template|arg1||arg3}}",
-                      'Some <strong class="error">Template:unknown template'
-                      '</strong>')
+        self.parserfn(
+            "Some {{unknown template|arg1||arg3}}",
+            'Some <strong class="error">Template:unknown template' "</strong>",
+        )
 
     def test_basic6(self):
         self.parserfn("Some [[link text]] x", "Some [[link text]] x")
@@ -145,7 +151,7 @@ return export
             title="Template:templ",
             namespace_id=10,
             body="a[[{{{1}}}|{{{2}}}]]b",
-        )
+        ),
     )
     def test_basic13(self, mock_get_page):
         self.ctx.start_page("Tt")
@@ -156,9 +162,7 @@ return export
         self.ctx.add_page(
             "Template:templ", 10, "a[[{{t2|z|zz-{{{1}}}}}|{{{2}}}]]b"
         )
-        self.ctx.add_page(
-            "Template:t2", 10, "t2{{{1}}}#{{{2}}}"
-        )
+        self.ctx.add_page("Template:t2", 10, "t2{{{1}}}#{{{2}}}")
         self.ctx.start_page("Tt")
         ret = self.ctx.expand("A{{templ|x|y}}B")
         self.assertEqual(ret, "Aa[[t2z#zz-x|y]]bB")
@@ -169,11 +173,13 @@ return export
             title="Template:templ",
             namespace_id=10,
             body="a[[:{{{1}}}:{{{2}}}|({{{1}}})]]b",
-        )
+        ),
     )
     def test_basic15(self, mock_get_page):
         self.ctx.start_page("Tt")
-        ret = self.ctx.expand("A{{templ|hu|állati|langname=Hungarian|interwiki=1}}B")
+        ret = self.ctx.expand(
+            "A{{templ|hu|állati|langname=Hungarian|interwiki=1}}B"
+        )
         self.assertEqual(ret, "Aa[[:hu:állati|(hu)]]bB")
 
     @patch(
@@ -182,7 +188,7 @@ return export
             title="Template:templ",
             namespace_id=10,
             body="a[[:{{{1}}}:{{{2}}}|({{{1}}})]]b",
-        )
+        ),
     )
     def test_basic16(self, mock_get_page):
         self.ctx.start_page("Tt")
@@ -197,14 +203,14 @@ return export
             title="Template:templ",
             namespace_id=10,
             body="a{{#ifeq:{{{interwiki|}}}|1|[[:{{{1}}}:{{{2}}}|({{{1}}})]]}}b",
-        )
+        ),
     )
     def test_basic17(self, mock_get_page):
         self.ctx.start_page("Tt")
         ret = self.ctx.expand(
             "A{{templ|hu|állati|langname=Hungarian|interwiki=1}}B"
         )
-        self.assertEqual(ret, 'Aa[[:hu:állati|(hu)]]bB')
+        self.assertEqual(ret, "Aa[[:hu:állati|(hu)]]bB")
 
     def test_if1(self):
         self.parserfn("{{#if:|T|F}}", "F")
@@ -252,18 +258,20 @@ return export
         self.parserfn('{{#iferror:aa<div\nclass="error"\n>foo</div>|T|F}}', "T")
 
     def test_iferror7(self):
-        self.parserfn('{{#iferror:{{#expr:}}|T|F}}', "T")
+        self.parserfn("{{#iferror:{{#expr:}}|T|F}}", "T")
 
     def test_iferror8(self):
-        self.parserfn('{{#iferror:{{#expr:!!!}}|T|F}}', "T")
+        self.parserfn("{{#iferror:{{#expr:!!!}}|T|F}}", "T")
 
     def test_iferror9(self):
-        self.parserfn("x{{#iferror: {{#expr: 1 + 2 }} | error | correct }}y",
-                      "xcorrecty")
+        self.parserfn(
+            "x{{#iferror: {{#expr: 1 + 2 }} | error | correct }}y", "xcorrecty"
+        )
 
     def test_iferror10(self):
-        self.parserfn("{{#iferror: {{#expr: 1 + X }} | error | correct }}",
-                      "error")
+        self.parserfn(
+            "{{#iferror: {{#expr: 1 + X }} | error | correct }}", "error"
+        )
 
     def test_iferror11(self):
         self.parserfn("{{#iferror: {{#expr: 1 + 2 }} | error }}", "3")
@@ -275,13 +283,16 @@ return export
         self.parserfn("{{#iferror: {{#expr: 1 + X }} }}", "")
 
     def test_iferror14(self):
-        self.parserfn("{{#iferror: {{#expr: . }} | error | correct }}",
-                      "correct")
+        self.parserfn(
+            "{{#iferror: {{#expr: . }} | error | correct }}", "correct"
+        )
 
     def test_iferror15(self):
-        self.parserfn('{{#iferror: <strong class="error">a</strong> '
-                      '| error | correct }}',
-                      "error")
+        self.parserfn(
+            '{{#iferror: <strong class="error">a</strong> '
+            "| error | correct }}",
+            "error",
+        )
 
     def test_ifexpr1(self):
         self.parserfn("a{{#ifexpr:1+3>2|T|F}}b", "aTb")
@@ -297,7 +308,7 @@ return export
 
     @patch(
         "wikitextprocessor.core.Wtp.get_page",
-        return_value=Page(title="Test title", namespace_id=0, body="FOO")
+        return_value=Page(title="Test title", namespace_id=0, body="FOO"),
     )
     def test_ifexist3(self, mock_get_page):
         self.ctx.start_page("Tt")
@@ -335,9 +346,11 @@ return export
         self.parserfn("{{#switch:e|a=one|c|d=four|b=two}}", "")
 
     def test_switch11(self):
-        self.parserfn("{{#switch: d |\na\n=\none\n|\nc\n|"
-                      "\nd\n=\nfour\n|\nb\n=\ntwo\n}}",
-                      "four")
+        self.parserfn(
+            "{{#switch: d |\na\n=\none\n|\nc\n|"
+            "\nd\n=\nfour\n|\nb\n=\ntwo\n}}",
+            "four",
+        )
 
     def test_switch12(self):
         self.parserfn("{{#switch:|a=one|=empty|three}}", "empty")
@@ -371,17 +384,20 @@ MORE
 NOT
 <section end=bar />
 """,
-        )
+        ),
     )
     def test_lst1(self, mock_get_page):
         self.ctx.start_page("Tt")
         ret = self.ctx.expand("{{#lst:testpage|foo}}")
-        self.assertEqual(ret, """
+        self.assertEqual(
+            ret,
+            """
 === Test section ===
 A
 
 MORE
-""")
+""",
+        )
 
     def test_tag1(self):
         self.parserfn("{{#tag:br}}", "<br />")
@@ -390,17 +406,21 @@ MORE
         self.parserfn("{{#tag:div|foo bar}}", "<div>foo bar</div>")
 
     def test_tag3(self):
-        self.parserfn("""{{#tag:div|foo bar|class=foo|id=me}}""",
-                      """<div class="foo" id="me">foo bar</div>""")
+        self.parserfn(
+            """{{#tag:div|foo bar|class=foo|id=me}}""",
+            """<div class="foo" id="me">foo bar</div>""",
+        )
 
     def test_tag4(self):
-        self.parserfn("""{{#tag:div|foo bar|class=foo|text=m"e'a}}""",
-                      """<div class="foo" text="m&quot;e&#x27;a">"""
-                      """foo bar</div>""")
+        self.parserfn(
+            """{{#tag:div|foo bar|class=foo|text=m"e'a}}""",
+            """<div class="foo" text="m&quot;e&#x27;a">""" """foo bar</div>""",
+        )
 
     def test_tag5(self):
-        self.parserfn("{{#tag:div|foo bar<dangerous>z}}",
-                      "<div>foo bar<dangerous>z</div>")
+        self.parserfn(
+            "{{#tag:div|foo bar<dangerous>z}}", "<div>foo bar<dangerous>z</div>"
+        )
 
     def test_tag6(self):
         self.parserfn("{{#tag:nowiki|foo bar}}", "foo bar")
@@ -628,12 +648,15 @@ MORE
         self.parserfn("{{#formatdate: launched 2000 }}", "launched 2000")
 
     def test_formatdate3(self):
-        self.parserfn("{{#formatdate: totally bogus date }}",
-                      "totally bogus date")
+        self.parserfn(
+            "{{#formatdate: totally bogus date }}", "totally bogus date"
+        )
 
     def test_fullurl1(self):
-        self.parserfn("{{fullurl:Test page|action=edit}}",
-                      "//dummy.host/index.php?title=Test+page&action=edit")
+        self.parserfn(
+            "{{fullurl:Test page|action=edit}}",
+            "//dummy.host/index.php?title=Test+page&action=edit",
+        )
 
     # XXX implement and test interwiki prefixes for fullurl
 
@@ -689,9 +712,11 @@ MORE
         self.parserfn("{{#titleparts:Help:foo/bar/baz|2}}", "Help:foo")
 
     def test_expr1(self):
-        self.parserfn("{{#expr}}",
-                      '<strong class="error">Expression error near '
-                      '&lt;end&gt;</strong>')
+        self.parserfn(
+            "{{#expr}}",
+            '<strong class="error">Expression error near '
+            "&lt;end&gt;</strong>",
+        )
 
     def test_expr2(self):
         self.parserfn("{{#expr|1 + 2.34}}", "3.34")
@@ -971,8 +996,10 @@ MORE
     def test_time17(self):
         # XXX month should really be in genitive
         # Also test tokenization of format string
-        self.parserfn("""{{#time:Yxgd "(foo)"|February 7, 2007|en}}""",
-                      "2007February07 (foo)")
+        self.parserfn(
+            """{{#time:Yxgd "(foo)"|February 7, 2007|en}}""",
+            "2007February07 (foo)",
+        )
 
     def test_time18(self):
         self.parserfn("{{#time:z|January 6, 2007}}", "5")
@@ -1025,7 +1052,7 @@ MORE
     def test_time34(self):
         self.parserfn("{{#time:e|February 4, 2007 10:00}}", "UTC")
 
-    #def test_time34(self):
+    # def test_time34(self):
     #    # This requires Python 3.7 ?
     #    # XXX also different timezone name formats, so the test does not work
     #    tzname = datetime.datetime.now().astimezone().tzname()
@@ -1066,12 +1093,15 @@ MORE
         self.parserfn("{{#time:t|July 4, 2004 10:00}}", "31")
 
     def test_time43(self):
-        self.parserfn("{{#time:c|July 4, 2004 10:11:22}}",
-                      "2004-07-04T10:11:22+00:00")
+        self.parserfn(
+            "{{#time:c|July 4, 2004 10:11:22}}", "2004-07-04T10:11:22+00:00"
+        )
 
     def test_time44(self):
-        self.parserfn("{{#time:r|22 oct 2020 19:00:59}}",
-                      "Thu, 22 Oct 2020 19:00:59 +0000")
+        self.parserfn(
+            "{{#time:r|22 oct 2020 19:00:59}}",
+            "Thu, 22 Oct 2020 19:00:59 +0000",
+        )
 
     def test_time45(self):
         self.parserfn("{{#time:z|February 2, 2007}}", "32")
@@ -1158,12 +1188,15 @@ MORE
         self.parserfn("{{#explode:String/Functions/Code|/|-1}}", "Code")
 
     def test_explode3(self):
-        self.parserfn("{{#explode:Split%By%Percentage%Signs|%|2}}",
-                      "Percentage")
+        self.parserfn(
+            "{{#explode:Split%By%Percentage%Signs|%|2}}", "Percentage"
+        )
 
     def test_explode4(self):
-        self.parserfn("{{#explode:And if you tolerate this thing| |2|3}}",
-                      "you tolerate this thing")
+        self.parserfn(
+            "{{#explode:And if you tolerate this thing| |2|3}}",
+            "you tolerate this thing",
+        )
 
     def test_f_urlencode1(self):
         self.parserfn("{{#urlencode:x:y/z kä}}", "x%3Ay%2Fz+k%C3%A4")
@@ -1214,9 +1247,23 @@ MORE
     def test_currentmonthname1(self):
         self.ctx.start_page("test page")
         ret = self.ctx.expand("{{CURRENTMONTHNAME}}")
-        self.assertIn(ret, ["January", "February", "March", "April", "May",
-                            "June", "July", "August", "September", "October",
-                            "November", "December"])
+        self.assertIn(
+            ret,
+            [
+                "January",
+                "February",
+                "March",
+                "April",
+                "May",
+                "June",
+                "July",
+                "August",
+                "September",
+                "October",
+                "November",
+                "December",
+            ],
+        )
 
     def test_server1(self):
         self.parserfn("{{SERVER}}", "//dummy.host")
@@ -1227,14 +1274,29 @@ MORE
     def test_currentmonthabbrev1(self):
         self.ctx.start_page("test page")
         ret = self.ctx.expand("{{CURRENTMONTHABBREV}}")
-        self.assertIn(ret, ["Jan", "Feb", "Mar", "Apr", "May",
-                            "Jun", "Jul", "Aug", "Sep", "Oct",
-                            "Nov", "Dec"])
+        self.assertIn(
+            ret,
+            [
+                "Jan",
+                "Feb",
+                "Mar",
+                "Apr",
+                "May",
+                "Jun",
+                "Jul",
+                "Aug",
+                "Sep",
+                "Oct",
+                "Nov",
+                "Dec",
+            ],
+        )
+
     @patch(
         "wikitextprocessor.core.Wtp.get_page",
         return_value=Page(
             title="Template:template", namespace_id=10, body="test content"
-        )
+        ),
     )
     def test_template1(self, mock_get_page):
         self.ctx.start_page("Tt")
@@ -1245,7 +1307,7 @@ MORE
         "wikitextprocessor.core.Wtp.get_page",
         return_value=Page(
             title="Template:template", namespace_id=10, body=" test content "
-        )
+        ),
     )
     def test_template2(self, mock_get_page):
         self.ctx.start_page("Tt")
@@ -1256,7 +1318,7 @@ MORE
         "wikitextprocessor.core.Wtp.get_page",
         return_value=Page(
             title="Template:template", namespace_id=10, body="* test content\n"
-        )
+        ),
     )
     def test_template3(self, mock_get_page):
         self.ctx.start_page("Tt")
@@ -1269,7 +1331,7 @@ MORE
             title="Template:template",
             namespace_id=10,
             body="test {{{1}}} content",
-        )
+        ),
     )
     def test_template4(self, mock_get_page):
         self.ctx.start_page("Tt")
@@ -1282,7 +1344,7 @@ MORE
             title="Template:template",
             namespace_id=10,
             body="test {{{1}}} content",
-        )
+        ),
     )
     def test_template5(self, mock_get_page):
         self.ctx.start_page("Tt")
@@ -1295,7 +1357,7 @@ MORE
             title="Template:template",
             namespace_id=10,
             body="test {{{1}}} content",
-        )
+        ),
     )
     def test_template6(self, mock_get_page):
         self.ctx.start_page("Tt")
@@ -1308,7 +1370,7 @@ MORE
             title="Template:template",
             namespace_id=10,
             body="test {{{1|}}} content",
-        )
+        ),
     )
     def test_template7(self, mock_get_page):
         self.ctx.start_page("Tt")
@@ -1321,7 +1383,7 @@ MORE
             title="Template:template",
             namespace_id=10,
             body="test {{{1|def}}} content",
-        )
+        ),
     )
     def test_template8(self, mock_get_page):
         self.ctx.start_page("Tt")
@@ -1334,7 +1396,7 @@ MORE
             title="Template:template",
             namespace_id=10,
             body="test {{{1|def}}} content",
-        )
+        ),
     )
     def test_template9(self, mock_get_page):
         self.ctx.start_page("Tt")
@@ -1347,7 +1409,7 @@ MORE
             title="Template:template",
             namespace_id=10,
             body="test {{{{{{1}}}}}} content",
-        )
+        ),
     )
     def test_template10(self, mock_get_page):
         self.ctx.start_page("Tt")
@@ -1360,7 +1422,7 @@ MORE
             title="Template:template",
             namespace_id=10,
             body="test {{{{{{1}}}}}} content",
-        )
+        ),
     )
     def test_template11(self, mock_get_page):
         self.ctx.start_page("Tt")
@@ -1373,7 +1435,7 @@ MORE
             title="Template:template",
             namespace_id=10,
             body="test {{{foo|{{{1}}}}}} content",
-        )
+        ),
     )
     def test_template12(self, mock_get_page):
         self.ctx.start_page("Tt")
@@ -1386,7 +1448,7 @@ MORE
             title="Template:template",
             namespace_id=10,
             body="test {{{foo|{{{1}}}}}} content",
-        )
+        ),
     )
     def test_template13(self, mock_get_page):
         self.ctx.start_page("Tt")
@@ -1399,7 +1461,7 @@ MORE
             title="Template:template",
             namespace_id=10,
             body="test {{{foo|{{{1}}}}}} content",
-        )
+        ),
     )
     def test_template14(self, mock_get_page):
         self.ctx.start_page("Tt")
@@ -1412,7 +1474,7 @@ MORE
             title="Template:template",
             namespace_id=10,
             body="test {{{foo|{{{1}}}}}} content",
-        )
+        ),
     )
     def test_template15(self, mock_get_page):
         self.ctx.start_page("Tt")
@@ -1428,7 +1490,7 @@ MORE
             "{{testmod|{{#sub:{{{1}}}|1}}}}"
             "{{testmod|{{#sub:{{{1}}}|1}}}}"
             "x|}}",
-        )
+        ),
     )
     def test_template16(self, mock_get_page):
         self.ctx.start_page("Tt")
@@ -1504,7 +1566,9 @@ MORE
     def test_template24c(self):
         self.ctx.analyze_templates()
         self.ctx.start_page("Tt")
-        ret = self.ctx.expand("{{#if:true|before{{#if:true|{{!}}|false}}after}}")
+        ret = self.ctx.expand(
+            "{{#if:true|before{{#if:true|{{!}}|false}}after}}"
+        )
         self.assertEqual(ret, "before|after")
 
     def test_template24d(self):
@@ -1569,10 +1633,9 @@ MORE
     def test_template27(self, mock_get_page):
         # Test infinite recursion in template expansion
         self.ctx.start_page("Tt")
-        ret = self.ctx.expand('{{foo}}')
+        ret = self.ctx.expand("{{foo}}")
         self.assertGreaterEqual(
-            ret.find('<strong class="error">too deep recursion'),
-            0
+            ret.find('<strong class="error">too deep recursion'), 0
         )
 
     @patch(
@@ -1586,7 +1649,7 @@ MORE
     def test_template28(self, mock_get_page):
         # Test | inside <math> in template argument
         self.ctx.start_page("Tt")
-        ret = self.ctx.expand('{{foo|x <math> 1 | 2 </math> y}}')
+        ret = self.ctx.expand("{{foo|x <math> 1 | 2 </math> y}}")
         self.assertEqual(ret, "ax <math> 1 | 2 </math> yb")
 
     @patch(
@@ -1955,7 +2018,8 @@ function export.testfn(frame)
   return "correct"
 end
 return export
-""")
+""",
+        )
         self.ctx.start_page("Tt")
         ret = self.ctx.expand("{{testtempl}}")
         self.assertEqual(ret, """correct""")
@@ -2014,7 +2078,7 @@ function export.testfn(frame)
   if v == "a<1>" then return "yes" else return "no" end
 end
 return export
-"""
+""",
         )
         self.ctx.start_page("Tt")
         ret = self.ctx.expand("{{testtempl|a<1>}}")
@@ -2159,9 +2223,7 @@ return export
         self.ctx.add_page(
             "Template:testtempl", 10, "{{#invoke:testmod|testfn}}"
         )
-        self.ctx.add_page(
-            "Template:testtempl2", 10, "foo{{{1|}}}"
-        )
+        self.ctx.add_page("Template:testtempl2", 10, "foo{{{1|}}}")
         self.ctx.add_page(
             "Module:testmod",
             828,
@@ -2240,20 +2302,32 @@ return export
         self.assertEqual(ret, "")  # nil
 
     def test_frame_callParserFunction1(self):
-        self.scribunto("<br />", """
-        return frame:callParserFunction("#tag", {"br"})""")
+        self.scribunto(
+            "<br />",
+            """
+        return frame:callParserFunction("#tag", {"br"})""",
+        )
 
     def test_frame_callParserFunction2(self):
-        self.scribunto("<br />", """
-        return frame:callParserFunction{name = "#tag", args = {"br"}}""")
+        self.scribunto(
+            "<br />",
+            """
+        return frame:callParserFunction{name = "#tag", args = {"br"}}""",
+        )
 
     def test_frame_callParserFunction3(self):
-        self.scribunto("<br />", """
-        return frame:callParserFunction("#tag", "br")""")
+        self.scribunto(
+            "<br />",
+            """
+        return frame:callParserFunction("#tag", "br")""",
+        )
 
     def test_frame_callParserFunction4(self):
-        self.scribunto("<div>content</div>", """
-        return frame:callParserFunction("#tag", "div", "content")""")
+        self.scribunto(
+            "<div>content</div>",
+            """
+        return frame:callParserFunction("#tag", "div", "content")""",
+        )
 
     @patch(
         "wikitextprocessor.core.Wtp.get_page",
@@ -2266,8 +2340,8 @@ function export.testfn(frame)
   return frame:getArgument(1).expand()
 end
 return export
-            """
-        )
+            """,
+        ),
     )
     def test_frame_getArgument1(self, mock_get_page):
         self.ctx.start_page("Tt")
@@ -2285,8 +2359,8 @@ function export.testfn(frame)
   return frame:getArgument(2).expand()
 end
 return export
-            """
-        )
+            """,
+        ),
     )
     def test_frame_getArgument2(self, mock_get_page):
         self.ctx.start_page("Tt")
@@ -2304,8 +2378,8 @@ function export.testfn(frame)
   return frame:getArgument(3)
 end
 return export
-            """
-        )
+            """,
+        ),
     )
     def test_frame_getArgument3(self, mock_get_page):
         self.ctx.start_page("Tt")
@@ -2323,8 +2397,8 @@ function export.testfn(frame)
   return frame:getArgument("foo").expand()
 end
 return export
-            """
-        )
+            """,
+        ),
     )
     def test_frame_getArgument4(self, mock_get_page):
         self.ctx.start_page("Tt")
@@ -2342,8 +2416,8 @@ function export.testfn(frame)
   return frame:getArgument{name = "foo"}.expand()
 end
 return export
-            """
-        )
+            """,
+        ),
     )
     def test_frame_getArgument5(self, mock_get_page):
         self.ctx.start_page("Tt")
@@ -2380,7 +2454,7 @@ function export.testfn(frame)
   return frame:preprocess("a{{testtemplate|a}}b")
 end
 return export
-"""
+""",
         )
         self.ctx.start_page("Tt")
         ret = self.ctx.expand("{{#invoke:testmod|testfn|foo=bar}}")
@@ -2397,7 +2471,7 @@ function export.testfn(frame)
   return frame:preprocess{text = "a{{testtemplate|a}}b"}
 end
 return export
-"""
+""",
         )
         self.ctx.start_page("Tt")
         ret = self.ctx.expand("{{#invoke:testmod|testfn|foo=bar}}")
@@ -2524,53 +2598,80 @@ return export
         self.assertEqual(ret, "a{{!}}b")
 
     def test_frame_extensionTag1(self):
-        self.scribunto("<ref>some text</ref>", """
-        return frame:extensionTag("ref", "some text")""")
+        self.scribunto(
+            "<ref>some text</ref>",
+            """
+        return frame:extensionTag("ref", "some text")""",
+        )
 
     def test_frame_extensionTag2(self):
-        self.scribunto('<ref class="foo">some text</ref>', """
-        return frame:extensionTag("ref", "some text", "class=foo")""")
+        self.scribunto(
+            '<ref class="foo">some text</ref>',
+            """
+        return frame:extensionTag("ref", "some text", "class=foo")""",
+        )
 
     def test_frame_extensionTag3(self):
-        self.scribunto('<ref class="bar" id="test">some text</ref>', """
+        self.scribunto(
+            '<ref class="bar" id="test">some text</ref>',
+            """
         return frame:extensionTag{name="ref", content="some text",
-        args={class="bar", id="test"}}""")
+        args={class="bar", id="test"}}""",
+        )
 
     def test_frame_extensionTag4(self):
-        self.scribunto("<br />", """
-        return frame:extensionTag("br")""")
+        self.scribunto(
+            "<br />",
+            """
+        return frame:extensionTag("br")""",
+        )
 
     def test_frame_extensionTag5(self):
-        self.scribunto("{{#tag:not_allowed_tag|}}", """
-        return frame:extensionTag("not_allowed_tag")""")
+        self.scribunto(
+            "{{#tag:not_allowed_tag|}}",
+            """
+        return frame:extensionTag("not_allowed_tag")""",
+        )
 
     def test_frame_newChild1(self):
-        self.scribunto("", """
-        return frame:newChild():getTitle()""")
+        self.scribunto(
+            "",
+            """
+        return frame:newChild():getTitle()""",
+        )
 
     def test_frame_newChild2(self):
-        self.scribunto("FOO", """
-        return frame:newChild{title="FOO"}:getTitle()""")
+        self.scribunto(
+            "FOO",
+            """
+        return frame:newChild{title="FOO"}:getTitle()""",
+        )
 
     def test_frame_newChild3(self):
-        self.scribunto("FOO|1=a|2=b", """
+        self.scribunto(
+            "FOO|1=a|2=b",
+            """
         local f = frame:newChild{title="FOO", args={"a", "b"}}
         local s = {}
         for k, v in pairs(f.args) do
            table.insert(s, tostring(k) .. "=" .. tostring(v))
         end
         table.sort(s)
-        return f:getTitle() .. "|" .. table.concat(s, "|")""")
+        return f:getTitle() .. "|" .. table.concat(s, "|")""",
+        )
 
     def test_frame_newChild4(self):
-        self.scribunto("FOO|1=a|bar=c|foo=b", """
+        self.scribunto(
+            "FOO|1=a|bar=c|foo=b",
+            """
         local f = frame:newChild{title="FOO", args={"a", foo="b", bar="c"}}
         local s = {}
         for k, v in pairs(f.args) do
            table.insert(s, tostring(k) .. "=" .. tostring(v))
         end
         table.sort(s)
-        return f:getTitle() .. "|" .. table.concat(s, "|")""")
+        return f:getTitle() .. "|" .. table.concat(s, "|")""",
+        )
 
     def test_mw_text_listToText1(self):
         self.scribunto("", """return mw.text.listToText({})""")
@@ -2579,420 +2680,654 @@ return export
         self.scribunto("abba", """return mw.text.listToText({"abba"})""")
 
     def test_mw_text_listToText3(self):
-        self.scribunto("abba and jara",
-                       """return mw.text.listToText({"abba", "jara"})""")
+        self.scribunto(
+            "abba and jara", """return mw.text.listToText({"abba", "jara"})"""
+        )
 
     def test_mw_text_listToText4(self):
-        self.scribunto("abba, jara and zara", """
-        return mw.text.listToText({"abba", "jara", "zara"})""")
+        self.scribunto(
+            "abba, jara and zara",
+            """
+        return mw.text.listToText({"abba", "jara", "zara"})""",
+        )
 
     def test_mw_text_listToText5(self):
-        self.scribunto("abba; jara or zara", """
-        return mw.text.listToText({"abba", "jara", "zara"}, ";", "or")""")
+        self.scribunto(
+            "abba; jara or zara",
+            """
+        return mw.text.listToText({"abba", "jara", "zara"}, ";", "or")""",
+        )
 
     def test_mw_text_nowiki1(self):
-        self.scribunto("&num;&lsqb;foo&rsqb;&lbrace;&lbrace;a&vert;"
-                       "b&rbrace;&rbrace;", """
-                       return mw.text.nowiki("#[foo]{{a|b}}")""")
+        self.scribunto(
+            "&num;&lsqb;foo&rsqb;&lbrace;&lbrace;a&vert;" "b&rbrace;&rbrace;",
+            """
+                       return mw.text.nowiki("#[foo]{{a|b}}")""",
+        )
 
     def test_mw_text_nowiki2(self):
-        self.scribunto("\n&num;&lt;foo&gt;&apos;#&#61;\n&NewLine;X\n", r"""
-        return mw.text.nowiki("\n#<foo>'#=\n\nX\n")""")
+        self.scribunto(
+            "\n&num;&lt;foo&gt;&apos;#&#61;\n&NewLine;X\n",
+            r"""
+        return mw.text.nowiki("\n#<foo>'#=\n\nX\n")""",
+        )
 
     def test_mw_text_nowiki3(self):
-        self.scribunto("&quot;test&quot;\n&minus;---\n"
-                       "http&colon;//example.com\n", r"""
-          return mw.text.nowiki('"test"\n----\nhttp://example.com\n')""")
+        self.scribunto(
+            "&quot;test&quot;\n&minus;---\n" "http&colon;//example.com\n",
+            r"""
+          return mw.text.nowiki('"test"\n----\nhttp://example.com\n')""",
+        )
 
     def test_mw_text_split1(self):
-        self.scribunto("",
-            """return table.concat(mw.text.split("", "/"), "@")""")
+        self.scribunto(
+            "", """return table.concat(mw.text.split("", "/"), "@")"""
+        )
 
     def test_mw_text_split2(self):
-        self.scribunto("abc",
-            """return table.concat(mw.text.split("abc", "/"), "@")""")
+        self.scribunto(
+            "abc", """return table.concat(mw.text.split("abc", "/"), "@")"""
+        )
 
     def test_mw_text_split3(self):
-        self.scribunto("ab@c",
-            """return table.concat(mw.text.split("ab/c", "/"), "@")""")
+        self.scribunto(
+            "ab@c", """return table.concat(mw.text.split("ab/c", "/"), "@")"""
+        )
 
     def test_mw_text_split4(self):
-        self.scribunto("@abc",
-            """return table.concat(mw.text.split("/abc", "/"), "@")""")
+        self.scribunto(
+            "@abc", """return table.concat(mw.text.split("/abc", "/"), "@")"""
+        )
 
     def test_mw_text_split5(self):
-        self.scribunto("abc@",
-            """return table.concat(mw.text.split("abc/", "/"), "@")""")
+        self.scribunto(
+            "abc@", """return table.concat(mw.text.split("abc/", "/"), "@")"""
+        )
 
     def test_mw_text_split6(self):
-        self.scribunto("a@bc@",
-            """return table.concat(mw.text.split("a/bc/", "/"), "@")""")
+        self.scribunto(
+            "a@bc@", """return table.concat(mw.text.split("a/bc/", "/"), "@")"""
+        )
 
     def test_mw_text_split7(self):
-        self.scribunto("a@b@c",
-            """return table.concat(mw.text.split("abc", ""), "@")""")
+        self.scribunto(
+            "a@b@c", """return table.concat(mw.text.split("abc", ""), "@")"""
+        )
 
     def test_mw_text_split8(self):
-        self.scribunto("a@a@",
-            """return table.concat(mw.text.split("abcabc", "[bc]+"), "@")""")
+        self.scribunto(
+            "a@a@",
+            """return table.concat(mw.text.split("abcabc", "[bc]+"), "@")""",
+        )
 
     def test_mw_text_split9(self):
-        self.scribunto("abcabc",
+        self.scribunto(
+            "abcabc",
             """return table.concat(mw.text.split("abcabc", "[bc]+", true),
-                                   "@")""")
+                                   "@")""",
+        )
 
     def test_mw_text_split10(self):
-        self.scribunto("abc@abc",
+        self.scribunto(
+            "abc@abc",
             """return table.concat(mw.text.split("abc[bc]+abc", "[bc]+", true),
-                                   "@")""")
+                                   "@")""",
+        )
 
     def test_mw_text_split11(self):
-        self.scribunto("귀",
-            """return table.concat(mw.text.split("귀", ""), "@")""")
+        self.scribunto(
+            "귀", """return table.concat(mw.text.split("귀", ""), "@")"""
+        )
 
     def test_mw_ustring_find1(self):
-        self.scribunto("nil",
+        self.scribunto(
+            "nil",
             """local s, e = mw.ustring.find("abcdef", "[b]", 1, true)
-               return tostring(s)""")
+               return tostring(s)""",
+        )
 
     def test_mw_text_gsplit1(self):
-        self.scribunto("ab@ab@", """
+        self.scribunto(
+            "ab@ab@",
+            """
           local result = {}
           for v in mw.text.gsplit("abcabc", "[c]+") do
               table.insert(result, v)
           end
-          return table.concat(result, "@")""")
+          return table.concat(result, "@")""",
+        )
 
     def test_mw_text_gsplit2(self):
-        self.scribunto("a@b@c", """
+        self.scribunto(
+            "a@b@c",
+            """
           local result = {}
           for v in mw.text.gsplit("abc", "") do
               table.insert(result, v)
           end
-          return table.concat(result, "@")""")
+          return table.concat(result, "@")""",
+        )
 
     def test_mw_text_trim1(self):
-        self.scribunto("a b  c",
-                       r"""return mw.text.trim("   a b  c\n\r\f\t  ")""")
+        self.scribunto(
+            "a b  c", r"""return mw.text.trim("   a b  c\n\r\f\t  ")"""
+        )
 
     def test_mw_text_trim2(self):
-        self.scribunto("a b",
-                       r"""return mw.text.trim("   a b  c\n\r\f\t  ",
-                                               " \n\r\f\tc")""")
+        self.scribunto(
+            "a b",
+            r"""return mw.text.trim("   a b  c\n\r\f\t  ",
+                                               " \n\r\f\tc")""",
+        )
 
     def test_mw_text_tag1(self):
-        self.scribunto("<br />", """
-        return mw.text.tag("br")""")
+        self.scribunto(
+            "<br />",
+            """
+        return mw.text.tag("br")""",
+        )
 
     def test_mw_text_tag2(self):
-        self.scribunto("<h1>Test title</h1>", """
-        return mw.text.tag("h1", nil, "Test title")""")
+        self.scribunto(
+            "<h1>Test title</h1>",
+            """
+        return mw.text.tag("h1", nil, "Test title")""",
+        )
 
     def test_mw_text_tag3(self):
-        self.scribunto("<h1>Test title</h1>", """
-        return mw.text.tag({name="h1", content="Test title"})""")
+        self.scribunto(
+            "<h1>Test title</h1>",
+            """
+        return mw.text.tag({name="h1", content="Test title"})""",
+        )
 
     def test_mw_text_tag4(self):
-        self.scribunto('<h1 class="cls">Test title</h1>', """
-        return mw.text.tag("h1", {class="cls"}, "Test title")""")
+        self.scribunto(
+            '<h1 class="cls">Test title</h1>',
+            """
+        return mw.text.tag("h1", {class="cls"}, "Test title")""",
+        )
 
     def test_mw_text_tag5(self):
-        self.scribunto('<h1 class="cls">Test title</h1>', """
+        self.scribunto(
+            '<h1 class="cls">Test title</h1>',
+            """
         return mw.text.tag({name="h1", attrs={class="cls"},
-                            content="Test title"})""")
+                            content="Test title"})""",
+        )
 
     def test_mw_text_truncate1(self):
-        self.scribunto("abc", """
-        return mw.text.truncate("abc")""")
+        self.scribunto(
+            "abc",
+            """
+        return mw.text.truncate("abc")""",
+        )
 
     def test_mw_text_truncate2(self):
-        self.scribunto("abc", """
-        return mw.text.truncate("abc", 5)""")
+        self.scribunto(
+            "abc",
+            """
+        return mw.text.truncate("abc", 5)""",
+        )
 
     def test_mw_text_truncate3(self):
-        self.scribunto("abc", """
-        return mw.text.truncate("abc", 3)""")
+        self.scribunto(
+            "abc",
+            """
+        return mw.text.truncate("abc", 3)""",
+        )
 
     def test_mw_text_truncate4(self):
-        self.scribunto("ab…", """
-        return mw.text.truncate("abc", 2)""")
+        self.scribunto(
+            "ab…",
+            """
+        return mw.text.truncate("abc", 2)""",
+        )
 
     def test_mw_text_truncate5(self):
-        self.scribunto("abXY", """
-        return mw.text.truncate("abcdef", 4, "XY", true)""")
+        self.scribunto(
+            "abXY",
+            """
+        return mw.text.truncate("abcdef", 4, "XY", true)""",
+        )
 
     def test_mw_text_truncate6(self):
-        self.scribunto("XYef", """
-        return mw.text.truncate("abcdef", -4, "XY", true)""")
+        self.scribunto(
+            "XYef",
+            """
+        return mw.text.truncate("abcdef", -4, "XY", true)""",
+        )
 
     def test_mw_text_truncate7(self):
-        self.scribunto("…cdef", """
-        return mw.text.truncate("abcdef", -4)""")
+        self.scribunto(
+            "…cdef",
+            """
+        return mw.text.truncate("abcdef", -4)""",
+        )
 
     def test_mw_text_truncate8(self):
-        self.scribunto("aX", """
-        return mw.text.truncate("abc", 2, "X", true)""")
+        self.scribunto(
+            "aX",
+            """
+        return mw.text.truncate("abc", 2, "X", true)""",
+        )
 
     def test_mw_jsonencode1(self):
-        self.scribunto('"x"', """
-        return mw.text.jsonEncode("x")""")
+        self.scribunto(
+            '"x"',
+            """
+        return mw.text.jsonEncode("x")""",
+        )
 
     def test_mw_jsonencode2(self):
-        self.scribunto('null', """
-        return mw.text.jsonEncode(nil)""")
+        self.scribunto(
+            "null",
+            """
+        return mw.text.jsonEncode(nil)""",
+        )
 
     def test_mw_jsonencode3(self):
-        self.scribunto('3', """
-        return mw.text.jsonEncode(3)""")
+        self.scribunto(
+            "3",
+            """
+        return mw.text.jsonEncode(3)""",
+        )
 
     def test_mw_jsonencode4(self):
-        self.scribunto('4.1', """
-        return mw.text.jsonEncode(4.1)""")
+        self.scribunto(
+            "4.1",
+            """
+        return mw.text.jsonEncode(4.1)""",
+        )
 
     def test_mw_jsonencode5(self):
-        self.scribunto('[]', """
-        return mw.text.jsonEncode({})""")
+        self.scribunto(
+            "[]",
+            """
+        return mw.text.jsonEncode({})""",
+        )
 
     def test_mw_jsonencode6(self):
-        self.scribunto('[1, "foo"]', """
-        return mw.text.jsonEncode({1, "foo"})""")
+        self.scribunto(
+            '[1, "foo"]',
+            """
+        return mw.text.jsonEncode({1, "foo"})""",
+        )
 
     def test_mw_jsonencode7(self):
-        self.scribunto('{"1": 1, "2": "foo"}', """
-        return mw.text.jsonEncode({1, "foo"}, mw.text.JSON_PRESERVE_KEYS)""")
+        self.scribunto(
+            '{"1": 1, "2": "foo"}',
+            """
+        return mw.text.jsonEncode({1, "foo"}, mw.text.JSON_PRESERVE_KEYS)""",
+        )
 
     def test_mw_jsonencode8(self):
-        self.scribunto('{"1": 1, "2": "foo", "x": 8}', """
-        return mw.text.jsonEncode({1, "foo", x=8})""")
+        self.scribunto(
+            '{"1": 1, "2": "foo", "x": 8}',
+            """
+        return mw.text.jsonEncode({1, "foo", x=8})""",
+        )
 
     def test_mw_jsonencode9(self):
-        self.scribunto('{"1": 1, "2": "foo", "x": 8}', """
+        self.scribunto(
+            '{"1": 1, "2": "foo", "x": 8}',
+            """
         return mw.text.jsonEncode({1, "foo", x=8},
-                                  mw.text.JSON_PRESERVE_KEYS)""")
+                                  mw.text.JSON_PRESERVE_KEYS)""",
+        )
 
     def test_mw_jsonencode10(self):
-        self.scribunto('{"1": 1, "12": 8, "2": "foo"}', """
-        return mw.text.jsonEncode({1, "foo", [12]=8})""")
+        self.scribunto(
+            '{"1": 1, "12": 8, "2": "foo"}',
+            """
+        return mw.text.jsonEncode({1, "foo", [12]=8})""",
+        )
 
     def test_mw_jsonencode11(self):
-        self.scribunto('true', """
-        return mw.text.jsonEncode(true)""")
+        self.scribunto(
+            "true",
+            """
+        return mw.text.jsonEncode(true)""",
+        )
 
     def test_mw_jsondecode1(self):
         # Note: returned nil converted to empty string
-        self.scribunto('', """
-        return mw.text.jsonDecode('null')""")
+        self.scribunto(
+            "",
+            """
+        return mw.text.jsonDecode('null')""",
+        )
 
     def test_mw_jsondecode2(self):
-        self.scribunto('true', """
-        return mw.text.jsonDecode('true')""")
+        self.scribunto(
+            "true",
+            """
+        return mw.text.jsonDecode('true')""",
+        )
 
     def test_mw_jsondecode3(self):
-        self.scribunto('1', """
-        return mw.text.jsonDecode('1')""")
+        self.scribunto(
+            "1",
+            """
+        return mw.text.jsonDecode('1')""",
+        )
 
     def test_mw_jsondecode4(self):
-        self.scribunto('4.1', """
-        return mw.text.jsonDecode('4.1')""")
+        self.scribunto(
+            "4.1",
+            """
+        return mw.text.jsonDecode('4.1')""",
+        )
 
     def test_mw_jsondecode5(self):
-        self.scribunto('foo', """
-        return mw.text.jsonDecode('"foo"')""")
+        self.scribunto(
+            "foo",
+            """
+        return mw.text.jsonDecode('"foo"')""",
+        )
 
     def test_mw_jsondecode6(self):
-        self.scribunto('0', """
+        self.scribunto(
+            "0",
+            """
         local x = mw.text.jsonDecode('[]')
-        return tostring(#x)""")
+        return tostring(#x)""",
+        )
 
     def test_mw_jsondecode7(self):
-        self.scribunto('4a', """
+        self.scribunto(
+            "4a",
+            """
         local x = mw.text.jsonDecode('[4.0, "a"]')
-        return x[1] .. x[2]""")
+        return x[1] .. x[2]""",
+        )
 
     def test_mw_jsondecode8(self):
-        self.scribunto('35', """
+        self.scribunto(
+            "35",
+            """
         local x = mw.text.jsonDecode('{"1": "3", "4": "5"}')
-        return x[1] .. x[4]""")
+        return x[1] .. x[4]""",
+        )
 
     def test_mw_jsondecode9(self):
-        self.scribunto('35', """
+        self.scribunto(
+            "35",
+            """
         local x = mw.text.jsonDecode('{"1": "3", "4": "5"}',
                                      mw.text.JSON_PRESERVE_KEYS)
-        return x["1"] .. x["4"]""")
+        return x["1"] .. x["4"]""",
+        )
 
     def test_mw_html1(self):
-        self.scribunto("<table></table>", """
+        self.scribunto(
+            "<table></table>",
+            """
         local t = mw.html.create("table")
-        return tostring(t)""")
+        return tostring(t)""",
+        )
 
     def test_mw_html2(self):
-        self.scribunto("<br />", """
+        self.scribunto(
+            "<br />",
+            """
         local t = mw.html.create("br")
-        return tostring(t)""")
+        return tostring(t)""",
+        )
 
     def test_mw_html3(self):
-        self.scribunto("<div />", """
+        self.scribunto(
+            "<div />",
+            """
         local t = mw.html.create("div", { selfClosing = true })
-        return tostring(t)""")
+        return tostring(t)""",
+        )
 
     def test_mw_html4(self):
-        self.scribunto("<div>Plain text</div>", """
+        self.scribunto(
+            "<div>Plain text</div>",
+            """
         local t = mw.html.create("div")
         t:wikitext("Plain text")
-        return tostring(t)""")
+        return tostring(t)""",
+        )
 
     def test_mw_html5(self):
-        self.scribunto("<span></span>", """
+        self.scribunto(
+            "<span></span>",
+            """
         local t = mw.html.create("div")
         t2 = t:tag("span")
-        return tostring(t2)""")
+        return tostring(t2)""",
+        )
 
     def test_mw_html6(self):
-        self.scribunto('<div foo="bar"></div>', """
+        self.scribunto(
+            '<div foo="bar"></div>',
+            """
         local t = mw.html.create("div")
         t:attr("foo", "bar")
-        return tostring(t)""")
+        return tostring(t)""",
+        )
 
     def test_mw_html7(self):
-        self.scribunto('<div foo="b&quot;&gt;ar"></div>', """
+        self.scribunto(
+            '<div foo="b&quot;&gt;ar"></div>',
+            """
         local t = mw.html.create("div")
         t:attr({foo='b">ar'})
-        return tostring(t)""")
+        return tostring(t)""",
+        )
 
     def test_mw_html8(self):
-        self.scribunto("nil", """
+        self.scribunto(
+            "nil",
+            """
         local t = mw.html.create("div")
-        return tostring(t:getAttr("foo"))""")
+        return tostring(t:getAttr("foo"))""",
+        )
 
     def test_mw_html9(self):
-        self.scribunto("bar", """
+        self.scribunto(
+            "bar",
+            """
         local t = mw.html.create("div")
         t:attr("foo", "bar")
-        return tostring(t:getAttr("foo"))""")
+        return tostring(t:getAttr("foo"))""",
+        )
 
     def test_mw_html10(self):
-        self.scribunto('<div class="bar"></div>', """
+        self.scribunto(
+            '<div class="bar"></div>',
+            """
         local t = mw.html.create("div")
         t:addClass("bar")
-        return tostring(t)""")
+        return tostring(t)""",
+        )
 
     def test_mw_html11(self):
-        self.scribunto('<div class="bar foo"></div>', """
+        self.scribunto(
+            '<div class="bar foo"></div>',
+            """
         local t = mw.html.create("div")
         t:addClass("bar")
         t:addClass("foo")
         t:addClass("bar")
-        return tostring(t)""")
+        return tostring(t)""",
+        )
 
     def test_mw_html12(self):
-        self.scribunto('<div style="foo:bar;"></div>', """
+        self.scribunto(
+            '<div style="foo:bar;"></div>',
+            """
         local t = mw.html.create("div")
         t:css({foo="bar"})
-        return tostring(t)""")
+        return tostring(t)""",
+        )
 
     def test_mw_html13(self):
-        self.scribunto('<div style="foo:bar;width:300px;"></div>', """
+        self.scribunto(
+            '<div style="foo:bar;width:300px;"></div>',
+            """
         local t = mw.html.create("div")
         t:cssText("foo:bar;")
         t:cssText("width:300px")
-        return tostring(t)""")
+        return tostring(t)""",
+        )
 
     def test_mw_html14(self):
-        self.scribunto('<div style="label:&quot;foo&quot;;"></div>', """
+        self.scribunto(
+            '<div style="label:&quot;foo&quot;;"></div>',
+            """
         local t = mw.html.create("div")
         t:cssText('label:"foo"')
-        return tostring(t)""")
+        return tostring(t)""",
+        )
 
     def test_mw_html15(self):
-        self.scribunto('<div style="label:&quot;foo&quot;;"></div>', """
+        self.scribunto(
+            '<div style="label:&quot;foo&quot;;"></div>',
+            """
         local t = mw.html.create("div")
         t:css("label", '"foo"')
-        return tostring(t)""")
+        return tostring(t)""",
+        )
 
     def test_mw_html16(self):
-        self.scribunto('<div><br /></div>', """
+        self.scribunto(
+            "<div><br /></div>",
+            """
         local t = mw.html.create("div")
         t:node(mw.html.create("br"))
-        return tostring(t)""")
+        return tostring(t)""",
+        )
 
     def test_mw_html17(self):
-        self.scribunto('<div><span>A</span></div>', """
+        self.scribunto(
+            "<div><span>A</span></div>",
+            """
         local t = mw.html.create("div")
         t:node("<span>A</span>")   -- Should this be supported?
-        return tostring(t)""")
+        return tostring(t)""",
+        )
 
     def test_mw_html18(self):
-        self.scribunto('<span><br /></span>', """
+        self.scribunto(
+            "<span><br /></span>",
+            """
         local t = mw.html.create("div")
         local t2 = t:tag("span")
         local t3 = t2:tag("br")
-        return tostring(t3:done())""")
+        return tostring(t3:done())""",
+        )
 
     def test_mw_html19(self):
-        self.scribunto('<div><span><br /></span></div>', """
+        self.scribunto(
+            "<div><span><br /></span></div>",
+            """
         local t = mw.html.create("div")
         local t2 = t:tag("span")
         local t3 = t2:tag("br")
-        return tostring(t3:allDone())""")
+        return tostring(t3:allDone())""",
+        )
 
     def test_mw_html20(self):
-        self.scribunto('<div><span><br />A<hr /></span></div>', """
+        self.scribunto(
+            "<div><span><br />A<hr /></span></div>",
+            """
         local t = mw.html.create("div")
         local t2 = t:tag("span")
         local t3 = t2:tag("br")
         t2:wikitext("A")
         local t4 = t2:tag("hr")
-        return tostring(t3:allDone())""")
+        return tostring(t3:allDone())""",
+        )
 
     def test_mw_html21(self):
-        self.scribunto('<div style="foo:bar;"></div>', """
+        self.scribunto(
+            '<div style="foo:bar;"></div>',
+            """
         local t = mw.html.create("div")
         t:css("foo", "bar")
-        return tostring(t)""")
+        return tostring(t)""",
+        )
 
     def test_mw_uri1(self):
-        self.scribunto("b+c", """
-        return mw.uri.encode("b c")""")
+        self.scribunto(
+            "b+c",
+            """
+        return mw.uri.encode("b c")""",
+        )
 
     def test_mw_uri2(self):
-        self.scribunto("%2Ffoo%2Fb%20ar", """
-        return mw.uri.encode("/foo/b ar", "PATH")""")
+        self.scribunto(
+            "%2Ffoo%2Fb%20ar",
+            """
+        return mw.uri.encode("/foo/b ar", "PATH")""",
+        )
 
     def test_mw_uri3(self):
-        self.scribunto("/foo/b_ar", """
-        return mw.uri.encode("/foo/b_ar", "WIKI")""")
+        self.scribunto(
+            "/foo/b_ar",
+            """
+        return mw.uri.encode("/foo/b_ar", "WIKI")""",
+        )
 
     def test_mw_uri4(self):
-        self.scribunto("__foo+b%C3%A1r+%2B+baz__", r"""
-        return mw.uri.encode("__foo b\195\161r + baz__")""")
+        self.scribunto(
+            "__foo+b%C3%A1r+%2B+baz__",
+            r"""
+        return mw.uri.encode("__foo b\195\161r + baz__")""",
+        )
 
     def test_mw_uri5(self):
-        self.scribunto("__foo+b%C3%A1r+%2B+%2Fbaz%2F__", r"""
-        return mw.uri.encode('__foo b\195\161r + /baz/__', 'QUERY')""")
+        self.scribunto(
+            "__foo+b%C3%A1r+%2B+%2Fbaz%2F__",
+            r"""
+        return mw.uri.encode('__foo b\195\161r + /baz/__', 'QUERY')""",
+        )
 
     def test_mw_uri6(self):
-        self.scribunto("__foo%20b%C3%A1r%20%2B%20%2Fbaz%2F__", r"""
-        return mw.uri.encode('__foo b\195\161r + /baz/__', 'PATH')""")
+        self.scribunto(
+            "__foo%20b%C3%A1r%20%2B%20%2Fbaz%2F__",
+            r"""
+        return mw.uri.encode('__foo b\195\161r + /baz/__', 'PATH')""",
+        )
 
     def test_mw_uri7(self):
-        self.scribunto('__foo_b%C3%A1r_%2B_/baz/__', r"""
-        return mw.uri.encode('__foo b\195\161r + /baz/__', 'WIKI')""")
+        self.scribunto(
+            "__foo_b%C3%A1r_%2B_/baz/__",
+            r"""
+        return mw.uri.encode('__foo b\195\161r + /baz/__', 'WIKI')""",
+        )
 
     def test_mw_uri8(self):
-        self.scribunto("/foo/b ar c", """
-        return mw.uri.decode("%2Ffoo%2Fb%20ar+c")""")
+        self.scribunto(
+            "/foo/b ar c",
+            """
+        return mw.uri.decode("%2Ffoo%2Fb%20ar+c")""",
+        )
 
     def test_mw_uri9(self):
-        self.scribunto("/foo/b ar+c", """
-        return mw.uri.decode("%2Ffoo%2Fb%20ar+c", "PATH")""")
+        self.scribunto(
+            "/foo/b ar+c",
+            """
+        return mw.uri.decode("%2Ffoo%2Fb%20ar+c", "PATH")""",
+        )
 
     def test_mw_uri10(self):
-        self.scribunto("foo_bar", """
-        return mw.uri.anchorEncode("foo bar")""")
+        self.scribunto(
+            "foo_bar",
+            """
+        return mw.uri.anchorEncode("foo bar")""",
+        )
 
     def test_mw_uri11(self):
-        self.scribunto("foo=b+ar&x=1", """
-        return mw.uri.buildQueryString({foo="b ar", x=1})""")
+        self.scribunto(
+            "foo=b+ar&x=1",
+            """
+        return mw.uri.buildQueryString({foo="b ar", x=1})""",
+        )
 
     @patch(
         "wikitextprocessor.core.Wtp.get_page",
@@ -3006,7 +3341,7 @@ function export.testfn(frame)
    return tostring(q.a) .. tostring(q.b) .. tostring(q.c) .. tostring(q.d)
 end
 return export
-"""
+""",
         ),
     )
     def test_mw_uri12(self, mock_get_page):
@@ -3015,16 +3350,25 @@ return export
         self.assertEqual(ret, "1a bfalsenil")
 
     def test_mw_uri13(self):
-        self.scribunto("https://wiki.local/wiki/Example?action=edit", r"""
-        return mw.uri.canonicalUrl("Example", {action="edit"})""")
+        self.scribunto(
+            "https://wiki.local/wiki/Example?action=edit",
+            r"""
+        return mw.uri.canonicalUrl("Example", {action="edit"})""",
+        )
 
     def test_mw_uri15(self):
-        self.scribunto("/w/index.php?action=edit&title=Example", r"""
-        return mw.uri.localUrl("Example", {action="edit"})""")
+        self.scribunto(
+            "/w/index.php?action=edit&title=Example",
+            r"""
+        return mw.uri.localUrl("Example", {action="edit"})""",
+        )
 
     def test_mw_uri16(self):
-        self.scribunto("//wiki.local/w/index.php?action=edit&title=Example", r"""
-        return mw.uri.fullUrl("Example", {action="edit"})""")
+        self.scribunto(
+            "//wiki.local/w/index.php?action=edit&title=Example",
+            r"""
+        return mw.uri.fullUrl("Example", {action="edit"})""",
+        )
 
     def test_mw_title1(self):
         self.ctx.add_page("Template:templ", 10, "{{#invoke:testmod|testfn}}")
@@ -3044,181 +3388,292 @@ return export
         self.assertEqual(ret, "Tt")
 
     def test_mw_title2(self):
-        self.scribunto("", """
+        self.scribunto(
+            "",
+            """
         local t = mw.title.makeTitle("Main", "R:L&S")
-        return t.nsText""")
+        return t.nsText""",
+        )
 
     def test_mw_title3(self):
-        self.scribunto("", """
+        self.scribunto(
+            "",
+            """
         local t = mw.title.new("R:L&S", "Main")
-        return t.nsText""")
+        return t.nsText""",
+        )
 
     def test_mw_title4(self):
-        self.scribunto("R:L&S", """
+        self.scribunto(
+            "R:L&S",
+            """
         local t = mw.title.new("R:L&S", "Main")
-        return t.text""")
+        return t.text""",
+        )
 
     def test_mw_title5(self):
-        self.scribunto("Module:R:L&S/foo/bar", """
+        self.scribunto(
+            "Module:R:L&S/foo/bar",
+            """
         local t = mw.title.new("R:L&S/foo/bar", "Module")
-        return t.prefixedText""")
+        return t.prefixedText""",
+        )
 
     def test_mw_title6(self):
-        self.scribunto("true", r"""
-        return mw.title.equals(mw.title.new("Foo"), mw.title.new("Foo"))""")
+        self.scribunto(
+            "true",
+            r"""
+        return mw.title.equals(mw.title.new("Foo"), mw.title.new("Foo"))""",
+        )
 
     def test_mw_title7(self):
-        self.scribunto("false", r"""
-        return mw.title.equals(mw.title.new("Foo"), mw.title.new("Bar"))""")
+        self.scribunto(
+            "false",
+            r"""
+        return mw.title.equals(mw.title.new("Foo"), mw.title.new("Bar"))""",
+        )
 
     def test_mw_title8(self):
-        self.scribunto("0", r"""
-        return mw.title.compare(mw.title.new("Foo"), mw.title.new("Foo"))""")
+        self.scribunto(
+            "0",
+            r"""
+        return mw.title.compare(mw.title.new("Foo"), mw.title.new("Foo"))""",
+        )
 
     def test_mw_title9(self):
-        self.scribunto("1", r"""
-        return mw.title.compare(mw.title.new("Foo"), mw.title.new("Bar"))""")
+        self.scribunto(
+            "1",
+            r"""
+        return mw.title.compare(mw.title.new("Foo"), mw.title.new("Bar"))""",
+        )
 
     def test_mw_title10(self):
-        self.scribunto("0", r"""
-        return mw.title.compare(mw.title.new("Foo"), mw.title.new("Foo"))""")
+        self.scribunto(
+            "0",
+            r"""
+        return mw.title.compare(mw.title.new("Foo"), mw.title.new("Foo"))""",
+        )
 
     def test_mw_title11(self):
-        self.scribunto("false", r"""
-        return mw.title.new("Foo") <=  mw.title.new("Bar")""")
+        self.scribunto(
+            "false",
+            r"""
+        return mw.title.new("Foo") <=  mw.title.new("Bar")""",
+        )
 
     def test_mw_title12(self):
-        self.scribunto("true", r"""
-        return mw.title.new("Foo") <= mw.title.new("Foo")""")
+        self.scribunto(
+            "true",
+            r"""
+        return mw.title.new("Foo") <= mw.title.new("Foo")""",
+        )
 
     def test_mw_title13(self):
-        self.scribunto("true", r"""
-        return mw.title.new("Foo") >  mw.title.new("Bar")""")
+        self.scribunto(
+            "true",
+            r"""
+        return mw.title.new("Foo") >  mw.title.new("Bar")""",
+        )
 
     def test_mw_title14(self):
-        self.scribunto("Module:Foo", r"""
+        self.scribunto(
+            "Module:Foo",
+            r"""
         local t = mw.title.new("Foo", "Module")
-        return t.prefixedText""")
+        return t.prefixedText""",
+        )
 
     def test_mw_title15(self):
-        self.scribunto("User:Foo", r"""
+        self.scribunto(
+            "User:Foo",
+            r"""
         local t = mw.title.new("Foo", 2)
-        return t.prefixedText""")
+        return t.prefixedText""",
+        )
 
     def test_mw_title16(self):
-        self.scribunto("Module:Foo", r"""
+        self.scribunto(
+            "Module:Foo",
+            r"""
         local t = mw.title.new("Foo", mw.site.namespaces.Module.id)
-        return t.prefixedText""")
+        return t.prefixedText""",
+        )
 
     def test_mw_title17(self):
-        self.scribunto("nil", r"""
+        self.scribunto(
+            "nil",
+            r"""
         local t = mw.title.new("Foo", "UnknownSpace")
-        return tostring(t)""")
+        return tostring(t)""",
+        )
 
     def test_mw_title18(self):
-        self.scribunto("Module:Test#Frag", r"""
+        self.scribunto(
+            "Module:Test#Frag",
+            r"""
         local t = mw.title.makeTitle("Module", "Test", "Frag")
-        return t.fullText""")
+        return t.fullText""",
+        )
 
     def test_mw_title19(self):
-        self.scribunto("Test", r"""
+        self.scribunto(
+            "Test",
+            r"""
         local t = mw.title.makeTitle(nil, "Test")
-        return t.fullText""")
+        return t.fullText""",
+        )
 
     def test_mw_title20(self):
-        self.scribunto("nil", r"""
+        self.scribunto(
+            "nil",
+            r"""
         local t = mw.title.makeTitle("Main", "{{")
-        return tostring(t)""")
+        return tostring(t)""",
+        )
 
     def test_mw_title21(self):
-        self.scribunto("1", r"""
+        self.scribunto(
+            "1",
+            r"""
         local t = mw.title.makeTitle("Talk", "Test")
-        return t.namespace""")
+        return t.namespace""",
+        )
 
     def test_mw_title22(self):
-        self.scribunto("1", r"""
+        self.scribunto(
+            "1",
+            r"""
         local t = mw.title.makeTitle("Talk", "Test")
-        return t.namespace""")
+        return t.namespace""",
+        )
 
     def test_mw_title23(self):
-        self.scribunto("Frag", r"""
+        self.scribunto(
+            "Frag",
+            r"""
         local t = mw.title.makeTitle("Talk", "Test", "Frag")
-        return t.fragment""")
+        return t.fragment""",
+        )
 
     def test_mw_title24(self):
-        self.scribunto("Talk", r"""
+        self.scribunto(
+            "Talk",
+            r"""
         local t = mw.title.makeTitle(1, "Test", "Frag")
-        return t.nsText""")
+        return t.nsText""",
+        )
 
     def test_mw_title25(self):
-        self.scribunto("User", r"""
+        self.scribunto(
+            "User",
+            r"""
         local t = mw.title.makeTitle(3, "Test", "Frag")
-        return t.subjectNsText""")
+        return t.subjectNsText""",
+        )
 
     def test_mw_title26(self):
-        self.scribunto("Test", r"""
+        self.scribunto(
+            "Test",
+            r"""
         local t = mw.title.makeTitle(3, "Test", "Frag")
-        return t.text""")
+        return t.text""",
+        )
 
     def test_mw_title27(self):
-        self.scribunto("User talk:Test", r"""
+        self.scribunto(
+            "User talk:Test",
+            r"""
         local t = mw.title.makeTitle(3, "Test", "Frag")
-        return t.prefixedText""")
+        return t.prefixedText""",
+        )
 
     def test_mw_title28(self):
-        self.scribunto("User talk:Test#Frag", r"""
+        self.scribunto(
+            "User talk:Test#Frag",
+            r"""
         local t = mw.title.makeTitle(3, "Test", "Frag")
-        return t.fullText""")
+        return t.fullText""",
+        )
 
     def test_mw_title29(self):
-        self.scribunto("Test", r"""
+        self.scribunto(
+            "Test",
+            r"""
         local t = mw.title.makeTitle(3, "Test/foo/bar", "Frag")
-        return t.rootText""")
+        return t.rootText""",
+        )
 
     def test_mw_title30a(self):
-        self.scribunto("Test/foo", r"""
+        self.scribunto(
+            "Test/foo",
+            r"""
         local t = mw.title.makeTitle(3, "Test/foo/bar", "Frag")
-        return t.baseText""")
+        return t.baseText""",
+        )
 
     def test_mw_title30b(self):
-        self.scribunto("Test/foo", r"""
+        self.scribunto(
+            "Test/foo",
+            r"""
         local t = mw.title.makeTitle(3, "Test/foo/translations", "Frag")
-        return t.baseText""")
+        return t.baseText""",
+        )
 
     def test_mw_title31a(self):
-        self.scribunto("bar", r"""
+        self.scribunto(
+            "bar",
+            r"""
         local t = mw.title.makeTitle(3, "Test/foo/bar", "Frag")
-        return t.subpageText""")
+        return t.subpageText""",
+        )
 
     def test_mw_title31b(self):
-        self.scribunto("translations", r"""
+        self.scribunto(
+            "translations",
+            r"""
         local t = mw.title.makeTitle(3, "Test/foo/translations", "Frag")
-        return t.subpageText""")
+        return t.subpageText""",
+        )
 
     def test_mw_title31c(self):
-        self.scribunto("foobar", r"""
+        self.scribunto(
+            "foobar",
+            r"""
         local t = mw.title.makeTitle(3, "Proto-Germanic/foobar", "Frag")
-        return t.subpageText""")
+        return t.subpageText""",
+        )
 
     def test_mw_title32(self):
-        self.scribunto("false", r"""
+        self.scribunto(
+            "false",
+            r"""
         local t = mw.title.makeTitle(3, "Test/foo/bar", "Frag")
-        return t.canTalk""")
+        return t.canTalk""",
+        )
 
     def test_mw_title33(self):
-        self.scribunto("true", r"""
+        self.scribunto(
+            "true",
+            r"""
         local t = mw.title.makeTitle("Main", "Test")
-        return t.isContentPage""")
+        return t.isContentPage""",
+        )
 
     def test_mw_title34(self):
-        self.scribunto("false", r"""
+        self.scribunto(
+            "false",
+            r"""
         local t = mw.title.makeTitle(3, "Test/foo/bar", "Frag")
-        return t.isExternal""")
+        return t.isExternal""",
+        )
 
     def test_mw_title35(self):
-        self.scribunto("false", r"""
+        self.scribunto(
+            "false",
+            r"""
         local t = mw.title.makeTitle(3, "Test/foo/bar", "Frag")
-        return t.isRedirect""")
+        return t.isRedirect""",
+        )
 
     def test_mw_title36(self):
         # test for redirect that exists
@@ -3239,74 +3694,116 @@ return export
         self.assertEqual(ret, "true")
 
     def test_mw_title37(self):
-        self.scribunto("false", r"""
+        self.scribunto(
+            "false",
+            r"""
         local t = mw.title.makeTitle(3, "Test/foo/bar", "Frag")
-        return t.isSpecialPage""")
+        return t.isSpecialPage""",
+        )
 
     def test_mw_title38(self):
-        self.scribunto("true", r"""
+        self.scribunto(
+            "true",
+            r"""
         local t = mw.title.makeTitle(3, "Test/foo/bar", "Frag")
-        return t.isSubpage""")
+        return t.isSubpage""",
+        )
 
     def test_mw_title39(self):
-        self.scribunto("true", r"""
+        self.scribunto(
+            "true",
+            r"""
         local t = mw.title.makeTitle(3, "Test/foo/bar", "Frag")
-        return t.isTalkPage""")
+        return t.isTalkPage""",
+        )
 
     def test_mw_title40(self):
-        self.scribunto("true", r"""
+        self.scribunto(
+            "true",
+            r"""
         local t = mw.title.makeTitle("Main", "Test/foo/bar", "Frag")
-        return t:isSubpageOf(mw.title.new("Test/foo"))""")
+        return t:isSubpageOf(mw.title.new("Test/foo"))""",
+        )
 
     def test_mw_title41(self):
-        self.scribunto("false", r"""
+        self.scribunto(
+            "false",
+            r"""
         local t = mw.title.makeTitle("Main", "Test/foo/bar", "Frag")
-        return t:isSubpageOf(mw.title.new("Test/foo/baz"))""")
+        return t:isSubpageOf(mw.title.new("Test/foo/baz"))""",
+        )
 
     def test_mw_title42(self):
-        self.scribunto("true", r"""
+        self.scribunto(
+            "true",
+            r"""
         local t = mw.title.makeTitle("Main", "Test/foo/bar", "Frag")
-        return t:inNamespace("Main")""")
+        return t:inNamespace("Main")""",
+        )
 
     def test_mw_title43(self):
-        self.scribunto("false", r"""
+        self.scribunto(
+            "false",
+            r"""
         local t = mw.title.makeTitle("Main", "Test/foo/bar", "Frag")
-        return t:inNamespace(3)""")
+        return t:inNamespace(3)""",
+        )
 
     def test_mw_title44(self):
-        self.scribunto("true", r"""
+        self.scribunto(
+            "true",
+            r"""
         local t = mw.title.makeTitle("Main", "Test/foo/bar", "Frag")
-        return t:inNamespaces("Module", "Main")""")
+        return t:inNamespaces("Module", "Main")""",
+        )
 
     def test_mw_title45(self):
-        self.scribunto("true", r"""
+        self.scribunto(
+            "true",
+            r"""
         local t = mw.title.makeTitle("User talk", "Test/foo/bar", "Frag")
-        return t:hasSubjectNamespace("User")""")
+        return t:hasSubjectNamespace("User")""",
+        )
 
     def test_mw_title46(self):
-        self.scribunto("wikitext", r"""
+        self.scribunto(
+            "wikitext",
+            r"""
         local t = mw.title.makeTitle(3, "Test/foo/bar", "Frag")
-        return t.contentModel""")
+        return t.contentModel""",
+        )
 
     def test_mw_title47(self):
-        self.scribunto("Test/foo", r"""
+        self.scribunto(
+            "Test/foo",
+            r"""
         local t = mw.title.makeTitle("Main", "Test/foo/bar", "Frag")
-        return t.basePageTitle.fullText""")
+        return t.basePageTitle.fullText""",
+        )
 
     def test_mw_title48(self):
-        self.scribunto("Test", r"""
+        self.scribunto(
+            "Test",
+            r"""
         local t = mw.title.makeTitle("Main", "Test/foo/bar", "Frag")
-        return t.rootPageTitle.fullText""")
+        return t.rootPageTitle.fullText""",
+        )
 
     def test_mw_title49(self):
-        self.scribunto("Talk:Test/foo/bar", r"""
+        self.scribunto(
+            "Talk:Test/foo/bar",
+            r"""
         local t = mw.title.makeTitle("Main", "Test/foo/bar", "Frag")
-        return t.talkPageTitle.fullText""")
+        return t.talkPageTitle.fullText""",
+        )
 
     def test_mw_title50(self):
-        self.scribunto("Test/foo/bar", r"""
+        self.scribunto(
+            "Test/foo/bar",
+            r"""
         local t = mw.title.makeTitle("Talk", "Test/foo/bar", "Frag")
-        return t.subjectPageTitle.fullText""")
+        return t.subjectPageTitle.fullText""",
+        )
 
     def test_mw_title51(self):
         # test for redirect target
@@ -3320,37 +3817,51 @@ return export
                local t = mw.title.makeTitle("Main", "Foo", "Frag")
                return t.redirectTarget.fullText
             end
-            return export"""
+            return export""",
         )
         self.ctx.start_page("Tt")
         ret = self.ctx.expand("{{#invoke:testmod|testfn}}")
         self.assertEqual(ret, "Bar")
 
     def test_mw_title52(self):
-        self.scribunto("Test/foo/bar/z", r"""
+        self.scribunto(
+            "Test/foo/bar/z",
+            r"""
         local t = mw.title.makeTitle("Main", "Test/foo/bar", "Frag")
-        return t:subPageTitle("z").fullText""")
+        return t:subPageTitle("z").fullText""",
+        )
 
     def test_mw_title53(self):
-        self.scribunto("Test/foo/b_ar", r"""
+        self.scribunto(
+            "Test/foo/b_ar",
+            r"""
         local t = mw.title.makeTitle("Main", "Test/foo/b ar", "Frag")
-        return t:partialUrl()""")
+        return t:partialUrl()""",
+        )
 
     def test_mw_title54(self):
-        self.scribunto("http://wiki.local/w/index.php?"
-                       "a=1&title=Test%2Ffoo%2Fb+ar#Frag", r"""
+        self.scribunto(
+            "http://wiki.local/w/index.php?" "a=1&title=Test%2Ffoo%2Fb+ar#Frag",
+            r"""
         local t = mw.title.makeTitle("Main", "Test/foo/b ar", "Frag")
-        return t:fullUrl({a=1}, "http")""")
+        return t:fullUrl({a=1}, "http")""",
+        )
 
     def test_mw_title55(self):
-        self.scribunto("/w/index.php?a=1&title=Test%2Ffoo%2Fb+ar#Frag", r"""
+        self.scribunto(
+            "/w/index.php?a=1&title=Test%2Ffoo%2Fb+ar#Frag",
+            r"""
         local t = mw.title.makeTitle("Main", "Test/foo/b ar", "Frag")
-        return t:localUrl({a=1})""")
+        return t:localUrl({a=1})""",
+        )
 
     def test_mw_title56(self):
-        self.scribunto("https://wiki.local/wiki/Test/foo/b_ar?a=1#Frag", r"""
+        self.scribunto(
+            "https://wiki.local/wiki/Test/foo/b_ar?a=1#Frag",
+            r"""
         local t = mw.title.makeTitle("Main", "Test/foo/b ar", "Frag")
-        return t:canonicalUrl({a=1})""")
+        return t:canonicalUrl({a=1})""",
+        )
 
     def test_mw_title57(self):
         # test for redirect target
@@ -3373,8 +3884,11 @@ return export
         self.assertEqual(ret, "RAWCONTENT")
 
     def test_mw_title58(self):
-        self.scribunto("Tt", """
-        return mw.title.getCurrentTitle().text""")
+        self.scribunto(
+            "Tt",
+            """
+        return mw.title.getCurrentTitle().text""",
+        )
 
     @patch(
         "wikitextprocessor.core.Wtp.get_page",
@@ -3388,7 +3902,7 @@ return export
                return title
             end
             return export""",
-        )
+        ),
     )
     def test_mw_title59(self, mock_get_page):
         # Turns out some modules save information betweem calls - at least
@@ -3409,12 +3923,15 @@ return export
         self.assertEqual(ret, "pt2")
 
     def test_mw_clone1(self):
-        self.scribunto("21AAa", r"""
+        self.scribunto(
+            "21AAa",
+            r"""
         local x = {1, "a", math.sin, foo={"a", "b"}}
         local v = mw.clone(x)
         x[1] = 2
         x.foo[1] = "AA"
-        return x[1] .. v[1] .. x.foo[1] .. v.foo[1]""")
+        return x[1] .. v[1] .. x.foo[1] .. v.foo[1]""",
+        )
 
     @patch(
         "wikitextprocessor.core.Wtp.get_page",
@@ -3427,7 +3944,7 @@ return export
                local c = mw.clone(frame.args)
                return c[1] .. c.foo .. tostring(c.nonex)
             end
-            return export"""
+            return export""",
         ),
     )
     def test_mw_clone99(self, mock_get_page):
@@ -3436,24 +3953,39 @@ return export
         self.assertEqual(ret, "abarnil")
 
     def test_table_getn(self):
-        self.scribunto("3", r"""
-        return table.getn({"a", "b", "c"})""")
+        self.scribunto(
+            "3",
+            r"""
+        return table.getn({"a", "b", "c"})""",
+        )
 
     def test_math_mod(self):
-        self.scribunto("2", r"""
-        return math.mod(12, 5)""")
+        self.scribunto(
+            "2",
+            r"""
+        return math.mod(12, 5)""",
+        )
 
     def test_string_format1(self):
-        self.scribunto("00004", r"""
-        return string.format("%05d", 4.7)""")
+        self.scribunto(
+            "00004",
+            r"""
+        return string.format("%05d", 4.7)""",
+        )
 
     def test_string_format2(self):
-        self.scribunto("00004 % foo 1.1 -6", r"""
-        return string.format("%05d %% %s %.1f %d", 4.7, "foo", 1.1, -6)""")
+        self.scribunto(
+            "00004 % foo 1.1 -6",
+            r"""
+        return string.format("%05d %% %s %.1f %d", 4.7, "foo", 1.1, -6)""",
+        )
 
     def test_string_format3(self):
-        self.scribunto("0004", r"""
-        return string.format("%.4X", 4.7)""")
+        self.scribunto(
+            "0004",
+            r"""
+        return string.format("%.4X", 4.7)""",
+        )
 
     @patch(
         "wikitextprocessor.core.Wtp.get_page",
@@ -3466,7 +3998,7 @@ function export.testfn(frame)
     return python.eval("1")
 end
 return export
-"""
+""",
         ),
     )
     def test_sandbox1(self, mock_get_page):
@@ -3479,18 +4011,27 @@ return export
         # For security, dangerous Lua functions should not be callable from
         # Lua modules (only expressly allowed modules and functions should be
         # available)
-        self.scribunto("true", r"""
-        return os.exit == nil""")
+        self.scribunto(
+            "true",
+            r"""
+        return os.exit == nil""",
+        )
 
     def test_sandbox4(self):
-        self.scribunto("true", r"""
-        return _G["os"].exit == nil""")
+        self.scribunto(
+            "true",
+            r"""
+        return _G["os"].exit == nil""",
+        )
 
     def test_sandbox5(self):
         # This is to test the other tests, to make sure an existing function is
         # properly detected
-        self.scribunto("false", r"""
-        return _G["os"].clock == nil""")
+        self.scribunto(
+            "false",
+            r"""
+        return _G["os"].clock == nil""",
+        )
 
     def test_dbfile1(self):
         self.ctx.add_page("Template:testmod", 10, "test content")
@@ -3522,20 +4063,25 @@ return export
 
     def test_lua_max_time1(self):
         t = time.time()
-        self.scribunto('<strong class="error">Lua timeout error in '
-                       'Module:testmod function testfn</strong>', """
+        self.scribunto(
+            '<strong class="error">Lua timeout error in '
+            "Module:testmod function testfn</strong>",
+            """
           local i = 0
           while true do
             i = i + 1
           end
           return i""",
-                       timeout=2)
+            timeout=2,
+        )
         self.assertLess(time.time() - t, 10)
 
     def test_link_backforth1(self):
         self.ctx.start_page("Tt")
-        v = ("([[w:Jurchen script|Jurchen script]]: , Image: "
-             "[[FIle:Da (Jurchen script).png|25px]])")
+        v = (
+            "([[w:Jurchen script|Jurchen script]]: , Image: "
+            "[[FIle:Da (Jurchen script).png|25px]])"
+        )
         node = self.ctx.parse(v)
         t = self.ctx.node_to_wikitext(node)
         self.assertEqual(v, t)
@@ -3544,36 +4090,37 @@ return export
         self.scribunto("", """return mw.wikibase.getEntityUrl()""")
 
     def test_gsub1(self):
-        self.scribunto("f(%d+)accel",
-                       """return string.gsub("f=accel", "=", "(%%d+)");""")
+        self.scribunto(
+            "f(%d+)accel", """return string.gsub("f=accel", "=", "(%%d+)");"""
+        )
 
     def test_gsub2(self):
         # This tests a Lua version compatibility kludge with string.gsub
-        self.scribunto("f]oo",
-                       """return string.gsub("f=oo", "=", "%]");""")
+        self.scribunto("f]oo", """return string.gsub("f=oo", "=", "%]");""")
 
     def test_gsub3(self):
         # This tests a Lua version compatibility kludge with string.gsub
-        self.scribunto("f-oo",
-                       """return string.gsub("f=oo", "=", "%-");""")
+        self.scribunto("f-oo", """return string.gsub("f=oo", "=", "%-");""")
 
     def test_gsub4(self):
-        self.scribunto("fOOf[[]]",
-                       """a = {}; a["o"] = "O";
-	               return mw.ustring.gsub("foof[[]]", ".", a);""")
+        self.scribunto(
+            "fOOf[[]]",
+            """a = {}; a["o"] = "O";
+	               return mw.ustring.gsub("foof[[]]", ".", a);""",
+        )
 
     def test_title_1_colon_e(self) -> None:
         self.scribunto("1:e", "return mw.title.new('1:e').text")
 
     def test_analyze_redirect_pre_expand_templates(self) -> None:
-        '''
+        """
         In Chinese Wiktionary, Template:-it- redirects to Template:意大利语,
         and this template expands to wikitext `==意大利语==`, which is a level
         two language subtitle node for Italian words. This test checks both
         pages should have `need_pre_expand` set to `true` in two redirect cases:
         Template:-it- -> Template:意大利语
         or Template:意大利语 -> Template:-it-
-        '''
+        """
         self.ctx.lang_code = "zh"
         # source page need_pre_expand is true
         self.ctx.add_page("Template:意大利語", 10, body="{{NoEdit|==意大利语==}}")
@@ -3592,6 +4139,20 @@ return export
         self.assertTrue(dest_page.need_pre_expand)
         source_page = self.ctx.get_page("Template:意大利語", 10)
         self.assertTrue(source_page.need_pre_expand)
+
+    def test_analyze_used_pre_expand_template(self) -> None:
+        """
+        If Template A uses Template B and B needs pre-expand then A should also
+        need pre-expand.
+        """
+        self.ctx.lang_code = "zh"
+        self.ctx.add_page(
+            "Template:-n2-", 10, body="===名词===", need_pre_expand=True
+        )
+        self.ctx.add_page("Template:En-nm", 10, body="{{-n2-|英語}}")
+        self.ctx.analyze_templates()
+        page = self.ctx.get_page("Template:En-nm", 10)
+        self.assertTrue(page.need_pre_expand)
 
 
 # XXX Test template_fn
