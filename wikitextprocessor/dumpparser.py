@@ -332,7 +332,7 @@ def save_pages_to_file(ctx: "Wtp", directory: Path) -> None:
         file_path.parent.mkdir(parents=True, exist_ok=True)
         with file_path.open("w", encoding="utf-8") as f:
             f.write(f"TITLE: {page.title}\n")
-            if page.body:
+            if page.body is not None:
                 f.write(page.body)
             elif page.redirect_to:
                 f.write(page.redirect_to)

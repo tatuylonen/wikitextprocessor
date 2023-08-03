@@ -1019,9 +1019,10 @@ class Wtp:
                 included_templates.add(called_template)
 
         # Chinese Wiktionary language and POS subtitle template
-        # uses "langhd" template
+        # uses "langhd" template, "langhd" redirects to "語言標題"
         is_chinese_heading = self.lang_code == "zh" and (
             "langhd" in included_templates
+            or "語言標題" in included_templates
             or is_chinese_subtitle_template(self, name)
         )
 
@@ -1071,7 +1072,7 @@ class Wtp:
             template_ns_id_list = None
 
         for page in self.get_all_pages(template_ns_id_list):
-            if page.body:
+            if page.body is not None:
                 used_templates, pre_expand = self._analyze_template(
                     page.title, page.body
                 )
@@ -1080,7 +1081,10 @@ class Wtp:
                 if pre_expand:
                     self.set_template_pre_expand(page.title)
                     expand_stack.append(page)
-            elif is_chinese_subtitle_template(self, page.title):
+            elif (
+                self.lang_code == "zh"
+                and is_chinese_subtitle_template(self, page.title)
+            ):
                 self.set_template_pre_expand(page.title)
 
         # XXX consider encoding template bodies here (also need to save related
