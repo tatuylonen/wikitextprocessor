@@ -353,6 +353,7 @@ class Wtp:
 
     def backup_db(self) -> None:
         self.backup_db_path.unlink(True)
+        self.db_conn.commit()
         backup_conn = sqlite3.connect(self.backup_db_path)
         with backup_conn:
             self.db_conn.backup(backup_conn)
