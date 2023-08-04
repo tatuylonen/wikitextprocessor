@@ -178,22 +178,24 @@ def process_dump(
         if save_pages_path is not None:
             save_pages_to_file(ctx, save_pages_path)
 
-    analyze_and_overwrite_pages(ctx, overwrite_folders)
+    analyze_and_overwrite_pages(ctx, overwrite_folders, skip_extract_dump)
 
 
 def analyze_and_overwrite_pages(
-    ctx: "Wtp", overwrite_folders: Optional[List[Path]]
+    ctx: "Wtp", overwrite_folders: Optional[List[Path]], skip_extract_dump: bool
 ) -> None:
     if overwrite_folders is not None:
         if overwrite_pages(ctx, overwrite_folders, False):
             # has template
-            ctx.backup_db()
+            if skip_extract_dump:
+                ctx.backup_db()
             overwrite_pages(ctx, overwrite_folders, True)
             ctx.analyze_templates()
         else:
             if not ctx.has_analyzed_templates():
                 ctx.analyze_templates()
-            ctx.backup_db()
+            if skip_extract_dump:
+                ctx.backup_db()
             overwrite_pages(ctx, overwrite_folders, True)
     elif not ctx.has_analyzed_templates():
         ctx.analyze_templates()
