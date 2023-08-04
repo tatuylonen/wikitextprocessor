@@ -1022,8 +1022,7 @@ class Wtp:
         # Chinese Wiktionary language and POS subtitle template
         # uses "langhd" template, "langhd" redirects to "語言標題"
         is_chinese_heading = self.lang_code == "zh" and (
-            "langhd" in included_templates
-            or "語言標題" in included_templates
+            len({"langhd", "語言標題", "语言标题"} & included_templates) > 0
             or is_chinese_subtitle_template(self, name)
         )
 
