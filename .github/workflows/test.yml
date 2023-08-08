@@ -36,16 +36,16 @@ jobs:
         with:
           path: htmlcov
 
-  depoly:
-    if: github.ref_name == 'main'
-    needs: test
-    permissions:
-      pages: write
-      id-token: write
-    environment:
-      name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }}
-    runs-on: ubuntu-latest
-    steps:
-      - id: deployment
-        uses: actions/deploy-pages@v2
+  # deploy:
+  #   if: github.ref_name == 'main'
+  #   needs: test
+  #   permissions:
+  #     pages: write
+  #     id-token: write
+  #   environment:
+  #     name: github-pages
+  #     url: ${{ steps.deployment.outputs.page_url }}
+  #   runs-on: ubuntu-latest
+  #   steps:
+  #     - id: deployment
+  #       uses: actions/deploy-pages@v2
