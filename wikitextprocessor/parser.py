@@ -1224,7 +1224,7 @@ def list_fn(ctx, token):
             # Suffixing a list item prefix with a colon can be used to continue
             # the same item after an intervening sublist.  In this case we
             # just return with the continued list item at the top of the stack.
-            return
+            break
 
         # Check for another list item on the same level (adding a new
         # list item to an earlier list)

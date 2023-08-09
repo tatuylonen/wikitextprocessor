@@ -81,8 +81,10 @@ class NodeExpTests(unittest.TestCase):
             "abc\n*a\n*# c\n*# d\n* b\ndef", "abc\n*a\n*# c\n*# d\n* b\ndef"
         )
 
-    def test_list4(self):
-        self.backcvt("abc\n*a\n**b\n*:c\n", "abc\n*a\n**b\n*:c\n")
+    # https://github.com/tatuylonen/wikitextprocessor/issues/84
+    # See test_parser/test_list_cont1
+    # def test_list4(self):
+    #     self.backcvt("abc\n*a\n**b\n*:c\n", "abc\n*a\n**b\n*:c\n")
 
     def test_pre1(self):
         self.backcvt("a<pre>foo\n  bar</pre>b", "a<pre>foo\n  bar</pre>b")

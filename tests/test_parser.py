@@ -804,37 +804,44 @@ dasfasddasfdas
         self.assertEqual(c.attrs.get("def"), [" back to the main list\n"])
         self.assertEqual(c.children, [" item 2\n"])
 
-    def test_list_cont1(self):
-        tree = self.parse("test", """#list item A1
-##list item B1
-##list item B2
-#:continuing list item A1
-#list item A2
-""")
-        self.assertEqual(len(tree.children), 1)
-        t = tree.children[0]
-        self.assertEqual(t.kind, NodeKind.LIST)
-        self.assertEqual(len(t.children), 2)
-        a, b = t.children
-        self.assertEqual(a.kind, NodeKind.LIST_ITEM)
-        self.assertEqual(a.args, "#")
-        self.assertEqual(len(a.children), 3)
-        aa, ab, ac = a.children
-        self.assertEqual(aa, "list item A1\n")
-        self.assertEqual(ab.kind, NodeKind.LIST)
-        self.assertEqual(ab.args, "##")
-        self.assertEqual(len(ab.children), 2)
-        aba, abb = ab.children
-        self.assertEqual(aba.kind, NodeKind.LIST_ITEM)
-        self.assertEqual(aba.args, "##")
-        self.assertEqual(aba.children, ["list item B1\n"])
-        self.assertEqual(abb.kind, NodeKind.LIST_ITEM)
-        self.assertEqual(abb.args, "##")
-        self.assertEqual(abb.children, ["list item B2\n"])
-        self.assertEqual(ac, "continuing list item A1\n")
-        self.assertEqual(b.kind, NodeKind.LIST_ITEM)
-        self.assertEqual(b.args, "#")
-        self.assertEqual(b.children, ["list item A2\n"])
+# Disabling this test after changing some list behavior.
+# https://github.com/tatuylonen/wikitextprocessor/issues/84
+# Instead of appending "continued items" to parent node as an
+# exception, just let it generate a `...#:` list with list-items;
+# these can be interpreted by the user in Wiktextract later on,
+# and the appending can be done done.
+#     def test_list_cont1(self):
+#         tree = self.parse("test", """#list item A1
+# ##list item B1
+# ##list item B2
+# #:continuing list item A1
+# #list item A2
+# """)
+#         print_tree(tree, 2)
+#         self.assertEqual(len(tree.children), 1)
+#         t = tree.children[0]
+#         self.assertEqual(t.kind, NodeKind.LIST)
+#         self.assertEqual(len(t.children), 2)
+#         a, b = t.children
+#         self.assertEqual(a.kind, NodeKind.LIST_ITEM)
+#         self.assertEqual(a.args, "#")
+#         self.assertEqual(len(a.children), 3)
+#         aa, ab, ac = a.children
+#         self.assertEqual(aa, "list item A1\n")
+#         self.assertEqual(ab.kind, NodeKind.LIST)
+#         self.assertEqual(ab.args, "##")
+#         self.assertEqual(len(ab.children), 2)
+#         aba, abb = ab.children
+#         self.assertEqual(aba.kind, NodeKind.LIST_ITEM)
+#         self.assertEqual(aba.args, "##")
+#         self.assertEqual(aba.children, ["list item B1\n"])
+#         self.assertEqual(abb.kind, NodeKind.LIST_ITEM)
+#         self.assertEqual(abb.args, "##")
+#         self.assertEqual(abb.children, ["list item B2\n"])
+#         self.assertEqual(ac, "continuing list item A1\n")
+#         self.assertEqual(b.kind, NodeKind.LIST_ITEM)
+#         self.assertEqual(b.args, "#")
+#         self.assertEqual(b.children, ["list item A2\n"])
 
     def test_list_cont2(self):
         tree = self.parse("test", """# list item
