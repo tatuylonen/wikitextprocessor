@@ -57,6 +57,7 @@ homepage = "https://github.com/tatuylonen/wikitextprocessor"
 
 [tool.setuptools]
 packages = [ "wikitextprocessor" ]
+zip-safe = false
 
 [tool.setuptools.package-data]
 wikitextprocessor = [
@@ -66,6 +67,7 @@ wikitextprocessor = [
     "lua/mediawiki-extensions-Scribunto/includes/engines/LuaCommon/lualib/ustring/*.lua",
     "lua/mediawiki-extensions-Scribunto/includes/engines/LuaCommon/lualib/luabit/*.lua",
     "data/*/*",
+    "py.typed",
 ]
 
 [tool.mypy]
