@@ -389,7 +389,7 @@ def _parser_pop(ctx, warn_unclosed):
     if (node.kind == NodeKind.LIST_ITEM and node.args.endswith(";") and
         node.temp_head):
         head = node.temp_head
-        node.temp_head = []
+        node.temp_head = None
         node.definition = node.children
         node.children = head
 
@@ -1196,7 +1196,7 @@ def list_fn(ctx, token):
     if not (ctx.beginning_of_line and ctx.begline_enabled):
         node = ctx.parser_stack[-1]
         if (token == ":" and node.kind == NodeKind.LIST_ITEM and
-            node.args.endswith(";") and not node.temp_head):
+            node.args.endswith(";") and node.temp_head is None):
             # Got definition for a head in a definition list on the same line
             #   "; term : definition"
             # Shuffle node.temp_head and children (they will be unshuffled
@@ -1215,7 +1215,7 @@ def list_fn(ctx, token):
         # Check for a definition in a definition list
         if (node.kind == NodeKind.LIST_ITEM and node.args.endswith(";") and
             token.endswith(":") and token[:-1] == node.args[:-1] and
-            not node.temp_head):
+            node.temp_head is None):
             # Got definition for a definition list item, on a separate line.
             # Shuffle node.temp_head and children (they will be unshuffled in
             # _parser_pop()) and do not change the stack otherwise
