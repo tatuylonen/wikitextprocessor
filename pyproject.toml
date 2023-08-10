@@ -41,7 +41,6 @@ dependencies = [
     "dateparser",
     "lupa @ git+https://github.com/scoder/lupa.git",
     "lxml",
-    "types-lxml",
     "psutil",
     "requests",
 ]
@@ -50,6 +49,7 @@ dependencies = [
 dev = [
     "nose2[coverage_plugin]",
     "tomli; python_version <= '3.10'",  # for coverage parsing TOML file
+    "types-lxml",
 ]
 
 [project.urls]
