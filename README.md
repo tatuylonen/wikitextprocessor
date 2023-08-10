@@ -556,7 +556,7 @@ need to be prefixed by ``Nodekind.``, e.g., ``NodeKind.LEVEL2``):
   The contents of the list item (including any possible sublists) are in
   ``children``.  If the list is a definition list (i.e., the prefix ends
   in ``";"``), then ``children`` contains the item label to be defined
-  and ``attrs["def"]`` contains the definition.
+  and ``definition`` contains the definition.
 * ``PREFORMATTED`` - Preformatted text where markup is interpreted.  Content
   is in ``children``.  This is used for lines starting with a space in
   wikitext.

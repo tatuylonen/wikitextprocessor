@@ -764,8 +764,8 @@ dasfasddasfdas
         t = tree.children[0]
         self.assertEqual(t.kind, NodeKind.LIST)
         self.assertEqual(t.args, ";")
-        self.assertNotIn("head", t.attrs)
-        self.assertNotIn("def", t.attrs)
+        self.assertEqual(t.temp_head, [])
+        self.assertEqual(t.definition, [])
         self.assertEqual(len(t.children), 3)
         a, b, c = t.children
         self.assertEqual(a.kind, NodeKind.LIST_ITEM)
@@ -775,33 +775,33 @@ dasfasddasfdas
         self.assertEqual(b.kind, NodeKind.LIST_ITEM)
         self.assertEqual(b.args, ";")
         self.assertEqual(b.children, [" item 1 "])
-        self.assertNotIn("head", b.attrs)
-        self.assertIn("def", b.attrs)
-        bdef = b.attrs.get("def")
+        self.assertEqual(b.temp_head, [])
+        self.assertTrue(len(b.definition) > 0)
+        bdef = b.definition
         self.assertEqual(len(bdef), 2)
         self.assertEqual(bdef[0], " definition\n")
         bdef1 = bdef[1]
         self.assertEqual(bdef1.kind, NodeKind.LIST)
         self.assertEqual(bdef1.args, ":;")
-        self.assertNotIn("head", bdef1.attrs)
-        self.assertNotIn("def", bdef1.attrs)
+        self.assertEqual(bdef1.temp_head, [])
+        self.assertEqual(bdef1.definition, [])
         self.assertEqual(len(bdef1.children), 2)
         bdef1a, bdef1b = bdef1.children
         self.assertEqual(bdef1a.kind, NodeKind.LIST_ITEM)
         self.assertEqual(bdef1a.args, ":;")
         self.assertEqual(bdef1a.children, [" sub-item 1 plus term\n"])
-        self.assertNotIn("head", bdef1a.attrs)
-        self.assertEqual(bdef1a.attrs.get("def"),
+        self.assertEqual(bdef1a.temp_head, [])
+        self.assertEqual(bdef1a.definition,
                          [" two colons plus definition\n"])
         self.assertEqual(bdef1b.kind, NodeKind.LIST_ITEM)
         self.assertEqual(bdef1b.args, ":;")
         self.assertEqual(bdef1b.children, [" sub-item 2 "])
-        self.assertNotIn("head", bdef1b.attrs)
-        self.assertEqual(bdef1b.attrs.get("def"), [" colon plus definition\n"])
+        self.assertEqual(bdef1b.temp_head, [])
+        self.assertEqual(bdef1b.definition, [" colon plus definition\n"])
         self.assertEqual(c.kind, NodeKind.LIST_ITEM)
         self.assertEqual(c.args, ";")
-        self.assertNotIn("head", c.attrs)
-        self.assertEqual(c.attrs.get("def"), [" back to the main list\n"])
+        self.assertEqual(c.temp_head, [])
+        self.assertEqual(c.definition, [" back to the main list\n"])
         self.assertEqual(c.children, [" item 2\n"])
 
 # Disabling this test after changing some list behavior.

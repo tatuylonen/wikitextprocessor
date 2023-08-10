@@ -118,7 +118,7 @@ class NodeKind(enum.Enum):
     # Args is directly the token for this item (not as a list).  Children
     # is what goes in this list item.  List items where the prefix ends in
     # ";" are definition list items.  For them, children contain the item
-    # to be defined and node.attrs["def"] contains the definition, which has
+    # to be defined and node.definition contains the definition, which has
     # the same format as children (i.e., a list of strings and WikiNode).
     LIST_ITEM = enum.auto(),  # args = token for this item
 
@@ -247,25 +247,32 @@ class WikiNode:
         "attrs",
         "children",
         "loc",
+        "definition",
+        "temp_head",
     )
 
-    def __init__(self, kind, loc):
+    def __init__(self,
+                 kind: NodeKind,
+                 loc: int
+    ) -> None:
         assert isinstance(kind, NodeKind)
         assert isinstance(loc, int)
         self.kind = kind
-        self.args = []  # List of lists
-        self.attrs = {}
-        self.children = []   # list of str and WikiNode
-        self.loc = loc  # XXX is this used???
-
-    def __str__(self):
+        self.args: Union[str, List] = []  # List of lists
+        self.attrs: Dict[str, Union[str, "WikiNode"]] = {}
+        self.children: List[Union[str, "WikiNode"]] = []
+        self.loc = loc  # used for debugging lines
+        self.definition: List[Union[str, "WikiNode"]] = []
+        self.temp_head: List[Union[str, "WikiNode"]] = []
+        
+    def __str__(self) -> str:
         return "<{}({}){} {}>".format(self.kind.name,
                                       self.args if isinstance(self.args, str)
                                       else ", ".join(map(repr, self.args)),
                                       self.attrs,
                                       ", ".join(map(repr, self.children)))
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         return self.__str__()
 
 
@@ -377,13 +384,13 @@ def _parser_pop(ctx, warn_unclosed):
         node.kind = NodeKind.PARSER_FN
 
     # When popping description list nodes that have a definition,
-    # shuffle attrs["head"] and children to have head in children and
-    # definition in attrs["def"]
+    # shuffle WikiNode.temp_head and children to have head in children and
+    # definition in WikiNode.definition
     if (node.kind == NodeKind.LIST_ITEM and node.args.endswith(";") and
-        "head" in node.attrs):
-        head = node.attrs["head"]
-        del node.attrs["head"]
-        node.attrs["def"] = node.children
+        node.temp_head):
+        head = node.temp_head
+        node.temp_head = []
+        node.definition = node.children
         node.children = head
 
     # Remove the topmost node from the stack.  It should be on its parent's
@@ -1189,12 +1196,13 @@ def list_fn(ctx, token):
     if not (ctx.beginning_of_line and ctx.begline_enabled):
         node = ctx.parser_stack[-1]
         if (token == ":" and node.kind == NodeKind.LIST_ITEM and
-            node.args.endswith(";") and "head" not in node.attrs):
+            node.args.endswith(";") and not node.temp_head):
             # Got definition for a head in a definition list on the same line
-            # Shuffle attrs["head"] and children (they will be unshuffled
+            #   "; term : definition"
+            # Shuffle node.temp_head and children (they will be unshuffled
             # in _parser_pop()) and do not change the stack otherwise
             _parser_merge_str_children(ctx)
-            node.attrs["head"] = node.children
+            node.temp_head = node.children
             node.children = []
             return
         # Otherwise treat colons that do not start a line as normal text
@@ -1207,12 +1215,12 @@ def list_fn(ctx, token):
         # Check for a definition in a definition list
         if (node.kind == NodeKind.LIST_ITEM and node.args.endswith(";") and
             token.endswith(":") and token[:-1] == node.args[:-1] and
-            "head" not in node.attrs):
+            not node.temp_head):
             # Got definition for a definition list item, on a separate line.
-            # Shuffle attrs["head"] and children (they will be unshuffled in
+            # Shuffle node.temp_head and children (they will be unshuffled in
             # _parser_pop()) and do not change the stack otherwise
             _parser_merge_str_children(ctx)
-            node.attrs["head"] = node.children
+            node.temp_head = node.children
             node.children = []
             return
 
@@ -1222,8 +1230,10 @@ def list_fn(ctx, token):
             node.args == token[:-1] and node.children and
             isinstance(node.children[-1], WikiNode)):
             # Suffixing a list item prefix with a colon can be used to continue
-            # the same item after an intervening sublist.  In this case we
-            # just return with the continued list item at the top of the stack.
+            # the same item after an intervening sublist. 
+            # Previously we would return here, but the behavior has been changed
+            # so that a new list and list item will be created instead of
+            # appending things at the end of the parent node.
             break
 
         # Check for another list item on the same level (adding a new
@@ -1276,7 +1286,8 @@ def list_fn(ctx, token):
     node.args = token
 
 
-def parse_attrs(node, attrs):
+def parse_attrs(node: WikiNode, attrs: str) -> None:
+    # XXX this could be a WikiNode method?
     """Parses HTML tag attributes from ``attrs`` and adds them to
     ``node.attrs``."""
     assert isinstance(node, WikiNode)
