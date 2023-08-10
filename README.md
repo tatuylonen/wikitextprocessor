@@ -66,7 +66,7 @@ python -m pip install wikitextprocessor
 
 This package includes tests written using the `unittest` framework.
 They can be run using, for example, `nose2`, which can be installed
-using `python -m pip install -e ".[dev]"`.
+using `python -m pip install -e --use-pep517 ".[dev]"`.
 
 To run the tests, use the following command in the top-level directory:
 
