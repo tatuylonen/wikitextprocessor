@@ -1320,8 +1320,34 @@ def tag_fn(ctx, token):
         _parser_have(ctx, NodeKind.PARSER_FN)):
         return text_fn(ctx, token)
 
-    # If we are at the beginning of a line, close pending list
-    close_begline_lists(ctx)
+    # If we are at the beginning of a line, close pending list,
+    # UNLESS we are closing a tag (</tag>) in which case if the
+    # element being closed is inside the newest link item,
+    # just continue the link item and allow newlines inside
+    # between the tags... XXX Double+ newlines break this still.
+    # """
+    # # Example <ref> the text...
+    # </ref> here is still part of the above list item, unexpectedly...
+    # """
+    end_tag_name = None
+    if token.startswith("</"):
+        # See if this looks like an end-tag
+        m = re.match(r"</([-a-zA-Z0-9]+)\s*>", token)
+        if m is None:
+            close_begline_lists(ctx)
+        else:
+            # end_tag_name is also saved for later, reusing the regex output
+            end_tag_name = m.group(1)
+            end_tag_name = end_tag_name.lower()
+            # See if we can find the opening tag from the stack
+            # or if we bump into a LIST_ITEM first, going from newest to oldest
+            for i in reversed(range(0, len(ctx.parser_stack))):
+                node = ctx.parser_stack[i]
+                if node.kind == NodeKind.HTML and node.args == end_tag_name:
+                    break # do not close_begline_lists
+                if node.kind == NodeKind.LIST_ITEM:
+                    close_begline_lists(ctx)
+                    break
 
     # Try to parse it as a start tag
     m = re.match(r"""<([-a-zA-Z0-9]+)\s*((\b[-a-zA-Z0-9]+(=("[^"]*"|"""
@@ -1418,12 +1444,16 @@ def tag_fn(ctx, token):
         return
 
     # Since it was not a start tag, it should be an end tag
-    m = re.match(r"</([-a-zA-Z0-9]+)\s*>", token)
-    if m is None:
-        print("Could not match end tag token: {!r}".format(token))
-        assert False
-    name = m.group(1)
-    name = name.lower()
+    if end_tag_name:
+        # Duplicated code from above
+        name = end_tag_name
+    else:
+        m = re.match(r"</([-a-zA-Z0-9]+)\s*>", token)
+        if m is None:
+            print("Could not match end tag token: {!r}".format(token))
+            assert False
+        name = m.group(1)
+        name = name.lower()
 
     # We should never see </section>
     if name == "section":
@@ -1452,7 +1482,7 @@ def tag_fn(ctx, token):
                   "".format(name), sortid="parser/1320")
 
     # See if we can find the opening tag from the stack
-    for i in range(0, len(ctx.parser_stack)):
+    for i in reversed(range(0, len(ctx.parser_stack))):
         node = ctx.parser_stack[i]
         if node.kind == NodeKind.HTML and node.args == name:
             break
