@@ -52,7 +52,7 @@ from .common import (
     nowiki_quote,
 )
 from .dumpparser import process_dump
-from .node_expand import to_wikitext, to_html, to_text
+from .node_expand import to_wikitext, to_html, to_text, NodeHandlerFnCallable
 
 if TYPE_CHECKING:
     from .parserfns import Namespace
@@ -2103,18 +2103,21 @@ class Wtp:
         # print("parse tree: {}".format(root))
         return root
 
-    def node_to_wikitext(self, node, node_handler_fn=None):
+    def node_to_wikitext(self,
+        node: WikiNode, 
+        node_handler_fn: Optional[NodeHandlerFnCallable]=None
+    ) -> str:
         """Converts the given parse tree node back to Wikitext."""
         v = to_wikitext(node, node_handler_fn=node_handler_fn)
         return v
 
     def node_to_html(
         self,
-        node,
-        template_fn=None,
-        post_template_fn=None,
-        node_handler_fn=None,
-    ):
+        node: WikiNode,
+        template_fn: Optional[TemplateFnCallable]=None,
+        post_template_fn: Optional[PostTemplateFnCallable]=None,
+        node_handler_fn: Optional[NodeHandlerFnCallable]=None,
+    ) -> str:
         """Converts the given parse tree node to HTML."""
         return to_html(
             self,

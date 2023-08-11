@@ -4,10 +4,29 @@
 
 import re
 import urllib.parse
+from typing import (
+                   Callable,
+                   Dict,
+                   List,
+                   Optional,
+                   Tuple,
+                   TYPE_CHECKING,
+                   Union,
+                   )
 from .parser import WikiNode, NodeKind
 from .wikihtml import ALLOWED_HTML_TAGS
+if TYPE_CHECKING:
+    from wikitextprocessor.core import (
+                                        Wtp,
+                                        TemplateFnCallable,
+                                        PostTemplateFnCallable,
+                                        )
 
-kind_to_level = {
+NodeHandlerFnCallable = Callable[[WikiNode],
+                                Union[None, str, list, tuple, WikiNode]
+                              ]
+
+kind_to_level: Dict[NodeKind, str] = {
     NodeKind.LEVEL2: "==",
     NodeKind.LEVEL3: "===",
     NodeKind.LEVEL4: "====",
@@ -16,8 +35,8 @@ kind_to_level = {
 }
 
 
-def to_attrs(node):
-    parts = []
+def to_attrs(node: WikiNode) -> str:
+    parts: List[str] = []
     for k, v in node.attrs.items():
         k = str(k)
         if not v:
@@ -28,7 +47,9 @@ def to_attrs(node):
     return " ".join(parts)
 
 
-def to_wikitext(node, node_handler_fn=None):
+def to_wikitext(node: WikiNode,
+                node_handler_fn: Optional[NodeHandlerFnCallable]=None
+) -> str:
     """Converts a parse tree (or subtree) back to Wikitext.
     If ``node_handler_fn`` is supplied, it will be called for each WikiNode
     being rendered, and if it returns non-None, the returned value will be
@@ -37,7 +58,7 @@ def to_wikitext(node, node_handler_fn=None):
     WikiNodes in the returned value."""
     assert node_handler_fn is None or callable(node_handler_fn)
 
-    def recurse(node):
+    def recurse(node: Union[str, WikiNode, List, Tuple]) -> str:
         if isinstance(node, str):
             # Certain constructs needs to be protected so that they don't get
             # parsed when we convert back and forth between wikitext and parsed
@@ -58,7 +79,7 @@ def to_wikitext(node, node_handler_fn=None):
                 return recurse(ret)
 
         kind = node.kind
-        parts = []
+        parts: List[str] = []
         if kind in kind_to_level:
             tag = kind_to_level[kind]
             t = recurse(node.args)
@@ -173,8 +194,12 @@ def to_wikitext(node, node_handler_fn=None):
     return recurse(node)
 
 
-def to_html(ctx, node, template_fn=None, post_template_fn=None,
-            node_handler_fn=None):
+def to_html(ctx: "Wtp",
+            node: WikiNode,
+            template_fn: Optional["TemplateFnCallable"]=None,
+            post_template_fn: Optional["PostTemplateFnCallable"]=None,
+            node_handler_fn: Optional[NodeHandlerFnCallable]=None,
+) -> str:
     """Converts the parse (sub-)tree at ``node`` to HTML, expanding all
     templates in it."""
     assert template_fn is None or callable(template_fn)
@@ -190,8 +215,12 @@ def to_html(ctx, node, template_fn=None, post_template_fn=None,
     return expanded
 
 
-def to_text(ctx, node, template_fn=None, post_template_fn=None,
-            node_handler_fn=None):
+def to_text(ctx: "Wtp",
+            node: WikiNode,
+            template_fn: Optional["TemplateFnCallable"]=None,
+            post_template_fn: Optional["PostTemplateFnCallable"]=None,
+            node_handler_fn: Optional[NodeHandlerFnCallable]=None,
+) -> str:
     """Converts the parse (sub-)tree at ``node`` to plain text, expanding
     all templates in it and stripping HTML tags."""
     assert template_fn is None or callable(template_fn)
