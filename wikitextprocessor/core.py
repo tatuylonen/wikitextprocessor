@@ -318,6 +318,10 @@ class Wtp:
         self.begline_enabled: bool = True
         self.begline_disable_counter: int = 0
         self.begline_disabled = BegLineDisableManager(self)
+        self.wsp_beginning_of_line: bool= False
+        self.linenum: int = 1
+        self.pre_parse: bool = False
+        self.suppress_special: bool = False
 
     def create_db(self) -> None:
         if self.db_path is None:

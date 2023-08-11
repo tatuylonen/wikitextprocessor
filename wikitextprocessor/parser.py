@@ -1839,7 +1839,7 @@ def parse_encoded(ctx: "Wtp", text: str) -> WikiNode:
     the parse tree."""
     assert ctx.title is not None  # ctx.start_page() must have been called
     node = WikiNode(NodeKind.ROOT, 0)
-    node.args.append([ctx.title])
+    node.args = [[ctx.title]]
     ctx.beginning_of_line = True
     ctx.wsp_beginning_of_line = False
     ctx.linenum = 1
