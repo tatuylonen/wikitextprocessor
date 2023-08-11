@@ -129,6 +129,14 @@ CookieData = Tuple[str, Sequence[str], bool]
 
 CookieChar = str
 
+EMPTY_NAMESPACEDATA: NamespaceDataEntry = {
+                                         "id": -1,
+                                         "name": "NAMESPACE_DATA_ERROR",
+                                         "aliases": [],
+                                         "content": False,
+                                         "istalk": False,
+                                         "issubject": False,
+                                          }
 # Warning: this function is not re-entrant.  We store ctx and page_handler
 # in global variables during dump processing, because they may not be
 # pickleable.
@@ -1051,10 +1059,10 @@ class Wtp:
             "Analyzing which templates should be expanded before parsing"
         )
         # Add/overwrite templates
-        template_ns = self.NAMESPACE_DATA.get("Template", {"id": None,
-                                                           "named": None})
-        template_ns_id = template_ns.get("id")
-        template_ns_local_name = template_ns.get("name")
+        template_ns: NamespaceDataEntry = self.NAMESPACE_DATA.get("Template",
+                                                         EMPTY_NAMESPACEDATA)
+        template_ns_id = template_ns["id"]
+        template_ns_local_name = template_ns["name"]
         self.add_page(
             f"{template_ns_local_name}:!", template_ns_id, "|"
         )  # magic word

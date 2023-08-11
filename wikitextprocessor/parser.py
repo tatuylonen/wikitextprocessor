@@ -7,6 +7,7 @@ import re
 
 from collections.abc import Iterator
 from typing import (
+                    Callable,
                     Dict,
                     List,
                     Optional,
@@ -893,7 +894,7 @@ def magic_fn(ctx: "Wtp", token: str) -> None:
                    .format(kind), sortid="parser/780")
 
 
-def colon_fn(ctx, token):
+def colon_fn(ctx: "Wtp", token: str) -> None:
     """Handler for a special colon ":" within a template call.  This indicates
     that it is actually a parser function call.  This is called from list_fn()
     when it detects that it is inside a template node."""
@@ -916,11 +917,13 @@ def colon_fn(ctx, token):
     # Colon in the first argument of {{name:...}} turns it into a parser
     # function call.
     node.kind = NodeKind.PARSER_FN
+    if TYPE_CHECKING:
+        assert isinstance(node.args, list)
     node.args.append(node.children)
     node.children = []
 
 
-def table_start_fn(ctx, token):
+def table_start_fn(ctx: "Wtp", token: str) -> None:
     """Handler for table start token "{|"."""
     if ctx.pre_parse:
         return text_fn(ctx, token)
@@ -948,7 +951,10 @@ attr_assignments_re = re.compile(
                 r""")*\s*$""")  # to account for spaces between entities
 
 
-def check_for_attributes(ctx, node):
+def check_for_attributes(
+                        ctx: "Wtp",
+                        node: WikiNode
+) -> Tuple[bool, str]:
     """Check if the children of this node conform to the format of
     attribute assignment in tables"""
 
@@ -958,6 +964,8 @@ def check_for_attributes(ctx, node):
     _parser_merge_str_children(ctx)
     if len(node.children) == 1 and isinstance(node.children[0], str):
         ret = node.children.pop()
+        if TYPE_CHECKING:
+            assert isinstance(ret, str)
         return (True, ret)
 
     candidate = ""
@@ -981,7 +989,7 @@ def check_for_attributes(ctx, node):
     return (False, "")
 
 
-def table_check_attrs(ctx):
+def table_check_attrs(ctx: "Wtp") -> None:
     """Checks if the table has attributes, and if so, parses them."""
     node = ctx.parser_stack[-1]
     if node.kind != NodeKind.TABLE:
@@ -997,7 +1005,7 @@ def table_check_attrs(ctx):
     parse_attrs(node, attribute_string)
 
 
-def table_row_check_attrs(ctx):
+def table_row_check_attrs(ctx: "Wtp") -> None:
     """Checks if the table row has attributes, and if so, parses them."""
     close_begline_lists(ctx)
     node = ctx.parser_stack[-1]
@@ -1014,7 +1022,7 @@ def table_row_check_attrs(ctx):
     parse_attrs(node, attribute_string)
 
 
-def table_caption_fn(ctx, token):
+def table_caption_fn(ctx: "Wtp", token: str) -> None:
     """Handler for table caption token "|+"."""
     if ctx.pre_parse:
         return text_fn(ctx, token)
@@ -1031,7 +1039,7 @@ def table_caption_fn(ctx, token):
     _parser_push(ctx, NodeKind.TABLE_CAPTION)
 
 
-def table_hdr_cell_fn(ctx, token):
+def table_hdr_cell_fn(ctx: "Wtp", token: str) -> None:
     """Handler function for table header row cell separator ! or !!."""
     if ctx.pre_parse:
         return text_fn(ctx, token)
@@ -1074,7 +1082,7 @@ def table_hdr_cell_fn(ctx, token):
         _parser_pop(ctx, True)
 
 
-def table_row_fn(ctx, token):
+def table_row_fn(ctx: "Wtp", token: str) -> None:
     """Handler function for table row separator "|-"."""
     if ctx.pre_parse:
         return text_fn(ctx, token)
@@ -1091,7 +1099,7 @@ def table_row_fn(ctx, token):
     _parser_push(ctx, NodeKind.TABLE_ROW)
 
 
-def table_cell_fn(ctx, token):
+def table_cell_fn(ctx: "Wtp", token: str) -> None:
     """Handler function for table row cell separator | or ||."""
     if ctx.pre_parse:
         return text_fn(ctx, token)
@@ -1111,11 +1119,14 @@ def table_cell_fn(ctx, token):
         _parser_merge_str_children(ctx)
         node = ctx.parser_stack[-1]
         if (not node.attrs and len(node.children) == 1 and
-            isinstance(node.children[0], str)):
+            isinstance(attrs := node.children[0], str)):
             if node.kind in (NodeKind.TABLE_CAPTION,
                              NodeKind.TABLE_HEADER_CELL,
                              NodeKind.TABLE_CELL):
-                attrs = node.children.pop()
+                node.children.pop()
+                # Using the walrus operator and pop()ing without return
+                # is just to make the type-checker happy without using
+                # an assert that attrs is definitely a str...
                 parse_attrs(node, attrs)
                 return
         return text_fn(ctx, token)
@@ -1136,7 +1147,7 @@ def table_cell_fn(ctx, token):
     _parser_push(ctx, NodeKind.TABLE_CELL)
 
 
-def vbar_fn(ctx, token):
+def vbar_fn(ctx: "Wtp", token: str) -> None:
     """Handler function for vertical bar |.  The interpretation of
     the vertical bar depends on context; it can separate arguments to
     templates, template argument references, links, etc, and it can
@@ -1144,6 +1155,8 @@ def vbar_fn(ctx, token):
     node = ctx.parser_stack[-1]
     if node.kind in HAVE_ARGS_KINDS:
         _parser_merge_str_children(ctx)
+        if TYPE_CHECKING:
+            assert isinstance(node.args, list)
         node.args.append(node.children)
         node.children = []
         return
@@ -1151,7 +1164,7 @@ def vbar_fn(ctx, token):
     table_cell_fn(ctx, token)
 
 
-def double_vbar_fn(ctx, token):
+def double_vbar_fn(ctx: "Wtp", token: str) -> None:
     """Handle function for double vertical bar ||.  This is used as a
     column separator in tables.  At the beginning of a line it starts
     a new column.  If it occurs in other contexts, it should be
@@ -1198,7 +1211,7 @@ def double_vbar_fn(ctx, token):
         table_cell_fn(ctx, token)
 
 
-def table_end_fn(ctx, token):
+def table_end_fn(ctx: "Wtp", token: str) -> None:
     """Handler function for end of a table token "|}"."""
     if ctx.pre_parse:
         return text_fn(ctx, token)
@@ -1216,7 +1229,7 @@ def table_end_fn(ctx, token):
         _parser_pop(ctx, True)
 
 
-def list_fn(ctx, token):
+def list_fn(ctx: "Wtp", token: str) -> None:
     """Handles various tokens that start unordered or ordered list items,
     description list items, or indented lines.  This also recognizes the
     colon used to separate parser function name from its first argument."""
@@ -1241,6 +1254,8 @@ def list_fn(ctx, token):
     # are handled here.
     if not (ctx.beginning_of_line and ctx.begline_enabled):
         node = ctx.parser_stack[-1]
+        if TYPE_CHECKING:
+            assert isinstance(node.args, str)
         if (token == ":" and node.kind == NodeKind.LIST_ITEM and
             node.args.endswith(";") and node.temp_head is None):
             # Got definition for a head in a definition list on the same line
@@ -1258,6 +1273,8 @@ def list_fn(ctx, token):
     while True:
         node = ctx.parser_stack[-1]
 
+        if TYPE_CHECKING:
+            assert isinstance(node.args, str)
         # Check for a definition in a definition list
         if (node.kind == NodeKind.LIST_ITEM and node.args.endswith(";") and
             token.endswith(":") and token[:-1] == node.args[:-1] and
@@ -1350,7 +1367,7 @@ def parse_attrs(node: WikiNode, attrs: str) -> None:
         node.attrs[name] = value
 
 
-def tag_fn(ctx, token):
+def tag_fn(ctx: "Wtp", token: str) -> None:
     """Handler function for tokens that look like HTML tags and their end
     tags.  This includes various built-in tags that aren't actually
     HTML.  Some WikiText tags that resemble HTML are described as HTML
@@ -1472,6 +1489,8 @@ def tag_fn(ctx, token):
                 break
             if node.args in permitted_parents:
                 break
+            if TYPE_CHECKING:
+                assert isinstance(node.args, str)
             close_next = ALLOWED_HTML_TAGS.get(node.args, {}).get(
                 "close-next", [])
             # Warn about unclosed tag unless it is one we close automatically
@@ -1561,15 +1580,17 @@ def tag_fn(ctx, token):
         if node.kind == NodeKind.HTML:
             # If close-next is set, then end tag is optional and can be closed
             # implicitly by closing the parent tag
-            close_next = ALLOWED_HTML_TAGS.get(node.args, {}).get(
+            if TYPE_CHECKING:
+                assert isinstance(node.args, str)
+            close_next2 = ALLOWED_HTML_TAGS.get(node.args, {}).get(
                 "close-next", None)
-            if close_next:
+            if close_next2:
                 _parser_pop(ctx, False)
                 continue
         _parser_pop(ctx, True)
 
 
-def magicword_fn(ctx, token):
+def magicword_fn(ctx: "Wtp", token: str) -> None:
     """Handles a magic word, such as "__NOTOC__"."""
     close_begline_lists(ctx)
     node = _parser_push(ctx, NodeKind.MAGIC_WORD)
@@ -1617,7 +1638,7 @@ list_prefix_re = re.compile(r"[*:;#]+")
 
 # Dictionary mapping fixed form tokens to their handler functions.
 # Tokens that have variable form are handled in the code in token_iter().
-tokenops = {
+tokenops: Dict[str, Callable[["Wtp", str], None]]= {
     "'''": bold_fn,
     "''": italic_fn,
     "[": elink_start_fn,
@@ -1641,7 +1662,7 @@ for x in MAGIC_WORDS:
     tokenops[x] = magicword_fn
 
 
-def bold_follows(parts, i):
+def bold_follows(parts: List[str], i: int) -> bool:
     """Checks if there is a bold (''') in parts after parts[i].  We allow
     intervening italics ('')."""
     parts = parts[i + 1:]
@@ -1663,7 +1684,7 @@ def token_iter(ctx: "Wtp", text: str) -> Iterator[Tuple[bool, str]]:
     # Replace single quotes inside HTML tags with MAGIC_SQUOTE_CHAR
     tag_parts = re.split(inside_html_tags_re, text)
     if len(tag_parts) > 1:
-        new_parts = []
+        new_parts: List[str] = []
         for tp in tag_parts:
             if re.match(inside_html_tags_re, tp):
             # we're inside an HTML tag
@@ -1864,11 +1885,11 @@ def parse_encoded(ctx: "Wtp", text: str) -> WikiNode:
         _parser_merge_str_children(ctx)
         ret = ctx.parser_stack[0]
     finally:
-        ctx.parser_stack = None
+        ctx.parser_stack = []
     return ret
 
 
-def print_tree(tree, indent=0):
+def print_tree(tree: Union[str, WikiNode], indent: int=0) -> None:
     """Prints the parse tree for debugging purposes.  This does not expand
     HTML entities; that should be done after processing templates."""
     assert isinstance(tree, (WikiNode, str))

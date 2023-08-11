@@ -125,9 +125,9 @@ def to_wikitext(node: WikiNode,
             parts.append("[")
             if node.args:
                 parts.append(recurse(node.args[0]))
-                for x in node.args[1:]:
+                for x2 in node.args[1:]:
                     parts.append(" ")
-                    parts.append(recurse(x))
+                    parts.append(recurse(x2))
             parts.append("]")
         elif kind == NodeKind.TABLE:
             parts.append("\n{{| {}\n".format(to_attrs(node)))
@@ -171,6 +171,8 @@ def to_wikitext(node: WikiNode,
                 if node.attrs:
                     parts.append(" ")
                     parts.append(to_attrs(node))
+                if TYPE_CHECKING:
+                    assert isinstance(node.args, str)
                 if ALLOWED_HTML_TAGS.get(node.args, {
                         "no-end-tag": True}).get("no-end-tag"):
                     parts.append(">")
