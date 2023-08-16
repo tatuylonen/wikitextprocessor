@@ -1411,7 +1411,9 @@ def tag_fn(ctx: "Wtp", token: str) -> None:
                 if node.kind == NodeKind.LIST_ITEM:
                     close_begline_lists(ctx)
                     break
-
+    else:
+        close_begline_lists(ctx)
+   
     # Try to parse it as a start tag
     m = re.match(r"""<([-a-zA-Z0-9]+)\s*((\b[-a-zA-Z0-9]+(=("[^"]*"|"""
                  r"""'[^']*'|[^ \t\n"'`=<>/]*))?\s*)*)(/?)\s*>""", token)
