@@ -82,7 +82,7 @@ def to_wikitext(node: WikiNode,
         parts: List[str] = []
         if kind in kind_to_level:
             tag = kind_to_level[kind]
-            t = recurse(node.args)
+            t = recurse(node.largs)
             parts.append("\n{} {} {}\n".format(tag, t, tag))
             parts.append(recurse(node.children))
         elif kind == NodeKind.HLINE:
@@ -90,12 +90,11 @@ def to_wikitext(node: WikiNode,
         elif kind == NodeKind.LIST:
             parts.append(recurse(node.children))
         elif kind == NodeKind.LIST_ITEM:
-            assert isinstance(node.args, str)
-            parts.append(node.args)
+            parts.append(node.sarg)
             prev_list = False
             for x in node.children:
                 if prev_list:
-                    parts.append(node.args + ":")
+                    parts.append(node.sarg + ":")
                 parts.append(recurse(x))
                 prev_list = isinstance(x, WikiNode) and x.kind == NodeKind.LIST
         elif kind == NodeKind.PRE:
@@ -106,26 +105,26 @@ def to_wikitext(node: WikiNode,
             parts.append(recurse(node.children))
         elif kind == NodeKind.LINK:
             parts.append("[[")
-            parts.append("|".join(map(recurse, node.args)))
+            parts.append("|".join(map(recurse, node.largs)))
             parts.append("]]")
             parts.append(recurse(node.children))
         elif kind == NodeKind.TEMPLATE:
             parts.append("{{")
-            parts.append("|".join(map(recurse, node.args)))
+            parts.append("|".join(map(recurse, node.largs)))
             parts.append("}}")
         elif kind == NodeKind.TEMPLATE_ARG:
             parts.append("{{{")
-            parts.append("|".join(map(recurse, node.args)))
+            parts.append("|".join(map(recurse, node.largs)))
             parts.append("}}}")
         elif kind == NodeKind.PARSER_FN:
-            parts.append("{{" + recurse(node.args[0]) + ":")
-            parts.append("|".join(map(recurse, node.args[1:])))
+            parts.append("{{" + recurse(node.largs[0]) + ":")
+            parts.append("|".join(map(recurse, node.largs[1:])))
             parts.append("}}")
         elif kind == NodeKind.URL:
             parts.append("[")
-            if node.args:
-                parts.append(recurse(node.args[0]))
-                for x2 in node.args[1:]:
+            if node.largs:
+                parts.append(recurse(node.largs[0]))
+                for x2 in node.largs[1:]:
                     parts.append(" ")
                     parts.append(recurse(x2))
             parts.append("]")
@@ -156,24 +155,22 @@ def to_wikitext(node: WikiNode,
                 parts.append("\n|{}\n"
                              .format(recurse(node.children)))
         elif kind == NodeKind.MAGIC_WORD:
-            parts.append("\n{}\n".format(node.args))
+            parts.append("\n{}\n".format(node.sarg))
         elif kind == NodeKind.HTML:
             if node.children:
-                parts.append("<{}".format(node.args))
+                parts.append("<{}".format(node.sarg))
                 if node.attrs:
                     parts.append(" ")
                     parts.append(to_attrs(node))
                 parts.append(">")
                 parts.append(recurse(node.children))
-                parts.append("</{}>".format(node.args))
+                parts.append("</{}>".format(node.sarg))
             else:
-                parts.append("<{}".format(node.args))
+                parts.append("<{}".format(node.sarg))
                 if node.attrs:
                     parts.append(" ")
                     parts.append(to_attrs(node))
-                if TYPE_CHECKING:
-                    assert isinstance(node.args, str)
-                if ALLOWED_HTML_TAGS.get(node.args, {
+                if ALLOWED_HTML_TAGS.get(node.sarg, {
                         "no-end-tag": True}).get("no-end-tag"):
                     parts.append(">")
                 else:

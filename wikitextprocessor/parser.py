@@ -265,12 +265,18 @@ inside_html_tags_re = re.compile(
 # I think there is no third list layer, maximum is args[x][y].
 WikiNodeChildrenList = List[Union[str, "WikiNode"]]
 WikiNodeArgsSublist = WikiNodeChildrenList # XXX Currently identical to above
-WikiNodeArgs = Union[str, # Just a string
-                     List[
-                        Union[
-                            WikiNodeArgsSublist,
-                            WikiNodeChildrenList]
-                        ]
+# WikiNodeArgs = Union[str, # Just a string
+#                      List[
+#                         Union[
+#                             WikiNodeArgsSublist,
+#                             WikiNodeChildrenList]
+#                         ]
+#                     ]
+WikiNodeStrArg = str
+WikiNodeListArgs = List[
+                    Union[
+                        WikiNodeArgsSublist,
+                        WikiNodeChildrenList]
                     ]
 WikiNodeHTMLAttrsDict = Dict[str, str]  # XXX Probably not just HTML...
 
@@ -279,7 +285,8 @@ class WikiNode:
 
     __slots__ = (
         "kind",
-        "args",
+        "sarg",
+        "largs",
         "attrs",
         "children",
         "loc",
@@ -294,7 +301,8 @@ class WikiNode:
         assert isinstance(kind, NodeKind)
         assert isinstance(loc, int)
         self.kind = kind
-        self.args: WikiNodeArgs = []  # String, or a list of lists
+        self.sarg: WikiNodeStrArg = ""
+        self.largs: WikiNodeListArgs = []  # String, or a list of lists
         self.attrs: WikiNodeHTMLAttrsDict = {}
         self.children: WikiNodeChildrenList = []
         self.loc = loc  # used for debugging lines
@@ -303,8 +311,8 @@ class WikiNode:
         
     def __str__(self) -> str:
         return "<{}({}){} {}>".format(self.kind.name,
-                                      self.args if isinstance(self.args, str)
-                                      else ", ".join(map(repr, self.args)),
+                                      self.sarg if self.sarg
+                                      else ", ".join(map(repr, self.largs)),
                                       self.attrs,
                                       ", ".join(map(repr, self.children)))
 
@@ -364,13 +372,13 @@ def _parser_pop(ctx: "Wtp", warn_unclosed: bool) -> None:
     # Warn about unclosed syntaxes.
     if warn_unclosed and node.kind in MUST_CLOSE_KINDS:
         if node.kind == NodeKind.HTML:
-            ctx.debug("HTML tag <{}> not properly closed".format(node.args),
+            ctx.debug("HTML tag <{}> not properly closed".format(node.sarg),
                         trace="started on line {}, detected on line {}"
                         .format(node.loc, ctx.linenum),
                         sortid="parser/304")
         elif node.kind == NodeKind.PARSER_FN:
             ctx.debug("parser function invocation {!r} not properly closed"
-                        .format(node.args[0]),
+                        .format(node.largs[0]),
                         trace="started on line {}, detected on line {}"
                         .format(node.loc, ctx.linenum),
                         sortid="parser/309")
@@ -408,17 +416,15 @@ def _parser_pop(ctx: "Wtp", warn_unclosed: bool) -> None:
     # If the node has arguments, move remaining children to be the last
     # argument
     if node.kind in HAVE_ARGS_KINDS:
-        if TYPE_CHECKING:
-            assert isinstance(node.args, list)
-        node.args.append(node.children)
+        node.largs.append(node.children)
         node.children = []
 
     # When popping a TEMPLATE, check if its name is a constant that
     # is a known parser function (including predefined variable).
     # If so, turn this node into a PARSER_FN node.
-    if (node.kind == NodeKind.TEMPLATE and node.args and
-        len(node.args[0]) == 1 and isinstance(node.args[0][0], str) and
-        node.args[0][0] in PARSER_FUNCTIONS):
+    if (node.kind == NodeKind.TEMPLATE and node.largs and
+        len(node.largs[0]) == 1 and isinstance(node.largs[0][0], str) and
+        node.largs[0][0] in PARSER_FUNCTIONS):
         # Change node type to PARSER_FN.  Otherwise it has identical
         # structure to a TEMPLATE.
         node.kind = NodeKind.PARSER_FN
@@ -426,9 +432,7 @@ def _parser_pop(ctx: "Wtp", warn_unclosed: bool) -> None:
     # When popping description list nodes that have a definition,
     # shuffle WikiNode.temp_head and children to have head in children and
     # definition in WikiNode.definition
-    if TYPE_CHECKING:
-        assert isinstance(node.args, str)
-    if (node.kind == NodeKind.LIST_ITEM and node.args.endswith(";") and
+    if (node.kind == NodeKind.LIST_ITEM and node.sarg.endswith(";") and
         node.temp_head):
         head = node.temp_head
         node.temp_head = None
@@ -497,7 +501,7 @@ def text_fn(ctx: "Wtp", token: str) -> None:
     # External links [https://...] require some magic.  They only seem to
     # be links if the content looks like a URL."""
     if node.kind == NodeKind.URL:
-        if not node.args and not node.children:
+        if not node.largs and not node.children:
             if not re.match(r"(https?:|mailto:|//)", token):
                 # It does not look like a URL
                 ctx.parser_stack.pop()
@@ -508,11 +512,9 @@ def text_fn(ctx: "Wtp", token: str) -> None:
 
         # Whitespaces inside an external link divide its first argument from its
         # second argument.  All remaining words go into the second argument.
-        if token.isspace() and not node.args:
+        if token.isspace() and not node.largs:
             _parser_merge_str_children(ctx)
-            if TYPE_CHECKING:
-                assert isinstance(node.args, list)
-            node.args.append(node.children)
+            node.largs.append(node.children)
             node.children = []
             return
 
@@ -612,7 +614,7 @@ def subtitle_start_fn(ctx, token) -> None:
         node = ctx.parser_stack[-1]
         if kind_to_level.get(node.kind, 99) < level:
             break
-        if node.kind == NodeKind.HTML and node.args not in (
+        if node.kind == NodeKind.HTML and node.sarg not in (
                 "span",
         ):
             break
@@ -645,9 +647,7 @@ def subtitle_end_fn(ctx: "Wtp", token: str) -> None:
         ctx.debug("subtitle start and end markers level mismatch",
                   sortid="parser/545")
     _parser_merge_str_children(ctx)
-    if TYPE_CHECKING:
-        assert isinstance(node.args, list)
-    node.args.append(node.children)
+    node.largs.append(node.children)
     node.children = []
 
 
@@ -902,7 +902,7 @@ def colon_fn(ctx: "Wtp", token: str) -> None:
 
     # Unless we are in the first argument of a template, treat a colon that is
     # not at the beginning of a
-    if node.kind != NodeKind.TEMPLATE or node.args:
+    if node.kind != NodeKind.TEMPLATE or node.largs:
         return text_fn(ctx, token)
 
     # Merge string children.  This is needed for both the following text and
@@ -917,9 +917,7 @@ def colon_fn(ctx: "Wtp", token: str) -> None:
     # Colon in the first argument of {{name:...}} turns it into a parser
     # function call.
     node.kind = NodeKind.PARSER_FN
-    if TYPE_CHECKING:
-        assert isinstance(node.args, list)
-    node.args.append(node.children)
+    node.largs.append(node.children)
     node.children = []
 
 
@@ -1155,9 +1153,7 @@ def vbar_fn(ctx: "Wtp", token: str) -> None:
     node = ctx.parser_stack[-1]
     if node.kind in HAVE_ARGS_KINDS:
         _parser_merge_str_children(ctx)
-        if TYPE_CHECKING:
-            assert isinstance(node.args, list)
-        node.args.append(node.children)
+        node.largs.append(node.children)
         node.children = []
         return
 
@@ -1254,10 +1250,8 @@ def list_fn(ctx: "Wtp", token: str) -> None:
     # are handled here.
     if not (ctx.beginning_of_line and ctx.begline_enabled):
         node = ctx.parser_stack[-1]
-        if TYPE_CHECKING:
-            assert isinstance(node.args, str)
         if (token == ":" and node.kind == NodeKind.LIST_ITEM and
-            node.args.endswith(";") and node.temp_head is None):
+            node.sarg.endswith(";") and node.temp_head is None):
             # Got definition for a head in a definition list on the same line
             #   "; term : definition"
             # Shuffle node.temp_head and children (they will be unshuffled
@@ -1273,11 +1267,9 @@ def list_fn(ctx: "Wtp", token: str) -> None:
     while True:
         node = ctx.parser_stack[-1]
 
-        if TYPE_CHECKING:
-            assert isinstance(node.args, str)
         # Check for a definition in a definition list
-        if (node.kind == NodeKind.LIST_ITEM and node.args.endswith(";") and
-            token.endswith(":") and token[:-1] == node.args[:-1] and
+        if (node.kind == NodeKind.LIST_ITEM and node.sarg.endswith(";") and
+            token.endswith(":") and token[:-1] == node.sarg[:-1] and
             node.temp_head is None):
             # Got definition for a definition list item, on a separate line.
             # Shuffle node.temp_head and children (they will be unshuffled in
@@ -1290,7 +1282,7 @@ def list_fn(ctx: "Wtp", token: str) -> None:
         # Check for continuing an earlier list item, possibly after an
         # intervening sublist
         if (node.kind == NodeKind.LIST_ITEM and token.endswith(":") and
-            node.args == token[:-1] and node.children and
+            node.sarg == token[:-1] and node.children and
             isinstance(node.children[-1], WikiNode)):
             # Suffixing a list item prefix with a colon can be used to continue
             # the same item after an intervening sublist. 
@@ -1301,7 +1293,7 @@ def list_fn(ctx: "Wtp", token: str) -> None:
 
         # Check for another list item on the same level (adding a new
         # list item to an earlier list)
-        if node.kind == NodeKind.LIST_ITEM and node.args == token:
+        if node.kind == NodeKind.LIST_ITEM and node.sarg == token:
             _parser_pop(ctx, False)
             break
 
@@ -1309,9 +1301,9 @@ def list_fn(ctx: "Wtp", token: str) -> None:
         # different prefix, we will close it and either add to a parent list
         # or start a new list.  Note that definition list definitions were
         # already handled above so we won't be seeing them here.
-        if node.kind == NodeKind.LIST_ITEM and len(node.args) < len(token):
-            for i in range(len(node.args)):
-                if token[i] not in (":", node.args[i]):
+        if node.kind == NodeKind.LIST_ITEM and len(node.sarg) < len(token):
+            for i in range(len(node.sarg)):
+                if token[i] not in (":", node.sarg[i]):
                     break  # Tokens do not match
             else:
                 # Tokens match (with non-last : matching * or #)
@@ -1342,11 +1334,11 @@ def list_fn(ctx: "Wtp", token: str) -> None:
     node = ctx.parser_stack[-1]
     if node.kind != NodeKind.LIST:
         node = _parser_push(ctx, NodeKind.LIST)
-        node.args = token
+        node.sarg = token
 
     # Add a new list item to the list.
     node = _parser_push(ctx, NodeKind.LIST_ITEM)
-    node.args = token
+    node.sarg = token
 
 
 def parse_attrs(node: WikiNode, attrs: str) -> None:
@@ -1406,14 +1398,14 @@ def tag_fn(ctx: "Wtp", token: str) -> None:
             # or if we bump into a LIST_ITEM first, going from newest to oldest
             for i in reversed(range(0, len(ctx.parser_stack))):
                 node = ctx.parser_stack[i]
-                if node.kind == NodeKind.HTML and node.args == end_tag_name:
+                if node.kind == NodeKind.HTML and node.sarg == end_tag_name:
                     break # do not close_begline_lists
                 if node.kind == NodeKind.LIST_ITEM:
                     close_begline_lists(ctx)
                     break
     else:
         close_begline_lists(ctx)
-   
+
     # Try to parse it as a start tag
     m = re.match(r"""<([-a-zA-Z0-9]+)\s*((\b[-a-zA-Z0-9]+(=("[^"]*"|"""
                  r"""'[^']*'|[^ \t\n"'`=<>/]*))?\s*)*)(/?)\s*>""", token)
@@ -1489,18 +1481,16 @@ def tag_fn(ctx: "Wtp", token: str) -> None:
                 continue
             if node.kind != NodeKind.HTML:
                 break
-            if node.args in permitted_parents:
+            if node.sarg in permitted_parents:
                 break
-            if TYPE_CHECKING:
-                assert isinstance(node.args, str)
-            close_next = ALLOWED_HTML_TAGS.get(node.args, {}).get(
+            close_next = ALLOWED_HTML_TAGS.get(node.sarg, {}).get(
                 "close-next", [])
             # Warn about unclosed tag unless it is one we close automatically
             _parser_pop(ctx, name not in close_next)
 
         # Handle other start tag.  We push HTML tags as HTML nodes.
         node = _parser_push(ctx, NodeKind.HTML)
-        node.args = name
+        node.sarg = name
         parse_attrs(node, attrs)
 
         # If the tag contains a trailing slash or it is an empty tag,
@@ -1551,14 +1541,14 @@ def tag_fn(ctx: "Wtp", token: str) -> None:
     # See if we can find the opening tag from the stack
     for i in reversed(range(0, len(ctx.parser_stack))):
         node = ctx.parser_stack[i]
-        if node.kind == NodeKind.HTML and node.args == name:
+        if node.kind == NodeKind.HTML and node.sarg == name:
             break
     else:
         # No corresponding start tag found
         if name in ("br", "hl", "wbr"):
             # This is incorrect but occurs; synthesize empty tag
             node = _parser_push(ctx, NodeKind.HTML)
-            node.args = name
+            node.sarg = name
             _parser_pop(ctx, False)
             return
         ctx.debug("no corresponding start tag found for {}".format(token),
@@ -1574,7 +1564,7 @@ def tag_fn(ctx: "Wtp", token: str) -> None:
             ctx.parser_stack[-1].children.pop()
             text_fn(ctx, "[")
             continue
-        if node.kind == NodeKind.HTML and node.args == name:
+        if node.kind == NodeKind.HTML and node.sarg == name:
             # Found the corresponding start tag.  Close this node and
             # then stop.
             _parser_pop(ctx, False)
@@ -1582,9 +1572,7 @@ def tag_fn(ctx: "Wtp", token: str) -> None:
         if node.kind == NodeKind.HTML:
             # If close-next is set, then end tag is optional and can be closed
             # implicitly by closing the parent tag
-            if TYPE_CHECKING:
-                assert isinstance(node.args, str)
-            close_next2 = ALLOWED_HTML_TAGS.get(node.args, {}).get(
+            close_next2 = ALLOWED_HTML_TAGS.get(node.sarg, {}).get(
                 "close-next", None)
             if close_next2:
                 _parser_pop(ctx, False)
@@ -1596,7 +1584,7 @@ def magicword_fn(ctx: "Wtp", token: str) -> None:
     """Handles a magic word, such as "__NOTOC__"."""
     close_begline_lists(ctx)
     node = _parser_push(ctx, NodeKind.MAGIC_WORD)
-    node.args = token
+    node.sarg = token
     _parser_pop(ctx, False)
 
 
@@ -1862,7 +1850,7 @@ def parse_encoded(ctx: "Wtp", text: str) -> WikiNode:
     the parse tree."""
     assert ctx.title is not None  # ctx.start_page() must have been called
     node = WikiNode(NodeKind.ROOT, 0)
-    node.args = [[ctx.title]]
+    node.largs = [[ctx.title]]
     ctx.beginning_of_line = True
     ctx.wsp_beginning_of_line = False
     ctx.linenum = 1
@@ -1899,7 +1887,9 @@ def print_tree(tree: Union[str, WikiNode], indent: int=0) -> None:
     if isinstance(tree, str):
         print("{}{}".format(" " * indent, repr(tree)))
         return
-    print("{}{} {}".format(" " * indent, tree.kind.name, tree.args))
+    print("{}{} {}".format(" " * indent,
+                              tree.kind.name,
+                              tree.sarg if tree.sarg else tree.largs))
     for k, v in tree.attrs.items():
         print("{}    {}={}".format(" " * indent, k, v))
     for child in tree.children:

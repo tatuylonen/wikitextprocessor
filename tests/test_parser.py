@@ -24,7 +24,7 @@ class ParserTests(unittest.TestCase):
         tree = self.parse("test", "")
         self.assertEqual(tree.kind, NodeKind.ROOT)
         self.assertEqual(tree.children, [])
-        self.assertEqual(tree.args, [["test"]])
+        self.assertEqual(tree.largs, [["test"]])
 
     def test_text(self):
         tree = self.parse("test", "some text")
@@ -51,7 +51,7 @@ class ParserTests(unittest.TestCase):
         self.assertEqual(len(tree.children), 1)
         child = tree.children[0]
         self.assertEqual(child.kind, NodeKind.LEVEL2)
-        self.assertEqual(child.args, [["Foo"]])
+        self.assertEqual(child.largs, [["Foo"]])
         self.assertEqual(child.children, [])
 
     def test_hdr2b(self):
@@ -59,7 +59,7 @@ class ParserTests(unittest.TestCase):
         self.assertEqual(len(tree.children), 1)
         child = tree.children[0]
         self.assertEqual(child.kind, NodeKind.LEVEL2)
-        self.assertEqual(child.args, [["Foo:Bar"]])
+        self.assertEqual(child.largs, [["Foo:Bar"]])
         self.assertEqual(child.children, ["\nZappa\n"])
 
     def test_hdr2c(self):
@@ -67,7 +67,7 @@ class ParserTests(unittest.TestCase):
         self.assertEqual(len(tree.children), 1)
         child = tree.children[0]
         self.assertEqual(child.kind, NodeKind.LEVEL3)
-        self.assertEqual(child.args, [["Foo:Bar"]])
+        self.assertEqual(child.largs, [["Foo:Bar"]])
         self.assertEqual(child.children, ["\nZappa\n"])
 
     def test_hdr23a(self):
@@ -81,9 +81,9 @@ class ParserTests(unittest.TestCase):
         h3b = h2.children[2]
         self.assertEqual(h3a.kind, NodeKind.LEVEL3)
         self.assertEqual(h3b.kind, NodeKind.LEVEL3)
-        self.assertEqual(h3a.args, [["Bar"]])
+        self.assertEqual(h3a.largs, [["Bar"]])
         self.assertEqual(h3a.children, ["\nb\n"])
-        self.assertEqual(h3b.args, [["Zappa"]])
+        self.assertEqual(h3b.largs, [["Zappa"]])
         self.assertEqual(h3b.children, ["\nc\n"])
 
     def test_hdr23b(self):
@@ -97,9 +97,9 @@ class ParserTests(unittest.TestCase):
         self.assertEqual(h2a.children[0], "\na\n")
         h3a = h2a.children[1]
         self.assertEqual(h3a.kind, NodeKind.LEVEL3)
-        self.assertEqual(h3a.args, [["Bar"]])
+        self.assertEqual(h3a.largs, [["Bar"]])
         self.assertEqual(h3a.children, ["\nb\n"])
-        self.assertEqual(h2b.args, [["Zappa"]])
+        self.assertEqual(h2b.largs, [["Zappa"]])
         self.assertEqual(h2b.children, ["\nc\n"])
 
     def test_hdr23456(self):
@@ -129,11 +129,11 @@ dasfasddasfdas
         self.assertEqual(len(tree.children), 1)
         h = tree.children[0]
         self.assertEqual(h.kind, NodeKind.LEVEL2)
-        self.assertEqual(len(h.args), 1)
-        self.assertEqual(len(h.args[0]), 1)
-        a = h.args[0][0]
+        self.assertEqual(len(h.largs), 1)
+        self.assertEqual(len(h.largs[0]), 1)
+        a = h.largs[0][0]
         self.assertEqual(a.kind, NodeKind.HTML)
-        self.assertEqual(a.args, "span")
+        self.assertEqual(a.sarg, "span")
         self.assertEqual(a.attrs.get("id"), "anchor")
         self.assertEqual(a.children, ["hdr text"])
         self.assertEqual(h.children, ["\ndata"])
@@ -148,7 +148,7 @@ dasfasddasfdas
         self.assertEqual(h2a.children,
                          ["\na\n&equals;&equals;&equals;Bar"
                           "&equals;&equals;&equals;\nb\n"])
-        self.assertEqual(h2b.args, [["Zappa"]])
+        self.assertEqual(h2b.largs, [["Zappa"]])
         self.assertEqual(h2b.children, ["\nc\n"])
 
     def test_nowiki2(self):
@@ -257,7 +257,7 @@ dasfasddasfdas
         self.assertEqual(len(tree.children), 1)
         a = tree.children[0]
         self.assertEqual(a.kind, NodeKind.HTML)
-        self.assertEqual(a.args, "b")
+        self.assertEqual(a.sarg, "b")
         self.assertEqual(a.children, ["foo"])
 
     def test_html2(self):
@@ -266,7 +266,7 @@ dasfasddasfdas
         self.assertEqual(len(tree.children), 1)
         a = tree.children[0]
         self.assertEqual(a.kind, NodeKind.HTML)
-        self.assertEqual(a.args, "div")
+        self.assertEqual(a.sarg, "div")
         self.assertEqual(a.attrs.get("style", False), "color: red")
         self.assertEqual(a.attrs.get("width", False), "40")
         self.assertEqual(a.attrs.get("max-width", False), "100")
@@ -278,7 +278,7 @@ dasfasddasfdas
         self.assertEqual(len(tree.children), 1)
         h = tree.children[0]
         self.assertEqual(h.kind, NodeKind.HTML)
-        self.assertEqual(h.args, "br")
+        self.assertEqual(h.sarg, "br")
         self.assertEqual(h.attrs.get("class", False), "big")
         self.assertEqual(h.children, [])
 
@@ -287,11 +287,11 @@ dasfasddasfdas
         self.assertEqual(len(tree.children), 1)
         a = tree.children[0]
         self.assertEqual(a.kind, NodeKind.HTML)
-        self.assertEqual(a.args, "div")
+        self.assertEqual(a.sarg, "div")
         self.assertEqual(len(a.children), 1)
         b = a.children[0]
         self.assertEqual(b.kind, NodeKind.HTML)
-        self.assertEqual(b.args, "span")
+        self.assertEqual(b.sarg, "span")
         self.assertEqual(b.children, ["foo"])
         self.assertEqual(self.ctx.errors, [])
 
@@ -301,11 +301,11 @@ dasfasddasfdas
         a, rest = tree.children
         self.assertEqual(rest, "</span>")
         self.assertEqual(a.kind, NodeKind.HTML)
-        self.assertEqual(a.args, "div")
+        self.assertEqual(a.sarg, "div")
         self.assertEqual(len(a.children), 1)
         b = a.children[0]
         self.assertEqual(b.kind, NodeKind.HTML)
-        self.assertEqual(b.args, "span")
+        self.assertEqual(b.sarg, "span")
         self.assertEqual(b.children, ["foo"])
         self.assertEqual(len(self.ctx.debugs), 2)
 
@@ -314,11 +314,11 @@ dasfasddasfdas
         self.assertEqual(len(tree.children), 1)
         a = tree.children[0]
         self.assertEqual(a.kind, NodeKind.HTML)
-        self.assertEqual(a.args, "div")
+        self.assertEqual(a.sarg, "div")
         self.assertEqual(len(a.children), 1)
         b = a.children[0]
         self.assertEqual(b.kind, NodeKind.HTML)
-        self.assertEqual(b.args, "span")
+        self.assertEqual(b.sarg, "span")
         self.assertEqual(b.children, ["foo"])
         self.assertEqual(len(self.ctx.debugs), 1)
 
@@ -327,14 +327,14 @@ dasfasddasfdas
         self.assertEqual(len(tree.children), 1)
         a = tree.children[0]
         self.assertEqual(a.kind, NodeKind.HTML)
-        self.assertEqual(a.args, "ul")
+        self.assertEqual(a.sarg, "ul")
         self.assertEqual(len(a.children), 2)
         b, c = a.children
         self.assertEqual(b.kind, NodeKind.HTML)
-        self.assertEqual(b.args, "li")
+        self.assertEqual(b.sarg, "li")
         self.assertEqual(b.children, ["foo"])
         self.assertEqual(c.kind, NodeKind.HTML)
-        self.assertEqual(c.args, "li")
+        self.assertEqual(c.sarg, "li")
         self.assertEqual(c.children, ["bar"])
         self.assertEqual(self.ctx.errors, [])
 
@@ -344,20 +344,20 @@ dasfasddasfdas
         self.assertEqual(len(tree.children), 1)
         h = tree.children[0]
         self.assertEqual(h.kind, NodeKind.LEVEL2)
-        self.assertEqual(h.args, [["Title"]])
+        self.assertEqual(h.largs, [["Title"]])
         self.assertEqual(len(h.children), 3)
         x, a, rest = h.children
         self.assertEqual(rest, "</div>")
         self.assertEqual(x, "\n")
         self.assertEqual(a.kind, NodeKind.HTML)
-        self.assertEqual(a.args, "ul")
+        self.assertEqual(a.sarg, "ul")
         self.assertEqual(len(a.children), 2)
         b, c = a.children
         self.assertEqual(b.kind, NodeKind.HTML)
-        self.assertEqual(b.args, "li")
+        self.assertEqual(b.sarg, "li")
         self.assertEqual(b.children, ["foo"])
         self.assertEqual(c.kind, NodeKind.HTML)
-        self.assertEqual(c.args, "li")
+        self.assertEqual(c.sarg, "li")
         self.assertEqual(c.children, ["bar"])
         self.assertEqual(len(self.ctx.debugs), 1)
 
@@ -367,7 +367,7 @@ dasfasddasfdas
         a = tree.children[0]
         self.assertTrue(isinstance(a, WikiNode))
         self.assertEqual(a.kind, NodeKind.HTML)
-        self.assertEqual(a.args, "b")
+        self.assertEqual(a.sarg, "b")
         self.assertEqual(a.children, ["foo"])
         self.assertEqual(self.ctx.errors, [])
 
@@ -378,7 +378,7 @@ dasfasddasfdas
         a = tree.children[0]
         self.assertTrue(isinstance(a, WikiNode))
         self.assertEqual(a.kind, NodeKind.HTML)
-        self.assertEqual(a.args, "br")
+        self.assertEqual(a.sarg, "br")
         self.assertEqual(a.children, [])
 
     def test_html11(self):
@@ -388,7 +388,7 @@ dasfasddasfdas
         a = tree.children[0]
         self.assertTrue(isinstance(a, WikiNode))
         self.assertEqual(a.kind, NodeKind.HTML)
-        self.assertEqual(a.args, "wbr")
+        self.assertEqual(a.sarg, "wbr")
         self.assertEqual(a.children, [])
 
     def test_html12(self):
@@ -398,7 +398,7 @@ dasfasddasfdas
         a = tree.children[0]
         self.assertTrue(isinstance(a, WikiNode))
         self.assertEqual(a.kind, NodeKind.HTML)
-        self.assertEqual(a.args, "tt")
+        self.assertEqual(a.sarg, "tt")
         self.assertEqual(a.children,
                          ["&lbrace;&lbrace;f&vert;oo&rbrace;&rbrace;"])
 
@@ -409,7 +409,7 @@ dasfasddasfdas
         a = tree.children[0]
         self.assertTrue(isinstance(a, WikiNode))
         self.assertEqual(a.kind, NodeKind.HTML)
-        self.assertEqual(a.args, "span")
+        self.assertEqual(a.sarg, "span")
         self.assertEqual(a.children, ["["])
 
     def test_html14(self):
@@ -429,7 +429,7 @@ dasfasddasfdas
         a = tree.children[0]
         self.assertTrue(isinstance(a, WikiNode))
         self.assertEqual(a.kind, NodeKind.HTML)
-        self.assertEqual(a.args, "div")
+        self.assertEqual(a.sarg, "div")
         self.assertEqual(a.children, ["foo"])
 
     def test_html16(self):
@@ -471,7 +471,7 @@ dasfasddasfdas
         a = tree.children[0]
         self.assertTrue(isinstance(a, WikiNode))
         self.assertEqual(a.kind, NodeKind.HTML)
-        self.assertEqual(a.args, "div")
+        self.assertEqual(a.sarg, "div")
         self.assertEqual(a.children, ["foo"])
 
     def test_html_unknown(self):
@@ -521,7 +521,7 @@ dasfasddasfdas
         ba, bb, bc = b.children
         self.assertEqual(ba, "t")
         self.assertEqual(bb.kind, NodeKind.TEMPLATE)
-        self.assertEqual(bb.args, [["test"]])
+        self.assertEqual(bb.largs, [["test"]])
         self.assertEqual(bc, "t")
         self.assertEqual(c, "b")
 
@@ -535,7 +535,7 @@ dasfasddasfdas
         ba, bb, bc = b.children
         self.assertEqual(ba, "t")
         self.assertEqual(bb.kind, NodeKind.HTML)
-        self.assertEqual(bb.args, "span")
+        self.assertEqual(bb.sarg, "span")
         self.assertEqual(bc, "t")
         self.assertEqual(c, "b")
 
@@ -549,7 +549,7 @@ dasfasddasfdas
         ba, bb = b.children
         self.assertEqual(ba, "t")
         self.assertEqual(bb.kind, NodeKind.LINK)
-        self.assertEqual(bb.args, [["test"]])
+        self.assertEqual(bb.largs, [["test"]])
         self.assertEqual(bb.children, ["t"])
         self.assertEqual(c, "b")
 
@@ -700,26 +700,26 @@ dasfasddasfdas
         a, b = tree.children
         self.assertEqual(a, "foo\n\n")
         self.assertEqual(b.kind, NodeKind.LIST)
-        self.assertEqual(b.args, "*")
+        self.assertEqual(b.sarg, "*")
         self.assertEqual(len(b.children), 2)
         ba, bb = b.children
         self.assertEqual(ba.kind, NodeKind.LIST_ITEM)
-        self.assertEqual(ba.args, "*")
+        self.assertEqual(ba.sarg, "*")
         self.assertEqual(len(ba.children), 2)
         baa, bab = ba.children
         self.assertEqual(baa, " item1\n")
         self.assertEqual(bab.kind, NodeKind.LIST)
-        self.assertEqual(bab.args, "**")
+        self.assertEqual(bab.sarg, "**")
         self.assertEqual(len(bab.children), 2)
         baba, babb = bab.children
         self.assertEqual(baba.kind, NodeKind.LIST_ITEM)
-        self.assertEqual(baba.args, "**")
+        self.assertEqual(baba.sarg, "**")
         self.assertEqual(baba.children, [" item1.1\n"])
         self.assertEqual(babb.kind, NodeKind.LIST_ITEM)
-        self.assertEqual(babb.args, "**")
+        self.assertEqual(babb.sarg, "**")
         self.assertEqual(babb.children, [" item1.2\n"])
         self.assertEqual(bb.kind, NodeKind.LIST_ITEM)
-        self.assertEqual(bb.args, "*")
+        self.assertEqual(bb.sarg, "*")
         self.assertEqual(bb.children, [" item2\n"])
 
     def test_ol(self):
@@ -729,26 +729,26 @@ dasfasddasfdas
         a, b = tree.children
         self.assertEqual(a, "foo\n\n")
         self.assertEqual(b.kind, NodeKind.LIST)
-        self.assertEqual(b.args, "#")
+        self.assertEqual(b.sarg, "#")
         self.assertEqual(len(b.children), 2)
         ba, bb = b.children
         self.assertEqual(ba.kind, NodeKind.LIST_ITEM)
-        self.assertEqual(ba.args, "#")
+        self.assertEqual(ba.sarg, "#")
         self.assertEqual(len(ba.children), 2)
         baa, bab = ba.children
         self.assertEqual(baa, " item1\n")
         self.assertEqual(bab.kind, NodeKind.LIST)
-        self.assertEqual(bab.args, "##")
+        self.assertEqual(bab.sarg, "##")
         self.assertEqual(len(bab.children), 2)
         baba, babb = bab.children
         self.assertEqual(baba.kind, NodeKind.LIST_ITEM)
-        self.assertEqual(baba.args, "##")
+        self.assertEqual(baba.sarg, "##")
         self.assertEqual(baba.children, ["item1.1\n"])
         self.assertEqual(babb.kind, NodeKind.LIST_ITEM)
-        self.assertEqual(babb.args, "##")
+        self.assertEqual(babb.sarg, "##")
         self.assertEqual(babb.children, [" item1.2\n"])
         self.assertEqual(bb.kind, NodeKind.LIST_ITEM)
-        self.assertEqual(bb.args, "#")
+        self.assertEqual(bb.sarg, "#")
         self.assertEqual(bb.children, [" item2\n"])
 
     def test_dl(self):
@@ -763,17 +763,17 @@ dasfasddasfdas
         self.assertEqual(len(tree.children), 1)
         t = tree.children[0]
         self.assertEqual(t.kind, NodeKind.LIST)
-        self.assertEqual(t.args, ";")
+        self.assertEqual(t.sarg, ";")
         self.assertIsNone(t.temp_head)
         self.assertIsNone(t.definition)
         self.assertEqual(len(t.children), 3)
         a, b, c = t.children
         self.assertEqual(a.kind, NodeKind.LIST_ITEM)
-        self.assertEqual(a.args, ";")
+        self.assertEqual(a.sarg, ";")
         self.assertEqual(a.children, [" Mixed definition lists\n"])
         self.assertEqual(a.attrs, {})
         self.assertEqual(b.kind, NodeKind.LIST_ITEM)
-        self.assertEqual(b.args, ";")
+        self.assertEqual(b.sarg, ";")
         self.assertEqual(b.children, [" item 1 "])
         self.assertIsNone(b.temp_head)
         self.assertIsNotNone(len(b.definition))
@@ -782,24 +782,24 @@ dasfasddasfdas
         self.assertEqual(bdef[0], " definition\n")
         bdef1 = bdef[1]
         self.assertEqual(bdef1.kind, NodeKind.LIST)
-        self.assertEqual(bdef1.args, ":;")
+        self.assertEqual(bdef1.sarg, ":;")
         self.assertIsNone(bdef1.temp_head)
         self.assertIsNone(bdef1.definition)
         self.assertEqual(len(bdef1.children), 2)
         bdef1a, bdef1b = bdef1.children
         self.assertEqual(bdef1a.kind, NodeKind.LIST_ITEM)
-        self.assertEqual(bdef1a.args, ":;")
+        self.assertEqual(bdef1a.sarg, ":;")
         self.assertEqual(bdef1a.children, [" sub-item 1 plus term\n"])
         self.assertIsNone(bdef1a.temp_head)
         self.assertEqual(bdef1a.definition,
                          [" two colons plus definition\n"])
         self.assertEqual(bdef1b.kind, NodeKind.LIST_ITEM)
-        self.assertEqual(bdef1b.args, ":;")
+        self.assertEqual(bdef1b.sarg, ":;")
         self.assertEqual(bdef1b.children, [" sub-item 2 "])
         self.assertIsNone(bdef1b.temp_head)
         self.assertEqual(bdef1b.definition, [" colon plus definition\n"])
         self.assertEqual(c.kind, NodeKind.LIST_ITEM)
-        self.assertEqual(c.args, ";")
+        self.assertEqual(c.sarg, ";")
         self.assertIsNone(c.temp_head)
         self.assertEqual(c.definition, [" back to the main list\n"])
         self.assertEqual(c.children, [" item 2\n"])
@@ -824,23 +824,23 @@ dasfasddasfdas
 #         self.assertEqual(len(t.children), 2)
 #         a, b = t.children
 #         self.assertEqual(a.kind, NodeKind.LIST_ITEM)
-#         self.assertEqual(a.args, "#")
+#         self.assertEqual(a.sarg, "#")
 #         self.assertEqual(len(a.children), 3)
 #         aa, ab, ac = a.children
 #         self.assertEqual(aa, "list item A1\n")
 #         self.assertEqual(ab.kind, NodeKind.LIST)
-#         self.assertEqual(ab.args, "##")
+#         self.assertEqual(ab.sarg, "##")
 #         self.assertEqual(len(ab.children), 2)
 #         aba, abb = ab.children
 #         self.assertEqual(aba.kind, NodeKind.LIST_ITEM)
-#         self.assertEqual(aba.args, "##")
+#         self.assertEqual(aba.sarg, "##")
 #         self.assertEqual(aba.children, ["list item B1\n"])
 #         self.assertEqual(abb.kind, NodeKind.LIST_ITEM)
-#         self.assertEqual(abb.args, "##")
+#         self.assertEqual(abb.sarg, "##")
 #         self.assertEqual(abb.children, ["list item B2\n"])
 #         self.assertEqual(ac, "continuing list item A1\n")
 #         self.assertEqual(b.kind, NodeKind.LIST_ITEM)
-#         self.assertEqual(b.args, "#")
+#         self.assertEqual(b.sarg, "#")
 #         self.assertEqual(b.children, ["list item A2\n"])
 
     def test_list_cont2(self):
@@ -880,11 +880,11 @@ dasfasddasfdas
         self.assertEqual(len(tree.children), 2)
         a, b = tree.children
         self.assertEqual(a.kind, NodeKind.LIST)
-        self.assertEqual(a.args, "#")
+        self.assertEqual(a.sarg, "#")
         self.assertEqual(len(a.children), 1)
         aa = a.children[0]
         self.assertEqual(aa.kind, NodeKind.LIST_ITEM)
-        self.assertEqual(aa.args, "#")
+        self.assertEqual(aa.sarg, "#")
         self.assertEqual(aa.children, [" item1\n"])
         self.assertEqual(b, "Foo\n")
 
@@ -894,11 +894,11 @@ dasfasddasfdas
     #     self.assertEqual(len(tree.children), 2)
     #     a, b = tree.children
     #     self.assertEqual(a.kind, NodeKind.LIST)
-    #     self.assertEqual(a.args, "#")
+    #     self.assertEqual(a.sarg, "#")
     #     self.assertEqual(len(a.children), 1)
     #     aa = a.children[0]
     #     self.assertEqual(aa.kind, NodeKind.LIST_ITEM)
-    #     self.assertEqual(aa.args, "#")
+    #     self.assertEqual(aa.sarg, "#")
     #     self.assertEqual(aa.children, ["\nitem1\n"])
     #     self.assertEqual(b, "Foo\n")
 
@@ -907,16 +907,16 @@ dasfasddasfdas
         self.assertEqual(len(tree.children), 1)
         t = tree.children[0]
         self.assertEqual(t.kind, NodeKind.LEVEL2)
-        self.assertEqual(t.args, [["Foo"]])
+        self.assertEqual(t.largs, [["Foo"]])
         self.assertEqual(len(t.children), 2)
         x, a = t.children
         self.assertEqual(x, "\n")
         self.assertEqual(a.kind, NodeKind.LIST)
-        self.assertEqual(a.args, "#")
+        self.assertEqual(a.sarg, "#")
         self.assertEqual(len(a.children), 1)
         b = a.children[0]
         self.assertEqual(b.kind, NodeKind.LIST_ITEM)
-        self.assertEqual(b.args, "#")
+        self.assertEqual(b.sarg, "#")
         self.assertEqual(b.children, ["item1"])
 
     def test_liststart2(self):
@@ -926,8 +926,8 @@ dasfasddasfdas
         t = tree.children[0]
         self.assertEqual(t.kind, NodeKind.TEMPLATE)
         self.assertEqual(t.children, [])
-        self.assertEqual(len(t.args), 2)
-        a, b = t.args
+        self.assertEqual(len(t.largs), 2)
+        a, b = t.largs
         self.assertEqual(a, ["Foo"])
         self.assertEqual(b, ["\n#item1"])
 
@@ -937,7 +937,7 @@ dasfasddasfdas
         a, b, c = tree.children
         self.assertEqual(a, "a ")
         self.assertEqual(b.kind, NodeKind.LINK)
-        self.assertEqual(b.args, [["Main Page"]])
+        self.assertEqual(b.largs, [["Main Page"]])
         self.assertEqual(b.children, [])
         self.assertEqual(c, " b")
 
@@ -946,7 +946,7 @@ dasfasddasfdas
         self.assertEqual(len(tree.children), 1)
         p = tree.children[0]
         self.assertEqual(p.kind, NodeKind.LINK)
-        self.assertEqual(p.args, [["Help:Contents"]])
+        self.assertEqual(p.largs, [["Help:Contents"]])
         self.assertEqual(p.children, [])
 
     def test_link3(self):
@@ -954,7 +954,7 @@ dasfasddasfdas
         self.assertEqual(len(tree.children), 1)
         p = tree.children[0]
         self.assertEqual(p.kind, NodeKind.LINK)
-        self.assertEqual(p.args, [["#See also"], ["different text"]])
+        self.assertEqual(p.largs, [["#See also"], ["different text"]])
         self.assertEqual(p.children, [])
 
     def test_link4(self):
@@ -962,7 +962,7 @@ dasfasddasfdas
         self.assertEqual(len(tree.children), 1)
         p = tree.children[0]
         self.assertEqual(p.kind, NodeKind.LINK)
-        self.assertEqual(p.args, [["User:John Doe"], []])
+        self.assertEqual(p.largs, [["User:John Doe"], []])
         self.assertEqual(p.children, [])
 
     def test_link5(self):
@@ -970,7 +970,7 @@ dasfasddasfdas
         self.assertEqual(len(tree.children), 2)
         a, b = tree.children
         self.assertEqual(a.kind, NodeKind.LINK)
-        self.assertEqual(a.args, [["Help"]])
+        self.assertEqual(a.largs, [["Help"]])
         self.assertEqual(a.children, [])
         self.assertEqual(b, "<nowiki />ful advise")
 
@@ -982,7 +982,7 @@ dasfasddasfdas
         self.assertEqual(len(tree.children), 1)
         a = tree.children[0]
         self.assertEqual(a.kind, NodeKind.LINK)
-        b = a.args[0][-1]
+        b = a.largs[0][-1]
         self.assertEqual(b.kind, NodeKind.LINK)
 
     def test_link_trailing(self):
@@ -990,7 +990,7 @@ dasfasddasfdas
         self.assertEqual(len(tree.children), 2)
         a, b = tree.children
         self.assertEqual(a.kind, NodeKind.LINK)
-        self.assertEqual(a.args, [["Help"]])
+        self.assertEqual(a.largs, [["Help"]])
         self.assertEqual(a.children, ["ing"])
         self.assertEqual(b, " heal")
 
@@ -1000,7 +1000,7 @@ dasfasddasfdas
         a, b, c = tree.children
         self.assertEqual(a, "this ")
         self.assertEqual(b.kind, NodeKind.URL)
-        self.assertEqual(b.args, [["https://wikipedia.com"]])
+        self.assertEqual(b.largs, [["https://wikipedia.com"]])
         self.assertEqual(b.children, [])
         self.assertEqual(c, " link")
 
@@ -1010,7 +1010,7 @@ dasfasddasfdas
         a, b, c = tree.children
         self.assertEqual(a, "this ")
         self.assertEqual(b.kind, NodeKind.URL)
-        self.assertEqual(b.args, [["https://wikipedia.com"]])
+        self.assertEqual(b.largs, [["https://wikipedia.com"]])
         self.assertEqual(b.children, [])
         self.assertEqual(c, " link")
 
@@ -1020,7 +1020,7 @@ dasfasddasfdas
         a, b, c = tree.children
         self.assertEqual(a, "this ")
         self.assertEqual(b.kind, NodeKind.URL)
-        self.assertEqual(b.args, [["https://wikipedia.com"], ["here"]])
+        self.assertEqual(b.largs, [["https://wikipedia.com"], ["here"]])
         self.assertEqual(b.children, [])
         self.assertEqual(c, " link")
 
@@ -1030,7 +1030,7 @@ dasfasddasfdas
         a, b, c = tree.children
         self.assertEqual(a, "this ")
         self.assertEqual(b.kind, NodeKind.URL)
-        self.assertEqual(b.args, [["https://wikipedia.com"],
+        self.assertEqual(b.largs, [["https://wikipedia.com"],
                                   ["here multiword"]])
         self.assertEqual(b.children, [])
         self.assertEqual(c, " link")
@@ -1046,7 +1046,7 @@ dasfasddasfdas
         self.assertEqual(len(a.children), 1)
         b = a.children[0]
         self.assertEqual(b.kind, NodeKind.URL)
-        self.assertEqual(b.args, [["https://wiktionary.org"]])
+        self.assertEqual(b.largs, [["https://wiktionary.org"]])
 
     def test_url6(self):
         tree = self.parse("test", "Ed[ward] Foo")
@@ -1103,7 +1103,8 @@ def foo(x):
         self.assertEqual(len(tree.children), 1)
         h = tree.children[0]
         self.assertEqual(h.kind, NodeKind.PRE)
-        self.assertEqual(h.args, [])
+        self.assertEqual(h.largs, [])
+        self.assertEqual(h.sarg, "")
         self.assertEqual(h.attrs.get("_close", False), False)
         self.assertEqual(h.attrs.get("_also_close", False), False)
         self.assertEqual(h.attrs.get("style", False), "color: red")
@@ -1114,7 +1115,8 @@ def foo(x):
         self.assertEqual(len(tree.children), 1)
         h = tree.children[0]
         self.assertEqual(h.kind, NodeKind.PRE)
-        self.assertEqual(h.args, [])
+        self.assertEqual(h.largs, [])
+        self.assertEqual(h.sarg, "")
         self.assertEqual(h.attrs.get("_close", False), False)
         self.assertEqual(h.attrs.get("_also_close", False), False)
         self.assertEqual(h.attrs.get("style", False), "color: red")
@@ -1150,7 +1152,7 @@ def foo(x):
         a, b, c = tree.children
         self.assertEqual(a, "a ")
         self.assertEqual(b.kind, NodeKind.MAGIC_WORD)
-        self.assertEqual(b.args, "__NOTOC__")
+        self.assertEqual(b.sarg, "__NOTOC__")
         self.assertEqual(b.children, [])
         self.assertEqual(c, " b")
 
@@ -1160,7 +1162,7 @@ def foo(x):
         a, b, c = tree.children
         self.assertEqual(a, "a")
         self.assertEqual(b.kind, NodeKind.TEMPLATE)
-        self.assertEqual(b.args, [["foo"]])
+        self.assertEqual(b.largs, [["foo"]])
         self.assertEqual(b.children, [])
         self.assertEqual(c, "b")
 
@@ -1169,7 +1171,7 @@ def foo(x):
         self.assertEqual(len(tree.children), 1)
         b = tree.children[0]
         self.assertEqual(b.kind, NodeKind.TEMPLATE)
-        self.assertEqual(b.args, [["foo"], ["bar"], [], ["z"], ["1-1/2"], []])
+        self.assertEqual(b.largs, [["foo"], ["bar"], [], ["z"], ["1-1/2"], []])
         self.assertEqual(b.children, [])
 
     def test_template3(self):
@@ -1177,7 +1179,7 @@ def foo(x):
         self.assertEqual(len(tree.children), 1)
         b = tree.children[0]
         self.assertEqual(b.kind, NodeKind.TEMPLATE)
-        self.assertEqual(b.args, [["\nfoo\n"], ["\nname=testi"], ["bar\n"],
+        self.assertEqual(b.largs, [["\nfoo\n"], ["\nname=testi"], ["bar\n"],
                                   ["\nbaz"]])
         self.assertEqual(b.children, [])
 
@@ -1186,7 +1188,7 @@ def foo(x):
         self.assertEqual(len(tree.children), 1)
         b = tree.children[0]
         self.assertEqual(b.kind, NodeKind.TEMPLATE)
-        self.assertEqual(b.args, [["foo bar"], ["name=test word"],
+        self.assertEqual(b.largs, [["foo bar"], ["name=test word"],
                                   ["tässä"]])
         self.assertEqual(b.children, [])
 
@@ -1195,7 +1197,7 @@ def foo(x):
         self.assertEqual(len(tree.children), 1)
         b = tree.children[0]
         self.assertEqual(b.kind, NodeKind.TEMPLATE)
-        self.assertEqual(b.args, [["foo bar"], ["name=test word"],
+        self.assertEqual(b.largs, [["foo bar"], ["name=test word"],
                                   ["tässä"]])
         self.assertEqual(b.children, [])
 
@@ -1204,34 +1206,34 @@ def foo(x):
         self.assertEqual(len(tree.children), 1)
         b = tree.children[0]
         self.assertEqual(b.kind, NodeKind.TEMPLATE)
-        self.assertEqual(len(b.args), 2)
-        self.assertEqual(b.args[0], ["foo bar"])
-        c = b.args[1]
+        self.assertEqual(len(b.largs), 2)
+        self.assertEqual(b.largs[0], ["foo bar"])
+        c = b.largs[1]
         self.assertIsInstance(c, list)
         self.assertEqual(len(c), 1)
         d = c[0]
         self.assertEqual(d.kind, NodeKind.TEMPLATE)
-        self.assertEqual(len(d.args), 2)
-        self.assertEqual(d.args[0], ["nested"])
-        self.assertEqual(len(d.args[1]), 1)
-        e = d.args[1][0]
+        self.assertEqual(len(d.largs), 2)
+        self.assertEqual(d.largs[0], ["nested"])
+        self.assertEqual(len(d.largs[1]), 1)
+        e = d.largs[1][0]
         self.assertEqual(e.kind, NodeKind.LINK)
-        self.assertEqual(e.args, [["link"]])
+        self.assertEqual(e.largs, [["link"]])
 
     def test_template7(self):
         tree = self.parse("test", "{{{{{foo}}}|bar}}")
         self.assertEqual(len(tree.children), 1)
         b = tree.children[0]
         self.assertEqual(b.kind, NodeKind.TEMPLATE)
-        self.assertEqual(len(b.args), 2)
-        c = b.args[0]
+        self.assertEqual(len(b.largs), 2)
+        c = b.largs[0]
         self.assertIsInstance(c, list)
         self.assertEqual(len(c), 1)
         d = c[0]
         self.assertEqual(d.kind, NodeKind.TEMPLATE_ARG)
-        self.assertEqual(d.args, [["foo"]])
+        self.assertEqual(d.largs, [["foo"]])
         self.assertEqual(d.children, [])
-        self.assertEqual(b.args[1], ["bar"])
+        self.assertEqual(b.largs[1], ["bar"])
 
     def test_template8(self):
         # Namespace specifiers, e.g., {{int:xyz}} should not generate
@@ -1240,7 +1242,7 @@ def foo(x):
         self.assertEqual(len(tree.children), 1)
         b = tree.children[0]
         self.assertEqual(b.kind, NodeKind.TEMPLATE)
-        self.assertEqual(b.args, [["int:xyz"]])
+        self.assertEqual(b.largs, [["int:xyz"]])
 
     def test_template9(self):
         # Main namespace references, e.g., {{:xyz}} should not
@@ -1249,7 +1251,7 @@ def foo(x):
         self.assertEqual(len(tree.children), 1)
         b = tree.children[0]
         self.assertEqual(b.kind, NodeKind.TEMPLATE)
-        self.assertEqual(b.args, [[":xyz"]])
+        self.assertEqual(b.largs, [[":xyz"]])
 
     def test_template10(self):
         tree = self.parse("test", "{{{{a}} }}")
@@ -1257,10 +1259,10 @@ def foo(x):
         t = tree.children[0]
         self.assertEqual(t.kind, NodeKind.TEMPLATE)
         self.assertEqual(t.children, [])
-        self.assertEqual(len(t.args), 1)
-        tt = t.args[0][0]
+        self.assertEqual(len(t.largs), 1)
+        tt = t.largs[0][0]
         self.assertEqual(tt.kind, NodeKind.TEMPLATE)
-        self.assertEqual(tt.args, [["a"]])
+        self.assertEqual(tt.largs, [["a"]])
         self.assertEqual(tt.children, [])
 
     def test_template11(self):
@@ -1269,10 +1271,10 @@ def foo(x):
         t = tree.children[0]
         self.assertEqual(t.kind, NodeKind.TEMPLATE)
         self.assertEqual(t.children, [])
-        self.assertEqual(len(t.args), 1)
-        tt = t.args[0][0]
+        self.assertEqual(len(t.largs), 1)
+        tt = t.largs[0][0]
         self.assertEqual(tt.kind, NodeKind.TEMPLATE_ARG)
-        self.assertEqual(tt.args, [["a"]])
+        self.assertEqual(tt.largs, [["a"]])
         self.assertEqual(tt.children, [])
 
     def test_template12(self):
@@ -1281,10 +1283,10 @@ def foo(x):
         t = tree.children[0]
         self.assertEqual(t.kind, NodeKind.TEMPLATE)
         self.assertEqual(t.children, [])
-        self.assertEqual(len(t.args), 1)
-        tt = t.args[0][0]
+        self.assertEqual(len(t.largs), 1)
+        tt = t.largs[0][0]
         self.assertEqual(tt.kind, NodeKind.TEMPLATE_ARG)
-        self.assertEqual(tt.args, [["a"], []])
+        self.assertEqual(tt.largs, [["a"], []])
         self.assertEqual(tt.children, [])
 
     def test_template13(self):
@@ -1293,11 +1295,11 @@ def foo(x):
         t = tree.children[0]
         self.assertEqual(t.kind, NodeKind.TEMPLATE)
         self.assertEqual(t.children, [])
-        self.assertEqual(len(t.args), 1)
-        self.assertEqual(t.args[0][0], " ")
-        tt = t.args[0][1]
+        self.assertEqual(len(t.largs), 1)
+        self.assertEqual(t.largs[0][0], " ")
+        tt = t.largs[0][1]
         self.assertEqual(tt.kind, NodeKind.TEMPLATE)
-        self.assertEqual(tt.args, [["a"], []])
+        self.assertEqual(tt.largs, [["a"], []])
         self.assertEqual(tt.children, [])
 
     def test_template14(self):
@@ -1309,7 +1311,7 @@ def foo(x):
         t = tree.children[0]
         self.assertEqual(t.kind, NodeKind.TEMPLATE)
         self.assertEqual(t.children, [])
-        self.assertEqual(t.args, [["x"], ["["]])
+        self.assertEqual(t.largs, [["x"], ["["]])
 
     def test_template15(self):
         tree = self.parse("test", "{{x|]}}")
@@ -1320,7 +1322,7 @@ def foo(x):
         t = tree.children[0]
         self.assertEqual(t.kind, NodeKind.TEMPLATE)
         self.assertEqual(t.children, [])
-        self.assertEqual(t.args, [["x"], ["]"]])
+        self.assertEqual(t.largs, [["x"], ["]"]])
 
     def test_template16(self):
         # This example is from Wiktionary: Unsupported titles/Less than three
@@ -1332,7 +1334,7 @@ def foo(x):
         t = tree.children[0]
         self.assertEqual(t.kind, NodeKind.TEMPLATE)
         self.assertEqual(t.children, [])
-        self.assertEqual(t.args, [["x"], ["<3"]])
+        self.assertEqual(t.largs, [["x"], ["<3"]])
 
     def test_template17(self):
         tree = self.parse("test", "{{x|3>}}")
@@ -1343,14 +1345,14 @@ def foo(x):
         t = tree.children[0]
         self.assertEqual(t.kind, NodeKind.TEMPLATE)
         self.assertEqual(t.children, [])
-        self.assertEqual(t.args, [["x"], ["3>"]])
+        self.assertEqual(t.largs, [["x"], ["3>"]])
 
     def test_templatevar1(self):
         tree = self.parse("test", "{{{foo}}}")
         self.assertEqual(len(tree.children), 1)
         b = tree.children[0]
         self.assertEqual(b.kind, NodeKind.TEMPLATE_ARG)
-        self.assertEqual(b.args, [["foo"]])
+        self.assertEqual(b.largs, [["foo"]])
         self.assertEqual(b.children, [])
 
     def test_templatevar2(self):
@@ -1358,7 +1360,7 @@ def foo(x):
         self.assertEqual(len(tree.children), 1)
         b = tree.children[0]
         self.assertEqual(b.kind, NodeKind.TEMPLATE_ARG)
-        self.assertEqual(b.args, [["foo"], ["bar"], ["baz"]])
+        self.assertEqual(b.largs, [["foo"], ["bar"], ["baz"]])
         self.assertEqual(b.children, [])
 
     def test_templatevar3(self):
@@ -1366,10 +1368,10 @@ def foo(x):
         self.assertEqual(len(tree.children), 1)
         b = tree.children[0]
         self.assertEqual(b.kind, NodeKind.TEMPLATE_ARG)
-        c = b.args[0][0]
+        c = b.largs[0][0]
         self.assertEqual(c.kind, NodeKind.TEMPLATE_ARG)
-        self.assertEqual(c.args, [["foo"]])
-        self.assertEqual(b.args[1:], [["bar"], ["baz"]])
+        self.assertEqual(c.largs, [["foo"]])
+        self.assertEqual(b.largs[1:], [["bar"], ["baz"]])
         self.assertEqual(b.children, [])
 
     def test_templatevar4(self):
@@ -1378,10 +1380,10 @@ def foo(x):
         t = tree.children[0]
         self.assertEqual(t.kind, NodeKind.TEMPLATE_ARG)
         self.assertEqual(t.children, [])
-        self.assertEqual(len(t.args), 1)
-        tt = t.args[0][0]
+        self.assertEqual(len(t.largs), 1)
+        tt = t.largs[0][0]
         self.assertEqual(tt.kind, NodeKind.TEMPLATE_ARG)
-        self.assertEqual(tt.args, [["1"]])
+        self.assertEqual(tt.largs, [["1"]])
         self.assertEqual(tt.children, [])
 
     def test_templatevar5(self):
@@ -1390,10 +1392,10 @@ def foo(x):
         t = tree.children[0]
         self.assertEqual(t.kind, NodeKind.TEMPLATE_ARG)
         self.assertEqual(t.children, [])
-        self.assertEqual(len(t.args), 1)
-        tt = t.args[0][0]
+        self.assertEqual(len(t.largs), 1)
+        tt = t.largs[0][0]
         self.assertEqual(tt.kind, NodeKind.TEMPLATE_ARG)
-        self.assertEqual(tt.args, [["1"], []])
+        self.assertEqual(tt.largs, [["1"], []])
         self.assertEqual(tt.children, [])
 
     def test_parserfn1(self):
@@ -1401,7 +1403,7 @@ def foo(x):
         self.assertEqual(len(tree.children), 2)
         b = tree.children[0]
         self.assertEqual(b.kind, NodeKind.PARSER_FN)
-        self.assertEqual(b.args, [["CURRENTYEAR"]])
+        self.assertEqual(b.largs, [["CURRENTYEAR"]])
         self.assertEqual(b.children, [])
         self.assertEqual(tree.children[1], "x")
 
@@ -1410,7 +1412,7 @@ def foo(x):
         self.assertEqual(len(tree.children), 1)
         b = tree.children[0]
         self.assertEqual(b.kind, NodeKind.PARSER_FN)
-        self.assertEqual(b.args, [["PAGESIZE"], ["TestPage"]])
+        self.assertEqual(b.largs, [["PAGESIZE"], ["TestPage"]])
         self.assertEqual(b.children, [])
 
     def test_parserfn3(self):
@@ -1418,7 +1420,7 @@ def foo(x):
         self.assertEqual(len(tree.children), 1)
         b = tree.children[0]
         self.assertEqual(b.kind, NodeKind.PARSER_FN)
-        self.assertEqual(b.args, [["#invoke"], ["testmod"], ["testfn"],
+        self.assertEqual(b.largs, [["#invoke"], ["testmod"], ["testfn"],
                                   ["testarg1"], ["testarg2"]])
         self.assertEqual(b.children, [])
 
@@ -1427,7 +1429,8 @@ def foo(x):
         self.assertEqual(len(tree.children), 1)
         t = tree.children[0]
         self.assertEqual(t.kind, NodeKind.TABLE)
-        self.assertEqual(t.args, [])
+        self.assertEqual(t.largs, [])
+        self.assertEqual(t.sarg, "")
         self.assertEqual(t.children, [])
 
     def test_table_simple(self):
@@ -1436,7 +1439,8 @@ def foo(x):
         self.assertEqual(len(tree.children), 1)
         t = tree.children[0]
         self.assertEqual(t.kind, NodeKind.TABLE)
-        self.assertEqual(t.args, [])
+        self.assertEqual(t.largs, [])
+        self.assertEqual(t.sarg, "")
         self.assertEqual(len(t.children), 2)
         a, b = t.children
         self.assertEqual(a.kind, NodeKind.TABLE_ROW)
@@ -1463,7 +1467,8 @@ def foo(x):
         self.assertEqual(len(tree.children), 1)
         t = tree.children[0]
         self.assertEqual(t.kind, NodeKind.TABLE)
-        self.assertEqual(t.args, [])
+        self.assertEqual(t.largs, [])
+        self.assertEqual(t.sarg, "")
         self.assertEqual(len(t.children), 2)
         a, b = t.children
         self.assertEqual(a.kind, NodeKind.TABLE_ROW)
@@ -1514,7 +1519,7 @@ def foo(x):
         self.assertEqual(tree.kind, NodeKind.ROOT)
         lnk = tree.children[0]
         self.assertEqual(lnk.kind, NodeKind.LINK)
-        lnkargs = lnk.args
+        lnkargs = lnk.largs
         self.assertEqual(lnkargs[0][0], "foo")
         self.assertEqual(lnkargs[1][0].kind, NodeKind.HTML)
         self.assertEqual(lnkargs[1][0].children[0], "bar")
@@ -1530,7 +1535,7 @@ def foo(x):
         # print_tree(tree, 2)
         self.assertEqual(tree.kind, NodeKind.ROOT)
         lnk = tree.children[0]
-        lnkargs = lnk.args
+        lnkargs = lnk.largs
         self.assertEqual(lnkargs[0][0], "foo")
         self.assertEqual(lnkargs[1][0].kind, NodeKind.HTML)
         self.assertEqual(lnkargs[1][0].children[0], "ppp")
@@ -1579,7 +1584,8 @@ def foo(x):
         self.assertEqual(len(tree.children), 1)
         t = tree.children[0]
         self.assertEqual(t.kind, NodeKind.TABLE)
-        self.assertEqual(t.args, [])
+        self.assertEqual(t.largs, [])
+        self.assertEqual(t.sarg, "")
         self.assertEqual(len(t.children), 4)
         c, h, a, b = t.children
         self.assertEqual(c.kind, NodeKind.TABLE_CAPTION)
@@ -1628,7 +1634,8 @@ def foo(x):
         t = tree.children[0]
         self.assertEqual(t.kind, NodeKind.TABLE)
         self.assertEqual(t.attrs.get("class"), "table")
-        self.assertEqual(t.args, [])
+        self.assertEqual(t.largs, [])
+        self.assertEqual(t.sarg, "")
         self.assertEqual(len(t.children), 4)
         c, h, a, b = t.children
         self.assertEqual(c.kind, NodeKind.TABLE_CAPTION)
@@ -1685,12 +1692,14 @@ def foo(x):
         t = tree.children[0]
         self.assertEqual(t.kind, NodeKind.TABLE)
         self.assertEqual(t.attrs, {})
-        self.assertEqual(t.args, [])
+        self.assertEqual(t.largs, [])
+        self.assertEqual(t.sarg, "")
         self.assertEqual(len(t.children), 1)
         r = t.children[0]
         self.assertEqual(r.kind, NodeKind.TABLE_ROW)
         self.assertEqual(r.attrs, {})
-        self.assertEqual(r.args, [])
+        self.assertEqual(r.largs, [])
+        self.assertEqual(r.sarg, "")
         self.assertEqual(len(r.children), 2)
         aa, ab = r.children
         self.assertEqual(aa.kind, NodeKind.TABLE_CELL)
@@ -1722,7 +1731,8 @@ def foo(x):
         t = tree.children[0]
         self.assertEqual(t.kind, NodeKind.TABLE)
         self.assertEqual(t.attrs.get("class"), "wikitable")
-        self.assertEqual(t.args, [])
+        self.assertEqual(t.largs, [])
+        self.assertEqual(t.sarg, "")
         self.assertEqual(len(t.children), 4)
         h, a, b, c = t.children
         self.assertEqual(h.kind, NodeKind.TABLE_ROW)
@@ -2061,7 +2071,7 @@ def foo(x):
         template_node = list_item_node.children[0]
         self.assertEqual(template_node.children, [])
         self.assertEqual(
-            template_node.args, [['  foo\n'], ['bar\n'], ['baz\n']]
+            template_node.largs, [['  foo\n'], ['bar\n'], ['baz\n']]
         )
 
     def test_empty_language_converter_template_argument(self):
@@ -2080,7 +2090,7 @@ def foo(x):
         self.assertTrue(isinstance(parser_fn_node, WikiNode))
         self.assertEqual(parser_fn_node.kind, NodeKind.PARSER_FN)
         self.assertEqual(
-            parser_fn_node.args,
+            parser_fn_node.largs,
             [
                 ["#invoke"],
                 ["form of/templates"],
@@ -2102,7 +2112,7 @@ def foo(x):
         self.assertTrue(isinstance(template_node, WikiNode))
         self.assertEqual(template_node.kind, NodeKind.TEMPLATE)
         self.assertEqual(
-            template_node.args,
+            template_node.largs,
             [['zh-x'], ["約 有 6 '''%'''{pā} 的 臺灣人 血型 是 A{ēi}B{bī}型。"], []]
         )
 
@@ -2119,7 +2129,7 @@ def foo(x):
         first_zh_x_node = tree.children[0].children[0].children[1]
         self.assertTrue(isinstance(first_zh_x_node, WikiNode))
         self.assertEqual(first_zh_x_node.kind, NodeKind.TEMPLATE)
-        self.assertEqual(first_zh_x_node.args[0], ['zh-x'])
+        self.assertEqual(first_zh_x_node.largs[0], ['zh-x'])
 
 
 # XXX implement <nowiki/> marking for links, templates

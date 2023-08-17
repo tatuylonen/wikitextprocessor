@@ -473,10 +473,10 @@ class Wtp:
                     NodeKind.LEVEL5,
                     NodeKind.LEVEL6,
                 ):
-                    if not node.args:
+                    if not node.largs:
                         continue
                     lst = (
-                        x if isinstance(x, str) else "???" for x in node.args[0]
+                      x if isinstance(x, str) else "???" for x in node.largs[0]
                     )
                     title = "".join(lst)
                     titles.append(title.strip())
