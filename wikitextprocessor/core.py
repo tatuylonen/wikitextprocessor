@@ -305,7 +305,7 @@ class Wtp:
             return result == 1
         return False
 
-    def buidl_sql_where_query(
+    def build_sql_where_query(
         self,
         namespace_ids: Optional[List[int]] = None,
         include_redirects: bool = True,
@@ -343,7 +343,7 @@ class Wtp:
     ) -> int:
         query_str = "SELECT count(*) FROM pages"
 
-        where_str, query_values = self.buidl_sql_where_query(
+        where_str, query_values = self.build_sql_where_query(
             namespace_ids,
             include_redirects,
             model,
@@ -1748,7 +1748,7 @@ class Wtp:
         SELECT title, namespace_id, redirect_to, need_pre_expand, body, model
         FROM pages
         """
-        where_str, query_values = self.buidl_sql_where_query(
+        where_str, query_values = self.build_sql_where_query(
             namespace_ids, include_redirects, model, search_pattern
         )
         query_str += where_str + " ORDER BY title ASC"
