@@ -219,7 +219,7 @@ def get_page_info(ctx: "Wtp", title: str, namespace_id: int) -> "_LuaTable":
     assert ctx.lua is not None
 
     page_id = 0  # XXX collect required info in phase 1
-    page: Optional["Page"] = ctx.get_page(title, namespace_id)
+    page = ctx.get_page(title, namespace_id)
     # whether the page exists and what its id might be
     dt = {
         "id": page_id,

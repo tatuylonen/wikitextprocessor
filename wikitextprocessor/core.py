@@ -15,6 +15,7 @@ import tempfile
 import urllib.parse
 from collections.abc import Sequence
 from dataclasses import dataclass
+from functools import lru_cache
 from pathlib import Path
 from types import TracebackType
 from typing import (
@@ -1683,6 +1684,7 @@ class Wtp:
         # print("    _finalize_expand:{!r}".format(text))
         return text
 
+    @lru_cache
     def get_page(
         self, title: str, namespace_id: Optional[int] = None
     ) -> Optional[Page]:
@@ -1710,7 +1712,10 @@ class Wtp:
                 # Add namespace prefix
                 title = ns_prefix + title
 
-        query_str = "SELECT * FROM pages WHERE title = ?"
+        query_str = """
+        SELECT title, namespace_id, redirect_to, need_pre_expand, body, model
+        FROM pages WHERE title = ?
+        """
         if namespace_id is not None:
             query_str += " AND namespace_id = ?"
         query_str += " LIMIT 1"
