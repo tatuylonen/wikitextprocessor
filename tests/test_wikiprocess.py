@@ -4151,6 +4151,7 @@ return export
         )
         self.ctx.add_page("Template:En-nm", 10, body="{{-n2-|英語}}")
         self.ctx.analyze_templates()
+        self.ctx.get_page.cache_clear()
         page = self.ctx.get_page("Template:En-nm", 10)
         self.assertTrue(page.need_pre_expand)
 
