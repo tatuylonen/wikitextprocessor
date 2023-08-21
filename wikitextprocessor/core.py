@@ -1682,7 +1682,7 @@ class Wtp:
         # print("    _finalize_expand:{!r}".format(text))
         return text
 
-    @lru_cache
+    @lru_cache(maxsize=1000)
     def get_page(
         self, title: str, namespace_id: Optional[int] = None
     ) -> Optional[Page]:
