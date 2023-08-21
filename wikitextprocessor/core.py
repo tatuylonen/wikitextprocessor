@@ -16,6 +16,7 @@ import urllib.parse
 from collections.abc import Sequence
 from dataclasses import dataclass
 from functools import lru_cache
+from importlib.resources import files
 from pathlib import Path
 from types import TracebackType
 from typing import (
@@ -31,8 +32,6 @@ from typing import (
     TypedDict,
     Union,
 )
-
-import pkg_resources
 
 from .common import (
     MAGIC_FIRST,
@@ -232,9 +231,7 @@ class Wtp:
         self.expand_stack: List[str] = []  # XXX: this has a confusing name
         self.parser_stack: List["WikiNode"] = []
         self.lang_code = lang_code
-        self.data_folder = Path(
-            pkg_resources.resource_filename("wikitextprocessor", "data/")
-        ).joinpath(lang_code)
+        self.data_folder = files("wikitextprocessor") / "data" / lang_code
         self.init_namespace_data()
         self.namespaces: Dict[int, Namespace] = {}
         init_namespaces(self)
@@ -396,7 +393,8 @@ class Wtp:
                     if not node.largs:
                         continue
                     lst = (
-                      x if isinstance(x, str) else "???" for x in node.largs[0]
+                        x if isinstance(x, str) else "???"
+                        for x in node.largs[0]
                     )
                     title = "".join(lst)
                     titles.append(title.strip())

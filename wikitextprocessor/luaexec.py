@@ -4,27 +4,26 @@
 # Copyright (c) Tatu Ylonen.  See file LICENSE and https://ylonen.org
 
 import copy
-import os
-import re
 import functools
 import html
 import json
+import multiprocessing  # XXX debug, remove me
+import re
 import traceback
 import unicodedata
-import pkg_resources
-import multiprocessing # XXX debug, remove me
-
-from typing import (Optional,
-                    TYPE_CHECKING,
-                    List,
-                    Tuple,
-                    Dict,
-                    Union,
-                    Any,
-                    Callable,
-                    Iterable,
-                    ItemsView
-                    )
+from importlib.resources import files
+from typing import (
+    TYPE_CHECKING,
+    Any,
+    Callable,
+    Dict,
+    ItemsView,
+    Iterable,
+    List,
+    Optional,
+    Tuple,
+    Union,
+)
 
 import lupa.lua51 as lupa
 from lupa.lua51 import lua_type
@@ -32,21 +31,19 @@ from lupa.lua51 import lua_type
 from .parserfns import PARSER_FUNCTIONS, call_parser_function, tag_fn
 
 if TYPE_CHECKING:
-    from .core import Wtp, Page, NamespaceDataEntry, ParentData
     from lupa.lua51 import _LuaTable
 
-# List of search paths for Lua libraries.
-builtin_lua_search_paths: List[Tuple[str, List[str]]] = [
+    from .core import NamespaceDataEntry, ParentData, Wtp
+
+# List of search paths for Lua libraries
+BUILTIN_LUA_SEARCH_PATHS = [
     # [path, ignore_modules]
     (".", ["string", "debug"]),
     ("mediawiki-extensions-Scribunto/includes/engines/LuaCommon/lualib", []),
 ]
 
 # Determine which directory our data files are in
-lua_dir: str = pkg_resources.resource_filename("wikitextprocessor", "lua/")
-if not lua_dir.endswith("/"):
-    lua_dir += "/"
-# print("lua_dir", lua_dir)
+LUA_DIR = files("wikitextprocessor") / "lua"
 
 
 def lua_loader(ctx: "Wtp", modname: str) -> Optional[str]:
@@ -85,14 +82,13 @@ def lua_loader(ctx: "Wtp", modname: str) -> Optional[str]:
         path += ".lua"
         data = None
 
-        prefix: str
-        exceptions: List[str]
-        for prefix, exceptions in builtin_lua_search_paths:
+        for prefix, exceptions in BUILTIN_LUA_SEARCH_PATHS:
             if modname in exceptions:
                 continue
-            p = lua_dir + prefix + "/" + path
-            if os.path.isfile(p):
-                with open(p, "r", encoding="utf-8") as f:
+
+            file_path = LUA_DIR / prefix / path
+            if file_path.is_file():
+                with file_path.open("r", encoding="utf-8") as f:
                     data = f.read()
                 break
 
@@ -257,14 +253,15 @@ def fetch_language_names(ctx: "Wtp", include: str) -> "_LuaTable":
     else:
         ret = {"en": ctx.LANGUAGES_BY_CODE["en"]}
     return ctx.lua.table_from(ret)  # type: ignore[union-attr]
-                                    # ⇑⇑ tells mypy to ignore an 'error';
-                                    # if fetch_language_names is being called,
-                                    # ctx.lua.table_from should never be None.
+    # ⇑⇑ tells mypy to ignore an 'error';
+    # if fetch_language_names is being called,
+    # ctx.lua.table_from should never be None.
 
 
 def call_set_functions(
     ctx: "Wtp",
-    set_functions: Callable[[
+    set_functions: Callable[
+        [
             Callable,  # mw_text_decode,
             # These callables can't be type-hinted without doing a whole
             # separate empty class with __callable__ using typing.Protocol,
@@ -283,8 +280,9 @@ def call_set_functions(
             Callable,  # debug_fetch_language_names,
             Callable,  # mw_wikibase_getlabel,
             Callable,  # mw_wikibase_getdescription,
-        ], # ->
-        None]
+        ],  # ->
+        None,
+    ],
 ) -> None:
     def debug_mw_text_jsondecode(x: str, *rest: int) -> Dict[Any, Any]:
         return mw_text_jsondecode(ctx, x, *rest)
@@ -295,37 +293,46 @@ def call_set_functions(
         these functions in particular are being scrambled and the functions
         get parameters meant for other functions!"""
         if bad_args:  # Somehow, the functions have been scrambled in memory
-                  # and this function is being called with too many
-                  # argument
-            print(f"LAMBDA GET_PAGE_INFO DEBUG:"
-                  f" {repr(bad_args)},"
-                  f" {ctx.title=},"
-                  f" {multiprocessing.current_process().name}")
+            # and this function is being called with too many
+            # argument
+            print(
+                f"LAMBDA GET_PAGE_INFO DEBUG:"
+                f" {repr(bad_args)},"
+                f" {ctx.title=},"
+                f" {multiprocessing.current_process().name}"
+            )
         return get_page_info(ctx, title, ns_id)
 
     def debug_get_page_content(x: str, *bad_args: Any) -> Optional[str]:
         if bad_args:
-            print(f"LAMBDA GET_PAGE_CONTENT DEBUG:"
-                  f" {repr(bad_args)},"
-                  f" {ctx.title=},"
-                  f" {multiprocessing.current_process().name}")
+            print(
+                f"LAMBDA GET_PAGE_CONTENT DEBUG:"
+                f" {repr(bad_args)},"
+                f" {ctx.title=},"
+                f" {multiprocessing.current_process().name}"
+            )
         return get_page_content(ctx, x)
 
     def debug_fetch_language_name(x: str, *bad_args: Any) -> str:
         if bad_args:
-            print(f"LAMBDA FETCH_LANGUAGE_NAME DEBUG:"
-                  f" {repr(bad_args)},"
-                  f" {ctx.title=},"
-                  f" {multiprocessing.current_process().name}")
+            print(
+                f"LAMBDA FETCH_LANGUAGE_NAME DEBUG:"
+                f" {repr(bad_args)},"
+                f" {ctx.title=},"
+                f" {multiprocessing.current_process().name}"
+            )
         return fetch_language_name(ctx, x)
 
     def debug_fetch_language_names(x: str, *bad_args: Any) -> "_LuaTable":
         if bad_args:
-            print(f"LAMBDA FETCH_LANGUAGE_NAMES DEBUG:"
-                  f" {repr(bad_args)},"
-                  f" {ctx.title=},"
-                  f" {multiprocessing.current_process().name}")
+            print(
+                f"LAMBDA FETCH_LANGUAGE_NAMES DEBUG:"
+                f" {repr(bad_args)},"
+                f" {ctx.title=},"
+                f" {multiprocessing.current_process().name}"
+            )
         return fetch_language_names(ctx, x)
+
     # Set functions that are implemented in Python
     set_functions(
         mw_text_decode,
@@ -354,15 +361,16 @@ def initialize_lua(ctx: "Wtp"):
     )
     ctx.lua = lua
     set_namespace_data: Callable = lua.eval(
-        "function(v) NAMESPACE_DATA = v end")
+        "function(v) NAMESPACE_DATA = v end"
+    )
     lua_namespace_data = copy.deepcopy(ctx.NAMESPACE_DATA)
     ns_name: str
     ns_data: NamespaceDataEntry
     for ns_name, ns_data in lua_namespace_data.items():
         for k, v in ns_data.items():
             if isinstance(v, list):
-                lua_namespace_data[ns_name][k] = lua.table_from(v) # type: ignore[literal-required]
-        lua_namespace_data[ns_name] = lua.table_from( # type: ignore[assignment]
+                lua_namespace_data[ns_name][k] = lua.table_from(v)  # type: ignore[literal-required]
+        lua_namespace_data[ns_name] = lua.table_from(  # type: ignore[assignment]
             lua_namespace_data[ns_name]
         )
     set_namespace_data(lua.table_from(lua_namespace_data))
@@ -371,7 +379,7 @@ def initialize_lua(ctx: "Wtp"):
     # the Lua loader to our custom loader; we will then use it to load the
     # bigger phase 2 of the sandbox.  This way, most of the sandbox loading
     # will benefit from caching and precompilation (when implemented).
-    with open(lua_dir + "_sandbox_phase1.lua", encoding="utf-8") as f:
+    with open(LUA_DIR / "_sandbox_phase1.lua", encoding="utf-8") as f:
         phase1_result: "_LuaTable" = lua.execute(f.read())
         set_loader = phase1_result[1]
         clear_loaddata_cache = phase1_result[2]
@@ -392,11 +400,12 @@ def initialize_lua(ctx: "Wtp"):
     call_set_functions(ctx, set_functions)
 
 
-def call_lua_sandbox(ctx: "Wtp",
-                     invoke_args: Iterable,
-                     expander: Callable,
-                     parent: Optional["ParentData"],
-                     timeout: Union[None, float, int]
+def call_lua_sandbox(
+    ctx: "Wtp",
+    invoke_args: Iterable,
+    expander: Callable,
+    parent: Optional["ParentData"],
+    timeout: Union[None, float, int],
 ) -> str:
     """Calls a function in a Lua module in the Lua sandbox.
     ``invoke_args`` is the arguments to the call; ``expander`` should
@@ -427,7 +436,9 @@ def call_lua_sandbox(ctx: "Wtp",
             # This is a second or later call to the Lua sandbox.
             # Reset the Lua context back to initial state.
             ctx.lua_reset_env()  # type: ignore[misc]
-            phase2_ret: "_LuaTable" = ctx.lua.eval('new_require("_sandbox_phase2")')
+            phase2_ret: "_LuaTable" = ctx.lua.eval(
+                'new_require("_sandbox_phase2")'
+            )
             # Lua tables start indexing on 1
             set_functions = phase2_ret[1]
             ctx.lua_invoke = phase2_ret[2]
@@ -441,8 +452,10 @@ def call_lua_sandbox(ctx: "Wtp",
     modname = expander(invoke_args[0]).strip()
     modfn = expander(invoke_args[1]).strip()
 
-    def value_with_expand(frame: Union[Dict, "_LuaTable"],
-                          fexpander: str, text: str,
+    def value_with_expand(
+        frame: Union[Dict, "_LuaTable"],
+        fexpander: str,
+        text: str,
     ) -> "_LuaTable":
         assert isinstance(frame, dict) or lua_type(frame) == "table"
         assert isinstance(fexpander, str)
@@ -450,12 +463,10 @@ def call_lua_sandbox(ctx: "Wtp",
         obj = {"expand": lambda obj_self: frame[fexpander](text)}
         return lua.table_from(obj)  # type:ignore[union-attr]
 
-    def make_frame(pframe: Union[None, Dict, "_LuaTable"],
-                   title: str,
-                   args: Union[
-                            Dict[Union[str, int], str],
-                            Tuple,
-                            List]
+    def make_frame(
+        pframe: Union[None, Dict, "_LuaTable"],
+        title: str,
+        args: Union[Dict[Union[str, int], str], Tuple, List],
     ) -> "_LuaTable":
         assert isinstance(title, str)
         assert isinstance(args, (list, tuple, dict))
@@ -481,9 +492,11 @@ def call_lua_sandbox(ctx: "Wtp",
                     if k.isdigit():
                         k = int(k)
                         if k < 1 or k > 1000:
-                            ctx.warning("Template argument index <1 "
-                                        f"or >1000: {k=!r}",
-                                      sortid="luaexec/477/20230710")
+                            ctx.warning(
+                                "Template argument index <1 "
+                                f"or >1000: {k=!r}",
+                                sortid="luaexec/477/20230710",
+                            )
                             k = 1000
                         if num <= k:
                             num = k + 1
@@ -492,8 +505,10 @@ def call_lua_sandbox(ctx: "Wtp",
                     k = num
                     num += 1
                 if k in frame_args:
-                    ctx.warning(f"Template index already in args: {k=!r}",
-                                sortid="luaexec/488/20230710")
+                    ctx.warning(
+                        f"Template index already in args: {k=!r}",
+                        sortid="luaexec/488/20230710",
+                    )
                 # Remove any <noinclude/> tags; they are used to prevent
                 # certain token interpretations in Wiktionary
                 # (e.g., Template:cop-fay-conj-table), whereas Lua code
@@ -515,8 +530,9 @@ def call_lua_sandbox(ctx: "Wtp",
             if not isinstance(dt, (str, int, float, type(None))):
                 name: str = str(dt["name"] or "")
                 content: str = str(dt["content"] or "")
-                attrs: Union[Dict[Union[int, str], str],
-                             str, "_LuaTable"] = dt["args"] or {}
+                attrs: Union[Dict[Union[int, str], str], str, "_LuaTable"] = (
+                    dt["args"] or {}
+                )
             elif len(args) == 1:
                 name = str(args[0])
                 content = ""
@@ -529,7 +545,7 @@ def call_lua_sandbox(ctx: "Wtp",
                 name = str(args[0] or "")
                 content = str(args[1] or "")
                 attrs = args[2] or {}
-            if isinstance(attrs, ItemsView) or lua_type(attrs) == 'table':
+            if isinstance(attrs, ItemsView) or lua_type(attrs) == "table":
                 if TYPE_CHECKING:
                     # Because Lupa doesn't let us import _LuaTable directly,
                     # this work-around is needed to convince the type-checker.
@@ -579,8 +595,8 @@ def call_lua_sandbox(ctx: "Wtp",
                     if isinstance(arg, (int, float, str)):
                         new_args.append(str(arg))
                     else:
-                        for k, v in sorted(arg.items(),
-                                           key=lambda x: str(x[0])
+                        for k, v in sorted(
+                            arg.items(), key=lambda x: str(x[0])
                         ):
                             new_args.append(str(v))
             name = ctx._canonicalize_parserfn_name(name)
@@ -648,23 +664,29 @@ def call_lua_sandbox(ctx: "Wtp",
 
         def debugGetParent(ctx: "Wtp", *args) -> "_LuaTable":
             if args:
-                print(f"LAMBDA GETPARENT DEBUG (title: {title}): {repr(args)}"
-                      f", process: {multiprocessing.current_process().name}")
+                print(
+                    f"LAMBDA GETPARENT DEBUG (title: {title}): {repr(args)}"
+                    f", process: {multiprocessing.current_process().name}"
+                )
             if TYPE_CHECKING:
                 assert isinstance(pframe, _LuaTable)
             return pframe
 
         def debugGetTitle(ctx: "Wtp", *args) -> str:
             if args:
-                print(f"LAMBDA GETTITLE DEBUG: (title: {title}): {repr(args)}"
-                      f", process: {multiprocessing.current_process().name}")
+                print(
+                    f"LAMBDA GETTITLE DEBUG: (title: {title}): {repr(args)}"
+                    f", process: {multiprocessing.current_process().name}"
+                )
             return title
 
-        def debugNewParserValue(frame_self: "_LuaTable", text: str
+        def debugNewParserValue(
+            frame_self: "_LuaTable", text: str
         ) -> "_LuaTable":
             return value_with_expand(frame_self, "preprocess", text)
 
-        def debugNewTemplateParserValue(frame_self: "_LuaTable", text: str
+        def debugNewTemplateParserValue(
+            frame_self: "_LuaTable", text: str
         ) -> "_LuaTable":
             return value_with_expand(frame_self, "expand", text)
 
@@ -717,11 +739,9 @@ def call_lua_sandbox(ctx: "Wtp",
         assert ctx.lua_invoke is not None
     exc: Optional[Exception] = None
     try:
-        ret: Tuple[bool, str] = ctx.lua_invoke(modname,
-                                               modfn,
-                                               frame,
-                                               ctx.title,
-                                               timeout)
+        ret: Tuple[bool, str] = ctx.lua_invoke(
+            modname, modfn, frame, ctx.title, timeout
+        )
         # Lua functions returning multiple values will return a tuple
         # as would be normal in Python.
         if not isinstance(ret, (list, tuple)):
@@ -783,9 +803,7 @@ def call_lua_sandbox(ctx: "Wtp",
         if "check deprecated lang param usage" in ctx.expand_stack:
             ctx.debug(
                 "LUA error but likely not bug"
-                "-- in #invoke {} parent {}".format(
-                    invoke_args, parent
-                ),
+                "-- in #invoke {} parent {}".format(invoke_args, parent),
                 trace=text,
                 sortid="luaexec/679",
             )
