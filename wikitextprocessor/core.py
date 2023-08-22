@@ -973,9 +973,7 @@ class Wtp:
             "Analyzing which templates should be expanded before parsing"
         )
         # Add/overwrite templates
-        template_ns: NamespaceDataEntry = self.NAMESPACE_DATA.get(
-            "Template", EMPTY_NAMESPACEDATA
-        )
+        template_ns = self.NAMESPACE_DATA.get("Template", EMPTY_NAMESPACEDATA)
         template_ns_id = template_ns["id"]
         template_ns_local_name = template_ns["name"]
         self.add_page(
@@ -1036,6 +1034,7 @@ class Wtp:
                     continue
 
             for template_title in included_map[title_no_ns_perfix]:
+                self.get_page.cache_clear()  # avoid infinite loop
                 template = self.get_page(template_title, template_ns_id)
                 if not template or template.need_pre_expand:
                     continue
