@@ -973,7 +973,9 @@ class Wtp:
             "Analyzing which templates should be expanded before parsing"
         )
         # Add/overwrite templates
-        template_ns = self.NAMESPACE_DATA.get("Template", EMPTY_NAMESPACEDATA)
+        template_ns: NamespaceDataEntry = self.NAMESPACE_DATA.get(
+            "Template", EMPTY_NAMESPACEDATA
+        )
         template_ns_id = template_ns["id"]
         template_ns_local_name = template_ns["name"]
         self.add_page(

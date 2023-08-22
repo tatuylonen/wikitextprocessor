@@ -737,7 +737,7 @@ def call_lua_sandbox(
     ctx.expand_stack.append("Lua:{}:{}()".format(modname, modfn))
     if TYPE_CHECKING:
         assert ctx.lua_invoke is not None
-    exc: Optional[Exception] = None
+    lua_exception: Optional[Exception] = None
     try:
         ret: Tuple[bool, str] = ctx.lua_invoke(
             modname, modfn, frame, ctx.title, timeout
@@ -759,7 +759,7 @@ def call_lua_sandbox(
         )
         ok, text = True, ""
     except lupa.LuaError as e:
-        ok, text, e = False, str(e), e
+        ok, text, lua_exception = False, "", e
     finally:
         while len(ctx.expand_stack) > stack_len:
             ctx.expand_stack.pop()
@@ -767,21 +767,11 @@ def call_lua_sandbox(
     #       .format(invoke_args, ok, text))
     ctx.lua_depth -= 1
     if ok:  # XXX should this be "is True" instead of checking truthiness?
-        if text is None:
-            text = ""
-        text = str(text)
+        text = str(text) if text is not None else ""
         text = unicodedata.normalize("NFC", text)
         return text
-    if isinstance(exc, Exception):
-        parts = [str(exc)]
-        # traceback.format_exception does not have a named keyvalue etype=
-        # anymore, in latest Python versions it is positional only.
-        lst = traceback.format_exception(
-            type(exc), value=exc, tb=exc.__traceback__
-        )
-        for x in lst:
-            parts.append("\t" + x.strip())
-        text = "\n".join(parts)
+    if lua_exception is not None:
+        text = "".join(traceback.format_exception(lua_exception)).strip()
     elif not isinstance(text, str):
         text = str(text)
     msg = re.sub(r".*?:\d+: ", "", text.split("\n", 1)[0])
