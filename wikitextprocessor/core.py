@@ -3,82 +3,59 @@
 #
 # Copyright (c) 2020-2022 Tatu Ylonen.  See file LICENSE and https://ylonen.org
 
-import os
-import re
-import sys
+import collections
 import html
+import html.entities
 import json
 import logging
-import tempfile
-import time
-import platform
-import traceback
-import collections
-import urllib.parse
-import pkg_resources
-import html.entities
-import multiprocessing
+import re
 import sqlite3
-
+import sys
+import tempfile
+import urllib.parse
 from collections.abc import Sequence
 from dataclasses import dataclass
+from functools import lru_cache
+from importlib.resources import files
+from pathlib import Path
+from types import TracebackType
 from typing import (
-    Optional,
+    TYPE_CHECKING,
+    Callable,
+    DefaultDict,
     Dict,
+    Generator,
+    List,
+    Optional,
     Set,
     Tuple,
-    Callable,
-    List,
-    Union,
-    DefaultDict,
-    TYPE_CHECKING,
     TypedDict,
-    Generator,
-    Iterator,
+    Union,
 )
-from types import TracebackType
 
-from pathlib import Path
-
-from .parserfns import PARSER_FUNCTIONS, call_parser_function, init_namespaces
-from .wikihtml import ALLOWED_HTML_TAGS
-from .luaexec import call_lua_sandbox
-from .parser import parse_encoded, NodeKind, WikiNode
 from .common import (
     MAGIC_FIRST,
     MAGIC_LAST,
-    MAX_MAGICS,
     MAGIC_NOWIKI_CHAR,
+    MAX_MAGICS,
     nowiki_quote,
 )
-from .dumpparser import process_dump
-from .node_expand import to_wikitext, to_html, to_text, NodeHandlerFnCallable
+from .luaexec import call_lua_sandbox
+from .node_expand import NodeHandlerFnCallable, to_html, to_text, to_wikitext
+from .parser import NodeKind, WikiNode, parse_encoded
+from .parserfns import PARSER_FUNCTIONS, call_parser_function, init_namespaces
+from .wikihtml import ALLOWED_HTML_TAGS
 
 if TYPE_CHECKING:
+    from lupa.lua51 import LuaNumber, LuaRuntime, _LuaTable
+
     from .parserfns import Namespace
-    from lupa.lua51 import LuaRuntime, _LuaTable, LuaNumber
 
 # Set of HTML tags that need an explicit end tag.
 PAIRED_HTML_TAGS: Set[str] = set(
     k for k, v in ALLOWED_HTML_TAGS.items() if not v.get("no-end-tag")
 )
 
-# PageData is the list containing all the collected data dicts about words
-# that are ultimately written down into the json-files through json.dumps.
-WordField = Union[str, int, List["WordField"], Dict[str, "WordField"]]
-WordData = Dict[str, WordField]
-ProcessResults = List[WordData]
-StatsData = TypedDict(
-    "StatsData",
-    {
-        "num_pages": int,
-        "language_counts": int,
-        "pos_counts": int,
-        "section_counts": int,
-    },
-    total=False,  # make fields non-obligatory
-)
-PageHandlerReturn = Tuple[ProcessResults, StatsData]
 NamespaceDataEntry = TypedDict(
     "NamespaceDataEntry",
     {
@@ -97,18 +74,20 @@ JsonValues = Union[str, int, float, list, dict, bool, None]
 ParentData = Tuple[str, Union["_LuaTable", Dict[Union[int, str], str]]]
 TemplateArgs = Dict[Union[int, str], str]
 TemplateFnCallable = Callable[
-                            [
-                                str,  # name
-                                TemplateArgs  # arguments
-                            ],  # ->
-                            str]  # expanded output
+    [
+        str,  # name
+        TemplateArgs,  # arguments
+    ],
+    str,  # expanded output
+]
 PostTemplateFnCallable = Callable[
-                            [
-                                str,  # name
-                                TemplateArgs,  # arguments
-                                str  # previously expanded from templatefn
-                            ],  # ->
-                            str]  # finalized expanded output
+    [
+        str,  # name
+        TemplateArgs,  # arguments
+        str,  # previously expanded from templatefn
+    ],
+    str,  # finalized expanded output
+]
 
 
 class ErrorMessageData(TypedDict):
@@ -120,28 +99,25 @@ class ErrorMessageData(TypedDict):
     called_from: str
     path: Tuple[str, ...]
 
+
 class CollatedErrorReturnData(TypedDict):
     errors: List[ErrorMessageData]
     warnings: List[ErrorMessageData]
     debugs: List[ErrorMessageData]
+
 
 CookieData = Tuple[str, Sequence[str], bool]
 
 CookieChar = str
 
 EMPTY_NAMESPACEDATA: NamespaceDataEntry = {
-                                         "id": -1,
-                                         "name": "NAMESPACE_DATA_ERROR",
-                                         "aliases": [],
-                                         "content": False,
-                                         "istalk": False,
-                                         "issubject": False,
-                                          }
-# Warning: this function is not re-entrant.  We store ctx and page_handler
-# in global variables during dump processing, because they may not be
-# pickleable.
-_global_ctx: "Wtp"
-_global_page_handler: Callable[["Page"], PageHandlerReturn]
+    "id": -1,
+    "name": "NAMESPACE_DATA_ERROR",
+    "aliases": [],
+    "content": False,
+    "istalk": False,
+    "issubject": False,
+}
 
 
 @dataclass
@@ -152,51 +128,6 @@ class Page:
     need_pre_expand: bool = False
     body: Optional[str] = None
     model: Optional[str] = None
-
-
-def phase2_page_handler(
-    page: Page,
-) -> Tuple[
-    bool,  # operation success
-    str,  # title
-    float,  # start time
-    Optional[PageHandlerReturn],  # ([results], {error data})
-    Optional[str],  # error message
-]:
-    """Helper function for calling the Phase2 page handler (see
-    reprocess()).  This is a global function in order to make this
-    pickleable.  The implication is that process() and reprocess() are not
-    re-entrant (i.e., cannot be called safely from multiple threads or
-    recursively)"""
-    ctx: "Wtp" = _global_ctx
-    start_t: float = time.time()
-
-    # Helps debug extraction hangs. This writes the path of each file being
-    # processed into /tmp/wiktextract*/wiktextract-*.  Once a hang
-    # has been observed, these files contain page(s) that hang.  They should
-    # be checked before aborting the process, as an interrupt might delete them.
-    with tempfile.TemporaryDirectory(prefix="wiktextract") as tmpdirname:
-        debug_path = "{}/wiktextract-{}".format(tmpdirname, os.getpid())
-        with open(debug_path, "w", encoding="utf-8") as f:
-            f.write(page.title + "\n")
-
-        ctx.start_page(page.title)
-        try:
-            ret: PageHandlerReturn = _global_page_handler(page)
-            return True, page.title, start_t, ret, None
-        except Exception as e:
-            lst = traceback.format_exception(
-                type(e), value=e, tb=e.__traceback__
-            )
-            msg = (
-                '=== EXCEPTION while parsing page "{}":\n '
-                "in process {}".format(
-                    page.title,
-                    multiprocessing.current_process().name,
-                )
-                + "".join(lst)
-            )
-            return False, page.title, start_t, ([], {}), msg
 
 
 class BegLineDisableManager(object):
@@ -212,10 +143,11 @@ class BegLineDisableManager(object):
         self.ctx.begline_disable_counter += 1
         self.ctx.begline_enabled = False
 
-    def __exit__(self,
-                 exc_type: type[BaseException],
-                 exc_value: BaseException,
-                 trace: TracebackType
+    def __exit__(
+        self,
+        exc_type: type[BaseException],
+        exc_value: BaseException,
+        trace: TracebackType,
     ) -> None:
         self.ctx.begline_disable_counter -= 1
         if self.ctx.begline_disable_counter < 1:
@@ -241,8 +173,6 @@ class Wtp:
         "lua_reset_env",  # Lua function to reset Lua environment
         "lua_clear_loaddata_cache",  # Lua function to clear mw.loadData() cache
         "lua_path",  # Path to Lua modules
-        "num_threads",  # Number of parallel threads to use
-        "quiet",  # If True, don't print any messages during processing
         "rev_ht",  # Mapping from text to magic cookie
         "expand_stack",  # Saved stack before calling Lua function
         "title",  # current page title
@@ -266,28 +196,17 @@ class Wtp:
         "namespaces",
         "LANGUAGES_BY_CODE",
         "lang_code",
-        "template_override_funcs",  # Python functions for overriding
-                                    # template expanded text
+        # Python functions for overriding template expanded text
+        "template_override_funcs",
     )
 
     def __init__(
         self,
-        num_threads: Optional[int] = None, # Wiktwords args double-sets this
-                                           # as None, if you're wondering why
-                                           # setting this to 1 doesn't lead to
-                                           # expected bugs.
         db_path: Optional[Union[str, Path]] = None,
-        quiet: bool = False,
-        lang_code: str = "en",
+        lang_code="en",
         languages_by_code: Dict[str, List[str]] = {},
         template_override_funcs: Dict[str, Callable[[Sequence[str]], str]] = {},
     ):
-        if platform.system() in ("Windows", "Darwin"):
-            # Default num_threads to 1 on Windows and MacOS, as they
-            # apparently don't use fork() for multiprocessing.Pool()
-            self.num_threads: Optional[int] = 1
-        else:
-            self.num_threads = num_threads
         if isinstance(db_path, str):
             self.db_path: Optional[Path] = Path(db_path)
         else:
@@ -308,28 +227,25 @@ class Wtp:
         self.lua_reset_env: Optional[Callable[[], "_LuaTable"]] = None
         self.lua_clear_loaddata_cache: Optional[Callable[[], None]] = None
         self.lua_depth = 0
-        self.quiet = quiet
         self.rev_ht: Dict[CookieData, str] = {}
         self.expand_stack: List[str] = []  # XXX: this has a confusing name
         self.parser_stack: List["WikiNode"] = []
         self.lang_code = lang_code
-        self.data_folder = Path(
-            pkg_resources.resource_filename("wikitextprocessor", "data/")
-        ).joinpath(lang_code)
+        self.data_folder = files("wikitextprocessor") / "data" / lang_code
         self.init_namespace_data()
         self.namespaces: Dict[int, Namespace] = {}
         init_namespaces(self)
         self.LANGUAGES_BY_CODE = languages_by_code
         self.create_db()
         self.template_override_funcs = template_override_funcs
-        self.beginning_of_line: bool = False
-        self.begline_enabled: bool = True
-        self.begline_disable_counter: int = 0
+        self.beginning_of_line = False
+        self.begline_enabled = True
+        self.begline_disable_counter = 0
         self.begline_disabled = BegLineDisableManager(self)
-        self.wsp_beginning_of_line: bool= False
-        self.linenum: int = 1
-        self.pre_parse: bool = False
-        self.suppress_special: bool = False
+        self.wsp_beginning_of_line = False
+        self.linenum = 1
+        self.pre_parse = False
+        self.suppress_special = False
 
     def create_db(self) -> None:
         if self.db_path is None:
@@ -344,7 +260,7 @@ class Wtp:
             self.backup_db_path.rename(self.db_path)
 
         self.db_conn = sqlite3.connect(self.db_path, check_same_thread=False)
-        self.db_conn.execute(
+        self.db_conn.executescript(
             """
         CREATE TABLE IF NOT EXISTS pages (
         title TEXT,
@@ -353,10 +269,11 @@ class Wtp:
         need_pre_expand INTEGER,
         body TEXT,
         model TEXT,
-        PRIMARY KEY(title, namespace_id))
+        PRIMARY KEY(title, namespace_id));
+
+        PRAGMA journal_mode = WAL;
         """
         )
-        self.db_conn.execute("PRAGMA journal_mode=WAL")
 
     @property
     def backup_db_path(self) -> Path:
@@ -386,54 +303,54 @@ class Wtp:
             return result == 1
         return False
 
-    def sql_where(
+    def build_sql_where_query(
         self,
         namespace_ids: Optional[List[int]] = None,
         include_redirects: bool = True,
+        model: Optional[str] = None,
         search_pattern: Optional[str] = None,
     ) -> Tuple[str, List[Union[str, int]]]:
-
         and_strs = []
         where_str = ""
+        query_values = []
         if namespace_ids is not None:
             and_strs.append(
                 f"namespace_id IN ({','.join('?' * len(namespace_ids))})"
             )
+            query_values.extend(namespace_ids)
         if not include_redirects:
             and_strs.append("redirect_to IS NULL")
         if search_pattern:
             and_strs.append("body LIKE ?")
+            query_values.append(search_pattern)
+        if model is not None:
+            and_strs.append("model = ?")
+            query_values.append(model)
 
-        if and_strs:
-            placeholders: List[Union[int, str]] = []
-            if namespace_ids:
-                placeholders.extend(namespace_ids)
-            if search_pattern:
-                placeholders.append(search_pattern)
+        if len(and_strs) > 0:
             where_str = " WHERE " + " AND ".join(and_strs)
-        else:
-            placeholders = []
 
-        # print(f"{where_str=!r}, {placeholders=!r}")
-        return where_str, placeholders
+        return where_str, tuple(query_values)
 
     def saved_page_nums(
         self,
         namespace_ids: Optional[List[int]] = None,
         include_redirects: bool = True,
+        model: Optional[str] = None,
         search_pattern: Optional[str] = None,
     ) -> int:
         query_str = "SELECT count(*) FROM pages"
 
-        where_str, placeholders = self.sql_where(namespace_ids,
-                                                 include_redirects,
-                                                 search_pattern)
+        where_str, query_values = self.build_sql_where_query(
+            namespace_ids,
+            include_redirects,
+            model,
+            search_pattern,
+        )
 
         query_str += where_str
 
-        for result in self.db_conn.execute(
-            query_str, placeholders
-        ):
+        for result in self.db_conn.execute(query_str, query_values):
             return result[0]
 
         return 0  # Mainly to satisfy the type checker
@@ -444,8 +361,8 @@ class Wtp:
         ) as f:
             self.NAMESPACE_DATA: Dict[str, NamespaceDataEntry] = json.load(f)
             self.LOCAL_NS_NAME_BY_ID: Dict[int, str] = {
-                data["id"]: data["name"] for
-                data in self.NAMESPACE_DATA.values()
+                data["id"]: data["name"]
+                for data in self.NAMESPACE_DATA.values()
             }
             self.NS_ID_BY_LOCAL_NAME: Dict[str, int] = {
                 data["name"]: data["id"]
@@ -476,7 +393,8 @@ class Wtp:
                     if not node.largs:
                         continue
                     lst = (
-                      x if isinstance(x, str) else "???" for x in node.largs[0]
+                        x if isinstance(x, str) else "???"
+                        for x in node.largs[0]
                     )
                     title = "".join(lst)
                     titles.append(title.strip())
@@ -486,9 +404,8 @@ class Wtp:
         print("{}: {}: {}".format(loc, kind, msg))
         sys.stdout.flush()
 
-    def error(self, msg: str,
-                    trace: Optional[str]=None,
-                    sortid="XYZunsorted"
+    def error(
+        self, msg: str, trace: Optional[str] = None, sortid="XYZunsorted"
     ) -> None:
         """Prints an error message to stdout.  The error is also saved in
         self.errors."""
@@ -513,9 +430,8 @@ class Wtp:
         )
         self._fmt_errmsg("ERROR", msg, trace)
 
-    def warning(self, msg: str,
-                    trace: Optional[str]=None,
-                    sortid="XYZunsorted"
+    def warning(
+        self, msg: str, trace: Optional[str] = None, sortid="XYZunsorted"
     ) -> None:
         """Prints a warning message to stdout.  The error is also saved in
         self.warnings."""
@@ -536,9 +452,8 @@ class Wtp:
         )
         self._fmt_errmsg("WARNING", msg, trace)
 
-    def debug(self, msg: str,
-                    trace: Optional[str]=None,
-                    sortid="XYZunsorted"
+    def debug(
+        self, msg: str, trace: Optional[str] = None, sortid="XYZunsorted"
     ) -> None:
         """Prints a debug message to stdout.  The error is also saved in
         self.debug."""
@@ -578,10 +493,8 @@ class Wtp:
             name = name.lower()  # Parser function names are case-insensitive
         return name
 
-    def _save_value(self,
-                    kind: str,
-                    args: Sequence[str],
-                    nowiki: bool
+    def _save_value(
+        self, kind: str, args: Sequence[str], nowiki: bool
     ) -> CookieChar:
         """Saves a value of a particular kind and returns a unique magic
         cookie character for it."""
@@ -819,8 +732,9 @@ class Wtp:
     def _template_to_body(self, title: str, text: Optional[str]) -> str:
         """Extracts the portion to be transcluded from a template body."""
         assert isinstance(title, str)
-        assert isinstance(text, str), f"{text=!r} was passed " \
-                                       "into _template_to_body"
+        assert isinstance(text, str), (
+            f"{text=!r} was passed " "into _template_to_body"
+        )
         # Remove all comments
         text = re.sub(r"(?s)<!--.*?-->", "", text)
         # Remove all text inside <noinclude> ... </noinclude>
@@ -874,9 +788,8 @@ class Wtp:
             title = title[5:]
 
         if (
-            namespace_id == self.NAMESPACE_DATA
-                                    .get("Template", {"id": None})
-                                    .get("id")
+            namespace_id
+            == self.NAMESPACE_DATA.get("Template", {"id": None}).get("id")
             and redirect_to is None
         ):
             body = self._template_to_body(title, body)
@@ -954,7 +867,8 @@ class Wtp:
                                    )*?
                              \}\}\}                # }}}
                     """,
-                    "", prev
+                    "",
+                    prev,
                 )
                 if newt == prev:
                     break
@@ -962,13 +876,15 @@ class Wtp:
             # print("After arg elim: {!r}".format(newt))
 
             # Handle templates
-            newt = re.sub(r"""(?sx)\{\{
+            newt = re.sub(
+                r"""(?sx)\{\{
                                         (    [^{}]
                                         |    \}[^}]
                                         )*?
                                     \}\}""",
-
-                          "", newt)
+                "",
+                newt,
+            )
             # print("After templ elim: {!r}".format(newt))
             if newt == outside:
                 break
@@ -1022,12 +938,10 @@ class Wtp:
             r"""(?sx)(^   |  [^{])            # start
                         (\{\{)?\{\{([^{]*?)   # ( ({{) {{ (name) )
                      (\|  |  \}\})            # | or }}""",
-            unpaired_text
+            unpaired_text,
         ):
             called_template = m.group(3)
-            called_template = re.sub(
-                r"(?si)<nowiki\s*/>", "", called_template
-            )
+            called_template = re.sub(r"(?si)<nowiki\s*/>", "", called_template)
             if len(called_template) > 0:
                 included_templates.add(called_template)
 
@@ -1059,8 +973,9 @@ class Wtp:
             "Analyzing which templates should be expanded before parsing"
         )
         # Add/overwrite templates
-        template_ns: NamespaceDataEntry = self.NAMESPACE_DATA.get("Template",
-                                                         EMPTY_NAMESPACEDATA)
+        template_ns: NamespaceDataEntry = self.NAMESPACE_DATA.get(
+            "Template", EMPTY_NAMESPACEDATA
+        )
         template_ns_id = template_ns["id"]
         template_ns_local_name = template_ns["name"]
         self.add_page(
@@ -1093,9 +1008,8 @@ class Wtp:
                 if pre_expand:
                     self.set_template_pre_expand(page.title)
                     expand_stack.append(page)
-            elif (
-                self.lang_code == "zh"
-                and is_chinese_subtitle_template(self, page.title)
+            elif self.lang_code == "zh" and is_chinese_subtitle_template(
+                self, page.title
             ):
                 self.set_template_pre_expand(page.title)
 
@@ -1122,6 +1036,7 @@ class Wtp:
                     continue
 
             for template_title in included_map[title_no_ns_perfix]:
+                self.get_page.cache_clear()  # avoid infinite loop
                 template = self.get_page(template_title, template_ns_id)
                 if not template or template.need_pre_expand:
                     continue
@@ -1242,16 +1157,16 @@ class Wtp:
     def expand(
         self,
         text: str,
-        parent: Optional[ParentData]=None,
+        parent: Optional[ParentData] = None,
         pre_expand=False,
-        template_fn: Optional[TemplateFnCallable]=None,
-        post_template_fn: Optional[PostTemplateFnCallable]=None,
+        template_fn: Optional[TemplateFnCallable] = None,
+        post_template_fn: Optional[PostTemplateFnCallable] = None,
         templates_to_expand: Optional[Set[str]] = None,
-        templates_to_not_expand: Optional[Set[str]]=None,
+        templates_to_not_expand: Optional[Set[str]] = None,
         expand_parserfns=True,
         expand_invoke=True,
         quiet=False,
-        timeout: Optional[Union[int, float]]=None,
+        timeout: Optional[Union[int, float]] = None,
     ) -> str:
         """Expands templates and parser functions (and optionally Lua macros)
         from ``text`` (which is from page with title ``title``).
@@ -1287,9 +1202,10 @@ class Wtp:
         # Handle <nowiki> in a preprocessing step
         text = self.preprocess_text(text)
 
-        def invoke_fn(invoke_args: Sequence[str],
-                      expander: Callable,
-                      parent: Optional[ParentData]
+        def invoke_fn(
+            invoke_args: Sequence[str],
+            expander: Callable,
+            parent: Optional[ParentData],
         ) -> str:
             """This is called to expand a #invoke parser function."""
             assert isinstance(invoke_args, (list, tuple))
@@ -1306,9 +1222,8 @@ class Wtp:
             #       .format(invoke_args, parent, ret))
             return ret
 
-        def expand_recurse(coded: str,
-                           parent: Optional[ParentData],
-                           expand_all: bool
+        def expand_recurse(
+            coded: str, parent: Optional[ParentData], expand_all: bool
         ) -> str:
             """This function does most of the work for expanding encoded
             templates, arguments, and parser functions."""
@@ -1665,7 +1580,7 @@ class Wtp:
                         if t2 is not None:
                             t = t2
 
-                    assert isinstance(t, str) # No body
+                    assert isinstance(t, str)  # No body
                     self.expand_stack.pop()  # template name
                     parts.append(t)
                 elif kind == "A":
@@ -1768,164 +1683,7 @@ class Wtp:
         # print("    _finalize_expand:{!r}".format(text))
         return text
 
-    def process(
-        self,
-        path: str,
-        page_handler: Callable[["Page"],
-                                # ->
-                                PageHandlerReturn],
-        namespace_ids: Set[int],
-        phase1_only=False,
-        override_folders: Optional[List[Path]] = None,
-        skip_extract_dump: bool = False,
-        save_pages_path: Optional[Path] = None,
-    ) -> Iterator[PageHandlerReturn]:
-        """Parses a WikiMedia dump file ``path`` (which should point to a
-        "<project>-<date>-pages-articles.xml.bz2" file.  This calls
-        ``page_handler(model, title, page)`` for each raw page.  This
-        works in two phases - in the first phase this calls
-        ctx.collect_specials() for each page to collect raw pages,
-        especially templates and Lua modules.  Then this goes over the
-        articles a second time ("phase 2"), calling page_handler for
-        each page (this automatically calls ctx.start_page(title) for
-        each page before calling page_handler).  The page_handler will
-        be called in parallel using the multiprocessing package, and
-        thus it cannot save data in ``ctx`` or global variables.  It
-        can only return its results.  This function will return an
-        iterator that yields all the results returned by page_handler
-        (in arbirary order), except None values will be ignored.  This
-        function is not re-entrant.  NOTE: THIS FUNCTION RETURNS
-        ITERATOR AND THE RESULT MUST BE ITERATED FOR THIS TO DO
-        SOMETHING."""
-        assert isinstance(path, str)
-        assert page_handler is None or callable(page_handler)
-        # Process the dump and copy it to temporary file (Phase 1)
-        process_dump(
-            self,
-            path,
-            namespace_ids,
-            override_folders,
-            skip_extract_dump,
-            # Does not take the page_handler passed into process
-            save_pages_path=save_pages_path,
-        )
-        if phase1_only or page_handler is None:
-            return iter(())  # empty iterator to make the type-checker happy
-
-        # Reprocess all the pages that we captured in Phase 1
-        return self.reprocess(page_handler)
-
-    def reprocess(
-        self,
-        page_handler: Callable[["Page"], PageHandlerReturn],
-        autoload=True,
-        namespace_ids: Optional[List[int]] = None,
-        include_redirects: bool = True,
-        search_pattern: Optional[str] = None,
-    ) -> Generator[PageHandlerReturn, None, None]:
-        """Reprocess all pages captured by self.process() or explicit calls to
-        self.add_page(). This calls page_handler(page) for each page, and
-        returns of list of their return values (ignoring None values).
-        This may call page_handler in parallel, and thus page_handler should not
-        attempt to save anything between calls and should not modify global
-        data. This function is not re-entrant.
-        NOTE: THIS FUNCTION RETURNS ITERATOR AND THE RESULT MUST BE ITERATED
-        FOR THIS TO DO SOMETHING."""
-        assert callable(page_handler)
-        global _global_ctx
-        global _global_page_handler
-        _global_ctx = self
-        _global_page_handler = page_handler
-
-        cnt = 0
-        start_t = time.time()
-        last_t = time.time()
-
-        all_page_nums = self.saved_page_nums(
-            namespace_ids, include_redirects, search_pattern
-        )
-
-        def process_counter() -> None:
-            nonlocal cnt
-            nonlocal last_t
-            cnt += 1
-            if (
-                not self.quiet
-                and
-                # cnt % 1000 == 0 and
-                time.time() - last_t > 1
-            ):
-                remaining = all_page_nums - cnt
-                secs = (time.time() - start_t) / cnt * remaining
-                logging.info(
-                    "  ... {}/{} pages ({:.1%}) processed, "
-                    "{:02d}:{:02d}:{:02d} remaining".format(
-                        cnt,
-                        all_page_nums,
-                        cnt / all_page_nums,
-                        int(secs / 3600),
-                        int(secs / 60 % 60),
-                        int(secs % 60),
-                    )
-                )
-                last_t = time.time()
-
-
-        ret: Optional[PageHandlerReturn]
-        if self.num_threads == 1:
-            # Single-threaded version (without subprocessing).  This is
-            # primarily intended for debugging.
-            for page in self.get_all_pages(
-                namespace_ids, include_redirects, search_pattern=search_pattern
-            ):
-                success, ret_title, t, ret, err = phase2_page_handler(page)
-                assert ret_title == page.title
-                if not success:
-                    # Print error in parent process - do not remove
-                    logging.error(ret)
-                    lines = (
-                        err.splitlines()
-                        if err
-                        else ["NO ERROR MESSAGE FROM phase2_page_handler"]
-                    )
-                    msg = lines[0]
-                    trace = "\n".join(lines[1:])
-                    if "EXCEPTION" in msg:
-                        self.error(msg, trace=trace, sortid="core/1457")
-                    continue
-                if ret is not None:
-                    yield ret
-                process_counter()
-        else:
-            # Process pages using multiple parallel processes (the normal
-            # case)
-            print(f"Starting multiprocessing with {self.num_threads = }")
-            if self.num_threads is None:
-                pool = multiprocessing.Pool()
-            else:
-                pool = multiprocessing.Pool(self.num_threads)
-            for success, title, t, ret, err in pool.imap_unordered(
-                phase2_page_handler,
-                self.get_all_pages(
-                    namespace_ids,
-                    include_redirects,
-                    search_pattern=search_pattern,
-                ),
-            ):
-                if not success:
-                    # Print error in parent process - do not remove
-                    logging.error(err)
-                    continue
-                if ret is not None:
-                    yield ret
-                process_counter()
-
-            pool.close()
-            pool.join()
-
-        sys.stderr.flush()
-        sys.stdout.flush()
-
+    @lru_cache(maxsize=1000)
     def get_page(
         self, title: str, namespace_id: Optional[int] = None
     ) -> Optional[Page]:
@@ -1953,7 +1711,10 @@ class Wtp:
                 # Add namespace prefix
                 title = ns_prefix + title
 
-        query_str = "SELECT * FROM pages WHERE title = ?"
+        query_str = """
+        SELECT title, namespace_id, redirect_to, need_pre_expand, body, model
+        FROM pages WHERE title = ?
+        """
         if namespace_id is not None:
             query_str += " AND namespace_id = ?"
         query_str += " LIMIT 1"
@@ -1984,27 +1745,21 @@ class Wtp:
         self,
         namespace_ids: Optional[List[int]] = None,
         include_redirects: bool = True,
+        model: Optional[str] = None,
         search_pattern: Optional[str] = None,
     ) -> Generator[Page, None, None]:
-        query_str = (
-            "SELECT title, namespace_id, redirect_to, "
-            "need_pre_expand, body, model"
-            " FROM pages"
+        query_str = """
+        SELECT title, namespace_id, redirect_to, need_pre_expand, body, model
+        FROM pages
+        """
+        where_str, query_values = self.build_sql_where_query(
+            namespace_ids, include_redirects, model, search_pattern
         )
-
-        where_str, placeholders = self.sql_where(namespace_ids,
-                                         include_redirects,
-                                         search_pattern)
-
-        query_str += where_str +  " ORDER BY title ASC"
+        query_str += where_str + " ORDER BY title ASC"
         # print("Getting all pages for query:"
         #       f"{query_str=!r}, {placeholders=!r}")
 
-
-        for result in self.db_conn.execute(
-            query_str,
-            placeholders,
-        ):
+        for result in self.db_conn.execute(query_str, query_values):
             yield Page(
                 title=result[0],
                 namespace_id=result[1],
@@ -2115,9 +1870,10 @@ class Wtp:
         # print("parse tree: {}".format(root))
         return root
 
-    def node_to_wikitext(self,
-        node: WikiNode, 
-        node_handler_fn: Optional[NodeHandlerFnCallable]=None
+    def node_to_wikitext(
+        self,
+        node: WikiNode,
+        node_handler_fn: Optional[NodeHandlerFnCallable] = None,
     ) -> str:
         """Converts the given parse tree node back to Wikitext."""
         v = to_wikitext(node, node_handler_fn=node_handler_fn)
@@ -2126,9 +1882,9 @@ class Wtp:
     def node_to_html(
         self,
         node: WikiNode,
-        template_fn: Optional[TemplateFnCallable]=None,
-        post_template_fn: Optional[PostTemplateFnCallable]=None,
-        node_handler_fn: Optional[NodeHandlerFnCallable]=None,
+        template_fn: Optional[TemplateFnCallable] = None,
+        post_template_fn: Optional[PostTemplateFnCallable] = None,
+        node_handler_fn: Optional[NodeHandlerFnCallable] = None,
     ) -> str:
         """Converts the given parse tree node to HTML."""
         return to_html(
@@ -2164,9 +1920,7 @@ def is_chinese_subtitle_template(wtp: Wtp, title: str) -> bool:
     template_ns = wtp.NAMESPACE_DATA.get("Template", {"name": None})
     template_ns_local_name = template_ns.get("name")
     if template_ns_local_name:
-        title_no_prefix = title.removeprefix(
-            template_ns_local_name + ":"
-        )
+        title_no_prefix = title.removeprefix(template_ns_local_name + ":")
     else:
         title_no_prefix = title
     for token in ["-", "="]:

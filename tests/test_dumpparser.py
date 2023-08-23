@@ -1,16 +1,26 @@
 import unittest
-from unittest.mock import patch
 from collections import namedtuple
 from pathlib import Path
+from unittest.mock import patch
 
-from wikitextprocessor.dumpparser import path_is_on_windows_partition
+from wikitextprocessor import Wtp
+from wikitextprocessor.dumpparser import (
+    path_is_on_windows_partition,
+    process_dump,
+)
 
-sdisktype = namedtuple('sdisktype', 'fstype mountpoint')
+sdisktype = namedtuple("sdisktype", "fstype mountpoint")
+
 
 class DumpParserTests(unittest.TestCase):
-    
-    @patch('wikitextprocessor.dumpparser.disk_partitions')
-    @patch('pathlib.Path.resolve', new = lambda x: x)
+    def setUp(self):
+        self.wtp = Wtp()
+
+    def tearDown(self):
+        self.wtp.close_db_conn()
+
+    @patch("psutil.disk_partitions")
+    @patch("pathlib.Path.resolve", new=lambda x: x)
     def test_path_is_on_windows_partition_nix(self, mock_disk_partitions):
         partitions = [
             sdisktype("fakelongfsname", "/"),
@@ -25,16 +35,21 @@ class DumpParserTests(unittest.TestCase):
         self.assertTrue(path_is_on_windows_partition(Path("/mnt/windows0")))
         self.assertTrue(path_is_on_windows_partition(Path("/mnt/windows1/foo")))
 
-    @patch('wikitextprocessor.dumpparser.disk_partitions')
-    @patch('pathlib.Path.resolve', new = lambda x: x)
+    @patch("psutil.disk_partitions")
+    @patch("pathlib.Path.resolve", new=lambda x: x)
     def test_path_is_on_windows_partition_windows(self, mock_disk_partitions):
         partitions = [
             sdisktype("NTFS", "C:\\"),
             sdisktype("exFAT", "D:\\"),
         ]
-
         mock_disk_partitions.return_value = partitions
         self.assertTrue(path_is_on_windows_partition(Path("D:\\")))
         self.assertTrue(path_is_on_windows_partition(Path("C:\\Users\\user0")))
 
-
+    def test_process_dump(self):
+        process_dump(
+            self.wtp,
+            "tests/test-pages-articles.xml.bz2",
+            {0, 4, 10, 14, 100, 110, 118, 828},
+        )
+        self.assertGreater(self.wtp.saved_page_nums(), 0)
