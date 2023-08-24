@@ -33,10 +33,10 @@ from .parserfns import PARSER_FUNCTIONS, call_parser_function, tag_fn
 if TYPE_CHECKING:
     from lupa.lua51 import _LuaTable
 
-    from .core import NamespaceDataEntry, ParentData, Wtp
+    from .core import NamespaceDataEntry, Page, ParentData, Wtp
 
 # List of search paths for Lua libraries
-BUILTIN_LUA_SEARCH_PATHS = [
+BUILTIN_LUA_SEARCH_PATHS: List[Tuple[str, List[str]]] = [
     # [path, ignore_modules]
     (".", ["string", "debug"]),
     ("mediawiki-extensions-Scribunto/includes/engines/LuaCommon/lualib", []),
@@ -146,7 +146,7 @@ def mw_text_jsondecode(ctx: "Wtp", s: str, *rest: int) -> Dict[Any, Any]:
     # Assign locally to assure type-checker this exists
     table_from = ctx.lua.table_from
 
-    def recurse(x: Union[List, Tuple, Dict]):
+    def recurse(x: Union[List, Tuple, Dict]) -> Any:
         if isinstance(x, (list, tuple)):
             return table_from(list(map(recurse, x)))
         if not isinstance(x, dict):
@@ -180,7 +180,7 @@ def mw_text_jsondecode(ctx: "Wtp", s: str, *rest: int) -> Dict[Any, Any]:
 def mw_text_jsonencode(s: Any, *rest) -> str:
     flags = int(rest[0]) if rest else 0
 
-    def recurse(x):
+    def recurse(x) -> Any:
         if isinstance(x, (str, int, float, type(None), type(True))):
             return x
         if lupa.lua_type(x) == "table":
@@ -215,7 +215,7 @@ def get_page_info(ctx: "Wtp", title: str, namespace_id: int) -> "_LuaTable":
     assert ctx.lua is not None
 
     page_id = 0  # XXX collect required info in phase 1
-    page = ctx.get_page(title, namespace_id)
+    page: Optional["Page"] = ctx.get_page(title, namespace_id)
     # whether the page exists and what its id might be
     dt = {
         "id": page_id,
@@ -287,7 +287,7 @@ def call_set_functions(
     def debug_mw_text_jsondecode(x: str, *rest: int) -> Dict[Any, Any]:
         return mw_text_jsondecode(ctx, x, *rest)
 
-    def debug_get_page_info(title: str, ns_id: int, *bad_args):
+    def debug_get_page_info(title: str, ns_id: int, *bad_args) -> "_LuaTable":
         """Debug wrapper; *bad_args are a debugging parameter list that should
         not be populated, ever, but does; somewhere, the references to
         these functions in particular are being scrambled and the functions
@@ -348,8 +348,9 @@ def call_set_functions(
     )
 
 
-def initialize_lua(ctx: "Wtp"):
-    def filter_attribute_access(obj: Any, attr_name: str, is_setting: bool):
+def initialize_lua(ctx: "Wtp") -> None:
+    def filter_attribute_access(obj: Any, attr_name: str, is_setting: bool
+    ) -> str:
         if isinstance(attr_name, str) and not attr_name.startswith("_"):
             return attr_name
         raise AttributeError("access denied")
@@ -379,7 +380,7 @@ def initialize_lua(ctx: "Wtp"):
     # the Lua loader to our custom loader; we will then use it to load the
     # bigger phase 2 of the sandbox.  This way, most of the sandbox loading
     # will benefit from caching and precompilation (when implemented).
-    with open(LUA_DIR / "_sandbox_phase1.lua", encoding="utf-8") as f:
+    with (LUA_DIR / "_sandbox_phase1.lua").open(encoding="utf-8") as f:
         phase1_result: "_LuaTable" = lua.execute(f.read())
         set_loader = phase1_result[1]
         clear_loaddata_cache = phase1_result[2]
