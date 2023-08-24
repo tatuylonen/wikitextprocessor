@@ -2178,6 +2178,17 @@ def foo(x):
         node = tree.children[0]
         self.assertTrue(node.contain_node(NodeKind.LIST_ITEM))
 
+    def test_find_html(self):
+        tree = self.parse("t", "<h1><p></p></h1>")
+        node = tree.children[0]
+        for p_tag in node.find_html("p"):
+            self.assertEqual(p_tag, "p")
+
+    def test_find_html_recursively(self):
+        tree = self.parse("t", "<h1><p><a></a></p></h1>")
+        node = tree.children[0]
+        for a_tag in node.find_html("a"):
+            self.assertEqual(a_tag, "a")
 
 # XXX implement <nowiki/> marking for links, templates
 #  - https://en.wikipedia.org/wiki/Help:Wikitext#Nowiki

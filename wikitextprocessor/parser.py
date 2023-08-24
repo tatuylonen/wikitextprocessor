@@ -362,6 +362,17 @@ class WikiNode:
             return True
         return False
 
+    def find_html(self, target_tag: str) -> Iterator["HTMLNode"]:
+        for node in self.find_child(NodeKind.HTML):
+            if node.tag == target_tag:
+                yield node
+
+    def find_html_recursively(self, target_tag: str) -> Iterator["HTMLNode"]:
+        for node in self.find_child_recursively(NodeKind.HTML):
+            if node.tag == target_tag:
+                yield node
+
+
 class TemplateNode(WikiNode):
     def __init__(self, linenum: int):
         super().__init__(NodeKind.TEMPLATE, linenum)
@@ -413,12 +424,23 @@ class TemplateNode(WikiNode):
         return parameters
 
 
+class HTMLNode(WikiNode):
+    def __init__(self, linenum: int):
+        super().__init__(NodeKind.HTML, linenum)
+
+    @property
+    def tag(self):
+        return self.sarg
+
+
 def _parser_push(ctx: "Wtp", kind: NodeKind) -> WikiNode:
     """Pushes a new node of the specified kind onto the stack."""
     assert isinstance(kind, NodeKind)
     _parser_merge_str_children(ctx)
     if kind == NodeKind.TEMPLATE:
         node = TemplateNode(ctx.linenum)
+    elif kind == NodeKind.HTML:
+        node = HTMLNode(ctx.linenum)
     else:
         node = WikiNode(kind, ctx.linenum)
     prev = ctx.parser_stack[-1]
