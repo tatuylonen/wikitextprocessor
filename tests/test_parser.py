@@ -1169,19 +1169,23 @@ def foo(x):
     def test_template2(self):
         tree = self.parse("test", "{{foo|bar||z|1-1/2|}}")
         self.assertEqual(len(tree.children), 1)
-        b = tree.children[0]
-        self.assertEqual(b.kind, NodeKind.TEMPLATE)
-        self.assertEqual(b.largs, [["foo"], ["bar"], [], ["z"], ["1-1/2"], []])
-        self.assertEqual(b.children, [])
+        node = tree.children[0]
+        self.assertEqual(node.kind, NodeKind.TEMPLATE)
+        self.assertEqual(node.largs, [["foo"], ["bar"], [], ["z"], ["1-1/2"], []])
+        self.assertEqual(node.children, [])
+        self.assertEqual(node.template_name, "foo")
+        self.assertEqual(node.template_parameters, {1: "bar", 2: "z", 3: "1-1/2"})
 
     def test_template3(self):
         tree = self.parse("test", "{{\nfoo\n|\nname=testi|bar\n|\nbaz}}")
         self.assertEqual(len(tree.children), 1)
-        b = tree.children[0]
-        self.assertEqual(b.kind, NodeKind.TEMPLATE)
-        self.assertEqual(b.largs, [["\nfoo\n"], ["\nname=testi"], ["bar\n"],
+        node = tree.children[0]
+        self.assertEqual(node.kind, NodeKind.TEMPLATE)
+        self.assertEqual(node.largs, [["\nfoo\n"], ["\nname=testi"], ["bar\n"],
                                   ["\nbaz"]])
-        self.assertEqual(b.children, [])
+        self.assertEqual(node.children, [])
+        self.assertEqual(node.template_name, "\nfoo\n")
+        self.assertEqual(node.template_parameters, {"name": "testi", 1: "bar\n", 2: "\nbaz"})
 
     def test_template4(self):
         tree = self.parse("test", "{{foo bar|name=test word|tässä}}")
@@ -1346,6 +1350,15 @@ def foo(x):
         self.assertEqual(t.kind, NodeKind.TEMPLATE)
         self.assertEqual(t.children, [])
         self.assertEqual(t.largs, [["x"], ["3>"]])
+
+    def test_template18(self):
+        tree = self.parse("test", "{{foo|name={{bar}}|foo}}")
+        node = tree.children[0]
+        self.assertEqual(node.template_name, "foo")
+        parameters = node.template_parameters
+        named_parameter = parameters["name"]
+        self.assertEqual(named_parameter.template_name, "bar")
+        self.assertEqual(parameters[1], "foo")
 
     def test_templatevar1(self):
         tree = self.parse("test", "{{{foo}}}")
