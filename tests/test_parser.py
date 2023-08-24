@@ -2144,6 +2144,40 @@ def foo(x):
         self.assertEqual(first_zh_x_node.kind, NodeKind.TEMPLATE)
         self.assertEqual(first_zh_x_node.largs[0], ['zh-x'])
 
+    def test_find_node(self):
+        tree = self.parse(
+            "t",
+            """== English ==
+=== Noun ===
+=== Verb ==="""
+        )
+        node = tree.children[0]
+        level_nodes = list(node.find_child(NodeKind.LEVEL3))
+        self.assertEqual(len(level_nodes), 2)
+
+    def test_find_node_recursively(self):
+        tree = self.parse(
+            "t",
+            """== English ==
+=== Noun ===
+# gloss 1
+# gloss 2"""
+        )
+        node = tree.children[0]
+        list_items = list(node.find_child_recursively(NodeKind.LIST_ITEM))
+        self.assertEqual(len(list_items), 2)
+
+    def test_contain_node(self):
+        tree = self.parse(
+            "t",
+            """== English ==
+=== Noun ===
+# gloss 1
+# gloss 2"""
+        )
+        node = tree.children[0]
+        self.assertTrue(node.contain_node(NodeKind.LIST_ITEM))
+
 
 # XXX implement <nowiki/> marking for links, templates
 #  - https://en.wikipedia.org/wiki/Help:Wikitext#Nowiki

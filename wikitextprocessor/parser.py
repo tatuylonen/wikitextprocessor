@@ -334,6 +334,33 @@ class WikiNode:
     def __repr__(self) -> str:
         return self.__str__()
 
+    def find_child(self, target_kind: NodeKind) -> Iterator["WikiNode"]:
+        for child in self.children:
+            if isinstance(child, WikiNode) and child.kind == target_kind:
+                yield child
+
+    def _find_node_recursively(
+        self, current_node: Union["WikiNode", str], target_kind: NodeKind
+    ) -> Iterator["WikiNode"]:
+        if isinstance(current_node, WikiNode):
+            for child in current_node.children:
+                if isinstance(child, WikiNode):
+                    if child.kind == target_kind:
+                        yield child
+                    for nest_child in child.children:
+                        yield from self._find_node_recursively(
+                            nest_child, target_kind
+                        )
+
+    def find_child_recursively(
+        self, target_kind: NodeKind
+    ) -> Iterator["WikiNode"]:
+        yield from self._find_node_recursively(self, target_kind)
+
+    def contain_node(self, target_kind: NodeKind) -> bool:
+        for node in self.find_child_recursively(target_kind):
+            return True
+        return False
 
 class TemplateNode(WikiNode):
     def __init__(self, linenum: int):
