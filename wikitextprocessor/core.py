@@ -1692,37 +1692,46 @@ class Wtp:
         title = title.replace("_", " ")
         if title.startswith("Main:"):
             title = title[5:]
+
+        upper_case_title = title  # the first letter is upper case
         if namespace_id is not None and namespace_id != 0:
             local_ns_name = self.LOCAL_NS_NAME_BY_ID[namespace_id]
             ns_prefix = local_ns_name + ":"
-            if self.lang_code == "zh" and namespace_id in {
+            if namespace_id in {
                 self.NAMESPACE_DATA[ns]["id"] for ns in ["Template", "Module"]
             }:
-                # Chinese Wiktionary capitalizes the first letter of template/module
-                # page titles but uses lower case in Wikitext and Lua code
+                # Chinese Wiktionary and English Wikipedia capitalize the first
+                # letter of template/module page titles but use lower case in
+                # Wikitext and Lua code
                 if title.startswith(ns_prefix):
                     template_name = title[len(ns_prefix) :]
-                    title = (
+                    upper_case_title = (
                         ns_prefix + template_name[0].upper() + template_name[1:]
                     )
                 else:
-                    title = ns_prefix + title[0].upper() + title[1:]
+                    upper_case_title = ns_prefix + title[0].upper() + title[1:]
+                    title = ns_prefix + title
             elif not title.startswith(ns_prefix):
                 # Add namespace prefix
                 title = ns_prefix + title
 
         query_str = """
         SELECT title, namespace_id, redirect_to, need_pre_expand, body, model
-        FROM pages WHERE title = ?
+        FROM pages
         """
+        query_values = []
+        if upper_case_title != title:
+            query_str += " WHERE (title = ? OR title = ?)"
+            query_values.extend([title, upper_case_title])
+        else:
+            query_str += " WHERE title = ?"
+            query_values.append(title)
         if namespace_id is not None:
             query_str += " AND namespace_id = ?"
+            query_values.append(namespace_id)
         query_str += " LIMIT 1"
         try:
-            for result in self.db_conn.execute(
-                query_str,
-                (title,) if namespace_id is None else (title, namespace_id),
-            ):
+            for result in self.db_conn.execute(query_str, tuple(query_values)):
                 return Page(
                     title=result[0],
                     namespace_id=result[1],
