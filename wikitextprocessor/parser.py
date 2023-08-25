@@ -362,6 +362,14 @@ class WikiNode:
             return True
         return False
 
+    def filter_empty_str_child(self) -> Iterator[Union[str, "WikiNode"]]:
+        for node in self.children:
+            if isinstance(node, str):
+                if len(node.strip()) > 0:
+                    yield node
+            else:
+                  yield node
+
     def find_html(self, target_tag: str) -> Iterator["HTMLNode"]:
         for node in self.find_child(NodeKind.HTML):
             if node.tag == target_tag:

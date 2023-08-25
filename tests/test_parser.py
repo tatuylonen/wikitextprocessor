@@ -2291,6 +2291,14 @@ def foo(x):
             self.assertTrue(isinstance(a_tag, HTMLNode))
             self.assertEqual(a_tag.tag, "a")
 
+    def test_filter_empty_str_child(self):
+        tree = self.parse("t", "==English==\n===Noun===")
+        node = tree.children[0]
+        filered_children = list(node.filter_empty_str_child())
+        self.assertEqual(len(filered_children), 1)
+        pos_node = filered_children[0]
+        self.assertTrue(isinstance(pos_node, WikiNode))
+        self.assertEqual(pos_node.kind, NodeKind.LEVEL3)
 
 # XXX implement <nowiki/> marking for links, templates
 #  - https://en.wikipedia.org/wiki/Help:Wikitext#Nowiki
