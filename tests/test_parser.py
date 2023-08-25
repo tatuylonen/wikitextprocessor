@@ -2275,6 +2275,10 @@ def foo(x):
         node = tree.children[0]
         self.assertTrue(node.contain_node(NodeKind.LIST_ITEM))
 
+        tree = self.parse("t", "{{foo|{{bar}}}}")
+        node = tree.children[0]
+        self.assertTrue(node.contain_node(NodeKind.TEMPLATE))
+
     def test_find_html(self):
         tree = self.parse("t", "<div><p></p></div>")
         node = tree.children[0]

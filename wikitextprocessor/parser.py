@@ -340,25 +340,31 @@ class WikiNode:
                 yield child
 
     def _find_node_recursively(
-        self, current_node: Union["WikiNode", str], target_kind: NodeKind
+        self,
+        start_node: "WikiNode",
+        current_node: Union["WikiNode", str],
+        target_kind: NodeKind,
     ) -> Iterator["WikiNode"]:
         if isinstance(current_node, WikiNode):
+            if current_node != start_node and current_node.kind == target_kind:
+                yield current_node
             for child in current_node.children:
-                if isinstance(child, WikiNode):
-                    if child.kind == target_kind:
-                        yield child
-                    for nest_child in child.children:
-                        yield from self._find_node_recursively(
-                            nest_child, target_kind
-                        )
+                yield from self._find_node_recursively(
+                    start_node, child, target_kind
+                )
+            for arg_list in current_node.largs:
+                for arg in arg_list:
+                    yield from self._find_node_recursively(
+                        start_node, arg, target_kind
+                    )
 
     def find_child_recursively(
         self, target_kind: NodeKind
     ) -> Iterator["WikiNode"]:
-        yield from self._find_node_recursively(self, target_kind)
+        yield from self._find_node_recursively(self, self, target_kind)
 
     def contain_node(self, target_kind: NodeKind) -> bool:
-        for node in self.find_child_recursively(target_kind):
+        for node in self._find_node_recursively(self, self, target_kind):
             return True
         return False
 
@@ -368,7 +374,7 @@ class WikiNode:
                 if len(node.strip()) > 0:
                     yield node
             else:
-                  yield node
+                yield node
 
     def find_html(self, target_tag: str) -> Iterator["HTMLNode"]:
         for node in self.find_child(NodeKind.HTML):
@@ -376,7 +382,7 @@ class WikiNode:
                 yield node
 
     def find_html_recursively(self, target_tag: str) -> Iterator["HTMLNode"]:
-        for node in self.find_child_recursively(NodeKind.HTML):
+        for node in self.find_child_recursively(self, NodeKind.HTML):
             if node.tag == target_tag:
                 yield node
 
