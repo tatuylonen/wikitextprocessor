@@ -50,6 +50,9 @@ dev = [
     "nose2[coverage_plugin]",
     "tomli; python_version <= '3.10'",  # for coverage parsing TOML file
     "types-lxml",
+    "isort",
+    "black",
+    "ruff",
 ]
 
 [project.urls]
@@ -77,3 +80,6 @@ mypy_path = "typestubs"
 branch = true
 concurrency = ["multiprocessing"]
 omit = ["tests/*"]
+
+[tool.black]
+line-length = 80
