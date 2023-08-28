@@ -48,7 +48,7 @@ For pre-existing extraction modules that use this package, please see:
 Install from source:
 
 ```
-git clone https://github.com/tatuylonen/wikitextprocessor.git
+git clone --recurse-submodules --shallow-submodules https://github.com/tatuylonen/wikitextprocessor.git
 cd wikitextprocessor
 python -m venv .venv
 source .venv/bin/activate
