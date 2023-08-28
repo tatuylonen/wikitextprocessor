@@ -9,7 +9,14 @@ import datetime
 import urllib.parse
 import dateparser
 
-from typing import TYPE_CHECKING, List, Optional
+from typing import (
+    Dict,
+    List,
+    Optional,
+    TYPE_CHECKING,
+    Union,
+)
+
 from collections.abc import Callable
 
 from .wikihtml import ALLOWED_HTML_TAGS
@@ -39,7 +46,7 @@ def if_fn(ctx: "Wtp", fn_name: str,
           expander: Callable[[str], str]
          ) -> str:
     """Implements #if parser function."""
-    # print(f"if_fn: {args}")  # XXX remove me
+    # print(f"if_fn: {args}") 
     arg0: str = args[0] if args else ""
     arg1: str = args[1] if len(args) >= 2 else ""
     arg2: str = args[2] if len(args) >= 3 else ""
@@ -112,12 +119,17 @@ def ifexist_fn(ctx: "Wtp", fn_name: str,
     return expander(arg2).strip()
 
 
-def switch_fn(ctx, fn_name, args, expander):
+def switch_fn(
+    ctx: "Wtp",
+    fn_name: str,
+    args: List[str],
+    expander: Callable[[str], str]
+) -> str:
     """Implements #switch parser function."""
     val = expander(args[0]).strip() if args else ""
     match_next = False
-    defval = None
-    last = None
+    defval: Optional[str] = None
+    last: Optional[str] = None
     for i in range(1, len(args)):
         arg = args[i]
         m = re.match(r"(?s)^([^=]*)=(.*)$", arg)
@@ -138,7 +150,12 @@ def switch_fn(ctx, fn_name, args, expander):
     return last or ""
 
 
-def categorytree_fn(ctx, fn_name, args, expander):
+def categorytree_fn(
+    ctx: "Wtp",
+    fn_name: str,
+    args: List[str],
+    expander: Callable
+) -> str:
     """Implements the #categorytree parser function.  This function accepts
     keyed arguments."""
     assert isinstance(args, dict)
@@ -147,11 +164,16 @@ def categorytree_fn(ctx, fn_name, args, expander):
     return ""
 
 
-def lst_fn(ctx, fn_name, args, expander):
+def lst_fn(
+    ctx: "Wtp",
+    fn_name: str,
+    args: List[str],
+    expander: Callable[[str], str]
+) -> str:
     """Implements the #lst (alias #section etc) parser function."""
     pagetitle = expander(args[0]).strip() if args else ""
     chapter = expander(args[1]).strip() if len(args) >= 2 else ""
-    text = ctx.read_by_title(pagetitle)
+    text: Optional[str] = ctx.read_by_title(pagetitle)
     if text is None:
         ctx.warning("{} trying to transclude chapter {!r} from non-existent "
                     "page {!r}"
@@ -159,7 +181,7 @@ def lst_fn(ctx, fn_name, args, expander):
                     sortid="parserfns/132")
         return ""
 
-    parts = []
+    parts: List[str] = []
     for m in re.finditer(r"(?si)<\s*section\s+begin={}\s*/\s*>(.*?)"
                          r"<\s*section\s+end={}\s*/\s*>"
                          .format(re.escape(chapter),
@@ -173,11 +195,12 @@ def lst_fn(ctx, fn_name, args, expander):
     return "".join(parts)
 
 
-def tag_fn(ctx: "Wtp",
-           fn_name: str,
-           args: List[str],
-           expander: Callable[[str], str]
-          ) -> str:
+def tag_fn(
+    ctx: "Wtp",
+   fn_name: str,
+   args: List[str],
+   expander: Callable[[str], str]
+) -> str:
     """Implements #tag parser function."""
     tag = expander(args[0]).lower() if args else ""
     if tag not in ALLOWED_HTML_TAGS and tag != "nowiki":
@@ -216,7 +239,12 @@ def tag_fn(ctx: "Wtp",
     return ret
 
 
-def fullpagename_fn(ctx, fn_name, args, expander):
+def fullpagename_fn(
+    ctx: "Wtp",
+    fn_name: str,
+    args: List[str],
+    expander: Callable[[str], str]
+) -> str:
     """Implements the FULLPAGENAME magic word/parser function."""
     t = expander(args[0]) if args else ctx.title
     t = re.sub(r"\s+", " ", t)
@@ -235,25 +263,45 @@ def fullpagename_fn(ctx, fn_name, args, expander):
     return t
 
 
-def fullpagenamee_fn(ctx, fn_name, args, expander):
+def fullpagenamee_fn(
+    ctx: "Wtp",
+    fn_name: str,
+    args: List[str],
+    expander: Callable[[str], str]
+) -> str:
     """Implements the FULLPAGENAMEE magic word/parser function."""
     t = fullpagename_fn(ctx, fn_name, args, expander)
     return wikiurlencode(t)
 
 
-def pagenamee_fn(ctx, fn_name, args, expander):
+def pagenamee_fn(
+    ctx: "Wtp",
+    fn_name: str,
+    args: List[str],
+    expander: Callable[[str], str]
+) -> str:
     """Implements the PAGENAMEE magic word/parser function."""
     t = pagename_fn(ctx, fn_name, args, expander)
     return wikiurlencode(t)
 
 
-def rootpagenamee_fn(ctx, fn_name, args, expander):
+def rootpagenamee_fn(
+    ctx: "Wtp",
+    fn_name: str,
+    args: List[str],
+    expander: Callable[[str], str]
+) -> str:
     """Implements the ROOTPAGENAMEE magic word/parser function."""
     t = rootpagename_fn(ctx, fn_name, args, expander)
     return wikiurlencode(t)
 
 
-def pagename_fn(ctx, fn_name, args, expander):
+def pagename_fn(
+    ctx: "Wtp",
+    fn_name: str,
+    args: List[str],
+    expander: Callable[[str], str]
+) -> str:
     """Implements the PAGENAME magic word/parser function."""
     t = expander(args[0]) if args else ctx.title
     t = re.sub(r"\s+", " ", t)
@@ -267,7 +315,12 @@ def pagename_fn(ctx, fn_name, args, expander):
     return t
 
 
-def basepagename_fn(ctx, fn_name, args, expander):
+def basepagename_fn(
+    ctx: "Wtp",
+    fn_name: str,
+    args: List[str],
+    expander: Callable[[str], str]
+) -> str:
     """Implements the BASEPAGENAME magic word/parser function."""
     t = expander(args[0]) if args else ctx.title
     t = re.sub(r"\s+", " ", t)
@@ -278,7 +331,12 @@ def basepagename_fn(ctx, fn_name, args, expander):
     return pagename_fn(ctx, fn_name, [t], lambda x: x)
 
 
-def rootpagename_fn(ctx, fn_name, args, expander):
+def rootpagename_fn(
+    ctx: "Wtp",
+    fn_name: str,
+    args: List[str],
+    expander: Callable[[str], str]
+) -> str:
     """Implements the ROOTPAGENAME magic word/parser function."""
     t = expander(args[0]) if args else ctx.title
     t = re.sub(r"\s+", " ", t)
@@ -289,7 +347,12 @@ def rootpagename_fn(ctx, fn_name, args, expander):
     return pagename_fn(ctx, fn_name, [t], lambda x: x)
 
 
-def subpagename_fn(ctx, fn_name, args, expander):
+def subpagename_fn(
+    ctx: "Wtp",
+    fn_name: str,
+    args: List[str],
+    expander: Callable[[str], str]
+) -> str:
     """Implements the SUBPAGENAME magic word/parser function."""
     t = expander(args[0]) if args else ctx.title
     t = re.sub(r"\s+", " ", t)
@@ -301,26 +364,41 @@ def subpagename_fn(ctx, fn_name, args, expander):
         return pagename_fn(ctx, fn_name, [t], lambda x: x)
 
 
-def talkpagename_fn(ctx, fn_name, args, expander):
+def talkpagename_fn(
+    ctx: "Wtp",
+    fn_name: str,
+    args: List[str],
+    expander: Callable[[str], str]
+) -> str:
     """Implements the TALKPAGENAME magic word."""
     ofs = ctx.title.find(":")
     if ofs < 0:
         return ctx.NAMESPACE_DATA["Talk"]["name"] + ":" + ctx.title
-    if ofs >= 0:
+    else:
         prefix = ctx.title[:ofs]
         if prefix not in ctx.NAMESPACE_DATA:
             return ctx.NAMESPACE_DATA["Talk"]["name"] + ":" + ctx.title
         return ctx.NAMESPACE_DATA[prefix + " talk"]["name"] + ":" + ctx.title[ofs + 1:]
 
 
-def namespacenumber_fn(ctx, fn_name, args, expander):
+def namespacenumber_fn(
+    ctx: "Wtp",
+    fn_name: str,
+    args: List[str],
+    expander: Callable[[str], str]
+) -> str:
     """Implements the NAMESPACENUMBER magic word/parser function."""
     # XXX currently hard-coded to return the name space number for the Main
     # namespace
-    return 0
+    return "0"
 
 
-def namespace_fn(ctx, fn_name, args, expander):
+def namespace_fn(
+    ctx: "Wtp",
+    fn_name: str,
+    args: List[str],
+    expander: Callable[[str], str]
+) -> str:
     """Implements the NAMESPACE magic word/parser function."""
     t = expander(args[0]) if args else ctx.title
     t = re.sub(r"\s+", " ", t)
@@ -334,7 +412,12 @@ def namespace_fn(ctx, fn_name, args, expander):
     return ""
 
 
-def subjectspace_fn(ctx, fn_name, args, expander):
+def subjectspace_fn(
+    ctx: "Wtp",
+    fn_name: str,
+    args: List[str],
+    expander: Callable[[str], str]
+) -> str:
     """Implements the SUBJECTSPACE magic word/parser function.  This
     implementation is very minimal."""
     t = expander(args[0]) if args else ctx.title
@@ -344,7 +427,12 @@ def subjectspace_fn(ctx, fn_name, args, expander):
     return ""
 
 
-def talkspace_fn(ctx, fn_name, args, expander):
+def talkspace_fn(
+    ctx: "Wtp",
+    fn_name: str,
+    args: List[str],
+    expander: Callable[[str], str]
+) -> str:
     """Implements the TALKSPACE magic word/parser function.  This
     implementation is very minimal."""
     t = expander(args[0]) if args else ctx.title
@@ -354,32 +442,62 @@ def talkspace_fn(ctx, fn_name, args, expander):
     return ctx.NAMESPACE_DATA["Talk"]["name"]
 
 
-def server_fn(ctx, fn_name, args, expander):
+def server_fn(
+    ctx: "Wtp",
+    fn_name: str,
+    args: List[str],
+    expander: Callable[[str], str]
+) -> str:
     """Implements the SERVER magic word."""
     return "//{}".format(SERVER_NAME)
 
 
-def servername_fn(ctx, fn_name, args, expander):
+def servername_fn(
+    ctx: "Wtp",
+    fn_name: str,
+    args: List[str],
+    expander: Callable[[str], str]
+) -> str:
     """Implements the SERVERNAME magic word."""
     return SERVER_NAME
 
 
-def currentyear_fn(ctx, fn_name, args, expander):
+def currentyear_fn(
+    ctx: "Wtp",
+    fn_name: str,
+    args: List[str],
+    expander: Callable[[str], str]
+) -> str:
     """Implements the CURRENTYEAR magic word."""
     return str(datetime.datetime.utcnow().year)
 
 
-def currentmonth_fn(ctx, fn_name, args, expander):
+def currentmonth_fn(
+    ctx: "Wtp",
+    fn_name: str,
+    args: List[str],
+    expander: Callable[[str], str]
+) -> str:
     """Implements the CURRENTMONTH magic word."""
     return "{:02d}".format(datetime.datetime.utcnow().month)
 
 
-def currentmonth1_fn(ctx, fn_name, args, expander):
+def currentmonth1_fn(
+    ctx: "Wtp",
+    fn_name: str,
+    args: List[str],
+    expander: Callable[[str], str]
+) -> str:
     """Implements the CURRENTMONTH1 magic word."""
     return "{:d}".format(datetime.datetime.utcnow().month)
 
 
-def currentmonthname_fn(ctx, fn_name, args, expander):
+def currentmonthname_fn(
+    ctx: "Wtp",
+    fn_name: str,
+    args: List[str],
+    expander: Callable[[str], str]
+) -> str:
     """Implements the CURRENTMONTHNAME magic word."""
     # XXX support for other languages?
     month = datetime.datetime.utcnow().month
@@ -388,7 +506,12 @@ def currentmonthname_fn(ctx, fn_name, args, expander):
             "December")[month]
 
 
-def currentmonthabbrev_fn(ctx, fn_name, args, expander):
+def currentmonthabbrev_fn(
+    ctx: "Wtp",
+    fn_name: str,
+    args: List[str],
+    expander: Callable[[str], str]
+) -> str:
     """Implements the CURRENTMONTHABBREV magic word."""
     # XXX support for other languages?
     month = datetime.datetime.utcnow().month
@@ -396,34 +519,64 @@ def currentmonthabbrev_fn(ctx, fn_name, args, expander):
             "Jul", "Aug", "Sep", "Oct", "Nov", "Dec")[month]
 
 
-def currentday_fn(ctx, fn_name, args, expander):
+def currentday_fn(
+    ctx: "Wtp",
+    fn_name: str,
+    args: List[str],
+    expander: Callable[[str], str]
+) -> str:
     """Implements the CURRENTDAY magic word."""
     return "{:d}".format(datetime.datetime.utcnow().day)
 
 
-def currentday2_fn(ctx, fn_name, args, expander):
+def currentday2_fn(
+    ctx: "Wtp",
+    fn_name: str,
+    args: List[str],
+    expander: Callable[[str], str]
+) -> str:
     """Implements the CURRENTDAY2 magic word."""
     return "{:02d}".format(datetime.datetime.utcnow().day)
 
 
-def currentdow_fn(ctx, fn_name, args, expander):
+def currentdow_fn(
+    ctx: "Wtp",
+    fn_name: str,
+    args: List[str],
+    expander: Callable[[str], str]
+) -> str:
     """Implements the CURRENTDOW magic word."""
     return "{:d}".format(datetime.datetime.utcnow().weekday())
 
 
-def revisionid_fn(ctx, fn_name, args, expander):
+def revisionid_fn(
+    ctx: "Wtp",
+    fn_name: str,
+    args: List[str],
+    expander: Callable[[str], str]
+) -> str:
     """Implements the REVISIONID magic word."""
     # We just return a dash, similar to "miser mode" in MediaWiki."""
     return "-"
 
 
-def revisionuser_fn(ctx, fn_name, args, expander):
+def revisionuser_fn(
+    ctx: "Wtp",
+    fn_name: str,
+    args: List[str],
+    expander: Callable[[str], str]
+) -> str:
     """Implements the REVISIONUSER magic word."""
     # We always return AnonymousUser
     return "AnonymousUser"
 
 
-def displaytitle_fn(ctx, fn_name, args, expander):
+def displaytitle_fn(
+    ctx: "Wtp",
+    fn_name: str,
+    args: List[str],
+    expander: Callable[[str], str]
+) -> str:
     """Implements the DISPLAYTITLE magic word/parser function."""
     t = expander(args[0]) if args else ""
     # XXX this should at least remove html tags h1 h2 h3 h4 h5 h6 div blockquote
@@ -434,19 +587,35 @@ def displaytitle_fn(ctx, fn_name, args, expander):
     return ""
 
 
-def defaultsort_fn(ctx, fn_nae, args, expander):
+def defaultsort_fn(
+    ctx: "Wtp",
+    fn_name: str,
+    args: List[str],
+    expander: Callable[[str], str]
+) -> str:
+
     """Implements the DEFAULTSORT magic word/parser function."""
     # XXX apparently this should set the title by which this page is
     # sorted in category listings
     return ""
 
 
-def lc_fn(ctx, fn_name, args, expander):
+def lc_fn(
+    ctx: "Wtp",
+    fn_name: str,
+    args: List[str],
+    expander: Callable[[str], str]
+) -> str:
     """Implements the lc parser function (lowercase)."""
     return expander(args[0]).strip().lower() if args else ""
 
 
-def lcfirst_fn(ctx, fn_name, args, expander):
+def lcfirst_fn(
+    ctx: "Wtp",
+    fn_name: str,
+    args: List[str],
+    expander: Callable[[str], str]
+) -> str:
     """Implements the lcfirst parser function (lowercase first character)."""
     t = expander(args[0]).strip() if args else ""
     if not t:
@@ -454,19 +623,34 @@ def lcfirst_fn(ctx, fn_name, args, expander):
     return t[0].lower() + t[1:]
 
 
-def uc_fn(ctx, fn_name, args, expander):
+def uc_fn(
+    ctx: "Wtp",
+    fn_name: str,
+    args: List[str],
+    expander: Callable[[str], str]
+) -> str:
     """Implements the uc parser function (uppercase)."""
     t = expander(args[0]).strip() if args else ""
     return t.upper()
 
 
-def ucfirst_fn(ctx, fn_name, args, expander):
+def ucfirst_fn(
+    ctx: "Wtp",
+    fn_name: str,
+    args: List[str],
+    expander: Callable[[str], str]
+) -> str:
     """Implements the ucfirst parser function (capitalize first character)."""
     t = expander(args[0]).strip() if args else ""
     return capitalizeFirstOnly(t)
 
 
-def formatnum_fn(ctx, fn_name, args, expander):
+def formatnum_fn(
+    ctx: "Wtp",
+    fn_name: str,
+    args: List[str],
+    expander: Callable[[str], str]
+) -> str:
     """Implements the formatnum parser function."""
     arg0 = expander(args[0]).strip() if args else ""
     arg1 = expander(args[1]).strip() if len(args) >= 2 else ""
@@ -493,7 +677,12 @@ def formatnum_fn(ctx, fn_name, args, expander):
     return "".join(parts)
 
 
-def dateformat_fn(ctx, fn_name, args, expander):
+def dateformat_fn(
+    ctx: "Wtp",
+    fn_name: str,
+    args: List[str],
+    expander: Callable[[str], str]
+) -> str:
     """Implements the #dateformat (= #formatdate) parser function."""
     arg0 = expander(args[0]) if args else ""
     arg0x = arg0
@@ -532,7 +721,12 @@ def dateformat_fn(ctx, fn_name, args, expander):
     return dt.isoformat()
 
 
-def localurl_fn(ctx, fn_name, args, expander):
+def localurl_fn(
+    ctx: "Wtp",
+    fn_name: str,
+    args: List[str],
+    expander: Callable[[str], str]
+) -> str:
     """Implements the localurl parser function."""
     arg0 = expander(args[0]).strip() if args else ctx.title
     arg1 = expander(args[1]).strip() if len(args) >= 2 else ""
@@ -545,7 +739,12 @@ def localurl_fn(ctx, fn_name, args, expander):
     return url
 
 
-def fullurl_fn(ctx, fn_name, args, expander):
+def fullurl_fn(
+    ctx: "Wtp",
+    fn_name: str,
+    args: List[str],
+    expander: Callable[[str], str]
+) -> str:
     """Implements the fullurl parser function."""
     arg0 = expander(args[0]).strip() if args else ""
     # XXX handle interwiki prefixes in arg0
@@ -563,7 +762,12 @@ def fullurl_fn(ctx, fn_name, args, expander):
     return url
 
 
-def urlencode_fn(ctx, fn_name, args, expander):
+def urlencode_fn(
+    ctx: "Wtp",
+    fn_name: str,
+    args: List[str],
+    expander: Callable[[str], str]
+) -> str:
     """Implements the urlencode parser function."""
     arg0 = expander(args[0]) if args else ""
     fmt = expander(args[1]) if len(args) > 1 else "QUERY"
@@ -576,13 +780,18 @@ def urlencode_fn(ctx, fn_name, args, expander):
     return wikiurlencode(url)
 
 
-def wikiurlencode(url):
+def wikiurlencode(url: str) -> str:
     assert isinstance(url, str)
     url = re.sub(r"\s+", "_", url)
     return urllib.parse.quote(url, safe="/:")
 
 
-def anchorencode_fn(ctx, fn_name, args, expander):
+def anchorencode_fn(
+    ctx: "Wtp",
+    fn_name: str,
+    args: List[str],
+    expander: Callable[[str], str]
+) -> str:
     """Implements the urlencode parser function."""
     anchor = expander(args[0]).strip() if args else ""
     anchor = re.sub(r"\s+", "_", anchor)
@@ -616,17 +825,28 @@ class Namespace:
         "talk",
     )
 
-    def __init__(self, aliases=None, canonicalName="",
-                 defaultContentModel="wikitext", hasGenderDistinction=True,
-                 id=None, isCapitalized=False, isContent=False,
-                 isIncludable=False,
-                 isMovable=False, isSubject=False, isTalk=False,
-                 name="", subject=None, talk=None):
+    def __init__(
+        self,
+        aliases: Optional[List[str]]=None,
+        canonicalName="",
+        defaultContentModel="wikitext",
+        hasGenderDistinction=True,
+        id: Optional[int]=None,
+        isCapitalized=False,
+        isContent=False,
+        isIncludable=False,
+        isMovable=False,
+        isSubject=False,
+        isTalk=False,
+        name="",
+        subject: Optional["Namespace"]=None,
+        talk: Optional["Namespace"]=None
+    ) -> None:
         assert name
         assert id is not None
         if aliases is None:
             aliases = []
-        self.aliases = aliases
+        self.aliases: List[str] = aliases
         self.canonicalName = canonicalName
         self.defaultContentModel = defaultContentModel
         self.hasGenderDistinction = hasGenderDistinction
@@ -642,7 +862,7 @@ class Namespace:
         self.talk = talk
 
 
-def init_namespaces(ctx: "Wtp"):
+def init_namespaces(ctx: "Wtp") -> None:
     # These duplicate definitions in lua/mw_site.lua
     for ns_can_name, ns_data in ctx.NAMESPACE_DATA.items():
         ctx.namespaces[ns_data["id"]] = Namespace(
@@ -661,12 +881,16 @@ def init_namespaces(ctx: "Wtp"):
             ns.subject = ctx.namespaces[ns.id - 1]
 
 
-def ns_fn(ctx, fn_name, args, expander):
+def ns_fn(
+    ctx: "Wtp",
+    fn_name: str,
+    args: List[str],
+    expander: Callable[[str], str]
+) -> str:
     """Implements the ns parser function."""
     t = expander(args[0]).strip().upper() if args else ""
     if t and t.isdigit():
-        t = int(t)
-        ns = ctx.namespaces.get(t)
+        ns = ctx.namespaces.get(int(t))
     else:
         for ns in ctx.namespaces.values():
             # print("checking", ns.name)
@@ -687,7 +911,12 @@ def ns_fn(ctx, fn_name, args, expander):
     return ns.name
 
 
-def titleparts_fn(ctx, fn_name, args, expander):
+def titleparts_fn(
+    ctx: "Wtp",
+    fn_name: str,
+    args: List[str],
+    expander: Callable[[str], str]
+) -> str:
     """Implements the #titleparts parser function."""
     t = expander(args[0]).strip() if args else ""
     arg1 = expander(args[1]).strip() if len(args) >= 2 else ""
@@ -715,9 +944,12 @@ def titleparts_fn(ctx, fn_name, args, expander):
     parts = parts[2 * first: 2 * (first + num_return) - 1]
     return "".join(parts)
 
+BinaryCallable = Callable[[Union[int, float], Union[int,float]],
+                           Union[int, float, str]]
+UnaryCallable = Callable[[Union[int, float]], Union[int, float, str]]
 
 # Supported unary functions for #expr
-unary_fns = {
+unary_fns: Dict[str, UnaryCallable] = {
     "-": lambda x: -x,  # Kludge to have this here besides parse_unary
     "+": lambda x: x,   # Kludge to have this here besides parse_unary
     "not": lambda x: int(not x),
@@ -737,7 +969,8 @@ unary_fns = {
 }
 
 
-def binary_e_fn(x, y):
+def binary_e_fn(x: Union[int, float], y: Union[int, float]
+) -> Union[int, float]:
     if isinstance(x, int) and isinstance(y, int):
         if y >= 0:
             for i in range(y):
@@ -753,31 +986,31 @@ def binary_e_fn(x, y):
     return x * math.pow(10, y)
 
 
-binary_e_fns = {
+binary_e_fns: Dict[str, BinaryCallable] = {
     "e": binary_e_fn,
 }
 
-binary_pow_fns = {
+binary_pow_fns: Dict[str, BinaryCallable] = {
     "^": math.pow,
 }
 
-binary_mul_fns = {
+binary_mul_fns:  Dict[str, BinaryCallable] = {
     "*": lambda x, y: x * y,
     "/": lambda x, y: "Divide by zero" if y == 0 else x / y,
     "div": lambda x, y: "Divide by zero" if y == 0 else x / y,
     "mod": lambda x, y: "Divide by zero" if y == 0 else x % y,
 }
 
-binary_add_fns = {
+binary_add_fns: Dict[str, BinaryCallable] = {
     "+": lambda x, y: x + y,
     "-": lambda x, y: x - y,
 }
 
-binary_round_fns = {
-    "round": round,
+binary_round_fns: Dict[str, BinaryCallable] = {
+    "round": round, # type:ignore
 }
 
-binary_cmp_fns = {
+binary_cmp_fns: Dict[str, BinaryCallable] = {
     "=": lambda x, y: int(x == y),
     "!=": lambda x, y: int(x != y),
     "<>": lambda x, y: int(x != y),
@@ -787,16 +1020,21 @@ binary_cmp_fns = {
     "<=": lambda x, y: int(x <= y),
 }
 
-binary_and_fns = {
+binary_and_fns: Dict[str, BinaryCallable] = {
     "and": lambda x, y: 1 if x and y else 0,
 }
 
-binary_or_fns = {
+binary_or_fns: Dict[str, BinaryCallable] = {
     "or": lambda x, y: 1 if x or y else 0,
 }
 
 
-def expr_fn(ctx, fn_name, args, expander):
+def expr_fn(
+    ctx: "Wtp",
+    fn_name: str,
+    args: List[str],
+    expander: Callable[[str], str]
+) -> str:
     """Implements the #titleparts parser function."""
     full_expr = expander(args[0]).strip().lower() if args else ""
     full_expr = full_expr or ""
@@ -805,7 +1043,7 @@ def expr_fn(ctx, fn_name, args, expander):
                               r"!=|<>|>=|<=|[^\s]", full_expr))
     tokidx = 0
 
-    def expr_error(tok):
+    def expr_error(tok: Optional[str]) -> str:
         if tok is None:
             tok = "&lt;end&gt;"
         #ctx.warning("#expr error near {} in {!r}"
@@ -814,7 +1052,7 @@ def expr_fn(ctx, fn_name, args, expander):
         return ('<strong class="error">Expression error near {}</strong>'
                 .format(tok))
 
-    def get_token():
+    def get_token() -> Optional[str]:
         nonlocal tokidx
         if tokidx >= len(tokens):
             return None
@@ -822,14 +1060,14 @@ def expr_fn(ctx, fn_name, args, expander):
         tokidx += 1
         return tok
 
-    def unget_token(tok):
+    def unget_token(tok: Optional[str]) -> None:
         nonlocal tokidx
         if tok is None:
             return
         assert tok == tokens[tokidx - 1]
         tokidx -= 1
 
-    def parse_atom(tok):
+    def parse_atom(tok: Optional[str]) -> Union[str, int, float]:
         if tok is None:
             return expr_error(tok)
         if tok == "(":
@@ -857,7 +1095,12 @@ def expr_fn(ctx, fn_name, args, expander):
             return 0
         return expr_error(tok)
 
-    def generic_binary(tok, parser, fns, assoc="left"):
+    def generic_binary(
+        tok: Optional[str],
+        parser: Callable,
+        fns: Dict[str, Callable],
+        assoc="left"
+    ) -> Union[int, float, str]:
         ret = parser(tok)
         if isinstance(ret, str):
             return ret
@@ -876,10 +1119,10 @@ def expr_fn(ctx, fn_name, args, expander):
         unget_token(tok)
         return ret
 
-    def parse_unary(tok):
+    def parse_unary(tok: Optional[str]) -> Union[str, int, float]:
         if tok == "-":
             tok = get_token()
-            ret = parse_unary(tok)
+            ret: Union[str, int, float] = parse_unary(tok) # type: ignore
             if isinstance(ret, str):
                 return ret
             return -ret
@@ -889,42 +1132,51 @@ def expr_fn(ctx, fn_name, args, expander):
         ret = parse_atom(tok)
         return ret
 
-    def parse_binary_e(tok):
+    def parse_binary_e(tok: Optional[str]) -> Union[str, int, float]:
         # binary "e" operator
         return generic_binary(tok, parse_unary, binary_e_fns)
 
-    def parse_unary_fn(tok):
-        fn = unary_fns.get(tok)
+    def parse_unary_fn(tok: Optional[str]) -> Union[str, int, float]:
+        fn = unary_fns.get(tok) # type: ignore[arg-type]
         if fn is None:
             return parse_binary_e(tok)
         tok = get_token()
+        assert tok is not None
         ret = parse_unary_fn(tok)
         if isinstance(ret, str):
             return ret
         return fn(ret)
 
-    def parse_binary_pow(tok):
+    def parse_binary_pow(tok: Optional[str]
+    ) -> Union[str, int, float]:
         return generic_binary(tok, parse_unary_fn, binary_pow_fns)
 
-    def parse_binary_mul(tok):
+    def parse_binary_mul(tok: Optional[str]
+    ) -> Union[str, int, float]:
         return generic_binary(tok, parse_binary_pow, binary_mul_fns)
 
-    def parse_binary_add(tok):
+    def parse_binary_add(tok: Optional[str]
+    ) -> Union[str, int, float]:
         return generic_binary(tok, parse_binary_mul, binary_add_fns)
 
-    def parse_binary_round(tok):
+    def parse_binary_round(tok: Optional[str]
+    ) -> Union[str, int, float]:
         return generic_binary(tok, parse_binary_add, binary_round_fns)
 
-    def parse_binary_cmp(tok):
+    def parse_binary_cmp(tok: Optional[str]
+    ) -> Union[str, int, float]:
         return generic_binary(tok, parse_binary_round, binary_cmp_fns)
 
-    def parse_binary_and(tok):
+    def parse_binary_and(tok: Optional[str]
+    ) -> Union[str, int, float]:
         return generic_binary(tok, parse_binary_cmp, binary_and_fns)
 
-    def parse_binary_or(tok):
+    def parse_binary_or(tok: Optional[str]
+    ) -> Union[str, int, float]:
         return generic_binary(tok, parse_binary_and, binary_or_fns)
 
-    def parse_expr(tok):
+    def parse_expr(tok: Optional[str]
+    ) -> Union[str, int, float]:
         return parse_binary_or(tok)
 
     tok = get_token()
@@ -937,7 +1189,12 @@ def expr_fn(ctx, fn_name, args, expander):
     return str(ret)
 
 
-def padleft_fn(ctx, fn_name, args, expander):
+def padleft_fn(
+    ctx: "Wtp",
+    fn_name: str,
+    args: List[str],
+    expander: Callable[[str], str]
+) -> str:
     """Implements the padleft parser function."""
     v = expander(args[0]) if args else ""
     cnt = expander(args[1]).strip() if len(args) >= 2 else "0"
@@ -958,7 +1215,12 @@ def padleft_fn(ctx, fn_name, args, expander):
     return v
 
 
-def padright_fn(ctx, fn_name, args, expander):
+def padright_fn(
+    ctx: "Wtp",
+    fn_name: str,
+    args: List[str],
+    expander: Callable[[str], str]
+) -> str:
     """Implements the padright parser function."""
     v = expander(args[0]) if args else ""
     cnt = expander(args[1]).strip() if len(args) >= 2 else "0"
@@ -980,7 +1242,12 @@ def padright_fn(ctx, fn_name, args, expander):
     return v
 
 
-def plural_fn(ctx, fn_name, args, expander):
+def plural_fn(
+    ctx: "Wtp",
+    fn_name: str,
+    args: List[str],
+    expander: Callable[[str], str]
+) -> str:
     """Implements the #plural parser function."""
     expr = expander(args[0]).strip() if args else "0"
     v = expr_fn(ctx, fn_name, [expr], lambda x: x)
@@ -1045,7 +1312,12 @@ time_fmt_map = {
 }
 
 
-def time_fn(ctx, fn_name, args, expander):
+def time_fn(
+    ctx: "Wtp",
+    fn_name: str,
+    args: List[str],
+    expander: Callable[[str], str]
+) -> str:
     """Implements the #time parser function."""
     fmt = expander(args[0]).strip() if args else ""
     dt = expander(args[1]).strip() if len(args) >= 2 else ""
@@ -1128,13 +1400,23 @@ def time_fn(ctx, fn_name, args, expander):
     return t.strftime(fmt)
 
 
-def len_fn(ctx, fn_name, args, expander):
+def len_fn(
+    ctx: "Wtp",
+    fn_name: str,
+    args: List[str],
+    expander: Callable[[str], str]
+) -> str:
     """Implements the #len parser function."""
     v = expander(args[0]).strip() if args else ""
     return str(len(v))
 
 
-def pos_fn(ctx, fn_name, args, expander):
+def pos_fn(
+    ctx: "Wtp",
+    fn_name: str,
+    args: List[str],
+    expander: Callable[[str], str]
+) -> str:
     """Implements the #pos parser function."""
     arg0 = expander(args[0]).strip() if args else ""
     arg1 = expander(args[1]) or " " if len(args) >= 2 else " "
@@ -1148,7 +1430,12 @@ def pos_fn(ctx, fn_name, args, expander):
     return ""
 
 
-def rpos_fn(ctx, fn_name, args, expander):
+def rpos_fn(
+    ctx: "Wtp",
+    fn_name: str,
+    args: List[str],
+    expander: Callable[[str], str]
+) -> str:
     """Implements the #rpos parser function."""
     arg0 = expander(args[0]).strip() if args else ""
     arg1 = expander(args[1]) or " " if len(args) >= 2 else " "
@@ -1162,7 +1449,12 @@ def rpos_fn(ctx, fn_name, args, expander):
     return "-1"
 
 
-def sub_fn(ctx, fn_name, args, expander):
+def sub_fn(
+    ctx: "Wtp",
+    fn_name: str,
+    args: List[str],
+    expander: Callable[[str], str]
+) -> str:
     """Implements the #sub parser function."""
     arg0 = expander(args[0]).strip() if args else ""
     start = expander(args[1]).strip() if len(args) >= 2 else ""
@@ -1185,7 +1477,12 @@ def sub_fn(ctx, fn_name, args, expander):
     return arg0[start : start + length]
 
 
-def pad_fn(ctx, fn_name, args, expander):
+def pad_fn(
+    ctx: "Wtp",
+    fn_name: str,
+    args: List[str],
+    expander: Callable[[str], str]
+) -> str:
     """Implements the pad parser function."""
     v = expander(args[0]).strip() if args else ""
     cnt = expander(args[1]).strip() if len(args) >= 2 else ""
@@ -1210,7 +1507,12 @@ def pad_fn(ctx, fn_name, args, expander):
     return v
 
 
-def replace_fn(ctx, fn_name, args, expander):
+def replace_fn(
+    ctx: "Wtp",
+    fn_name: str,
+    args: List[str],
+    expander: Callable[[str], str]
+) -> str:
     """Implements the #replace parser function."""
     arg0 = expander(args[0]).strip() if args else ""
     arg1 = expander(args[1]) or " " if len(args) >= 2 else " "
@@ -1218,7 +1520,12 @@ def replace_fn(ctx, fn_name, args, expander):
     return arg0.replace(arg1, arg2)
 
 
-def explode_fn(ctx, fn_name, args, expander):
+def explode_fn(
+    ctx: "Wtp",
+    fn_name: str,
+    args: List[str],
+    expander: Callable[[str], str]
+) -> str:
     """Implements the #explode parser function."""
     arg0 = expander(args[0]).strip() if args else ""
     delim = expander(args[1]) or " " if len(args) >= 2 else " "
@@ -1242,14 +1549,24 @@ def explode_fn(ctx, fn_name, args, expander):
     return parts[position]
 
 
-def urldecode_fn(ctx, fn_name, args, expander):
+def urldecode_fn(
+    ctx: "Wtp",
+    fn_name: str,
+    args: List[str],
+    expander: Callable[[str], str]
+) -> str:
     """Implements the #urldecode parser function."""
     arg0 = expander(args[0]).strip() if args else ""
     ret = urllib.parse.unquote_plus(arg0)
     return ret
 
 
-def unimplemented_fn(ctx, fn_name, args, expander):
+def unimplemented_fn(
+    ctx: "Wtp",
+    fn_name: str,
+    args: List[str],
+    expander: Callable[[str], str]
+) -> str:
     ctx.error("unimplemented parserfn {}".format(fn_name),
               sortid="parserfns/1191")
     return "{{" + fn_name + ":" + "|".join(map(str, args)) + "}}"
@@ -1407,7 +1724,12 @@ PARSER_FUNCTIONS = {
 }
 
 
-def call_parser_function(ctx, fn_name, args, expander):
+def call_parser_function(
+    ctx: "Wtp",
+    fn_name: str,
+    args: List[str],
+    expander: Callable[[str], str]
+) -> str:
     """Calls the given parser function with the given arguments."""
     assert isinstance(fn_name, str)
     assert isinstance(args, (list, tuple, dict))
