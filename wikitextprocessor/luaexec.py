@@ -663,7 +663,7 @@ def call_lua_sandbox(
             ctx.expand_stack.pop()
             return ret
 
-        def debugGetParent(ctx: "Wtp", *args) -> "_LuaTable":
+        def debugGetParent(frame: "_LuaTable", *args) -> "_LuaTable":
             if args:
                 print(
                     f"LAMBDA GETPARENT DEBUG (title: {title}): {repr(args)}"
@@ -673,7 +673,18 @@ def call_lua_sandbox(
                 assert isinstance(pframe, _LuaTable)
             return pframe
 
-        def debugGetTitle(ctx: "Wtp", *args) -> str:
+        lua_getp_generator = lua.eval("""
+            function(py_func)
+                wrapper_func = function(x)
+                    return py_func(x)
+                end
+                return wrapper_func
+            end
+        """)
+
+        wrappedDebugGetParent = lua_getp_generator(debugGetParent)
+
+        def debugGetTitle(frame: "_LuaTable", *args) -> str:
             if args:
                 print(
                     f"LAMBDA GETTITLE DEBUG: (title: {title}): {repr(args)}"
@@ -699,7 +710,7 @@ def call_lua_sandbox(
         frame["extensionTag"] = extensionTag
         frame["expandTemplate"] = expandTemplate
         # getArgument is set in sandbox.lua
-        frame["getParent"] = debugGetParent
+        frame["getParent"] = wrappedDebugGetParent
         frame["getTitle"] = debugGetTitle
         # frame["getParent"] = lambda ctx: pframe
         # frame["getTitle"] = lambda ctx: title
