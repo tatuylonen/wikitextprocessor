@@ -1535,10 +1535,11 @@ class Wtp:
                         # print("TEMPLATE_FN {}: {} {} -> {}"
                         #      .format(template_fn, name, ht, repr(t)))
                     if t is None:
-                        body: Optional[str] = self.read_by_title(
+                        template_page = self.get_page_resolve_redirect(
                             name, self.NAMESPACE_DATA["Template"]["id"]
                         )
-                        if body is not None:
+                        if template_page is not None:
+                            body = template_page.body
                             # XXX optimize by pre-encoding bodies during
                             # preprocessing
                             # (Each template is typically used many times)
@@ -1551,17 +1552,7 @@ class Wtp:
                             encoded_body = expand_args(encoded_body, ht)
                             # Expand the body using the calling template/page
                             # as the parent frame for any parserfn calls
-                            new_title = tname.strip()
-                            for prefix in self.NAMESPACE_DATA:
-                                if tname.startswith(prefix + ":"):
-                                    break
-                            else:
-                                new_title = (
-                                    self.NAMESPACE_DATA["Template"]["name"]
-                                    + ":"
-                                    + new_title
-                                )
-                            new_parent = (new_title, ht)
+                            new_parent = (template_page.title, ht)
                             # print("expanding template body for {} {}"
                             #       .format(name, ht))
                             # XXX no real need to expand here, it will expanded
@@ -1810,12 +1801,20 @@ class Wtp:
     ) -> Optional[str]:
         """Reads the contents of the page.  Returns None if the page does
         not exist."""
+        page = self.get_page_resolve_redirect(title, namespace_id)
+        return page.body if page is not None else None
+
+    def get_page_resolve_redirect(
+        self, title: str, namespace_id: Optional[int] = None
+    ) -> Optional[Page]:
         page = self.get_page(title, namespace_id)
         if page is None:
             return None
         if page.redirect_to is not None:
-            return self.read_by_title(page.redirect_to, namespace_id)
-        return page.body if page is not None else None
+            return self.get_page_resolve_redirect(
+                page.redirect_to, namespace_id
+            )
+        return page
 
     def parse(
         self,
