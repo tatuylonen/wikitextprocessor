@@ -34,7 +34,7 @@ function new_loader(modname)
       error("PYTHON LOADER NOT SET - call lua_set_loader() first")
    end
    if content == nil then
-      return nil, "module not found"
+      return nil, "module '" .. modname .. "' not found"
    end
 
    -- Load the content into the Lua interpreter.
