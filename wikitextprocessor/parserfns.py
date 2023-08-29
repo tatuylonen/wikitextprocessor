@@ -1223,12 +1223,12 @@ def padright_fn(
 ) -> str:
     """Implements the padright parser function."""
     v = expander(args[0]) if args else ""
-    cnt = expander(args[1]).strip() if len(args) >= 2 else "0"
+    cntstr = expander(args[1]).strip() if len(args) >= 2 else "0"
     arg2 = expander(args[2]) if len(args) >= 3 and args[2] else "0"
     pad = arg2 if len(args) >= 3 and arg2 else "0"
-    if not cnt.isdigit():
+    if not cntstr.isdigit():
         cnt = 0
-        if cnt.startswith("-") and cnt[1:].isdigit():
+        if cntstr.startswith("-") and cntstr[1:].isdigit():
             pass
         else:
             ctx.warning("pad length is not integer: {!r}".format(cnt),
