@@ -578,7 +578,8 @@ class Wtp:
             if not args or not args[0]:
                 # Templates without a first argument (template name)
                 # are just rendered as text in wikimedia stuff.
-                return "&lbrace;&lbrace;" + "&vert;".join(args) + "&rbrace;&rbrace;"
+                return ("&lbrace;&lbrace;" + "&vert;".join(args) + 
+                       "&rbrace;&rbrace;")
             # print("REPL_TEMPL: args={}".format(args))
             return self._save_value("T", args, nowiki)
 

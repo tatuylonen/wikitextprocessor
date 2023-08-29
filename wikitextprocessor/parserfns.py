@@ -1141,7 +1141,6 @@ def expr_fn(
         if fn is None:
             return parse_binary_e(tok)
         tok = get_token()
-        assert tok is not None
         ret = parse_unary_fn(tok)
         if isinstance(ret, str):
             return ret
