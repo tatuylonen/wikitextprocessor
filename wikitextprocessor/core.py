@@ -1676,7 +1676,10 @@ class Wtp:
 
     @lru_cache(maxsize=1000)
     def get_page(
-        self, title: str, namespace_id: Optional[int] = None
+        self,
+        title: str,
+        namespace_id: Optional[int] = None,
+        no_redirect: bool = False,
     ) -> Optional[Page]:
         # " " in Lua Module name is replaced by "_" in Wiktionary Lua code
         # when call `require`
@@ -1720,6 +1723,8 @@ class Wtp:
         if namespace_id is not None:
             query_str += " AND namespace_id = ?"
             query_values.append(namespace_id)
+        if no_redirect:
+            query_str += " AND redirect_to IS NULL"
         query_str += " LIMIT 1"
         try:
             for result in self.db_conn.execute(query_str, tuple(query_values)):
@@ -1811,9 +1816,7 @@ class Wtp:
         if page is None:
             return None
         if page.redirect_to is not None:
-            return self.get_page_resolve_redirect(
-                page.redirect_to, namespace_id
-            )
+            return self.get_page(page.redirect_to, namespace_id, True)
         return page
 
     def parse(
