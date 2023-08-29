@@ -1197,17 +1197,17 @@ def padleft_fn(
 ) -> str:
     """Implements the padleft parser function."""
     v = expander(args[0]) if args else ""
-    cnt = expander(args[1]).strip() if len(args) >= 2 else "0"
+    cntstr = expander(args[1]).strip() if len(args) >= 2 else "0"
     pad = expander(args[2]) if len(args) >= 3 and args[2] else "0"
-    if not cnt.isdigit():
-        if cnt.startswith("-") and cnt[1:].isdigit():
+    if not cntstr.isdigit():
+        if cntstr.startswith("-") and cntstr[1:].isdigit():
             pass
         else:
-            ctx.warning("pad length is not integer: {!r}".format(cnt),
+            ctx.warning("pad length is not integer: {!r}".format(cntstr),
                         sortid="parserfns/916")
         cnt = 0
     else:
-        cnt = int(cnt)
+        cnt = int(cntstr)
     if cnt - len(v) > len(pad):
         pad = (pad * ((cnt - len(v)) // len(pad)))
     if len(v) < cnt:
