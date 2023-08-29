@@ -22,8 +22,7 @@ local Html = {
 
 function mw_html.create(tagName, args)
    local selfClosing = args and args.selfClosing
-   if (tagName == "hr" or tagName == "br" or
-       tagname == "references") then
+   if (tagName == "hr" or tagName == "br" or tagName == "references") then
       selfClosing = true
    end
    local obj = Html:new()

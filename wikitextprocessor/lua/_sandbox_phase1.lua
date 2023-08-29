@@ -34,7 +34,7 @@ function new_loader(modname)
       error("PYTHON LOADER NOT SET - call lua_set_loader() first")
    end
    if content == nil then
-      return nil, "module not found"
+      return nil, "module '" .. modname .. "' not found"
    end
 
    -- Load the content into the Lua interpreter.
@@ -80,10 +80,12 @@ function new_require(modname)
    assert(fn, msg)
    assert(fn ~= true)
    local ret = fn(env)
-   assert(ret)
-   -- Save value in package.loaded.  Note that package.loaded is cleared
-   -- whenever we reset the Lua environment.
-   _save_mod(modname, ret)
+   -- the `strict` module doesn't return value
+   if ret ~= nil then
+       -- Save value in package.loaded.  Note that package.loaded is cleared
+       -- whenever we reset the Lua environment.
+       _save_mod(modname, ret)
+   end
    return ret
 end
 
@@ -315,6 +317,8 @@ local function _lua_reset_env()
 
     -- Clear some metatables
     setmetatable(_G, nil)
+    -- Clear metatable added by "strict.lua"
+    setmetatable(env, nil)
 
     -- Flushes stdin buffers.  This is mostly used to make sure debug
     -- buffers are properly output before possible crashes.  This is

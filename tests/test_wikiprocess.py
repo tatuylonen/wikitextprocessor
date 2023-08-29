@@ -4155,6 +4155,15 @@ return export
         page = self.ctx.get_page("Template:En-nm", 10)
         self.assertTrue(page.need_pre_expand)
 
+    def test_get_page_resolve_redirect_infinite_recursion(self):
+        self.ctx.add_page("Template:cite-book", 10, body="cite-book")
+        self.ctx.add_page(
+            "Template:Cite-book", 10, redirect_to="Template:cite-book"
+        )
+        self.ctx.db_conn.commit()
+        page = self.ctx.get_page_resolve_redirect("Template:cite-book", 10)
+        self.assertEqual(page.body, "cite-book")
+
 
 # XXX Test template_fn
 
