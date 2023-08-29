@@ -740,7 +740,7 @@ dasfasddasfdas
         self.assertEqual(c.kind, NodeKind.HLINE)
         self.assertEqual(d, "\nmore")
 
-    def test_list_html(self):
+    def test_list_html1(self):
         tree = self.parse("test", "foo\n*item\n\n<strong>bar</strong>")
         self.assertEqual(len(tree.children), 4)
         a, b, c, d = tree.children
@@ -748,6 +748,19 @@ dasfasddasfdas
         self.assertEqual(b.kind, NodeKind.LIST)
         self.assertEqual(c, "\n")
         self.assertEqual(d.kind, NodeKind.HTML)
+
+    def test_list_html2(self):
+        tree = self.parse("test", "foo\n*item <strong>bar\n</strong>\n*item2\n")
+        self.assertEqual(len(tree.children), 2)
+        a, b = tree.children
+        self.assertEqual(a, "foo\n")
+        self.assertEqual(b.kind, NodeKind.LIST)
+        self.assertEqual(len(b.children), 2)
+        c, d = b.children
+        self.assertEqual(c.kind, NodeKind.LIST_ITEM)
+        self.assertEqual(d.kind, NodeKind.LIST_ITEM)
+        self.assertEqual(c.children[1].kind, NodeKind.HTML)
+        self.assertEqual(c.children[2], "\n")
 
     def test_ul(self):
         tree = self.parse(
