@@ -66,9 +66,9 @@ zip-safe = false
 wikitextprocessor = [
     "lua/*.lua",
     "lua/mediawiki-extensions-Scribunto/COPYING",
-    "lua/mediawiki-extensions-Scribunto/includes/engines/LuaCommon/lualib/*.lua",
-    "lua/mediawiki-extensions-Scribunto/includes/engines/LuaCommon/lualib/ustring/*.lua",
-    "lua/mediawiki-extensions-Scribunto/includes/engines/LuaCommon/lualib/luabit/*.lua",
+    "lua/mediawiki-extensions-Scribunto/includes/Engines/LuaCommon/lualib/*.lua",
+    "lua/mediawiki-extensions-Scribunto/includes/Engines/LuaCommon/lualib/ustring/*.lua",
+    "lua/mediawiki-extensions-Scribunto/includes/Engines/LuaCommon/lualib/luabit/*.lua",
     "data/*/*",
     "py.typed",
 ]

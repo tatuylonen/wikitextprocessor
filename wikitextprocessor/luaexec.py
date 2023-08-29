@@ -39,7 +39,7 @@ if TYPE_CHECKING:
 BUILTIN_LUA_SEARCH_PATHS: List[Tuple[str, List[str]]] = [
     # [path, ignore_modules]
     (".", ["string", "debug"]),
-    ("mediawiki-extensions-Scribunto/includes/engines/LuaCommon/lualib", []),
+    ("mediawiki-extensions-Scribunto/includes/Engines/LuaCommon/lualib", []),
 ]
 
 # Determine which directory our data files are in
