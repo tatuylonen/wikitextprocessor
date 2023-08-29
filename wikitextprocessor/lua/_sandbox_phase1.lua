@@ -315,6 +315,8 @@ local function _lua_reset_env()
 
     -- Clear some metatables
     setmetatable(_G, nil)
+    -- Clear metatable added by "strict.lua"
+    setmetatable(env, nil)
 
     -- Flushes stdin buffers.  This is mostly used to make sure debug
     -- buffers are properly output before possible crashes.  This is
