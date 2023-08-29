@@ -80,10 +80,12 @@ function new_require(modname)
    assert(fn, msg)
    assert(fn ~= true)
    local ret = fn(env)
-   assert(ret)
-   -- Save value in package.loaded.  Note that package.loaded is cleared
-   -- whenever we reset the Lua environment.
-   _save_mod(modname, ret)
+   -- the `strict` module doesn't return value
+   if ret ~= nil then
+       -- Save value in package.loaded.  Note that package.loaded is cleared
+       -- whenever we reset the Lua environment.
+       _save_mod(modname, ret)
+   end
    return ret
 end
 
