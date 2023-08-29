@@ -568,14 +568,17 @@ class Wtp:
         #     )
         #     return prefix + self._save_value("A", args, nowiki)
 
-        def repl_templ(m: re.Match) -> CookieChar:
+        def repl_templ(m: re.Match) -> Union[CookieChar, str]:
+            # I know CookieChar == str, this is just for documentation.
             """Replacement function for templates {{name|...}} and parser
             functions."""
             nowiki = MAGIC_NOWIKI_CHAR in m.group(0)
             v = m.group(1)
             args = vbar_split(v)
             if not args or not args[0]:
-                return m.group(0)
+                # Templates without a first argument (template name)
+                # are just rendered as text in wikimedia stuff.
+                return "&lbrace;&lbrace;" + "&vert;".join(args) + "&rbrace;&rbrace;"
             # print("REPL_TEMPL: args={}".format(args))
             return self._save_value("T", args, nowiki)
 

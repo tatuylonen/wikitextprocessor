@@ -272,6 +272,24 @@ dasfasddasfdas
             ],
         )
 
+    def test_no_template_name1(self):
+        tree = self.parse("test", "{{|es|something}}")
+        self.assertEqual(
+            tree.children,
+            [
+                "&lbrace;&lbrace;&vert;es&vert;something&rbrace;&rbrace;"
+            ],
+        )
+
+    def test_no_template_name2(self):
+        tree = self.parse("test", "{{}}")
+        self.assertEqual(
+            tree.children,
+            [
+                "&lbrace;&lbrace;&rbrace;&rbrace;"
+            ],
+        )
+
     def test_entity_expand(self):
         tree = self.parse("test", "R&amp;D")
         self.assertEqual(tree.children, ["R&amp;D"])
