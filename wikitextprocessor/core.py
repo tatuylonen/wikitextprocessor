@@ -574,6 +574,8 @@ class Wtp:
             nowiki = MAGIC_NOWIKI_CHAR in m.group(0)
             v = m.group(1)
             args = vbar_split(v)
+            if not args or not args[0]:
+                return m.group(0)
             # print("REPL_TEMPL: args={}".format(args))
             return self._save_value("T", args, nowiki)
 
