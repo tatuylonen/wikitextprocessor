@@ -675,8 +675,8 @@ def call_lua_sandbox(
 
         lua_getp_generator = lua.eval("""
             function(py_func)
-                wrapper_func = function(x)
-                    return py_func(x)
+                wrapper_func = function(...)
+                    return py_func(...)
                 end
                 return wrapper_func
             end
