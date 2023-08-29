@@ -1234,7 +1234,7 @@ def padright_fn(
             ctx.warning("pad length is not integer: {!r}".format(cnt),
                         sortid="parserfns/940")
     else:
-        cnt = int(cnt)
+        cnt = int(cntstr)
     if cnt - len(v) > len(pad):
         pad = (pad * ((cnt - len(v)) // len(pad)))
     if len(v) < cnt:
