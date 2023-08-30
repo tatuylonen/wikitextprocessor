@@ -13,6 +13,7 @@ local mw_autoload = {
    uri = "mw_uri",
    ustring = "ustring:ustring",
    wikibase = "mw_wikibase",
+   message = "mw_message",
    getContentLanguage = function(table)
       return table.language.getContentLanguage
    end,
