@@ -177,16 +177,16 @@ function Html:css(name, value)
 end
 
 function Html:cssText(new_css)
-   if new_css == nil or new_css == "" then return end
-   if mw.ustring.sub(new_css, -1) ~= ";" then new_css = new_css .. ";" end
-      local css = self:getAttr("style") or ""
-   if css == "" then
-      css = new_css
-   else
-      css = css .. new_css
-   end
-   self:attr("style", css)
-   return self
+    if new_css == nil or new_css == "" then return self end
+    if mw.ustring.sub(new_css, -1) ~= ";" then new_css = new_css .. ";" end
+    local css = self:getAttr("style") or ""
+    if css == "" then
+        css = new_css
+    else
+        css = css .. new_css
+    end
+    self:attr("style", css)
+    return self
 end
 
 function Html:done()
