@@ -665,9 +665,11 @@ def call_lua_sandbox(
 
         def debugGetParent(frame: "_LuaTable", *args) -> "_LuaTable":
             if args:
-                print(
-                    f"LAMBDA GETPARENT DEBUG (title: {title}): {repr(args)}"
-                    f", process: {multiprocessing.current_process().name}"
+                ctx.debug(
+                    f"GETPARENT EXTRA ARGS: Lua module:{title}, "
+                    f"frame: {frame}, "
+                    f"extra args: {repr(args)}, "
+                    f"process name: {multiprocessing.current_process().name}"
                 )
             if TYPE_CHECKING:
                 assert isinstance(pframe, _LuaTable)
@@ -686,9 +688,11 @@ def call_lua_sandbox(
 
         def debugGetTitle(frame: "_LuaTable", *args) -> str:
             if args:
-                print(
-                    f"LAMBDA GETTITLE DEBUG: (title: {title}): {repr(args)}"
-                    f", process: {multiprocessing.current_process().name}"
+                ctx.debug(
+                    f"GETTITLE EXTRA ARGS: Lua module:{title}, "
+                    f"frame: {frame}, "
+                    f"extra args: {repr(args)}, "
+                    f"process name: {multiprocessing.current_process().name}"
                 )
             return title
 
