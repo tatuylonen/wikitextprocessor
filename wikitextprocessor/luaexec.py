@@ -296,7 +296,7 @@ def call_set_functions(
             # and this function is being called with too many
             # argument
             print(
-                f"LAMBDA GET_PAGE_INFO DEBUG:"
+                f"MAKE_FRAME GET_PAGE_INFO DEBUG:"
                 f" {repr(bad_args)},"
                 f" {ctx.title=},"
                 f" {multiprocessing.current_process().name}"
@@ -306,7 +306,7 @@ def call_set_functions(
     def debug_get_page_content(x: str, *bad_args: Any) -> Optional[str]:
         if bad_args:
             print(
-                f"LAMBDA GET_PAGE_CONTENT DEBUG:"
+                f"MAKE_FRAME GET_PAGE_CONTENT DEBUG:"
                 f" {repr(bad_args)},"
                 f" {ctx.title=},"
                 f" {multiprocessing.current_process().name}"
@@ -316,7 +316,7 @@ def call_set_functions(
     def debug_fetch_language_name(x: str, *bad_args: Any) -> str:
         if bad_args:
             print(
-                f"LAMBDA FETCH_LANGUAGE_NAME DEBUG:"
+                f"MAKE_FRAME FETCH_LANGUAGE_NAME DEBUG:"
                 f" {repr(bad_args)},"
                 f" {ctx.title=},"
                 f" {multiprocessing.current_process().name}"
@@ -326,7 +326,7 @@ def call_set_functions(
     def debug_fetch_language_names(x: str, *bad_args: Any) -> "_LuaTable":
         if bad_args:
             print(
-                f"LAMBDA FETCH_LANGUAGE_NAMES DEBUG:"
+                f"MAKE_FRAME FETCH_LANGUAGE_NAMES DEBUG:"
                 f" {repr(bad_args)},"
                 f" {ctx.title=},"
                 f" {multiprocessing.current_process().name}"

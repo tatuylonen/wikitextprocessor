@@ -1257,7 +1257,7 @@ def plural_fn(
     return expander(args[2]).strip() if len(args) >= 3 else ""
 
 
-def month_num_days(ctx, t):
+def month_num_days(ctx: "Wtp", t: datetime.datetime) -> int:
     mdays = [31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31]
     v = mdays[t.month - 1]
     if t.month == 2:
@@ -1266,7 +1266,13 @@ def month_num_days(ctx, t):
     return v
 
 
-time_fmt_map = {
+time_fmt_map: Dict[str,
+                   Union[
+                    str,
+                    Callable[
+                        ["Wtp", datetime.datetime],
+                        Union[int, float, str]]]
+                ] = {
     "Y": "%Y",
     "y": "%y",
     "L": lambda ctx, t: 1 if (t.year % 4 == 0 and
@@ -1298,11 +1304,11 @@ time_fmt_map = {
     "s": "%S",
     "U": lambda ctx, t: int(t.timestamp()),
     "e": "%Z",
-    "I": lambda ctx, t: "1" if t.dst() and t.dst().seconds != 0 else "0",
+    "I": lambda ctx, t: "1" if t.dst() and t.dst().seconds != 0 else "0",  # type: ignore[union-attr]
     "0": lambda ctx, t: t.strftime("%z")[:5],
     "P": lambda ctx, t: t.strftime("%z")[:3] + ":" + t.strftime("%z")[3:5],
     "T": "%Z",
-    "Z": lambda ctx, t: 0 if t.utcoffset() is None else t.utcoffset().seconds,
+    "Z": lambda ctx, t: 0 if t.utcoffset() is None else t.utcoffset().seconds,  # type: ignore[union-attr]
     "t": month_num_days,
     "c": lambda ctx, t: t.isoformat(),
     "r": lambda ctx, t: t.strftime("%a, %d %b %Y %H:%M:%S {}").format(
@@ -1329,10 +1335,11 @@ def time_fn(
     if not dt:
         dt = "now"
 
-    settings = {"RETURN_AS_TIMEZONE_AWARE": True}
+    settings: dateparser._Settings = {"RETURN_AS_TIMEZONE_AWARE": True}
     if loc in ("", "0"):
         dt += " UTC"
 
+    t: Optional[datetime.datetime]
     if dt.startswith("@"):
         try:
             t = datetime.datetime.fromtimestamp(float(dt[1:]))
@@ -1355,7 +1362,7 @@ def time_fn(
                 main_date = dateparser.parse(m.group(1), settings=settings)
                 add_time = dateparser.parse(m.group(2), settings=settings)
                 now = dateparser.parse("now", settings=settings)
-                if main_date and add_time:
+                if main_date and add_time is not None and now is not None:
                     # this is just a kludge: dateparser parses "+2 days" as
                     # "2 days AGO". The now-datetime object is used to check
                     # just in case which way the parsing goes (we're relying
@@ -1380,7 +1387,7 @@ def time_fn(
     #if t.utcoffset():
     #    t -= t.utcoffset()
 
-    def fmt_repl(m):
+    def fmt_repl(m: re.Match) -> str:
         f = m.group(0)
         if len(f) > 1 and f.startswith('"') and f.endswith('"'):
             return f[1:-1]
@@ -1389,10 +1396,10 @@ def time_fn(
             if isinstance(v, str):
                 return v
             assert callable(v)
-            v = v(ctx, t)
-            if not isinstance(v, str):
-                v = str(v)
-            return v
+            v2 = v(ctx, t)
+            if not isinstance(v2, str):
+                v2 = str(v2)
+            return v2
         return f
 
     fmt = re.sub(r'(x[mijkot]?)?[^"]|"[^"]*"', fmt_repl, fmt)
@@ -1419,10 +1426,11 @@ def pos_fn(
     """Implements the #pos parser function."""
     arg0 = expander(args[0]).strip() if args else ""
     arg1 = expander(args[1]) or " " if len(args) >= 2 else " "
-    offset = expander(args[2]).strip() if len(args) >= 3 else ""
-    if not offset or not offset.isdigit():
-        offset = "0"
-    offset = int(offset)
+    offsetstr = expander(args[2]).strip() if len(args) >= 3 else ""
+    if not offsetstr or not offsetstr.isdigit():
+        offset = 0
+    else:
+        offset = int(offsetstr)
     idx = arg0.find(arg1, offset)
     if idx >= 0:
         return str(idx)
@@ -1438,10 +1446,11 @@ def rpos_fn(
     """Implements the #rpos parser function."""
     arg0 = expander(args[0]).strip() if args else ""
     arg1 = expander(args[1]) or " " if len(args) >= 2 else " "
-    offset = expander(args[2]).strip() if len(args) >= 3 else ""
-    if not offset or not offset.isdigit():
-        offset = "0"
-    offset = int(offset)
+    offsetstr = expander(args[2]).strip() if len(args) >= 3 else ""
+    if not offsetstr or not offsetstr.isdigit():
+        offset = 0
+    else:
+        offset = int(offsetstr)
     idx = arg0.rfind(arg1, offset)
     if idx >= 0:
         return str(idx)
@@ -1456,10 +1465,10 @@ def sub_fn(
 ) -> str:
     """Implements the #sub parser function."""
     arg0 = expander(args[0]).strip() if args else ""
-    start = expander(args[1]).strip() if len(args) >= 2 else ""
+    startstr = expander(args[1]).strip() if len(args) >= 2 else ""
     length = expander(args[2]).strip() if len(args) >= 3 else ""
     try:
-        start = int(start)
+        start = int(startstr)
     except ValueError:
         start = 0
     if start < 0:
