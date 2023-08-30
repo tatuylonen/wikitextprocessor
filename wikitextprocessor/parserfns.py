@@ -46,7 +46,7 @@ def if_fn(ctx: "Wtp", fn_name: str,
           expander: Callable[[str], str]
          ) -> str:
     """Implements #if parser function."""
-    # print(f"if_fn: {args}") 
+    # print(f"if_fn: {args}")
     arg0: str = args[0] if args else ""
     arg1: str = args[1] if len(args) >= 2 else ""
     arg2: str = args[2] if len(args) >= 3 else ""
@@ -1356,7 +1356,7 @@ def time_fn(
         # people on wiktionary don't go crazy with weird formatting
         t = dateparser.parse(dt, settings=settings)
         if t is None:
-            m = re.match(r"([^+]*)\s*(\+\s*\d+\s*(day|year|month)s?)\s*$", 
+            m = re.match(r"([^+]*)\s*(\+\s*\d+\s*(day|year|month)s?)\s*$",
                          orig_dt)
             if m:
                 main_date = dateparser.parse(m.group(1), settings=settings)
@@ -1569,6 +1569,16 @@ def urldecode_fn(
     return ret
 
 
+def shortdesc_fn(
+    ctx: "Wtp",
+    fn_name: str,
+    args: List[str],
+    expander: Callable[[str], str]
+) -> str:
+    # https://en.wikipedia.org/wiki/Wikipedia:Short_description
+    return ""
+
+
 def unimplemented_fn(
     ctx: "Wtp",
     fn_name: str,
@@ -1611,7 +1621,7 @@ PARSER_FUNCTIONS = {
     "ARTICLESPACEE": unimplemented_fn,
     "SUBJECTSPACEE": unimplemented_fn,
     "TALKSPACEE": unimplemented_fn,
-    "SHORTDESC": unimplemented_fn,
+    "SHORTDESC": shortdesc_fn,
     "SITENAME": unimplemented_fn,
     "SERVER": server_fn,
     "SERVERNAME": servername_fn,

@@ -154,14 +154,16 @@ function Language:formatNum(n, options)
 end
 
 function Language:formatDate(format, timestamp, localtime)
-   -- XXX currently ignores localtime
-   if not timestamp then
-      timestamp = os.date("%Y-%m-%d %X")
-   end
-   -- XXX actually format the time.  See
-   -- https://www.mediawiki.org/wiki/Help:Extension:ParserFunctions#.23time
-   -- form supported timestamp formats and format specification.
-   return timestamp
+    -- XXX currently ignores localtime
+    if format == "U" then
+        timestamp = os.time()
+    elseif not timestamp then
+        timestamp = os.date("%Y-%m-%d %X")
+    end
+    -- XXX actually format the time.  See
+    -- https://www.mediawiki.org/wiki/Help:Extension:ParserFunctions#.23time
+    -- form supported timestamp formats and format specification.
+    return timestamp
 end
 
 function Language:formatDuration(seconds, allowedIntervals)
