@@ -666,7 +666,7 @@ def call_lua_sandbox(
         def debugGetParent(frame: "_LuaTable", *args) -> "_LuaTable":
             if args:
                 ctx.debug(
-                    f"GETPARENT EXTRA ARGS: Lua module:{title}, "
+                    f"LAMBDA GETPARENT EXTRA ARGS: Lua module:{title}, "
                     f"frame: {frame}, "
                     f"extra args: {repr(args)}, "
                     f"process name: {multiprocessing.current_process().name}"
@@ -689,7 +689,7 @@ def call_lua_sandbox(
         def debugGetTitle(frame: "_LuaTable", *args) -> str:
             if args:
                 ctx.debug(
-                    f"GETTITLE EXTRA ARGS: Lua module:{title}, "
+                    f"LAMBDA GETTITLE EXTRA ARGS: Lua module:{title}, "
                     f"frame: {frame}, "
                     f"extra args: {repr(args)}, "
                     f"process name: {multiprocessing.current_process().name}"
@@ -697,13 +697,27 @@ def call_lua_sandbox(
             return title
 
         def debugNewParserValue(
-            frame_self: "_LuaTable", text: str
+            frame_self: "_LuaTable", text: str, *args,
         ) -> "_LuaTable":
+            if args:
+                ctx.debug(
+                    f"LAMBDA NEWPARSERVALUE EXTRA ARGS: Lua module:{title}, "
+                    f"frame: {frame}, "
+                    f"extra args: {repr(args)}, "
+                    f"process name: {multiprocessing.current_process().name}"
+                )
             return value_with_expand(frame_self, "preprocess", text)
 
         def debugNewTemplateParserValue(
-            frame_self: "_LuaTable", text: str
+            frame_self: "_LuaTable", text: str, *args,
         ) -> "_LuaTable":
+            if args:
+                ctx.debug(
+                    f"LAMBDA NEWTEMPLATEPARSERVALUE EXTRA ARGS: Lua module:{title}, "
+                    f"frame: {frame}, "
+                    f"extra args: {repr(args)}, "
+                    f"process name: {multiprocessing.current_process().name}"
+                )
             return value_with_expand(frame_self, "expand", text)
 
         # Create frame object as dictionary with default value None
