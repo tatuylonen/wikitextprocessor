@@ -79,7 +79,7 @@ function new_require(modname)
    local fn, msg = new_loader(modname)
    assert(fn, msg)
    assert(fn ~= true)
-   local ret = fn(env)
+   local ret = fn()
    -- the `strict` module doesn't return value
    if ret ~= nil then
        -- Save value in package.loaded.  Note that package.loaded is cleared
@@ -101,7 +101,7 @@ local function new_loadData(modname)
    -- Load the module and create initialization function
    local fn, msg = new_loader(modname)
    assert(fn, msg)
-   local ret = fn(env)
+   local ret = fn()
 
    -- If caching data (for mw.loadData), save the value.  This is kept
    -- across Lua environment resets.
