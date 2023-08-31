@@ -675,7 +675,14 @@ def call_lua_sandbox(
                 assert isinstance(pframe, _LuaTable)
             return pframe
 
-        lua_getp_generator = lua.eval("""
+        # XXX this is actually pretty generic and could be used
+        # to wrap any python function in a lua function wrapper if
+        # needed; could this be turned into a *decorator*?
+        # debugGetParent needed to be wrapped because there's a
+        # en.wikiPEDIA module that tested type(x.getParent) == 'function'
+        # for some silly reason; if that turns up elsewhere, here's
+        # a solution.
+        lua_wrapper_generator = lua.eval("""
             function(py_func)
                 wrapper_func = function(...)
                     return py_func(...)
@@ -684,7 +691,7 @@ def call_lua_sandbox(
             end
         """)
 
-        wrappedDebugGetParent = lua_getp_generator(debugGetParent)
+        wrappedDebugGetParent = lua_wrapper_generator(debugGetParent)
 
         def debugGetTitle(frame: "_LuaTable", *args) -> str:
             if args:

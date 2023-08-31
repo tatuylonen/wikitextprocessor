@@ -46,7 +46,7 @@ def if_fn(ctx: "Wtp", fn_name: str,
           expander: Callable[[str], str]
          ) -> str:
     """Implements #if parser function."""
-    # print(f"if_fn: {args}")
+    # print(f"if_fn: {args}") 
     arg0: str = args[0] if args else ""
     arg1: str = args[1] if len(args) >= 2 else ""
     arg2: str = args[2] if len(args) >= 3 else ""
@@ -1356,7 +1356,7 @@ def time_fn(
         # people on wiktionary don't go crazy with weird formatting
         t = dateparser.parse(dt, settings=settings)
         if t is None:
-            m = re.match(r"([^+]*)\s*(\+\s*\d+\s*(day|year|month)s?)\s*$",
+            m = re.match(r"([^+]*)\s*(\+\s*\d+\s*(day|year|month)s?)\s*$", 
                          orig_dt)
             if m:
                 main_date = dateparser.parse(m.group(1), settings=settings)
@@ -1466,7 +1466,7 @@ def sub_fn(
     """Implements the #sub parser function."""
     arg0 = expander(args[0]).strip() if args else ""
     startstr = expander(args[1]).strip() if len(args) >= 2 else ""
-    length = expander(args[2]).strip() if len(args) >= 3 else ""
+    lengthstr = expander(args[2]).strip() if len(args) >= 3 else ""
     try:
         start = int(startstr)
     except ValueError:
@@ -1475,7 +1475,7 @@ def sub_fn(
         start = max(0, len(arg0) + start)
     start = min(start, len(arg0))
     try:
-        length = int(length)
+        length = int(lengthstr)
     except ValueError:
         length = 0
     if length == 0:
@@ -1493,15 +1493,15 @@ def pad_fn(
 ) -> str:
     """Implements the pad parser function."""
     v = expander(args[0]).strip() if args else ""
-    cnt = expander(args[1]).strip() if len(args) >= 2 else ""
+    cntstr = expander(args[1]).strip() if len(args) >= 2 else ""
     pad = expander(args[2]) if len(args) >= 3 and args[2] else "0"
     direction = expander(args[3]) if len(args) >= 4 else ""
-    if not cnt.isdigit():
-        ctx.warning("pad length is not integer: {!r}".format(cnt),
+    if not cntstr.isdigit():
+        ctx.warning("pad length is not integer: {!r}".format(cntstr),
                     sortid="parserfns/1133")
         cnt = 0
     else:
-        cnt = int(cnt)
+        cnt = int(cntstr)
     if cnt - len(v) > len(pad):
         pad = (pad * ((cnt - len(v)) // len(pad) + 1))
     if len(v) < cnt:
@@ -1537,14 +1537,14 @@ def explode_fn(
     """Implements the #explode parser function."""
     arg0 = expander(args[0]).strip() if args else ""
     delim = expander(args[1]) or " " if len(args) >= 2 else " "
-    position = expander(args[2]).strip() if len(args) >= 3 else ""
-    limit = expander(args[3]).strip() if len(args) >= 4 else ""
+    posstr = expander(args[2]).strip() if len(args) >= 3 else ""
+    limitstr = expander(args[3]).strip() if len(args) >= 4 else ""
     try:
-        position = int(position)
+        position = int(posstr)
     except ValueError:
         position = 0
     try:
-        limit = int(limit)
+        limit = int(limitstr)
     except ValueError:
         limit = 0
     parts = arg0.split(delim)
@@ -1745,7 +1745,7 @@ PARSER_FUNCTIONS = {
 def call_parser_function(
     ctx: "Wtp",
     fn_name: str,
-    args: List[str],
+    args: Union[Dict[Union[int, str], str], List[str]],
     expander: Callable[[str], str]
 ) -> str:
     """Calls the given parser function with the given arguments."""
@@ -1779,6 +1779,7 @@ def call_parser_function(
         # Convert from vector to keyed args
         ht = {}
         i = 1
+        k: Union[str, int]
         for arg in args:
             arg = str(arg)
             ofs = arg.find("=")
