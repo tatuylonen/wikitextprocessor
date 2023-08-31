@@ -1766,7 +1766,7 @@ class Wtp:
         where_str, query_values = self.build_sql_where_query(
             namespace_ids, include_redirects, model, search_pattern
         )
-        query_str += where_str + " ORDER BY title ASC"
+        query_str += where_str + " ORDER BY title, rowid ASC"
         # print("Getting all pages for query:"
         #       f"{query_str=!r}, {placeholders=!r}")
 
