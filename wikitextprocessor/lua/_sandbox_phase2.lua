@@ -151,7 +151,7 @@ local function _lua_invoke(mod_name, fn_name, frame, page_title, timeout)
       if not mod then
          local initfn, msg = _new_loader(mod1)
          if initfn then
-            success, mod = pcall(initfn, _G)
+            success, mod = pcall(initfn)
             if not success then
                _mw_frame = saved_frame
                _mw_pageTitle = saved_pageTitle
@@ -167,7 +167,7 @@ local function _lua_invoke(mod_name, fn_name, frame, page_title, timeout)
       if not mod then
          local initfn, msg = _new_loader(mod_name)
          if initfn then
-            success, mod = pcall(initfn, _G)
+            success, mod = pcall(initfn)
             if not success then
                _mw_frame = saved_frame
                _mw_pageTitle = saved_pageTitle
