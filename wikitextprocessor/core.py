@@ -578,7 +578,7 @@ class Wtp:
             if not args or not args[0]:
                 # Templates without a first argument (template name)
                 # are just rendered as text in wikimedia stuff.
-                return ("&lbrace;&lbrace;" + "&vert;".join(args) + 
+                return ("&lbrace;&lbrace;" + "&vert;".join(args) +
                        "&rbrace;&rbrace;")
             # print("REPL_TEMPL: args={}".format(args))
             return self._save_value("T", args, nowiki)
@@ -1718,19 +1718,18 @@ class Wtp:
         query_str = """
         SELECT title, namespace_id, redirect_to, need_pre_expand, body, model
         FROM pages
+        WHERE title = ?
         """
-        query_values = []
-        if upper_case_title != title:
-            query_str += " WHERE (title = ? OR title = ?)"
-            query_values.extend([title, upper_case_title])
-        else:
-            query_str += " WHERE title = ?"
-            query_values.append(title)
+        query_values = [title]
         if namespace_id is not None:
             query_str += " AND namespace_id = ?"
             query_values.append(namespace_id)
         if no_redirect:
             query_str += " AND redirect_to IS NULL"
+        if upper_case_title != title:
+            query_str = query_str + " UNION ALL " + query_str
+            query_values = query_values + [upper_case_title] + query_values[1:]
+
         query_str += " LIMIT 1"
         try:
             for result in self.db_conn.execute(query_str, tuple(query_values)):
