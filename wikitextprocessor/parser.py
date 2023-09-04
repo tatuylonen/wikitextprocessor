@@ -339,6 +339,8 @@ class WikiNode:
         target_kind: NodeKind,
         with_index: bool = False,
     ) -> Iterator[Union["WikiNode", Tuple[int, "WikiNode"]]]:
+        # Find direct child nodes that match the target node type, also return
+        # the node index that could be used to divide child node list.
         for index, child in enumerate(self.children):
             if isinstance(child, WikiNode) and child.kind == target_kind:
                 if with_index:
@@ -352,6 +354,9 @@ class WikiNode:
         current_node: Union["WikiNode", str],
         target_kind: NodeKind,
     ) -> Iterator["WikiNode"]:
+        # Find nodes in WikiNode.children and WikiNode.largs recursively.
+        # Seach WikiNode.largs probably is not needed, add it because the
+        # original `contains_list()` in wiktextract does this.
         if isinstance(current_node, WikiNode):
             if current_node != start_node and current_node.kind == target_kind:
                 yield current_node
@@ -368,6 +373,7 @@ class WikiNode:
     def find_child_recursively(
         self, target_kind: NodeKind
     ) -> Iterator["WikiNode"]:
+        # Similar to `find_child()` but also seach nested nodes.
         yield from self._find_node_recursively(self, self, target_kind)
 
     def contain_node(self, target_kind: NodeKind) -> bool:
@@ -376,6 +382,7 @@ class WikiNode:
         return False
 
     def filter_empty_str_child(self) -> Iterator[Union[str, "WikiNode"]]:
+        # Remove string child nodes that only contain space or new line.
         for node in self.children:
             if isinstance(node, str):
                 if len(node.strip()) > 0:
@@ -388,6 +395,7 @@ class WikiNode:
         target_tag: str,
         with_index: bool = False,
     ) -> Iterator[Union["HTMLNode", Tuple[int, "HTMLNode"]]]:
+        # Find direct HTMl child nodes match the target tag.
         for index, node in self.find_child(NodeKind.HTML, True):
             if node.tag == target_tag:
                 if with_index:
@@ -414,6 +422,7 @@ class TemplateNode(WikiNode):
 
     @property
     def template_parameters(self) -> Dict[str | int, str | WikiNode]:
+        # Convert the list type arguments to a dictionary.
         if self._template_parameters is not None:
             return self._template_parameters
 
