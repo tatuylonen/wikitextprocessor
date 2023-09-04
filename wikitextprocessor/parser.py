@@ -334,10 +334,17 @@ class WikiNode:
     def __repr__(self) -> str:
         return self.__str__()
 
-    def find_child(self, target_kind: NodeKind) -> Iterator["WikiNode"]:
-        for child in self.children:
+    def find_child(
+        self,
+        target_kind: NodeKind,
+        with_index: bool = False,
+    ) -> Iterator[Union["WikiNode", Tuple[int, "WikiNode"]]]:
+        for index, child in enumerate(self.children):
             if isinstance(child, WikiNode) and child.kind == target_kind:
-                yield child
+                if with_index:
+                    yield index, child
+                else:
+                    yield child
 
     def _find_node_recursively(
         self,
@@ -376,10 +383,17 @@ class WikiNode:
             else:
                 yield node
 
-    def find_html(self, target_tag: str) -> Iterator["HTMLNode"]:
-        for node in self.find_child(NodeKind.HTML):
+    def find_html(
+        self,
+        target_tag: str,
+        with_index: bool = False,
+    ) -> Iterator[Union["HTMLNode", Tuple[int, "HTMLNode"]]]:
+        for index, node in self.find_child(NodeKind.HTML, True):
             if node.tag == target_tag:
-                yield node
+                if with_index:
+                    yield index, node
+                else:
+                    yield node
 
     def find_html_recursively(self, target_tag: str) -> Iterator["HTMLNode"]:
         for node in self.find_child_recursively(self, NodeKind.HTML):
