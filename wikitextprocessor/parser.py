@@ -348,10 +348,18 @@ class WikiNode:
                 else:
                     yield child
 
-    def invert_find_child(self, target_kind: NodeKind) -> Iterator["WikiNode"]:
+    def invert_find_child(
+        self,
+        target_kind: NodeKind,
+        include_empty_str: bool = False,
+    ) -> Iterator["WikiNode"]:
         # Find direct child nodes that don't match the target node type.
         for child in self.children:
-            if not isinstance(child, WikiNode) or child.kind != target_kind:
+            if isinstance(child, str) and (
+                include_empty_str or len(child.strip()) > 0
+            ):
+                yield child
+            elif isinstance(child, WikiNode) and child.kind != target_kind:
                 yield child
 
     def _find_node_recursively(

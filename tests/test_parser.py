@@ -2347,10 +2347,12 @@ def foo(x):
         self.assertEqual(pos_node.kind, NodeKind.LEVEL3)
 
     def test_invert_find_child(self):
-        tree = self.parse("", "# gloss\n#: example")
-        node = tree.children[0]
-        not_list_nodes = list(node.invert_find_child(NodeKind.LIST))
-        self.assertEqual(not_list_nodes, ["gloss"])
+        tree = self.parse("", "# gloss text {{foo}}\n#: example")
+        gloss_node = tree.children[0].children[0]
+        not_list_nodes = list(gloss_node.invert_find_child(NodeKind.LIST))
+        self.assertEqual(len(not_list_nodes), 2)
+        self.assertEqual(not_list_nodes[0], " gloss text ")
+        self.assertEqual(not_list_nodes[1].template_name, "foo")
 
 # XXX implement <nowiki/> marking for links, templates
 #  - https://en.wikipedia.org/wiki/Help:Wikitext#Nowiki
