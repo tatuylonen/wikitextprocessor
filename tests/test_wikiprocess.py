@@ -4162,8 +4162,15 @@ return export
         )
         self.ctx.db_conn.commit()
         page = self.ctx.get_page_resolve_redirect("Template:cite-book", 10)
+        self.assertEqual(page.title, "Template:cite-book")
         self.assertEqual(page.body, "cite-book")
 
+    def test_query_page_title_case(self):
+        self.ctx.add_page("Template:Q", 10, "")
+        self.ctx.add_page("Template:q", 10, "")
+        self.ctx.db_conn.commit()
+        page = self.ctx.get_page("q", 10)
+        self.assertEqual(page.title, "Template:q")
 
 # XXX Test template_fn
 
