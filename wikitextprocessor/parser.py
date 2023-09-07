@@ -348,6 +348,20 @@ class WikiNode:
                 else:
                     yield child
 
+    def invert_find_child(
+        self,
+        target_kind: NodeKind,
+        include_empty_str: bool = False,
+    ) -> Iterator["WikiNode"]:
+        # Find direct child nodes that don't match the target node type.
+        for child in self.children:
+            if isinstance(child, str) and (
+                include_empty_str or len(child.strip()) > 0
+            ):
+                yield child
+            elif isinstance(child, WikiNode) and child.kind != target_kind:
+                yield child
+
     def _find_node_recursively(
         self,
         start_node: "WikiNode",
@@ -394,18 +408,33 @@ class WikiNode:
         self,
         target_tag: str,
         with_index: bool = False,
+        attr_name: str = "",
+        attr_value: str = "",
     ) -> Iterator[Union["HTMLNode", Tuple[int, "HTMLNode"]]]:
-        # Find direct HTMl child nodes match the target tag.
+        # Find direct HTMl child nodes match the target tag and attribute.
         for index, node in self.find_child(NodeKind.HTML, True):
             if node.tag == target_tag:
+                if len(attr_name) > 0 and attr_value not in node.attrs.get(
+                    attr_name, {}
+                ):
+                    continue
                 if with_index:
                     yield index, node
                 else:
                     yield node
 
-    def find_html_recursively(self, target_tag: str) -> Iterator["HTMLNode"]:
-        for node in self.find_child_recursively(self, NodeKind.HTML):
+    def find_html_recursively(
+        self,
+        target_tag: str,
+        attr_name: str = "",
+        attr_value: str = "",
+    ) -> Iterator["HTMLNode"]:
+        for node in self.find_child_recursively(NodeKind.HTML):
             if node.tag == target_tag:
+                if len(attr_name) > 0 and attr_value not in node.attrs.get(
+                    attr_name, {}
+                ):
+                    continue
                 yield node
 
 

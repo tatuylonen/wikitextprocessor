@@ -2311,20 +2311,31 @@ def foo(x):
         self.assertTrue(node.contain_node(NodeKind.TEMPLATE))
 
     def test_find_html(self):
-        tree = self.parse("t", "<div><p></p></div>")
+        tree = self.parse("t", "<div><p class='class_name'></p></div>")
         node = tree.children[0]
         self.assertTrue(isinstance(node, HTMLNode))
-        for p_tag in node.find_html("p"):
+        found_node = False
+        for index, p_tag in node.find_html(
+            "p", True, "class", "class_name"
+        ):
             self.assertTrue(isinstance(p_tag, HTMLNode))
             self.assertEqual(p_tag.tag, "p")
+            self.assertEqual(index, 0)
+            self.assertEqual(p_tag.attrs.get("class"), "class_name")
+            found_node = True
+        self.assertTrue(found_node)
 
     def test_find_html_recursively(self):
-        tree = self.parse("t", "<div><p><a></a></p></div>")
+        tree = self.parse("t", "<div><p><a class='class_name'></a></p></div>")
         node = tree.children[0]
         self.assertTrue(isinstance(node, HTMLNode))
-        for a_tag in node.find_html("a"):
+        found_node = False
+        for a_tag in node.find_html_recursively("a", "class", "class_name"):
             self.assertTrue(isinstance(a_tag, HTMLNode))
             self.assertEqual(a_tag.tag, "a")
+            self.assertEqual(a_tag.attrs.get("class"), "class_name")
+            found_node = True
+        self.assertTrue(found_node)
 
     def test_filter_empty_str_child(self):
         tree = self.parse("t", "==English==\n===Noun===")
@@ -2334,6 +2345,14 @@ def foo(x):
         pos_node = filered_children[0]
         self.assertTrue(isinstance(pos_node, WikiNode))
         self.assertEqual(pos_node.kind, NodeKind.LEVEL3)
+
+    def test_invert_find_child(self):
+        tree = self.parse("", "# gloss text {{foo}}\n#: example")
+        gloss_node = tree.children[0].children[0]
+        not_list_nodes = list(gloss_node.invert_find_child(NodeKind.LIST))
+        self.assertEqual(len(not_list_nodes), 2)
+        self.assertEqual(not_list_nodes[0], " gloss text ")
+        self.assertEqual(not_list_nodes[1].template_name, "foo")
 
 # XXX implement <nowiki/> marking for links, templates
 #  - https://en.wikipedia.org/wiki/Help:Wikitext#Nowiki
