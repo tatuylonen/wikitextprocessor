@@ -276,18 +276,14 @@ dasfasddasfdas
         tree = self.parse("test", "{{|es|something}}")
         self.assertEqual(
             tree.children,
-            [
-                "&lbrace;&lbrace;&vert;es&vert;something&rbrace;&rbrace;"
-            ],
+            ["&lbrace;&lbrace;&vert;es&vert;something&rbrace;&rbrace;"],
         )
 
     def test_no_template_name2(self):
         tree = self.parse("test", "{{}}")
         self.assertEqual(
             tree.children,
-            [
-                "&lbrace;&lbrace;&rbrace;&rbrace;"
-            ],
+            ["&lbrace;&lbrace;&rbrace;&rbrace;"],
         )
 
     def test_entity_expand(self):
@@ -1268,7 +1264,8 @@ def foo(x):
         self.assertEqual(node.children, [])
         self.assertEqual(node.template_name, "foo")
         self.assertEqual(
-            node.template_parameters, {1: "bar", 2: "z", 3: "1-1/2"}
+            node.template_parameters,
+            {1: "bar", 2: "", 3: "z", 4: "1-1/2", 5: ""},
         )
 
     def test_template3(self):
@@ -2315,9 +2312,7 @@ def foo(x):
         node = tree.children[0]
         self.assertTrue(isinstance(node, HTMLNode))
         found_node = False
-        for index, p_tag in node.find_html(
-            "p", True, "class", "class_name"
-        ):
+        for index, p_tag in node.find_html("p", True, "class", "class_name"):
             self.assertTrue(isinstance(p_tag, HTMLNode))
             self.assertEqual(p_tag.tag, "p")
             self.assertEqual(index, 0)
@@ -2353,6 +2348,13 @@ def foo(x):
         self.assertEqual(len(not_list_nodes), 2)
         self.assertEqual(not_list_nodes[0], " gloss text ")
         self.assertEqual(not_list_nodes[1].template_name, "foo")
+
+    def test_empty_template_parameter(self):
+        tree = self.parse("", "{{foo||bar}}")
+        node = tree.children[0]
+        self.assertEqual(node.template_parameters.get(1), "")
+        self.assertEqual(node.template_parameters.get(2), "bar")
+
 
 # XXX implement <nowiki/> marking for links, templates
 #  - https://en.wikipedia.org/wiki/Help:Wikitext#Nowiki
