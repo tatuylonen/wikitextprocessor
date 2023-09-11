@@ -460,6 +460,10 @@ class TemplateNode(WikiNode):
         for parameter_list in self.largs[1:]:
             is_named = False
             parameter_name = ""
+            if len(parameter_list) == 0:
+                parameters[unnamed_parameter_index] = ""
+                unnamed_parameter_index += 1
+
             for parameter in parameter_list:
                 if isinstance(parameter, str):
                     if "=" in parameter:
