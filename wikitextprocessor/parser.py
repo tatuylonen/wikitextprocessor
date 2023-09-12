@@ -4,6 +4,7 @@
 import enum
 import html
 import re
+from collections import defaultdict
 from collections.abc import Iterator
 from typing import (
     TYPE_CHECKING,
@@ -442,7 +443,10 @@ class TemplateNode(WikiNode):
     def __init__(self, linenum: int):
         super().__init__(NodeKind.TEMPLATE, linenum)
         self._template_parameters: Optional[
-            Dict[Union[str, int], Union[str, WikiNode]]
+            Dict[
+                Union[str, int],
+                Union[str, WikiNode, List[Union[str, WikiNode]]],
+            ]
         ] = None
 
     @property
@@ -450,45 +454,59 @@ class TemplateNode(WikiNode):
         return self.largs[0][0]
 
     @property
-    def template_parameters(self) -> Dict[str | int, str | WikiNode]:
+    def template_parameters(
+        self,
+    ) -> Dict[
+        Union[str, int], Union[str, WikiNode, List[Union[str, WikiNode]]]
+    ]:
         # Convert the list type arguments to a dictionary.
         if self._template_parameters is not None:
             return self._template_parameters
 
-        parameters = {}
-        unnamed_parameter_index = 1
+        parameters = defaultdict(list)
+        unnamed_parameter_index = 0
         for parameter_list in self.largs[1:]:
             is_named = False
             parameter_name = ""
             if len(parameter_list) == 0:
-                parameters[unnamed_parameter_index] = ""
                 unnamed_parameter_index += 1
+                parameters[unnamed_parameter_index] = ""
 
-            for parameter in parameter_list:
-                if isinstance(parameter, str):
-                    if "=" in parameter:
-                        is_named = True
-                    if is_named:
-                        parameter = parameter.strip()
-                    if len(parameter) == 0:
-                        continue
-                    if "=" in parameter:
-                        equal_sign_index = parameter.index("=")
-                        parameter_name = parameter[:equal_sign_index].strip()
-                        parameter_value = parameter[
-                            equal_sign_index + 1 :
-                        ].strip()
-                        if len(parameter_value) > 0:
-                            parameters[parameter_name] = parameter_value
-                            break
+            for index, parameter in enumerate(parameter_list):
+                if index == 0:
+                    if not isinstance(parameter, str):
+                        unnamed_parameter_index += 1
+                    else:
+                        if "=" in parameter:
+                            is_named = True
                         else:
+                            unnamed_parameter_index += 1
+                        if is_named:
+                            parameter = parameter.strip()
+                        if len(parameter) == 0:
+                            continue
+                        if "=" in parameter:
+                            equal_sign_index = parameter.index("=")
+                            parameter_name = parameter[
+                                :equal_sign_index
+                            ].strip()
+                            parameter_value = parameter[
+                                equal_sign_index + 1 :
+                            ].strip()
+                            if len(parameter_value) > 0:
+                                parameters[parameter_name].append(
+                                    parameter_value
+                                )
                             continue
 
                 if is_named and len(parameter_name) > 0:
-                    parameters[parameter_name] = parameter
+                    parameters[parameter_name].append(parameter)
                 else:
-                    parameters[unnamed_parameter_index] = parameter
-                    unnamed_parameter_index += 1
+                    parameters[unnamed_parameter_index].append(parameter)
+
+        for p_name, p_value in parameters.items():
+            if isinstance(p_value, list) and len(p_value) == 1:
+                parameters[p_name] = p_value[0]
 
         self._template_parameters = parameters
         return parameters

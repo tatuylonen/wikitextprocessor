@@ -2355,6 +2355,41 @@ def foo(x):
         self.assertEqual(node.template_parameters.get(1), "")
         self.assertEqual(node.template_parameters.get(2), "bar")
 
+    def test_template_in_template_parameters(self):
+        # https://fr.wiktionary.org/wiki/animal
+        tree = self.parse(
+            "",
+            "{{exemple|lang=fr|{{smcp|Moricet}}. — Mais pas du tout, il est à moi !<br\n/>{{smcp|Duchotel}}, ''bas à Moricet''. — Oh ! '''animal''' !|source={{w|Georges Feydeau}}, ''{{w|Monsieur chasse !}}'', 1892}}",
+        )
+        node = tree.children[0]
+        self.assertEqual(node.template_parameters.get("lang"), "fr")
+        unnamed_parameter = node.template_parameters.get(1)
+        self.assertEqual(unnamed_parameter[0].template_name, "smcp")
+        self.assertEqual(
+            unnamed_parameter[0].template_parameters, {1: "Moricet"}
+        )
+        self.assertEqual(
+            unnamed_parameter[1], ". — Mais pas du tout, il est à moi !<br/>"
+        )
+        self.assertEqual(unnamed_parameter[2].template_name, "smcp")
+        self.assertEqual(
+            unnamed_parameter[2].template_parameters, {1: "Duchotel"}
+        )
+        self.assertEqual(
+            unnamed_parameter[3], ", ''bas à Moricet''. — Oh ! '''animal'''!"
+        )
+        source_parameter = node.template_parameters.get("source")
+        self.assertEqual(source_parameter[0].template_name, "w")
+        self.assertEqual(
+            source_parameter[0].template_parameters, {1: "Georges Feydeau"}
+        )
+        self.assertEqual(source_parameter[1], ", ''")
+        self.assertEqual(source_parameter[2].template_name, "w")
+        self.assertEqual(
+            source_parameter[2].template_parameters, {1: "Monsieur chasse !"}
+        )
+        self.assertEqual(source_parameter[3], "'', 1892")
+
 
 # XXX implement <nowiki/> marking for links, templates
 #  - https://en.wikipedia.org/wiki/Help:Wikitext#Nowiki
