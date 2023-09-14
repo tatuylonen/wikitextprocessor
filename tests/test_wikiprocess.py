@@ -4172,6 +4172,9 @@ return export
         page = self.ctx.get_page("q", 10)
         self.assertEqual(page.title, "Template:q")
 
+    def test_get_page_empty_title(self):
+        self.assertEqual(self.ctx.get_page(""), None)
+
 # XXX Test template_fn
 
 # XXX test post_template_fn

@@ -1689,6 +1689,8 @@ class Wtp:
         title = title.replace("_", " ")
         if title.startswith("Main:"):
             title = title[5:]
+        if len(title) == 0:
+            return None
 
         upper_case_title = title  # the first letter is upper case
         if namespace_id is not None and namespace_id != 0:
