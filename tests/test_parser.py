@@ -2399,6 +2399,15 @@ def foo(x):
             self.assertTrue(isinstance(template_node, TemplateNode))
             self.assertTrue(template_node.template_name, "foo")
 
+    def test_template_parameter_contains_equals_sign(self):
+        # https://fr.wiktionary.org/wiki/L2#Dérivés
+        tree = self.parse("", "{{lien|1=L1 = L2 hypothesis|lang=en}}")
+        node = tree.children[0]
+        self.assertTrue(isinstance(node, TemplateNode))
+        self.assertTrue(
+            node.template_parameters, {1: "L1 = L2 hypothesis", "lang": "en"}
+        )
+
 
 # XXX implement <nowiki/> marking for links, templates
 #  - https://en.wikipedia.org/wiki/Help:Wikitext#Nowiki
