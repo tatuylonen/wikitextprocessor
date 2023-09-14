@@ -224,6 +224,16 @@ class NodeKind(enum.Enum):
     HTML = enum.auto()
 
 
+LEVEL_NODES = frozenset(
+    [
+        NodeKind.LEVEL2,
+        NodeKind.LEVEL3,
+        NodeKind.LEVEL4,
+        NodeKind.LEVEL5,
+        NodeKind.LEVEL6,
+    ]
+)
+
 # Maps subtitle token to its kind
 subtitle_to_kind: Dict[str, NodeKind] = {
     "==": NodeKind.LEVEL2,
@@ -521,6 +531,26 @@ class HTMLNode(WikiNode):
         return self.sarg
 
 
+class LevelNode(WikiNode):
+    def __init__(self, level_type: NodeKind, linenum: int):
+        super().__init__(level_type, linenum)
+
+    def find_content(self, target_type: NodeKind) -> Iterator[WikiNode]:
+        """
+        Find WikiNode in `WikiNode.largs`. This method could be used to find
+        templates "inside" the level node but not the child nodes under the
+        level node.
+        """
+        for content in (
+            level_node_arg
+            for level_node_arg_list in self.largs
+            for level_node_arg in level_node_arg_list
+            if isinstance(level_node_arg, WikiNode)
+            and level_node_arg.kind == target_type
+        ):
+            yield content
+
+
 def _parser_push(ctx: "Wtp", kind: NodeKind) -> WikiNode:
     """Pushes a new node of the specified kind onto the stack."""
     assert isinstance(kind, NodeKind)
@@ -529,6 +559,8 @@ def _parser_push(ctx: "Wtp", kind: NodeKind) -> WikiNode:
         node = TemplateNode(ctx.linenum)
     elif kind == NodeKind.HTML:
         node = HTMLNode(ctx.linenum)
+    elif kind in LEVEL_NODES:
+        node = LevelNode(kind, ctx.linenum)
     else:
         node = WikiNode(kind, ctx.linenum)
     prev = ctx.parser_stack[-1]
