@@ -42,7 +42,7 @@ from .common import (
 )
 from .luaexec import call_lua_sandbox
 from .node_expand import NodeHandlerFnCallable, to_html, to_text, to_wikitext
-from .parser import NodeKind, WikiNode, parse_encoded
+from .parser import LEVEL_NODES, NodeKind, WikiNode, parse_encoded
 from .parserfns import PARSER_FUNCTIONS, call_parser_function, init_namespaces
 from .wikihtml import ALLOWED_HTML_TAGS
 
@@ -383,13 +383,7 @@ class Wtp:
         if self.parser_stack:
             titles: List[str] = []
             for node in self.parser_stack:
-                if node.kind in (
-                    NodeKind.LEVEL2,
-                    NodeKind.LEVEL3,
-                    NodeKind.LEVEL4,
-                    NodeKind.LEVEL5,
-                    NodeKind.LEVEL6,
-                ):
+                if node.kind in LEVEL_NODES:
                     if not node.largs:
                         continue
                     lst = (
@@ -578,8 +572,11 @@ class Wtp:
             if not args or not args[0]:
                 # Templates without a first argument (template name)
                 # are just rendered as text in wikimedia stuff.
-                return ("&lbrace;&lbrace;" + "&vert;".join(args) +
-                       "&rbrace;&rbrace;")
+                return (
+                    "&lbrace;&lbrace;"
+                    + "&vert;".join(args)
+                    + "&rbrace;&rbrace;"
+                )
             # print("REPL_TEMPL: args={}".format(args))
             return self._save_value("T", args, nowiki)
 

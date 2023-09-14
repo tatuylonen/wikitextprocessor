@@ -7,6 +7,7 @@ import unittest
 from wikitextprocessor import Wtp
 from wikitextprocessor.parser import (
     HTMLNode,
+    LevelNode,
     NodeKind,
     TemplateNode,
     WikiNode,
@@ -2389,6 +2390,14 @@ def foo(x):
             source_parameter[2].template_parameters, {1: "Monsieur chasse !"}
         )
         self.assertEqual(source_parameter[3], "'', 1892")
+
+    def test_level_node_find_content(self):
+        tree = self.parse("", "== {{foo}} ==")
+        node = tree.children[0]
+        self.assertTrue(isinstance(node, LevelNode))
+        for template_node in node.find_content(NodeKind.TEMPLATE):
+            self.assertTrue(isinstance(template_node, TemplateNode))
+            self.assertTrue(template_node.template_name, "foo")
 
 
 # XXX implement <nowiki/> marking for links, templates
