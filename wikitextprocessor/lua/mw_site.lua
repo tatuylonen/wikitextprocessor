@@ -21,7 +21,7 @@ Namespace.__index = Namespace
 function Namespace:new(obj)
    obj = obj or {}
    setmetatable(obj, self)
-   obj.canonicalName = obj.name
+   obj.canonicalName = obj.canonical
    obj.displayName = obj.name
    obj.hasSubpages = obj.name == "Main" or obj.name == NAMESPACE_DATA.Module.name
    return obj
@@ -41,7 +41,8 @@ for ns_canonical_name in pairs(NAMESPACE_DATA) do
     isSubject=ns_data.issubject,
     isContent=ns_data.content,
     isTalk=ns_data.istalk,
-    aliases=ns_data.aliases
+    aliases=ns_data.aliases,
+    canonical=ns_canonical_name,
   }
   mw_site_namespaces[ns_data.id] = ns
   mw_site_namespaces[ns_data.name] = ns
