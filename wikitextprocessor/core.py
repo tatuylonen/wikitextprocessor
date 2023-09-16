@@ -16,7 +16,11 @@ import urllib.parse
 from collections.abc import Sequence
 from dataclasses import dataclass
 from functools import lru_cache
-from importlib.resources import files
+import sys
+if sys.version_info < (3, 10):
+    from importlib_resources import files
+else:
+    from importlib.resources import files
 from pathlib import Path
 from types import TracebackType
 from typing import (

@@ -11,7 +11,11 @@ import multiprocessing  # XXX debug, remove me
 import re
 import traceback
 import unicodedata
-from importlib.resources import files
+import sys
+if sys.version_info < (3, 10):
+    from importlib_resources import files
+else:
+    from importlib.resources import files
 from typing import (
     TYPE_CHECKING,
     Any,
