@@ -9,9 +9,15 @@ import html
 import json
 import multiprocessing  # XXX debug, remove me
 import re
+import sys
 import traceback
 import unicodedata
-from importlib.resources import files
+
+if sys.version_info < (3, 10):
+    from importlib_resources import files
+else:
+    from importlib.resources import files
+
 from typing import (
     TYPE_CHECKING,
     Any,
@@ -349,7 +355,8 @@ def call_set_functions(
 
 
 def initialize_lua(ctx: "Wtp") -> None:
-    def filter_attribute_access(obj: Any, attr_name: str, is_setting: bool
+    def filter_attribute_access(
+        obj: Any, attr_name: str, is_setting: bool
     ) -> str:
         if isinstance(attr_name, str) and not attr_name.startswith("_"):
             return attr_name
@@ -682,14 +689,16 @@ def call_lua_sandbox(
         # en.wikiPEDIA module that tested type(x.getParent) == 'function'
         # for some silly reason; if that turns up elsewhere, here's
         # a solution.
-        lua_wrapper_generator = lua.eval("""
+        lua_wrapper_generator = lua.eval(
+            """
             function(py_func)
                 wrapper_func = function(...)
                     return py_func(...)
                 end
                 return wrapper_func
             end
-        """)
+        """
+        )
 
         wrappedDebugGetParent = lua_wrapper_generator(debugGetParent)
 
@@ -704,7 +713,7 @@ def call_lua_sandbox(
             return title
 
         def debugNewParserValue(
-            frame_self: "_LuaTable", text: str, *args,
+            frame_self: "_LuaTable", text: str, *args
         ) -> "_LuaTable":
             if args:
                 ctx.debug(
@@ -716,7 +725,7 @@ def call_lua_sandbox(
             return value_with_expand(frame_self, "preprocess", text)
 
         def debugNewTemplateParserValue(
-            frame_self: "_LuaTable", text: str, *args,
+            frame_self: "_LuaTable", text: str, *args
         ) -> "_LuaTable":
             if args:
                 ctx.debug(
