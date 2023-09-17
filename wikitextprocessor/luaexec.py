@@ -853,8 +853,13 @@ def call_lua_sandbox(
         "</strong>".format(msg, html.escape(modname), html.escape(modfn))
     )
 
+def cache_decorator_with_python_version_check(func:Callable):
+    if sys.version_info < (3, 9):
+        return functools.lru_cache(maxsize=None)(func)
+    else:
+        return functools.cache(func)
 
-@functools.cache
+@cache_decorator_with_python_version_check
 def query_wikidata(item_id: str) -> Optional[dict]:
     import requests
 
