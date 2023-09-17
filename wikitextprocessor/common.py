@@ -4,7 +4,11 @@
 
 import re
 from typing import Iterator, Dict
-
+import sys
+if sys.version_info < (3, 9):
+    from typing import Pattern, Match
+else:
+    Pattern, Match = re.Pattern, re.Match
 
 # Character range used for marking magic sequences.  This package
 # assumes that these characters do not occur on Wikitext pages.  These
@@ -49,13 +53,13 @@ _nowiki_map: Dict[str, str] = {
     "'": "&apos;",
     "_": "&#95;",  # wikitext __MAGIC_WORDS__
 }
-_nowiki_re: re.Pattern[str] = re.compile(
+_nowiki_re: Pattern[str] = re.compile(
                                  "|".join(
                                   re.escape(x) for x in _nowiki_map.keys()))
 
 def nowiki_quote(text: str) -> str:
     """Quote text inside <nowiki>...</nowiki> by escaping certain characters."""
-    def _nowiki_repl(m: re.Match[str]) -> str:
+    def _nowiki_repl(m: Match[str]) -> str:
         return _nowiki_map[m.group(0)]
 
     return re.sub(_nowiki_re, _nowiki_repl, text)
