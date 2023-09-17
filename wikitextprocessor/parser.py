@@ -5,7 +5,13 @@ import enum
 import html
 import re
 from collections import defaultdict
-from collections.abc import Iterator
+import sys
+if sys.version_info < (3, 9):
+    from typing import (
+       Iterator
+    )
+else:
+    from collections.abc import Iterator
 from typing import (
     TYPE_CHECKING,
     Callable,

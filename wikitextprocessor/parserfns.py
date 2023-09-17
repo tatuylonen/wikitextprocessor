@@ -17,7 +17,11 @@ from typing import (
     Union,
 )
 
-from collections.abc import Callable
+import sys
+if sys.version_info < (3, 9):
+    from typing import Callable
+else:
+    from collections.abc import Callable
 
 from .wikihtml import ALLOWED_HTML_TAGS
 from .common import nowiki_quote, MAGIC_NOWIKI_CHAR

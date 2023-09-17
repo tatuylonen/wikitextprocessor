@@ -13,10 +13,13 @@ import sqlite3
 import sys
 import tempfile
 import urllib.parse
-from collections.abc import Sequence
+import sys
+if sys.version_info < (3, 9):
+    from typing import Sequence
+else:
+    from collections.abc import Sequence
 from dataclasses import dataclass
 from functools import lru_cache
-import sys
 if sys.version_info < (3, 10):
     from importlib_resources import files
 else:
