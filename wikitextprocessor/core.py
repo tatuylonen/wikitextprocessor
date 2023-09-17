@@ -15,9 +15,11 @@ import tempfile
 import urllib.parse
 import sys
 if sys.version_info < (3, 9):
-    from typing import Sequence
+    from typing import Sequence, Type
+    BaseExceptionType = Type[BaseException]
 else:
     from collections.abc import Sequence
+    BaseExceptionType = type[BaseException]
 from dataclasses import dataclass
 from functools import lru_cache
 if sys.version_info < (3, 10):
@@ -152,7 +154,7 @@ class BegLineDisableManager(object):
 
     def __exit__(
         self,
-        exc_type: type[BaseException],
+        exc_type: BaseExceptionType,
         exc_value: BaseException,
         trace: TracebackType,
     ) -> None:
