@@ -287,7 +287,7 @@ class Wtp:
     @property
     def backup_db_path(self) -> Path:
         assert self.db_path
-        return self.db_path.with_stem(self.db_path.stem + "_backup")
+        return self.db_path.with_name(self.db_path.stem + "_backup" + self.db_path.suffix)
 
     def backup_db(self) -> None:
         self.backup_db_path.unlink(True)
