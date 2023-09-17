@@ -1034,20 +1034,19 @@ class Wtp:
         # refer to them
         while len(expand_stack) > 0:
             page = expand_stack.pop()
-            title_no_ns_perfix = page.title.removeprefix(
-                template_ns_local_name + ":"
-            )
-            if title_no_ns_perfix not in included_map:
+            prefix = template_ns_local_name + ":"
+            title_no_ns_prefix = page.title[len(prefix):] if page.title.startswith(prefix) else page.title
+            if title_no_ns_prefix not in included_map:
                 if self.lang_code == "zh":
-                    title_no_ns_perfix = (
-                        title_no_ns_perfix[0].lower() + title_no_ns_perfix[1:]
+                    title_no_ns_prefix = (
+                        title_no_ns_prefix[0].lower() + title_no_ns_prefix[1:]
                     )
-                    if title_no_ns_perfix not in included_map:
+                    if title_no_ns_prefix not in included_map:
                         continue
                 else:
                     continue
 
-            for template_title in included_map[title_no_ns_perfix]:
+            for template_title in included_map[title_no_ns_prefix]:
                 self.get_page.cache_clear()  # avoid infinite loop
                 template = self.get_page(template_title, template_ns_id)
                 if not template or template.need_pre_expand:
@@ -1945,10 +1944,8 @@ def is_chinese_subtitle_template(wtp: Wtp, title: str) -> bool:
     # and their titles are usually starts with "-" or "="
     template_ns = wtp.NAMESPACE_DATA.get("Template", {"name": None})
     template_ns_local_name = template_ns.get("name")
-    if template_ns_local_name:
-        title_no_prefix = title.removeprefix(template_ns_local_name + ":")
-    else:
-        title_no_prefix = title
+    prefix = template_ns_local_name + ":" if template_ns_local_name else ""
+    title_no_prefix = title[len(prefix):] if title.startswith(prefix) else title
     for token in ["-", "="]:
         if title_no_prefix.startswith(token) and title_no_prefix.endswith(
             token
