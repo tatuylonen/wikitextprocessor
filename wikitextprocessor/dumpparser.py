@@ -146,9 +146,16 @@ def overwrite_pages(
     for folder_path in folder_paths:
         if folder_path.is_file() and folder_path.suffix == ".json":
             with folder_path.open(encoding="utf-8") as f:
-                for title, body in json.load(f).items():
+                for title, page_data in json.load(f).items():
                     is_template = overwite_single_page(
-                        ctx, title, body, do_overwrite
+                        ctx,
+                        title,
+                        do_overwrite,
+                        namespace_id=page_data.get("namespace_id"),
+                        redirect_to=page_data.get("redirect_to"),
+                        need_pre_expand=page_data.get("need_pre_expand", False),
+                        body=page_data.get("body"),
+                        model=page_data.get("model", "wikitext"),
                     )
                     if not do_overwrite and is_template:
                         return True
@@ -170,7 +177,7 @@ def overwrite_pages(
                 title = first_line[7:].strip()
                 body = f.read()
                 is_template = overwite_single_page(
-                    ctx, title, body, do_overwrite
+                    ctx, title, do_overwrite, body=body
                 )
                 if not do_overwrite and is_template:
                     return True
@@ -180,19 +187,37 @@ def overwrite_pages(
 
 
 def overwite_single_page(
-    ctx: "Wtp", title: str, body: str, do_overwrite: bool
+    ctx: "Wtp",
+    title: str,
+    do_overwrite: bool,
+    namespace_id: Optional[int] = None,
+    redirect_to: Optional[str] = None,
+    need_pre_expand: bool = False,
+    body: Optional[str] = None,
+    model: str = "wikitext",
 ) -> bool:
     template_ns_id = ctx.NAMESPACE_DATA.get("Template", {"id": None}).get("id")
-    if ":" in title:
-        local_ns_name = title[: title.find(":")]
-        ns_id = ctx.NS_ID_BY_LOCAL_NAME.get(local_ns_name, 0)
-    else:
-        ns_id = 0
+    if namespace_id is None:
+        if ":" in title:
+            local_ns_name = title[: title.find(":")]
+            namespace_id = ctx.NS_ID_BY_LOCAL_NAME.get(local_ns_name, 0)
+        else:
+            namespace_id = 0
     if do_overwrite:
-        module_ns_id = ctx.NAMESPACE_DATA.get("Module", {"id": None}).get("id")
-        model = "Scribunto" if ns_id == module_ns_id else "wikitext"
-        ctx.add_page(title, ns_id, body, model=model)
-    elif template_ns_id == ns_id:
+        if model is None:
+            module_ns_id = ctx.NAMESPACE_DATA.get("Module", {"id": None}).get(
+                "id"
+            )
+            model = "Scribunto" if namespace_id == module_ns_id else "wikitext"
+        ctx.add_page(
+            title,
+            namespace_id,
+            body=body,
+            redirect_to=redirect_to,
+            need_pre_expand=need_pre_expand,
+            model=model,
+        )
+    elif template_ns_id == namespace_id:
         return True
 
     return False
