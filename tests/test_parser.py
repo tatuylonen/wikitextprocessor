@@ -1279,7 +1279,7 @@ def foo(x):
             node.largs, [["\nfoo\n"], ["\nname=testi"], ["bar\n"], ["\nbaz"]]
         )
         self.assertEqual(node.children, [])
-        self.assertEqual(node.template_name, "\nfoo\n")
+        self.assertEqual(node.template_name, "foo")
         self.assertEqual(
             node.template_parameters, {"name": "testi", 1: "bar\n", 2: "\nbaz"}
         )
@@ -2408,6 +2408,12 @@ def foo(x):
             node.template_parameters, {1: "L1 = L2 hypothesis", "lang": "en"}
         )
 
+    def test_template_name_end_space(self):
+        # https://fr.wiktionary.org/wiki/lenn
+        tree = self.parse("", "{{exemple |Hag ar roue a gas anezañ e-tal eul '''lenn'''. }}")
+        node = tree.children[0]
+        self.assertTrue(isinstance(node, TemplateNode))
+        self.assertEqual(node.template_name, "exemple")
 
 # XXX implement <nowiki/> marking for links, templates
 #  - https://en.wikipedia.org/wiki/Help:Wikitext#Nowiki

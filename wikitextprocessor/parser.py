@@ -461,7 +461,7 @@ class TemplateNode(WikiNode):
 
     @property
     def template_name(self) -> str:
-        return self.largs[0][0]
+        return self.largs[0][0].strip()
 
     @property
     def template_parameters(
