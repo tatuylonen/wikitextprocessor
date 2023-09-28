@@ -148,7 +148,6 @@ function mw_title.makeTitle(namespace, title, fragment, interwiki)
    if title:sub(1, 1) == " " or title:sub(-1) == " " then
        title = title:gsub("^%s*(.-)%s*$", "%1")
    end
-   if title:find("  ") then return nil end
    if title:find("~~~~") then return nil end
    local prefixes = {
      NAMESPACE_DATA.Talk.name .. ":",
