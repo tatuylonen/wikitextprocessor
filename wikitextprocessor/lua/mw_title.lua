@@ -132,7 +132,6 @@ local mw_title = {
 function mw_title.makeTitle(namespace, title, fragment, interwiki)
    if title == nil or title == "" then return nil end
    if title:find("%%[0-9a-fA-F][0-9a-fA-F]") then return nil end
-   if title:find("#") then return nil end
    if title:find("<") then return nil end
    if title:find(">") then return nil end
    if title:find("%[") then return nil end
@@ -140,7 +139,6 @@ function mw_title.makeTitle(namespace, title, fragment, interwiki)
    if title:find("|") then return nil end
    if title:find("{") then return nil end
    if title:find("}") then return nil end
-   if title:find("_") then return nil end
    if title:sub(1, 1) == ":" then return nil end
    if title == "." or title == ".." then return nil end
    if title:sub(1, 2) == "./" or title:sub(1, 3) == "../" then return nil end
@@ -150,7 +148,6 @@ function mw_title.makeTitle(namespace, title, fragment, interwiki)
    if title:sub(1, 1) == " " or title:sub(-1) == " " then
        title = title:gsub("^%s*(.-)%s*$", "%1")
    end
-   if title:find("  ") then return nil end
    if title:find("~~~~") then return nil end
    local prefixes = {
      NAMESPACE_DATA.Talk.name .. ":",
