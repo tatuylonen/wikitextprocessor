@@ -46,7 +46,7 @@ def if_fn(ctx: "Wtp", fn_name: str,
           expander: Callable[[str], str]
          ) -> str:
     """Implements #if parser function."""
-    # print(f"if_fn: {args}") 
+    # print(f"if_fn: {args}")
     arg0: str = args[0] if args else ""
     arg1: str = args[1] if len(args) >= 2 else ""
     arg2: str = args[2] if len(args) >= 3 else ""
@@ -469,7 +469,7 @@ def currentyear_fn(
     expander: Callable[[str], str]
 ) -> str:
     """Implements the CURRENTYEAR magic word."""
-    return str(datetime.datetime.utcnow().year)
+    return str(datetime.datetime.now(datetime.timezone.utc).year)
 
 
 def currentmonth_fn(
@@ -479,7 +479,7 @@ def currentmonth_fn(
     expander: Callable[[str], str]
 ) -> str:
     """Implements the CURRENTMONTH magic word."""
-    return "{:02d}".format(datetime.datetime.utcnow().month)
+    return datetime.datetime.now(datetime.timezone.utc).strftime("%m")
 
 
 def currentmonth1_fn(
@@ -489,7 +489,7 @@ def currentmonth1_fn(
     expander: Callable[[str], str]
 ) -> str:
     """Implements the CURRENTMONTH1 magic word."""
-    return "{:d}".format(datetime.datetime.utcnow().month)
+    return str(datetime.datetime.now(datetime.timezone.utc).month)
 
 
 def currentmonthname_fn(
@@ -500,10 +500,7 @@ def currentmonthname_fn(
 ) -> str:
     """Implements the CURRENTMONTHNAME magic word."""
     # XXX support for other languages?
-    month = datetime.datetime.utcnow().month
-    return ("", "January", "February", "March", "April", "May", "June",
-            "July", "August", "September", "October", "November",
-            "December")[month]
+    return datetime.datetime.now(datetime.timezone.utc).strftime("%B")
 
 
 def currentmonthabbrev_fn(
@@ -514,9 +511,7 @@ def currentmonthabbrev_fn(
 ) -> str:
     """Implements the CURRENTMONTHABBREV magic word."""
     # XXX support for other languages?
-    month = datetime.datetime.utcnow().month
-    return ("", "Jan", "Feb", "Mar", "Apr", "May", "Jun",
-            "Jul", "Aug", "Sep", "Oct", "Nov", "Dec")[month]
+    return datetime.datetime.now(datetime.timezone.utc).strftime("%b")
 
 
 def currentday_fn(
@@ -526,7 +521,7 @@ def currentday_fn(
     expander: Callable[[str], str]
 ) -> str:
     """Implements the CURRENTDAY magic word."""
-    return "{:d}".format(datetime.datetime.utcnow().day)
+    return str(datetime.datetime.now(datetime.timezone.utc).day)
 
 
 def currentday2_fn(
@@ -536,7 +531,7 @@ def currentday2_fn(
     expander: Callable[[str], str]
 ) -> str:
     """Implements the CURRENTDAY2 magic word."""
-    return "{:02d}".format(datetime.datetime.utcnow().day)
+    return datetime.datetime.now(datetime.timezone.utc).strftime("%d")
 
 
 def currentdow_fn(
@@ -546,7 +541,7 @@ def currentdow_fn(
     expander: Callable[[str], str]
 ) -> str:
     """Implements the CURRENTDOW magic word."""
-    return "{:d}".format(datetime.datetime.utcnow().weekday())
+    return str(datetime.datetime.now(datetime.timezone.utc).weekday())
 
 
 def revisionid_fn(
@@ -1356,7 +1351,7 @@ def time_fn(
         # people on wiktionary don't go crazy with weird formatting
         t = dateparser.parse(dt, settings=settings)
         if t is None:
-            m = re.match(r"([^+]*)\s*(\+\s*\d+\s*(day|year|month)s?)\s*$", 
+            m = re.match(r"([^+]*)\s*(\+\s*\d+\s*(day|year|month)s?)\s*$",
                          orig_dt)
             if m:
                 main_date = dateparser.parse(m.group(1), settings=settings)
