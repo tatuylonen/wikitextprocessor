@@ -39,21 +39,24 @@ classifiers = [
 requires-python = ">=3.9"
 dependencies = [
     "dateparser",
+    "importlib_resources; python_version < '3.10'",
     "lupa @ git+https://github.com/scoder/lupa.git",
     "lxml",
     "psutil",
     "requests",
-    "importlib_resources; python_version < '3.10'",
 ]
 
 [project.optional-dependencies]
 dev = [
-    "nose2[coverage_plugin]",
-    "tomli; python_version <= '3.10'",  # for coverage parsing TOML file
-    "types-lxml",
-    "isort",
     "black",
+    "mypy",
+    "nose2[coverage_plugin]",
     "ruff",
+    "tomli; python_version <= '3.10'",  # for coverage parsing TOML file
+    "types-dateparser",
+    "types-lxml",
+    "types-psutil",
+    "types-requests",
 ]
 
 [project.urls]
@@ -87,3 +90,9 @@ line-length = 80
 
 [tool.ruff]
 line-length = 80
+select = [
+    "E",  # pycodestyle error
+    "F",  # Pyflakes
+    "I",  # isort
+    "W",  # pycodestyle warning
+]
