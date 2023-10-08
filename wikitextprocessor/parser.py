@@ -380,7 +380,7 @@ class WikiNode:
         target_kind: NodeKind,
     ) -> Iterator["WikiNode"]:
         # Find nodes in WikiNode.children and WikiNode.largs recursively.
-        # Seach WikiNode.largs probably is not needed, add it because the
+        # Search WikiNode.largs probably is not needed, add it because the
         # original `contains_list()` in wiktextract does this.
         if isinstance(current_node, WikiNode):
             if current_node != start_node and current_node.kind == target_kind:
@@ -398,7 +398,7 @@ class WikiNode:
     def find_child_recursively(
         self, target_kind: NodeKind
     ) -> Iterator["WikiNode"]:
-        # Similar to `find_child()` but also seach nested nodes.
+        # Similar to `find_child()` but also search nested nodes.
         yield from self._find_node_recursively(self, self, target_kind)
 
     def contain_node(self, target_kind: NodeKind) -> bool:
@@ -699,7 +699,7 @@ def _parser_pop(ctx: "Wtp", warn_unclosed: bool) -> None:
         node.children = head
 
     # Remove the topmost node from the stack.  It should be on its parent's
-    # chilren list.
+    # children list.
     ctx.parser_stack.pop()
 
 

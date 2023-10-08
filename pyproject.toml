@@ -96,3 +96,13 @@ select = [
     "I",  # isort
     "W",  # pycodestyle warning
 ]
+
+[tool.typos]
+files.extend-exclude = [
+    "wikitextprocessor/lua/mediawiki-extensions-Scribunto",
+    "wikitextprocessor/data",
+    "tests",
+]
+default.extend-ignore-identifiers-re = [
+    "uupper",
+]

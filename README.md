@@ -323,7 +323,7 @@ def start_subsection(self, title)
 ```
 
 Sets the title of the current subsection of the current section on the
-page.  This is autimatically reset to ``None`` by ``Wtp.start_page()``
+page.  This is automatically reset to ``None`` by ``Wtp.start_page()``
 and ``Wtp.start_section()``.  The subsection title is only used in error,
 warning, and debug messages.
 

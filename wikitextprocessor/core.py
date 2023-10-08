@@ -161,7 +161,7 @@ class BegLineDisableManager(object):
 
 class Wtp:
     """Context used for processing wikitext and for expanding templates,
-    parser functions and Lua macros.  The indended usage pattern is to
+    parser functions and Lua macros.  The intended usage pattern is to
     initialize this context once (this holds template and module definitions),
     and then using the context for processing many pages."""
 
@@ -477,7 +477,7 @@ class Wtp:
         """Returns a dictionary with errors, warnings, and debug messages
         from the context.  Note that the values are reset whenever starting
         processing a new word.  The value returned by this function is
-        JSON-compatible and can easily be returned by a paralle process."""
+        JSON-compatible and can easily be returned by a parallel process."""
         return {
             "errors": self.errors,
             "warnings": self.warnings,
@@ -1030,20 +1030,20 @@ class Wtp:
         # refer to them
         while len(expand_stack) > 0:
             page = expand_stack.pop()
-            title_no_ns_perfix = page.title.removeprefix(
+            title_no_ns_prefix = page.title.removeprefix(
                 template_ns_local_name + ":"
             )
-            if title_no_ns_perfix not in included_map:
+            if title_no_ns_prefix not in included_map:
                 if self.lang_code == "zh":
-                    title_no_ns_perfix = (
-                        title_no_ns_perfix[0].lower() + title_no_ns_perfix[1:]
+                    title_no_ns_prefix = (
+                        title_no_ns_prefix[0].lower() + title_no_ns_prefix[1:]
                     )
-                    if title_no_ns_perfix not in included_map:
+                    if title_no_ns_prefix not in included_map:
                         continue
                 else:
                     continue
 
-            for template_title in included_map[title_no_ns_perfix]:
+            for template_title in included_map[title_no_ns_prefix]:
                 self.get_page.cache_clear()  # avoid infinite loop
                 template = self.get_page(template_title, template_ns_id)
                 if not template or template.need_pre_expand:
@@ -1434,7 +1434,7 @@ class Wtp:
                             continue
 
                     # As a compatibility feature, recognize parser functions
-                    # also as the first argument of a template (withoout colon),
+                    # also as the first argument of a template (without colon),
                     # whether there are more arguments or not.  This is used
                     # for magic words and some parser functions have an implicit
                     # compatibility template that essentially does this.

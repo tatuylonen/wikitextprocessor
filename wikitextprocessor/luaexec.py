@@ -7,6 +7,7 @@ import copy
 import functools
 import html
 import json
+import logging
 import multiprocessing  # XXX debug, remove me
 import re
 import sys
@@ -729,7 +730,8 @@ def call_lua_sandbox(
         ) -> "_LuaTable":
             if args:
                 ctx.debug(
-                    f"LAMBDA NEWTEMPLATEPARSERVALUE EXTRA ARGS: Lua module:{title}, "
+                    "LAMBDA NEWTEMPLATEPARSERVALUE EXTRA ARGS: "
+                    f"Lua module:{title}, "
                     f"frame: {frame}, "
                     f"extra args: {repr(args)}, "
                     f"process name: {multiprocessing.current_process().name}"
@@ -863,7 +865,7 @@ def call_lua_sandbox(
 def query_wikidata(item_id: str) -> Optional[dict]:
     import requests
 
-    r: requests.Response = requests.get(
+    r = requests.get(
         "https://query.wikidata.org/sparql",
         params={
             "query": "SELECT ?itemLabel ?itemDescription WHERE { VALUES ?item "
@@ -877,11 +879,11 @@ def query_wikidata(item_id: str) -> Optional[dict]:
 
     if r.ok:
         result = r.json()
-        print(f"WIKIDATA QUERY succeded: {item_id=!r}, {result=!r}")
+        # print(f"WIKIDATA QUERY succeeded: {item_id=}, {result=}")
         for binding in result.get("results", {}).get("bindings", {}):
             return binding
     else:
-        print(f"WIKIDATA QUERY failed: {item_id=!r}")
+        logging.error(f"WIKIDATA QUERY failed: {item_id=} {r.text=}")
         return None
     return None
 

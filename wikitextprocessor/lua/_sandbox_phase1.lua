@@ -22,7 +22,7 @@ function new_loader(modname)
    end
    -- print("lua new_loader: " .. modname)
    -- If the module is in the normal cache (loaded by require), call its
-   -- intialization function
+   -- initialization function
    if loader_cache[modname] ~= nil then
       return loader_cache[modname]
    end
