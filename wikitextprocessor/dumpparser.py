@@ -147,7 +147,7 @@ def overwrite_pages(
         if folder_path.is_file() and folder_path.suffix == ".json":
             with folder_path.open(encoding="utf-8") as f:
                 for title, page_data in json.load(f).items():
-                    is_template = overwite_single_page(
+                    is_template = overwrite_single_page(
                         ctx,
                         title,
                         do_overwrite,
@@ -161,7 +161,7 @@ def overwrite_pages(
                         return True
             continue
 
-        # old overwite file format that stars with "TTILE: "
+        # old overwrite file format that stars with "TTILE: "
         for file_path in folder_path.iterdir():
             if file_path.name.startswith(".") or file_path.suffix == ".json":
                 continue
@@ -176,7 +176,7 @@ def overwrite_pages(
                     sys.exit(1)
                 title = first_line[7:].strip()
                 body = f.read()
-                is_template = overwite_single_page(
+                is_template = overwrite_single_page(
                     ctx, title, do_overwrite, body=body
                 )
                 if not do_overwrite and is_template:
@@ -186,7 +186,7 @@ def overwrite_pages(
     return False
 
 
-def overwite_single_page(
+def overwrite_single_page(
     ctx: "Wtp",
     title: str,
     do_overwrite: bool,

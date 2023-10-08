@@ -140,7 +140,7 @@ local function _lua_invoke(mod_name, fn_name, frame, page_title, timeout)
    -- Set time limit for execution of the Lua code
    _lua_set_timeout(timeout)
 
-   -- Load the module.  Note that the initilizations above must be done before
+   -- Load the module.  Note that the initializations above must be done before
    -- loading the module, as the module could refer to, e.g., page title
    -- during loading.
    local mod, success
