@@ -2397,23 +2397,26 @@ def foo(x):
         self.assertTrue(isinstance(node, LevelNode))
         for template_node in node.find_content(NodeKind.TEMPLATE):
             self.assertTrue(isinstance(template_node, TemplateNode))
-            self.assertTrue(template_node.template_name, "foo")
+            self.assertEqual(template_node.template_name, "foo")
 
     def test_template_parameter_contains_equals_sign(self):
         # https://fr.wiktionary.org/wiki/L2#Dérivés
         tree = self.parse("", "{{lien|1=L1 = L2 hypothesis|lang=en}}")
         node = tree.children[0]
         self.assertTrue(isinstance(node, TemplateNode))
-        self.assertTrue(
+        self.assertEqual(
             node.template_parameters, {1: "L1 = L2 hypothesis", "lang": "en"}
         )
 
     def test_template_name_end_space(self):
         # https://fr.wiktionary.org/wiki/lenn
-        tree = self.parse("", "{{exemple |Hag ar roue a gas anezañ e-tal eul '''lenn'''. }}")
+        tree = self.parse(
+            "", "{{exemple |Hag ar roue a gas anezañ e-tal eul '''lenn'''. }}"
+        )
         node = tree.children[0]
         self.assertTrue(isinstance(node, TemplateNode))
         self.assertEqual(node.template_name, "exemple")
+
 
 # XXX implement <nowiki/> marking for links, templates
 #  - https://en.wikipedia.org/wiki/Help:Wikitext#Nowiki
