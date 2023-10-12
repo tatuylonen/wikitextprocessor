@@ -1,4 +1,4 @@
-[submodule "wikitextprocessor/lua/mediawiki-extensions-Scribunto"]
-	path = wikitextprocessor/lua/mediawiki-extensions-Scribunto
+[submodule "src/wikitextprocessor/lua/mediawiki-extensions-Scribunto"]
+	path = src/wikitextprocessor/lua/mediawiki-extensions-Scribunto
 	url = https://github.com/wikimedia/mediawiki-extensions-Scribunto.git
 	shallow = true

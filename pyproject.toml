@@ -63,7 +63,6 @@ dev = [
 homepage = "https://github.com/tatuylonen/wikitextprocessor"
 
 [tool.setuptools]
-packages = [ "wikitextprocessor" ]
 zip-safe = false
 
 [tool.setuptools.package-data]
@@ -99,8 +98,8 @@ select = [
 
 [tool.typos]
 files.extend-exclude = [
-    "wikitextprocessor/lua/mediawiki-extensions-Scribunto",
-    "wikitextprocessor/data",
+    "src/wikitextprocessor/lua/mediawiki-extensions-Scribunto",
+    "src/wikitextprocessor/data",
     "tests",
 ]
 default.extend-ignore-identifiers-re = [
