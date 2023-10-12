@@ -534,7 +534,7 @@ class Wtp:
                     # re.X = ignore whitespace and comments, re.I = ignore case
                     r"""(?xi)\|(
                             (
-                                <([-a-zA-z0-9]+)\b[^>]*>  # html tag
+                                <([-a-zA-Z0-9]+)\b[^>]*>  # html tag
                                     [^][{}]*?             # element contents
                                                           # (including `|`'s)
                                     </\3\s*>              # end tag
