@@ -135,7 +135,7 @@ class Page:
     model: Optional[str] = None
 
 
-class BegLineDisableManager(object):
+class BegLineDisableManager:
     """A 'context manager'-style object to use with `with` that increments
     and decrements a counter used as a flag to see whether the parser
     should care about tokens at the beginning of a line, used in magic_fn
@@ -980,33 +980,15 @@ class Wtp:
         logging.info(
             "Analyzing which templates should be expanded before parsing"
         )
-        # Add/overwrite templates
-        template_ns: NamespaceDataEntry = self.NAMESPACE_DATA.get(
-            "Template", EMPTY_NAMESPACEDATA
-        )
-        template_ns_id = template_ns["id"]
-        template_ns_local_name = template_ns["name"]
-        self.add_page(
-            f"{template_ns_local_name}:!", template_ns_id, "|"
-        )  # magic word
-        self.add_page(
-            f"{template_ns_local_name}:((", template_ns_id, "&lbrace;&lbrace;"
-        )  # {{((}} -> {{
-        self.add_page(
-            f"{template_ns_local_name}:))", template_ns_id, "&rbrace;&rbrace;"
-        )  # {{))}} -> }}
-
+        template_ns_data = self.NAMESPACE_DATA.get("Template")
+        template_ns_id = template_ns_data["id"]
+        template_ns_local_name = template_ns_data["name"]
         expand_stack: List[Page] = []
         # the keys of included_map are template names without
         # the namespace prefix
         included_map: DefaultDict[str, Set[str]] = collections.defaultdict(set)
 
-        if template_ns_id:
-            template_ns_id_list: Optional[List[int]] = [template_ns_id]
-        else:
-            template_ns_id_list = None
-
-        for page in self.get_all_pages(template_ns_id_list):
+        for page in self.get_all_pages([template_ns_id]):
             if page.body is not None:
                 used_templates, pre_expand = self._analyze_template(
                     page.title, page.body

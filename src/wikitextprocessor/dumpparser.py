@@ -92,6 +92,7 @@ def process_dump(
     overwrite_folders: Optional[List[Path]] = None,
     skip_extract_dump: bool = False,
     save_pages_path: Optional[Path] = None,
+    skip_analyze_templates: bool = False,
 ) -> None:
     """Parses a WikiMedia dump file ``path`` (which should point to a
     "<project>-<date>-pages-articles.xml.bz2" file.  This implements
@@ -112,11 +113,29 @@ def process_dump(
         if save_pages_path is not None:
             save_pages_to_file(ctx, save_pages_path)
 
-    analyze_and_overwrite_pages(ctx, overwrite_folders, skip_extract_dump)
+    # Add default templates
+    template_ns = ctx.NAMESPACE_DATA.get("Template")
+    template_ns_id = template_ns["id"]
+    template_ns_local_name = template_ns["name"]
+    ctx.add_page(  # magic word
+        f"{template_ns_local_name}:!", template_ns_id, "|"
+    )
+    ctx.add_page(  # {{((}} -> {{
+        f"{template_ns_local_name}:((", template_ns_id, "&lbrace;&lbrace;"
+    )
+    ctx.add_page(  # {{))}} -> }}
+        f"{template_ns_local_name}:))", template_ns_id, "&rbrace;&rbrace;"
+    )
+    analyze_and_overwrite_pages(
+        ctx, overwrite_folders, skip_extract_dump, skip_analyze_templates
+    )
 
 
 def analyze_and_overwrite_pages(
-    ctx: "Wtp", overwrite_folders: Optional[List[Path]], skip_extract_dump: bool
+    ctx: "Wtp",
+    overwrite_folders: Optional[List[Path]],
+    skip_extract_dump: bool,
+    skip_analyze_templates: bool,
 ) -> None:
     if overwrite_folders is not None:
         if overwrite_pages(ctx, overwrite_folders, False):
@@ -124,15 +143,18 @@ def analyze_and_overwrite_pages(
             if skip_extract_dump:
                 ctx.backup_db()
             overwrite_pages(ctx, overwrite_folders, True)
-            ctx.analyze_templates()
+            if not skip_analyze_templates:
+                ctx.analyze_templates()
         else:
-            if not ctx.has_analyzed_templates():
+            if not skip_analyze_templates and not ctx.has_analyzed_templates():
                 ctx.analyze_templates()
             if skip_extract_dump:
                 ctx.backup_db()
             overwrite_pages(ctx, overwrite_folders, True)
-    elif not ctx.has_analyzed_templates():
+    elif not skip_analyze_templates and not ctx.has_analyzed_templates():
         ctx.analyze_templates()
+    if skip_analyze_templates:
+        ctx.db_conn.commit()
 
 
 def overwrite_pages(
