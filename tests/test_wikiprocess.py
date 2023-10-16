@@ -15,6 +15,9 @@ from wikitextprocessor.common import MAGIC_NOWIKI_CHAR
 class WikiProcTests(unittest.TestCase):
     def setUp(self) -> None:
         self.ctx = Wtp()
+        self.ctx.add_page("Template:!", 10, "|")
+        self.ctx.add_page("Template:((", 10, "&lbrace;&lbrace;")
+        self.ctx.add_page("Template:))", 10, "&rbrace;&rbrace;")
 
     def tearDown(self) -> None:
         self.ctx.close_db_conn()
@@ -1551,7 +1554,6 @@ MORE
 
     def test_template24a(self):
         self.ctx.add_page("Template:template", 10, "a{{{1}}}b")
-        self.ctx.analyze_templates()
         self.ctx.start_page("Tt")
         ret = self.ctx.expand("{{template|{{!}}}}")
         self.assertEqual(ret, "a|b")
@@ -1564,7 +1566,6 @@ MORE
         self.assertEqual(ret, "a|-b")
 
     def test_template24c(self):
-        self.ctx.analyze_templates()
         self.ctx.start_page("Tt")
         ret = self.ctx.expand(
             "{{#if:true|before{{#if:true|{{!}}|false}}after}}"
@@ -1575,7 +1576,6 @@ MORE
         self.ctx.add_page(
             "Template:t1", 10, "before{{#if:true|{{!}}|false}}after"
         )
-        self.ctx.analyze_templates()
         self.ctx.start_page("Tt")
         ret = self.ctx.expand("{{#if:true|{{t1}}}}")
         self.assertEqual(ret, "before|after")
@@ -1584,7 +1584,6 @@ MORE
         self.ctx.add_page(
             "Template:t1", 10, "before{{#if:true|{{!}}|false}}after"
         )
-        self.ctx.analyze_templates()
         self.ctx.start_page("Tt")
         ret = self.ctx.expand("{|\n||first||{{t1}}||last\n|}")
         self.assertEqual(ret, "{|\n||first||before|after||last\n|}")
@@ -1592,7 +1591,6 @@ MORE
     def test_template24f(self):
         self.ctx.add_page("Template:row", 10, "||bar\n{{!}} {{!}}baz\n| zap")
         self.ctx.add_page("Template:t1", 10, "{|\n! Hdr\n{{row|foo}}\n|}")
-        self.ctx.analyze_templates()
         self.ctx.start_page("Tt")
         ret = self.ctx.expand("{{t1}}")
         self.assertEqual(ret, "{|\n! Hdr\n||bar\n| |baz\n| zap\n|}")
@@ -1602,7 +1600,6 @@ MORE
         # https://www.mediawiki.org/wiki/Extension:Scribunto/Lua_reference_manual#frame:getTitle,
         # under frame:expandTemplate examples
         self.ctx.add_page("Template:template", 10, "a{{{1}}}b")
-        self.ctx.analyze_templates()
         self.ctx.start_page("Tt")
         ret = self.ctx.expand("{{template|{{((}}!{{))}}}}")
         self.assertEqual(ret, "a&lbrace;&lbrace;!&rbrace;&rbrace;b")
