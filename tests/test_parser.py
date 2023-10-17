@@ -2417,6 +2417,17 @@ def foo(x):
         self.assertTrue(isinstance(node, TemplateNode))
         self.assertEqual(node.template_name, "exemple")
 
+    def test_latex_math_tag_template_parameter(self):
+        # https://en.wiktionary.org/wiki/antisymmetric
+        tree = self.parse("", "{{quote-book|en|<math>\\frac{1}{2}</math>}}")
+        template_node = tree.children[0]
+        self.assertTrue(isinstance(template_node, TemplateNode))
+        self.assertEqual(template_node.template_name, "quote-book")
+        self.assertEqual(
+            template_node.template_parameters,
+            {1: "en", 2: "<math>\\frac{1}{2}</math>"}
+        )
+
 
 # XXX implement <nowiki/> marking for links, templates
 #  - https://en.wikipedia.org/wiki/Help:Wikitext#Nowiki
