@@ -2428,6 +2428,11 @@ def foo(x):
             {1: "en", 2: "<math>\\frac{1}{2}</math>"}
         )
 
+    def test_match_template_contains_unpaired_curly_brackets(self):
+        # https://en.wiktionary.org/wiki/Template:str_index-lite/logic
+        tree = self.parse("", "{{#switch:foo|*foo{*={|*bar}*=}|-}}")
+        parser_function_node = tree.children[0]
+        self.assertEqual(parser_function_node.kind, NodeKind.PARSER_FN)
 
 # XXX implement <nowiki/> marking for links, templates
 #  - https://en.wikipedia.org/wiki/Help:Wikitext#Nowiki
