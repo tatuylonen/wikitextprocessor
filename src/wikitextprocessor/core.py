@@ -700,9 +700,10 @@ class Wtp:
             # Replace template invocation
             text = re.sub(
                 r"\{" + MAGIC_NOWIKI_CHAR + r"?\{((?:"
-                r"[^{}]|"  # any character except brackets
+                r"[^{}](?:{[^{}])?|"  # lone possible { and also default "any"
+                r"}(?=[^{}])|"  # lone `}`, (?=...) is not consumed (lookahead)
                 r"-{}-|"  # GitHub issue #59 Chinese wiktionary special `-{}-`
-                r"{[^{}]+}|"  # latex argument: "<math>\frac{1}{2}</math>"
+                r"}{|"  # latex argument: "<math>\frac{1}{2}</math>"
                 r")+?)\}" + MAGIC_NOWIKI_CHAR + r"?\}",
                 repl_templ,
                 text,
@@ -1393,11 +1394,11 @@ class Wtp:
                     tname = re.sub(r"<noinclude\s*/>", "", tname)
 
                     # Strip safesubst: and subst: prefixes
-                    tname = tname.strip()
-                    if tname[:10].lower() == "safesubst:":
-                        tname = tname[10:]
-                    elif tname[:6].lower() == "subst:":
-                        tname = tname[6:]
+                    tname = (
+                        tname.strip()
+                        .removeprefix("subst:")
+                        .removeprefix("safesubst:")
+                    )
 
                     # Check if it is a parser function call
                     ofs = tname.find(":")
