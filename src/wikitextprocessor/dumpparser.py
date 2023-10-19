@@ -120,6 +120,9 @@ def process_dump(
     ctx.add_page(  # magic word
         f"{template_ns_local_name}:!", template_ns_id, "|"
     )
+    ctx.add_page(
+        f"{template_ns_local_name}:=", template_ns_id, "="
+    )
     ctx.add_page(  # {{((}} -> {{
         f"{template_ns_local_name}:((", template_ns_id, "&lbrace;&lbrace;"
     )
