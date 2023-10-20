@@ -169,6 +169,10 @@ def overwrite_pages(
     the overwritten pages include template.
     """
     for folder_path in folder_paths:
+        if not folder_path.exists():
+            logging.warning(f"Override path: {folder_path} doesn't exist.")
+            continue
+
         if folder_path.is_file() and folder_path.suffix == ".json":
             with folder_path.open(encoding="utf-8") as f:
                 for title, page_data in json.load(f).items():
@@ -186,6 +190,8 @@ def overwrite_pages(
                         return True
             continue
 
+        if not folder_path.is_dir():
+            continue
         # old overwrite file format that stars with "TTILE: "
         for file_path in folder_path.iterdir():
             if file_path.name.startswith(".") or file_path.suffix == ".json":
