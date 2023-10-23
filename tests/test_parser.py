@@ -2434,6 +2434,13 @@ def foo(x):
         parser_function_node = tree.children[0]
         self.assertEqual(parser_function_node.kind, NodeKind.PARSER_FN)
 
+    def test_find_two_kinds_of_nodes(self):
+        tree = self.parse("", "[[link]]\n{{foo}}\n<a>tag</a>")
+        found_nodes = list(tree.find_child(NodeKind.TEMPLATE | NodeKind.HTML))
+        self.assertEqual(len(found_nodes), 2)
+        self.assertTrue(isinstance(found_nodes[0], TemplateNode))
+        self.assertTrue(isinstance(found_nodes[1], HTMLNode))
+
 # XXX implement <nowiki/> marking for links, templates
 #  - https://en.wikipedia.org/wiki/Help:Wikitext#Nowiki
 #  - fix test_nowiki11 and continue

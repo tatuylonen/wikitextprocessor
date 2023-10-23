@@ -105,7 +105,7 @@ MAGIC_WORDS: Set[str] = set(
 
 
 @enum.unique
-class NodeKind(enum.Enum):
+class NodeKind(enum.Flag):
     """Node types in the parse tree."""
 
     # Root node of the tree.  This represents the parsed document.
@@ -347,13 +347,13 @@ class WikiNode:
 
     def find_child(
         self,
-        target_kind: NodeKind,
+        target_kinds: NodeKind,
         with_index: bool = False,
     ) -> Iterator[Union["WikiNode", Tuple[int, "WikiNode"]]]:
         # Find direct child nodes that match the target node type, also return
         # the node index that could be used to divide child node list.
         for index, child in enumerate(self.children):
-            if isinstance(child, WikiNode) and child.kind == target_kind:
+            if isinstance(child, WikiNode) and child.kind in target_kinds:
                 if with_index:
                     yield index, child
                 else:
@@ -361,7 +361,7 @@ class WikiNode:
 
     def invert_find_child(
         self,
-        target_kind: NodeKind,
+        target_kinds: NodeKind,
         include_empty_str: bool = False,
     ) -> Iterator["WikiNode"]:
         # Find direct child nodes that don't match the target node type.
@@ -370,39 +370,39 @@ class WikiNode:
                 include_empty_str or len(child.strip()) > 0
             ):
                 yield child
-            elif isinstance(child, WikiNode) and child.kind != target_kind:
+            elif isinstance(child, WikiNode) and child.kind not in target_kinds:
                 yield child
 
     def _find_node_recursively(
         self,
         start_node: "WikiNode",
         current_node: Union["WikiNode", str],
-        target_kind: NodeKind,
+        target_kinds: NodeKind,
     ) -> Iterator["WikiNode"]:
         # Find nodes in WikiNode.children and WikiNode.largs recursively.
         # Search WikiNode.largs probably is not needed, add it because the
         # original `contains_list()` in wiktextract does this.
         if isinstance(current_node, WikiNode):
-            if current_node != start_node and current_node.kind == target_kind:
+            if current_node != start_node and current_node.kind in target_kinds:
                 yield current_node
             for child in current_node.children:
                 yield from self._find_node_recursively(
-                    start_node, child, target_kind
+                    start_node, child, target_kinds
                 )
             for arg_list in current_node.largs:
                 for arg in arg_list:
                     yield from self._find_node_recursively(
-                        start_node, arg, target_kind
+                        start_node, arg, target_kinds
                     )
 
     def find_child_recursively(
-        self, target_kind: NodeKind
+        self, target_kinds: NodeKind
     ) -> Iterator["WikiNode"]:
         # Similar to `find_child()` but also search nested nodes.
-        yield from self._find_node_recursively(self, self, target_kind)
+        yield from self._find_node_recursively(self, self, target_kinds)
 
-    def contain_node(self, target_kind: NodeKind) -> bool:
-        for node in self._find_node_recursively(self, self, target_kind):
+    def contain_node(self, target_kinds: NodeKind) -> bool:
+        for node in self._find_node_recursively(self, self, target_kinds):
             return True
         return False
 
@@ -538,7 +538,7 @@ class LevelNode(WikiNode):
     def __init__(self, level_type: NodeKind, linenum: int):
         super().__init__(level_type, linenum)
 
-    def find_content(self, target_type: NodeKind) -> Iterator[WikiNode]:
+    def find_content(self, target_types: NodeKind) -> Iterator[WikiNode]:
         """
         Find WikiNode in `WikiNode.largs`. This method could be used to find
         templates "inside" the level node but not the child nodes under the
@@ -549,7 +549,7 @@ class LevelNode(WikiNode):
             for level_node_arg_list in self.largs
             for level_node_arg in level_node_arg_list
             if isinstance(level_node_arg, WikiNode)
-            and level_node_arg.kind == target_type
+            and level_node_arg.kind in target_types
         ):
             yield content
 
