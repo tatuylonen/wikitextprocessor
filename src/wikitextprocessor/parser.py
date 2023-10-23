@@ -350,8 +350,13 @@ class WikiNode:
         target_kinds: NodeKind,
         with_index: bool = False,
     ) -> Iterator[Union["WikiNode", Tuple[int, "WikiNode"]]]:
-        # Find direct child nodes that match the target node type, also return
-        # the node index that could be used to divide child node list.
+        """
+        Find direct child nodes that match the target node type, also return
+        the node index that could be used to divide child node list.
+
+        `target_kinds` could be a single NodeKind enum member or multiple
+        NodeKind members combined with the "|"(OR) operator.
+        """
         for index, child in enumerate(self.children):
             if isinstance(child, WikiNode) and child.kind in target_kinds:
                 if with_index:
