@@ -2425,7 +2425,7 @@ def foo(x):
         self.assertEqual(template_node.template_name, "quote-book")
         self.assertEqual(
             template_node.template_parameters,
-            {1: "en", 2: "<math>\\frac{1}{2}</math>"}
+            {1: "en", 2: "<math>\\frac{1}{2}</math>"},
         )
 
     def test_match_template_contains_unpaired_curly_brackets(self):
@@ -2440,6 +2440,19 @@ def foo(x):
         self.assertEqual(len(found_nodes), 2)
         self.assertTrue(isinstance(found_nodes[0], TemplateNode))
         self.assertTrue(isinstance(found_nodes[1], HTMLNode))
+
+    def test_parse_html_with_xml_attribute(self):
+        # https://fr.wiktionary.org/wiki/autrice
+        # expanded from template "équiv-pour"
+        # https://fr.wiktionary.org/wiki/Modèle:équiv-pour
+        tree = self.parse(
+            "",
+            '<bdi lang="fr" xml:lang="fr" class="lang-fr">[[auteur#fr|auteur]]</bdi>',
+        )
+        self.assertTrue(isinstance(tree.children[0], HTMLNode))
+        self.assertEqual(tree.children[0].tag, "bdi")
+        self.assertEqual(tree.children[0].children[0].kind, NodeKind.LINK)
+
 
 # XXX implement <nowiki/> marking for links, templates
 #  - https://en.wikipedia.org/wiki/Help:Wikitext#Nowiki

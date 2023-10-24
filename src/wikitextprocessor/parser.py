@@ -285,7 +285,8 @@ MUST_CLOSE_KINDS: Tuple[NodeKind, ...] = (
 # This means that if you have nesting capturing groups,
 # the contents will be repeated partly.
 inside_html_tags_re = re.compile(
-    r"(<(?i:" + r"|".join(ALLOWED_HTML_TAGS.keys()) + r")\s+[^><]*>)"
+    r"(<(?:" + r"|".join(ALLOWED_HTML_TAGS.keys()) + r")[^><]*>)",
+    re.IGNORECASE
 )
 
 # We don't have specs for this, so let's assume...
@@ -1738,7 +1739,7 @@ def tag_fn(ctx: "Wtp", token: str) -> None:
 
     # Try to parse it as a start tag
     m = re.match(
-        r"""<([-a-zA-Z0-9]+)\s*((\b[-a-zA-Z0-9]+(=("[^"]*"|"""
+        r"""<([-a-zA-Z0-9]+)\s*((\b[-a-zA-Z0-9:]+(=("[^"]*"|"""
         r"""'[^']*'|[^ \t\n"'`=<>/]*))?\s*)*)(/?)\s*>""",
         token,
     )
@@ -1955,8 +1956,8 @@ token_re = re.compile(
     r"[ \t]+\n*|"
     r":|"  # sometimes special when not beginning of line
     r"<<[-a-zA-Z0-9/]*>>|"
-    r"""<[-a-zA-Z0-9]+\s*(\b[-a-zA-Z0-9]+(=("[^<>"]*"|"""
-    r"""'[^<>']*'|[^ \t\n"'`=<>]*))?\s*)*/?>|"""
+    r"""<[-a-zA-Z0-9]+\s*(\b[-a-zA-Z0-9:]+(=("[^<>"]*"|"""  # HTML start tag
+    r"""'[^<>']*'|[^ \t\n"'`=<>]*))?\s*)*/?>|"""  # HTML start tag
     r"</[-a-zA-Z0-9]+\s*>|"
     r"("
     + r"|".join(r"\b{}\b".format(x) for x in MAGIC_WORDS)
