@@ -63,7 +63,7 @@ def main():
             if ns_data["id"] == data["id"] and data["alias"] != ns_data["name"]:
                 ns_data["aliases"].append(data["alias"])
 
-    data_folder = Path(f"wikitextprocessor/data/{args.lang_code}")
+    data_folder = Path(f"src/wikitextprocessor/data/{args.lang_code}")
     if not data_folder.exists():
         data_folder.mkdir()
     with data_folder.joinpath("namespaces.json").open(
