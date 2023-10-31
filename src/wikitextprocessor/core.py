@@ -838,10 +838,10 @@ class Wtp:
                     (^|\n) \{\|               # start of line {|
                         (    [^\n]            # any except newline
                         |    \n+[^{|]         # any except { or | at line start
-                        |    \n+\|[^}]        # | + any except } at linestart
+                        |    \n+\|[^}]?       # | + any except } at linestart
                         |    \n+\{[^|]        # { + any except | at linestart
                         )*?
-                    \n+\|\}                   # |}""",
+                    \n+\s*\|\}                # |}""",
                 "",
                 prev,
             )
