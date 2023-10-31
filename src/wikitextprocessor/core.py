@@ -841,7 +841,7 @@ class Wtp:
                         |    \n+\|[^}]        # | + any except } at linestart
                         |    \n+\{[^|]        # { + any except | at linestart
                         )*?
-                    \n+\|\}                   # |}""",
+                    \n+\s*\|\}                # |}""",
                 "",
                 prev,
             )
