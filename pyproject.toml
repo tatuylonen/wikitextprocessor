@@ -42,6 +42,7 @@ dependencies = [
     "importlib_resources; python_version < '3.10'",
     "lupa @ git+https://github.com/scoder/lupa.git",
     "lxml",
+    "mediawiki_langcodes",
     "psutil",
     "requests",
 ]

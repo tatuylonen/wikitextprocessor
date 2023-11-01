@@ -242,24 +242,29 @@ def get_page_content(ctx: "Wtp", title: str) -> Optional[str]:
     return ctx.read_by_title(title.strip())
 
 
-def fetch_language_name(ctx: "Wtp", code: str) -> str:
-    """This function is called from Lua code as part of the mw.language
-    implementation.  This maps a language code to its name."""
-    ret = ctx.LANGUAGES_BY_CODE.get(code)
-    if ret:
-        return ret[0]
-    return ""
+def fetch_language_name(code: str, inLanguage: Optional[str]) -> str:
+    """
+    This function is called from Lua code as part of the mw.language
+    implementation.  This maps a language code to its name.
+    https://www.mediawiki.org/wiki/Extension:Scribunto/Lua_reference_manual#mw.language.fetchLanguageName
+    """
+    from mediawiki_langcodes import code_to_name
+
+    return code_to_name(code, inLanguage or "")
 
 
-def fetch_language_names(ctx: "Wtp", include: str) -> "_LuaTable":
+def fetch_language_names(
+    ctx: "Wtp", inLanguage: Optional[str], include: Optional[str]
+) -> "_LuaTable":
     """This function is called from Lua code as part of the mw.language
     implementation.  This returns a list of known language names."""
-    include = str(include)
-    if include == "all":
-        ret = ctx.LANGUAGES_BY_CODE
-    else:
-        ret = {"en": ctx.LANGUAGES_BY_CODE["en"]}
-    return ctx.lua.table_from(ret)  # type: ignore[union-attr]
+    from mediawiki_langcodes import get_all_names
+
+    names = {
+        lang_code: lang_name
+        for lang_code, lang_name in get_all_names(inLanguage or "")
+    }
+    return ctx.lua.table_from(names)  # type: ignore[union-attr]
     # ⇑⇑ tells mypy to ignore an 'error';
     # if fetch_language_names is being called,
     # ctx.lua.table_from should never be None.
@@ -320,7 +325,9 @@ def call_set_functions(
             )
         return get_page_content(ctx, x)
 
-    def debug_fetch_language_name(x: str, *bad_args: Any) -> str:
+    def debug_fetch_language_name(
+        code: str, inLanguage: str, *bad_args: Any
+    ) -> str:
         if bad_args:
             print(
                 f"MAKE_FRAME FETCH_LANGUAGE_NAME DEBUG:"
@@ -328,9 +335,11 @@ def call_set_functions(
                 f" {ctx.title=},"
                 f" {multiprocessing.current_process().name}"
             )
-        return fetch_language_name(ctx, x)
+        return fetch_language_name(code, inLanguage)
 
-    def debug_fetch_language_names(x: str, *bad_args: Any) -> "_LuaTable":
+    def debug_fetch_language_names(
+        inLanguage: str, include: str, *bad_args: Any
+    ) -> "_LuaTable":
         if bad_args:
             print(
                 f"MAKE_FRAME FETCH_LANGUAGE_NAMES DEBUG:"
@@ -338,7 +347,7 @@ def call_set_functions(
                 f" {ctx.title=},"
                 f" {multiprocessing.current_process().name}"
             )
-        return fetch_language_names(ctx, x)
+        return fetch_language_names(ctx, inLanguage, include)
 
     # Set functions that are implemented in Python
     set_functions(
