@@ -137,7 +137,6 @@ def __init__(
     self,
     db_path: Optional[Union[str, Path]] = None,
     lang_code="en",
-    languages_by_code: Dict[str, List[str]] = {},
     template_override_funcs: Dict[str, Callable[[Sequence[str]], str]] = {},
 ):
 ```
@@ -161,7 +160,6 @@ the following arguments:
   first phase. If you wish to re-create the database, you should remove
   the old file first.
 * `lang_code` - the language code of the dump file.
-* `languages_by_code` - Languages data.
 * `template_override_funcs` - Python functions for overriding expanded template text.
 
 ```python

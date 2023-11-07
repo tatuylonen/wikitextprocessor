@@ -199,7 +199,6 @@ class Wtp:
         "LOCAL_NS_NAME_BY_ID",  # Local namespace names dictionary
         "NS_ID_BY_LOCAL_NAME",
         "namespaces",
-        "LANGUAGES_BY_CODE",
         "lang_code",
         # Python functions for overriding template expanded text
         "template_override_funcs",
@@ -209,7 +208,6 @@ class Wtp:
         self,
         db_path: Optional[Union[str, Path]] = None,
         lang_code="en",
-        languages_by_code: Dict[str, List[str]] = {},
         template_override_funcs: Dict[str, Callable[[Sequence[str]], str]] = {},
     ):
         if isinstance(db_path, str):
@@ -235,12 +233,11 @@ class Wtp:
         self.rev_ht: Dict[CookieData, str] = {}
         self.expand_stack: List[str] = []  # XXX: this has a confusing name
         self.parser_stack: List["WikiNode"] = []
-        self.lang_code = lang_code
+        self.lang_code = lang_code  # dump file language code
         self.data_folder = files("wikitextprocessor") / "data" / lang_code
         self.init_namespace_data()
         self.namespaces: Dict[int, Namespace] = {}
         init_namespaces(self)
-        self.LANGUAGES_BY_CODE = languages_by_code
         self.create_db()
         self.template_override_funcs = template_override_funcs
         self.beginning_of_line = False
