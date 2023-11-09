@@ -43,11 +43,11 @@ function mw_wikibase.getDescriptionWithLang(id)
 end
 
 function mw_wikibase.isValidEntityId(id)
-   return True
+   return true
 end
 
 function mw_wikibase.entityExists(id)
-   return False
+   return false
 end
 
 function mw_wikibase.renderSnak(snak)
