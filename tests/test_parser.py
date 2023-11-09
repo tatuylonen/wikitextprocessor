@@ -2453,6 +2453,15 @@ def foo(x):
         self.assertEqual(tree.children[0].tag, "bdi")
         self.assertEqual(tree.children[0].children[0].kind, NodeKind.LINK)
 
+    def test_space_around_attr_equal_sign(self):
+        # https://fr.wiktionary.org/wiki/русский
+        # template "ru-décl-adjd"
+        tree = self.parse("", '<th colspan = "2">Cas</th>')
+        html_node = tree.children[0]
+        self.assertTrue(isinstance(html_node, HTMLNode))
+        self.assertEqual(html_node.tag, "th")
+        self.assertEqual(html_node.attrs, {"colspan": "2"})
+
 
 # XXX implement <nowiki/> marking for links, templates
 #  - https://en.wikipedia.org/wiki/Help:Wikitext#Nowiki

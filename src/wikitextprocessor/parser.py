@@ -1678,11 +1678,11 @@ def parse_attrs(node: WikiNode, attrs: str) -> None:
     # Extract attributes from the tag into the node.attrs dictionary
     for m in re.finditer(
         r"""(?si)\b([^"'>/=\0-\037\s]+)"""
-        r"""(=("[^"]*"|'[^']*'|[^"'<>`\s]*))?\s*""",
+        r"""(?:\s*=\s*("[^"]*"|'[^']*'|[^"'<>`\s]*))?\s*""",
         attrs,
     ):
         name = m.group(1)
-        value = m.group(3) or ""
+        value = m.group(2) or ""
         if value.startswith("'") or value.startswith('"'):
             value = value[1:-1]
         node.attrs[name] = value
@@ -1739,7 +1739,7 @@ def tag_fn(ctx: "Wtp", token: str) -> None:
 
     # Try to parse it as a start tag
     m = re.match(
-        r"""<([-a-zA-Z0-9]+)\s*((\b[-a-zA-Z0-9:]+(=("[^"]*"|"""
+        r"""<([-a-zA-Z0-9]+)\s*((\b[-a-zA-Z0-9:]+(\s*=\s*("[^"]*"|"""
         r"""'[^']*'|[^ \t\n"'`=<>/]*))?\s*)*)(/?)\s*>""",
         token,
     )
@@ -1956,7 +1956,7 @@ token_re = re.compile(
     r"[ \t]+\n*|"
     r":|"  # sometimes special when not beginning of line
     r"<<[-a-zA-Z0-9/]*>>|"
-    r"""<[-a-zA-Z0-9]+\s*(\b[-a-zA-Z0-9:]+(=("[^<>"]*"|"""  # HTML start tag
+    r"""<[-a-zA-Z0-9]+\s*(\b[-a-zA-Z0-9:]+(\s*=\s*("[^<>"]*"|"""  # HTML start
     r"""'[^<>']*'|[^ \t\n"'`=<>]*))?\s*)*/?>|"""  # HTML start tag
     r"</[-a-zA-Z0-9]+\s*>|"
     r"("
