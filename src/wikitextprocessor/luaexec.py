@@ -470,17 +470,6 @@ def call_lua_sandbox(
     modname = expander(invoke_args[0]).strip()
     modfn = expander(invoke_args[1]).strip()
 
-    def value_with_expand(
-        frame: Union[Dict, "_LuaTable"],
-        fexpander: str,
-        text: str,
-    ) -> "_LuaTable":
-        assert isinstance(frame, dict) or lua_type(frame) == "table"
-        assert isinstance(fexpander, str)
-        assert isinstance(text, str)
-        obj = {"expand": lambda obj_self: frame[fexpander](text)}
-        return lua.table_from(obj)  # type:ignore[union-attr]
-
     def make_frame(
         pframe: Union[None, Dict, "_LuaTable"],
         title: str,
@@ -722,30 +711,34 @@ def call_lua_sandbox(
                 )
             return title
 
-        def debugNewParserValue(
-            frame_self: "_LuaTable", text: str, *args
-        ) -> "_LuaTable":
-            if args:
+        @lupa.unpacks_lua_table_method
+        def debugNewParserValue(frame, text, *args):
+            if len(args) > 0:
                 ctx.debug(
                     f"LAMBDA NEWPARSERVALUE EXTRA ARGS: Lua module:{title}, "
                     f"frame: {frame}, "
                     f"extra args: {repr(args)}, "
                     f"process name: {multiprocessing.current_process().name}"
                 )
-            return value_with_expand(frame_self, "preprocess", text)
+            obj = {"expand": lambda _: frame["preprocess"](frame, text)}
+            return lua.table_from(obj)
 
-        def debugNewTemplateParserValue(
-            frame_self: "_LuaTable", text: str, *args
-        ) -> "_LuaTable":
-            if args:
+        @lupa.unpacks_lua_table_method
+        def debugNewTemplateParserValue(frame, title, args, *rest_args):
+            if len(rest_args) > 0:
                 ctx.debug(
                     "LAMBDA NEWTEMPLATEPARSERVALUE EXTRA ARGS: "
-                    f"Lua module:{title}, "
+                    f"Lua module: {frame['getTitle'](frame)}, "
                     f"frame: {frame}, "
-                    f"extra args: {repr(args)}, "
+                    f"extra args: {rest_args}, "
                     f"process name: {multiprocessing.current_process().name}"
                 )
-            return value_with_expand(frame_self, "expand", text)
+            obj = {
+                "expand": lambda _: frame["expandTemplate"](
+                    frame, lua.table_from({"title": title, "args": args})
+                )
+            }
+            return lua.table_from(obj)
 
         # Create frame object as dictionary with default value None
         frame: Dict[str, Union["_LuaTable", Callable]] = {}
