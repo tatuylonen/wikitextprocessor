@@ -149,7 +149,7 @@ local function _lua_invoke(mod_name, fn_name, frame, page_title, timeout)
       local mod1 = module_ns_name .. ":" .. mod_name
       mod = _cached_mod(mod1)
       if not mod then
-         local initfn, msg = _new_loader(mod1)
+         local initfn, msg = _new_loader(mod1, true)
          if initfn then
             success, mod = pcall(initfn)
             if not success then
@@ -165,7 +165,7 @@ local function _lua_invoke(mod_name, fn_name, frame, page_title, timeout)
    if not mod then
       mod = _cached_mod(mod_name)
       if not mod then
-         local initfn, msg = _new_loader(mod_name)
+         local initfn, msg = _new_loader(mod_name, true)
          if initfn then
             success, mod = pcall(initfn)
             if not success then

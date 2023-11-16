@@ -12,10 +12,41 @@ local loader_cache = {}
 local loaddata_cache = {}
 local _orig_package = package
 
+-- Copied from https://github.com/wikimedia/mediawiki-extensions-Scribunto/blob/8d69dc173e33ae936ff4401d41ee5e6a1fd1ba67/includes/Engines/LuaCommon/lualib/mwInit.lua#L38-L66
+--- Do a "deep copy" of a table or other value.
+function mw_clone( val )
+    local tableRefs = {}
+    local function recursiveClone( val )
+        if type( val ) == 'table' then
+            -- Encode circular references correctly
+            if tableRefs[val] ~= nil then
+                return tableRefs[val]
+            end
+
+            local retVal
+            retVal = {}
+            tableRefs[val] = retVal
+
+            -- Copy metatable
+            if getmetatable( val ) then
+                setmetatable( retVal, recursiveClone( getmetatable( val ) ) )
+            end
+
+            for key, elt in pairs( val ) do
+                retVal[key] = recursiveClone( elt )
+            end
+            return retVal
+        else
+            return val
+        end
+    end
+    return recursiveClone( val )
+end
+
 -- This function loads new a new module, whether built-in or defined in the
 -- data file, and returns its initialization function.  This caches the
 -- initialization function.
-function new_loader(modname)
+function new_loader(modname, clone_env)
    -- this module wreaks havoc on the global namespace
    if modname == "Module:No globals" then
       return nil, "Module banned"
@@ -45,7 +76,12 @@ function new_loader(modname)
    else
       fn, msg = load(content, modname)
    end
-   setfenv(fn, env)
+   if clone_env then
+       -- clone environment for `#invoke`
+       setfenv(fn, mw_clone(env))
+   else
+       setfenv(fn, env)
+   end
    -- Cache the loaded module initialization function
    loader_cache[modname] = fn
    return fn, msg
@@ -397,6 +433,7 @@ local function _lua_reset_env()
     env["_cached_mod"] = _cached_mod
     env["_save_mod"] = _save_mod
     env["package"] = new_package
+    env["_mw_clone"] = mw_clone
     -- namespace
     env["NAMESPACE_DATA"] = NAMESPACE_DATA
     return env
