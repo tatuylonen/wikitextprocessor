@@ -444,20 +444,24 @@ def call_lua_sandbox(
         )
         return "{{" + invoke_args[0] + ":" + "|".join(invoke_args[1:]) + "}}"
 
-    if ctx.lua is None:
-        # This is the first call to the Lua sandbox.
-        # Create a Lua context and initialize it.
-        initialize_lua(ctx)  # This sets ctx.lua
-    else:
-        # This is a second or later call to the Lua sandbox.
-        # Reset the Lua context back to initial state.
-        ctx.lua_reset_env()  # type: ignore[misc]
-        phase2_ret: "_LuaTable" = ctx.lua.eval('new_require("_sandbox_phase2")')
-        # Lua tables start indexing on 1
-        set_functions = phase2_ret[1]
-        ctx.lua_invoke = phase2_ret[2]
-        ctx.lua_reset_env = phase2_ret[3]
-        call_set_functions(ctx, set_functions)
+    # Initialize the Lua sandbox if not already initialized
+    if ctx.lua_depth == 0:
+        if ctx.lua is None:
+            # This is the first call to the Lua sandbox.
+            # Create a Lua context and initialize it.
+            initialize_lua(ctx)  # This sets ctx.lua
+        else:
+            # This is a second or later call to the Lua sandbox.
+            # Reset the Lua context back to initial state.
+            ctx.lua_reset_env()  # type: ignore[misc]
+            phase2_ret: "_LuaTable" = ctx.lua.eval(
+                'new_require("_sandbox_phase2")'
+            )
+            # Lua tables start indexing on 1
+            set_functions = phase2_ret[1]
+            ctx.lua_invoke = phase2_ret[2]
+            ctx.lua_reset_env = phase2_ret[3]
+            call_set_functions(ctx, set_functions)
 
     ctx.lua_depth += 1
     lua = ctx.lua
