@@ -13,6 +13,7 @@ import re
 import sys
 import traceback
 import unicodedata
+from collections import deque
 
 if sys.version_info < (3, 10):
     from importlib_resources import files
@@ -401,8 +402,13 @@ def initialize_lua(ctx: "Wtp") -> None:
         phase1_result: "_LuaTable" = lua.execute(f.read())
         set_loader = phase1_result[1]
         clear_loaddata_cache = phase1_result[2]
+        set_env_funcs = phase1_result[3]
         # Call the function that sets the Lua loader
         set_loader(lambda x: lua_loader(ctx, x))
+        set_env_funcs(
+            lambda x: append_lua_env(ctx.lua_env_stack, x),
+            lambda: top_lua_env(ctx.lua_env_stack),
+        )
 
     # Then load the second phase of the sandbox.  This now goes through the
     # new loader and is evaluated in the sandbox.  This mostly implements
@@ -445,7 +451,7 @@ def call_lua_sandbox(
         return "{{" + invoke_args[0] + ":" + "|".join(invoke_args[1:]) + "}}"
 
     # Initialize the Lua sandbox if not already initialized
-    if ctx.lua_depth == 0:
+    if len(ctx.lua_env_stack) == 0:
         if ctx.lua is None:
             # This is the first call to the Lua sandbox.
             # Create a Lua context and initialize it.
@@ -463,7 +469,6 @@ def call_lua_sandbox(
             ctx.lua_reset_env = phase2_ret[3]
             call_set_functions(ctx, set_functions)
 
-    ctx.lua_depth += 1
     lua = ctx.lua
 
     # Get module and function name
@@ -815,7 +820,8 @@ def call_lua_sandbox(
             ctx.expand_stack.pop()
     # print("Lua call {} returned: ok={!r} text={!r}"
     #       .format(invoke_args, ok, text))
-    ctx.lua_depth -= 1
+    if len(ctx.lua_env_stack) > 0:
+        ctx.lua_env_stack.pop()
     if ok:  # XXX should this be "is True" instead of checking truthiness?
         text = str(text) if text is not None else ""
         text = unicodedata.normalize("NFC", text)
@@ -904,3 +910,14 @@ def mw_wikibase_getdescription(item_id: str) -> Optional[str]:
         return item_data.get("itemDescription", {}).get("value", item_id)
     else:
         return None
+
+
+def top_lua_env(env_stack: deque) -> Optional["_LuaTable"]:
+    if len(env_stack) == 0:
+        return None
+    else:
+        return env_stack[-1]
+
+
+def append_lua_env(env_stack: deque, env: "_LuaTable") -> None:
+    env_stack.append(env)

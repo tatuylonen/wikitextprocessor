@@ -4,6 +4,8 @@
 
 -- Python function for loading a source file or Scribunto Lua module
 local _python_loader = nil
+local _python_append_env = nil
+local _python_top_env = nil
 
 -- The new sandbox environment we create
 local env = {}
@@ -47,16 +49,20 @@ end
 -- data file, and returns its initialization function.  This caches the
 -- initialization function.
 function new_loader(modname, clone_env)
-   -- this module wreaks havoc on the global namespace
-   if modname == "Module:No globals" then
-      return nil, "Module banned"
-   end
-   -- print("lua new_loader: " .. modname)
-   -- If the module is in the normal cache (loaded by require), call its
-   -- initialization function
-   if loader_cache[modname] ~= nil then
-      return loader_cache[modname]
-   end
+    local mod_env = _python_top_env() or env
+    if clone_env then
+        -- clone environment for `#invoke`
+        mod_env = mw_clone(mod_env)
+        _python_append_env(mod_env)
+    end
+    -- print("lua new_loader: " .. modname)
+    -- If the module is in the normal cache (loaded by require), call its
+    -- initialization function
+    if loader_cache[modname] ~= nil then
+        local cached_mod = loader_cache[modname]
+        setfenv(cached_mod, mod_env)
+        return cached_mod
+    end
    -- Otherwise load the module
    local content = nil
    if _python_loader ~= nil then
@@ -76,12 +82,7 @@ function new_loader(modname, clone_env)
    else
       fn, msg = load(content, modname)
    end
-   if clone_env then
-       -- clone environment for `#invoke`
-       setfenv(fn, mw_clone(env))
-   else
-       setfenv(fn, env)
-   end
+   setfenv(fn, mod_env)
    -- Cache the loaded module initialization function
    loader_cache[modname] = fn
    return fn, msg
@@ -160,6 +161,11 @@ local function _lua_set_python_loader(fn)
       error("Python loader already set")
    end
    _python_loader = fn
+end
+
+local function _lua_set_env_funcs(py_append_env_fn, py_top_env_fn)
+    _python_append_env = py_append_env_fn
+    _python_top_env = py_top_env_fn
 end
 
 -- Maximum allowed execution time in Lua code (seconds)
@@ -451,4 +457,4 @@ _lua_reset_env()
 _lua_reset_env()
 -- Now we should be in the sandbox environment
 
-return { _lua_set_python_loader, _clear_loadData_cache }
+return { _lua_set_python_loader, _clear_loadData_cache, _lua_set_env_funcs }
