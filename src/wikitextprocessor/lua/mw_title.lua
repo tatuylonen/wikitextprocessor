@@ -291,16 +291,7 @@ function mw_title.new(text, namespace)
 end
 
 function mw_title.getCurrentTitle()
-   local t = mw_title.new(_mw_pageTitle)
-   if t == nil then
-      print("mw.title.getCurrentTitle returns nil")
-   end
-   return t
-   -- local frame = mw.getCurrentFrame()
-   -- local parent = frame:getParent() or frame
-   -- local title = parent:getTitle()
-   -- local newtitle = mw_title.new(title, "Main")
-   -- return newtitle
+    return mw_title.new(mw_current_title_python())
 end
 
 function mw_title.equals(a, b)

@@ -4,8 +4,6 @@
 
 -- Python function for loading a source file or Scribunto Lua module
 local _python_loader = nil
-local _python_append_env = nil
-local _python_top_env = nil
 
 -- The new sandbox environment we create
 local env = {}
@@ -48,12 +46,9 @@ end
 -- This function loads new a new module, whether built-in or defined in the
 -- data file, and returns its initialization function.  This caches the
 -- initialization function.
-function new_loader(modname, clone_env)
-    local mod_env = _python_top_env() or env
-    if clone_env then
-        -- clone environment for `#invoke`
-        mod_env = mw_clone(mod_env)
-        _python_append_env(mod_env)
+function new_loader(modname, mod_env)
+    if mod_env == nil then
+        mod_env = _python_top_env() or env
     end
     -- print("lua new_loader: " .. modname)
     -- If the module is in the normal cache (loaded by require), call its
@@ -161,11 +156,6 @@ local function _lua_set_python_loader(fn)
       error("Python loader already set")
    end
    _python_loader = fn
-end
-
-local function _lua_set_env_funcs(py_append_env_fn, py_top_env_fn)
-    _python_append_env = py_append_env_fn
-    _python_top_env = py_top_env_fn
 end
 
 -- Maximum allowed execution time in Lua code (seconds)
@@ -292,7 +282,7 @@ local retained_modules = {
    mw_text = true,
    mw_title = true,
    mw_uri = true,
-};
+}
 
 retained_modules["ustring:ustring"] = true
 retained_modules["ustring/lower"] = true
@@ -382,7 +372,7 @@ local function _lua_reset_env()
 
     -- Cause most packages to be reloaded
     for k, v in pairs(package.loaded) do
-       if retained_modules[k] == nil then
+       if retained_modules[k] ~= true then
           package.loaded[k] = nil
        end
     end
@@ -391,9 +381,13 @@ local function _lua_reset_env()
     -- enables us to cache the module, which provides some speedup.
     -- "next" function is (re)defined in _sandbox_phase2.lua and we keep it too.
     -- also keep the namespace texts
-    for k, v in pairs(env) do
-       if k ~= "mw" and k ~= "next" and k ~= "NAMESPACE_DATA" then
-          env[k] = nil
+    local kept_variables = {
+        mw = true,
+        next = true,
+    }
+    for key, _ in pairs(env) do
+       if kept_variables[key] ~= true then
+          env[key] = nil
        end
     end
 
@@ -442,6 +436,8 @@ local function _lua_reset_env()
     env["_mw_clone"] = mw_clone
     -- namespace
     env["NAMESPACE_DATA"] = NAMESPACE_DATA
+    env["_python_top_env"] = _python_top_env
+    env["_python_append_env"] = _python_append_env
     return env
 end
 
@@ -457,4 +453,4 @@ _lua_reset_env()
 _lua_reset_env()
 -- Now we should be in the sandbox environment
 
-return { _lua_set_python_loader, _clear_loadData_cache, _lua_set_env_funcs }
+return { _lua_set_python_loader, _clear_loadData_cache }

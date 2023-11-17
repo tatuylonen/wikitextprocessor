@@ -202,6 +202,7 @@ class Wtp:
         # Python functions for overriding template expanded text
         "template_override_funcs",
         "lua_env_stack",
+        "lua_frame_stack",
     )
 
     def __init__(
@@ -248,6 +249,7 @@ class Wtp:
         self.pre_parse = False
         self.suppress_special = False
         self.lua_env_stack = deque()
+        self.lua_frame_stack = deque()
 
     def create_db(self) -> None:
         if self.db_path is None:

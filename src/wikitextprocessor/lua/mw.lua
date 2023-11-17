@@ -108,7 +108,7 @@ function mw.logObject(obj)
 end
 
 function mw.getCurrentFrame()
-   return _mw_frame
+    return current_frame_python()
 end
 
 return mw

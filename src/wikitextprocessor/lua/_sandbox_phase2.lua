@@ -8,27 +8,6 @@ assert(new_require == nil)
 assert(io == nil)
 assert(_new_loadData ~= nil)
 
--- The main MediaWiki namespace for accessing its functions.  This is
--- created in _lua_set_functions.
-mw = nil
-
-mw_decode_python = nil
-mw_encode_python = nil
-mw_jsonencode_python = nil
-mw_jsondecode_python = nil
-mw_python_get_page_info = nil
-mw_python_get_page_content = nil
-mw_python_fetch_language_name = nil
-mw_python_fetch_language_names = nil
-mw_wikibase_getlabel_python = nil
-mw_wikibase_getdesc_python = nil
-
--- These are used for passing information about the current call to
--- _lua_invoke().  The values are restred on return, as calls can be
--- recursive.
-_mw_frame = "<unassigned>"
-_mw_pageTitle = "<unassigned>"
-
 local function frame_args_index(new_args, key)
    -- print("frame_args_index", key)
    local i = tonumber(key)
@@ -87,8 +66,8 @@ local function prepare_frame_args(frame)
     local title = (o and o.title) or ""
     local args = (o and o.args) or {}
     local new_frame = mw.clone(x)
-    new_frame.getParent = function(ctx) return x end
-    new_frame.getTitle = function(ctx) return title end
+    new_frame.getParent = function(_) return x end
+    new_frame.getTitle = function(_) return title end
     new_frame.args = args
     prepare_frame_args(new_frame)
     return new_frame
@@ -131,12 +110,8 @@ local function _lua_invoke(mod_name, fn_name, frame, page_title, timeout)
       prepare_frame_args(pframe)
    end
 
-   -- Initialize some fields that will be referenced from functions
-   local saved_frame = _mw_frame
-   local saved_pageTitle = _mw_pageTitle
-   _mw_frame = frame
-   _mw_pageTitle = page_title
-
+   local mod_env = _mw_clone(_python_top_env() or _G)
+   _python_append_env(mod_env)
    -- Set time limit for execution of the Lua code
    _lua_set_timeout(timeout)
 
@@ -149,12 +124,10 @@ local function _lua_invoke(mod_name, fn_name, frame, page_title, timeout)
       local mod1 = module_ns_name .. ":" .. mod_name
       mod = _cached_mod(mod1)
       if not mod then
-         local initfn, msg = _new_loader(mod1, true)
+         local initfn, msg = _new_loader(mod1, mod_env)
          if initfn then
             success, mod = pcall(initfn)
             if not success then
-               _mw_frame = saved_frame
-               _mw_pageTitle = saved_pageTitle
                return false, ("\tLoading module failed in #invoke: " ..
                                  mod1 .. "\n" .. mod)
             end
@@ -165,12 +138,10 @@ local function _lua_invoke(mod_name, fn_name, frame, page_title, timeout)
    if not mod then
       mod = _cached_mod(mod_name)
       if not mod then
-         local initfn, msg = _new_loader(mod_name, true)
+         local initfn, msg = _new_loader(mod_name, mod_env)
          if initfn then
             success, mod = pcall(initfn)
             if not success then
-               _mw_frame = saved_frame
-               _mw_pageTitle = saved_pageTitle
                return false, ("\tLoading module failed in #invoke: " ..
                                  mod_name .. "\n" .. mod)
             end
@@ -184,15 +155,11 @@ local function _lua_invoke(mod_name, fn_name, frame, page_title, timeout)
    -- Look up the target function in the module
    local fn = mod[fn_name]
    if fn == nil then
-      _mw_frame = saved_frame
-      _mw_pageTitle = saved_pageTitle
       return false, "\tNo function '" .. fn_name .. "' in module " .. mod_name
    end
    -- Call the function in the module
    local st, v = pcall(fn, frame)
    -- print("Lua sandbox:", tostring(v))
-   _mw_frame = saved_frame
-   _mw_pageTitle = saved_pageTitle
    if type(v) == "string" then
       return st, v
    end
@@ -212,30 +179,18 @@ end
 -- Python function that will be used for loading Lua modules and various
 -- other Python functions that implement some of the functionality needed
 -- for executing Scribunto code (these functions are called from Lua code).
-local function _lua_set_functions(
-        mw_text_decode, mw_text_encode, mw_text_jsonencode, mw_text_jsondecode,
-        get_page_info, get_page_content, fetch_language_name,
-        fetch_language_names, mw_wikibase_getlabel, mw_wikibase_getdesc
-)
-   -- Note: this is exposed to the Lua sandbox and the Lua sandbox can access
-   -- the functions via mw.  Thus all the Python functions provided here
-   -- must be safe to call from hostile code.
-   mw = require("mw")
-   mw_decode_python = mw_text_decode
-   mw_encode_python = mw_text_encode
-   mw_jsonencode_python = mw_text_jsonencode
-   mw_jsondecode_python = mw_text_jsondecode
-   mw_python_get_page_info = get_page_info
-   mw_python_get_page_content = get_page_content
-   mw_python_fetch_language_name = fetch_language_name
-   mw_python_fetch_language_names = fetch_language_names
-   mw_wikibase_getlabel_python = mw_wikibase_getlabel
-   mw_wikibase_getdesc_python = mw_wikibase_getdesc
-
-   -- This is set in https://github.com/wikimedia/mediawiki-extensions-Scribunto/blob/4aa17cb80c72998b9cead27e5be1ca39d8a0cfed/includes/Engines/LuaCommon/lualib/mw.language.lua#L27-L28
-   -- and used in https://en.wiktionary.org/wiki/Module:languages
-   string.uupper = mw.ustring.upper
-   string.ulower = mw.ustring.lower
+local function _lua_set_functions(py_funcs_table)
+    -- Note: this is exposed to the Lua sandbox and the Lua sandbox can access
+    -- the functions via mw.  Thus all the Python functions provided here
+    -- must be safe to call from hostile code.
+    mw = require("mw")
+    for func_name, py_func in pairs(py_funcs_table) do
+        _G[func_name] = py_func
+    end
+    -- This is set in https://github.com/wikimedia/mediawiki-extensions-Scribunto/blob/4aa17cb80c72998b9cead27e5be1ca39d8a0cfed/includes/Engines/LuaCommon/lualib/mw.language.lua#L27-L28
+    -- and used in https://en.wiktionary.org/wiki/Module:languages
+    string.uupper = mw.ustring.upper
+    string.ulower = mw.ustring.lower
 end
 
 
