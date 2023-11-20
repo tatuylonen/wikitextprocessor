@@ -711,58 +711,17 @@ def call_lua_sandbox(
                 )
             return title
 
-        @lupa.unpacks_lua_table_method
-        def debugNewParserValue(frame, text, *args):
-            if len(args) > 0:
-                ctx.debug(
-                    f"LAMBDA NEWPARSERVALUE EXTRA ARGS: Lua module:{title}, "
-                    f"frame: {frame}, "
-                    f"extra args: {repr(args)}, "
-                    f"process name: {multiprocessing.current_process().name}"
-                )
-            obj = {"expand": lambda _: frame["preprocess"](frame, text)}
-            return lua.table_from(obj)
-
-        @lupa.unpacks_lua_table_method
-        def debugNewTemplateParserValue(frame, title, args, *rest_args):
-            if len(rest_args) > 0:
-                ctx.debug(
-                    "LAMBDA NEWTEMPLATEPARSERVALUE EXTRA ARGS: "
-                    f"Lua module: {frame['getTitle'](frame)}, "
-                    f"frame: {frame}, "
-                    f"extra args: {rest_args}, "
-                    f"process name: {multiprocessing.current_process().name}"
-                )
-            obj = {
-                "expand": lambda _: frame["expandTemplate"](
-                    frame, lua.table_from({"title": title, "args": args})
-                )
-            }
-            return lua.table_from(obj)
-
         # Create frame object as dictionary with default value None
         frame: Dict[str, Union["_LuaTable", Callable]] = {}
         frame["args"] = frame_args_lt
-        # argumentPairs is set in sandbox.lua
         frame["callParserFunction"] = callParserFunction
         frame["extensionTag"] = extensionTag
         frame["expandTemplate"] = expandTemplate
-        # getArgument is set in sandbox.lua
         frame["getParent"] = wrappedDebugGetParent
         frame["getTitle"] = debugGetTitle
-        # frame["getParent"] = lambda ctx: pframe
-        # frame["getTitle"] = lambda ctx: title
         frame["preprocess"] = preprocess
-        # XXX still untested:
-        frame["newParserValue"] = debugNewParserValue
-        frame["newTemplateParserValue"] = debugNewTemplateParserValue
-        # frame["newParserValue"] = lambda ctx, x: value_with_expand(
-        #     ctx, "preprocess", x
-        # )
-        # frame["newTemplateParserValue"] = lambda ctx, x: value_with_expand(
-        #     ctx, "expand", x
-        # )
-        # newChild set in sandbox.lua
+        # argumentPairs, getArgument, newChild, newParserValue,
+        # newTemplateParserValue are set in _sandbox_phase2.lua
         return lua.table_from(frame)
 
     # Create parent frame (for page being processed) and current frame

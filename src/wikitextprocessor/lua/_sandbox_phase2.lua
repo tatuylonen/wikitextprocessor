@@ -66,6 +66,31 @@ local function prepare_frame_args(frame)
         if v == nil then return nil end
         return { expand = function() return v end }
     end
+
+    function frame:newParserValue(opt)
+        -- https://www.mediawiki.org/wiki/Extension:Scribunto/Lua_reference_manual#frame:newParserValue
+        -- https://github.com/wikimedia/mediawiki-extensions-Scribunto/blob/8d69dc173e33ae936ff4401d41ee5e6a1fd1ba67/includes/Engines/LuaCommon/lualib/mw.lua#L411
+        local text
+        if type(opt) == 'table' then
+            text = opt.texts
+        else
+            text = opt
+        end
+        return { expand = function() return self:preprocess(text) end }
+    end
+
+    function frame:newTemplateParserValue(opt)
+        if type(opt) ~= 'table' then
+            error(
+                "frame:newTemplateParserValue: the first parameter must be a table"
+            )
+        end
+        if opt.title == nil then
+            error("frame:newTemplateParserValue: a title is required")
+        end
+        return { expand = function() return self:expandTemplate(opt) end }
+    end
+
     frame.newChild = function(x, o)
         local title = (o and o.title) or ""
         local args = (o and o.args) or {}
