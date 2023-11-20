@@ -341,7 +341,7 @@ def call_set_functions(
                 "mw_python_fetch_language_name": debug_fetch_language_name,
                 "mw_python_fetch_language_names": debug_fetch_language_names,
                 "mw_wikibase_getlabel_python": mw_wikibase_getlabel,
-                "mw_wikibase_getdescription": mw_wikibase_getdescription,
+                "mw_wikibase_getdesc_python": mw_wikibase_getdescription,
                 "mw_current_title_python": partial(get_current_title, ctx),
                 "current_frame_python": partial(
                     top_lua_stack, ctx.lua_frame_stack
