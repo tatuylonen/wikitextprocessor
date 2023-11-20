@@ -1550,9 +1550,11 @@ class Wtp:
                                 encoded_body, new_parent, expand_all
                             )
                         else:
-                            self.error(f"Empty template body {name=},"
-                                          f"possibly broken redirect",
-                                          sortid="core/1551/20231113")
+                            self.error(
+                                f"Empty template body {name=},"
+                                f"possibly broken redirect",
+                                sortid="core/1551/20231113",
+                            )
                             return ""
 
                     # If a post_template_fn has been supplied, call it now
