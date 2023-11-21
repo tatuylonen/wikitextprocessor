@@ -3,7 +3,6 @@
 #
 # Copyright (c) 2020-2022 Tatu Ylonen.  See file LICENSE and https://ylonen.org
 
-import collections
 import html
 import html.entities
 import json
@@ -13,6 +12,7 @@ import sqlite3
 import sys
 import tempfile
 import urllib.parse
+from collections import defaultdict, deque
 from collections.abc import Sequence
 from dataclasses import dataclass
 from functools import lru_cache
@@ -173,7 +173,6 @@ class Wtp:
         "errors",  # List of error messages (cleared for each new page)
         "fullpage",  # The unprocessed text of the current page (or None)
         "lua",  # Lua runtime or None if not yet initialized
-        "lua_depth",  # Recursion depth in Lua calls
         "lua_invoke",  # Lua function used to invoke a Lua module
         "lua_reset_env",  # Lua function to reset Lua environment
         "lua_clear_loaddata_cache",  # Lua function to clear mw.loadData() cache
@@ -202,6 +201,8 @@ class Wtp:
         "lang_code",
         # Python functions for overriding template expanded text
         "template_override_funcs",
+        "lua_env_stack",
+        "lua_frame_stack",
     )
 
     def __init__(
@@ -229,7 +230,6 @@ class Wtp:
         ] = None
         self.lua_reset_env: Optional[Callable[[], "_LuaTable"]] = None
         self.lua_clear_loaddata_cache: Optional[Callable[[], None]] = None
-        self.lua_depth = 0
         self.rev_ht: Dict[CookieData, str] = {}
         self.expand_stack: List[str] = []  # XXX: this has a confusing name
         self.parser_stack: List["WikiNode"] = []
@@ -248,6 +248,8 @@ class Wtp:
         self.linenum = 1
         self.pre_parse = False
         self.suppress_special = False
+        self.lua_env_stack = deque()
+        self.lua_frame_stack = deque()
 
     def create_db(self) -> None:
         if self.db_path is None:
@@ -906,7 +908,7 @@ class Wtp:
         #     print(repr(outside))
 
         # Check for unpaired HTML tags
-        tag_cnts: DefaultDict[str, int] = collections.defaultdict(int)
+        tag_cnts: DefaultDict[str, int] = defaultdict(int)
         for m in re.finditer(
             r"(?si)<(/)?({})\b\s*[^>]*(/)?>"
             r"".format("|".join(PAIRED_HTML_TAGS)),
@@ -983,7 +985,7 @@ class Wtp:
         expand_stack: List[Page] = []
         # the keys of included_map are template names without
         # the namespace prefix
-        included_map: DefaultDict[str, Set[str]] = collections.defaultdict(set)
+        included_map: DefaultDict[str, Set[str]] = defaultdict(set)
 
         for page in self.get_all_pages([template_ns_id]):
             if page.body is not None:
@@ -1548,9 +1550,11 @@ class Wtp:
                                 encoded_body, new_parent, expand_all
                             )
                         else:
-                            self.error(f"Empty template body {name=},"
-                                          f"possibly broken redirect",
-                                          sortid="core/1551/20231113")
+                            self.error(
+                                f"Empty template body {name=},"
+                                f"possibly broken redirect",
+                                sortid="core/1551/20231113",
+                            )
                             return ""
 
                     # If a post_template_fn has been supplied, call it now

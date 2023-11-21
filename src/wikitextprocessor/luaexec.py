@@ -13,6 +13,8 @@ import re
 import sys
 import traceback
 import unicodedata
+from collections import deque
+from functools import partial
 
 if sys.version_info < (3, 10):
     from importlib_resources import files
@@ -271,30 +273,7 @@ def fetch_language_names(
 
 
 def call_set_functions(
-    ctx: "Wtp",
-    set_functions: Callable[
-        [
-            Callable,  # mw_text_decode,
-            # These callables can't be type-hinted without doing a whole
-            # separate empty class with __callable__ using typing.Protocol,
-            # and the functions fed into these slots are passed straight
-            # into lua code, where the type-hinter can't see them anyhow,
-            # so it's probably not worth the effort. I realized this after
-            # an hour figuring out all the signatures and writing them
-            # in the functions and here and not understanding why the
-            # the type-checker didn't accept it...
-            Callable,  # mw_text_encode,
-            Callable,  # mw_text_jsonencode,
-            Callable,  # debug_mw_text_jsondecode,
-            Callable,  # debug_get_page_info,
-            Callable,  # debug_get_page_content,
-            Callable,  # debug_fetch_language_name,
-            Callable,  # debug_fetch_language_names,
-            Callable,  # mw_wikibase_getlabel,
-            Callable,  # mw_wikibase_getdescription,
-        ],  # ->
-        None,
-    ],
+    ctx: "Wtp", set_functions: Callable[["_LuaTable"], None]
 ) -> None:
     def debug_mw_text_jsondecode(x: str, *rest: int) -> Dict[Any, Any]:
         return mw_text_jsondecode(ctx, x, *rest)
@@ -351,16 +330,38 @@ def call_set_functions(
 
     # Set functions that are implemented in Python
     set_functions(
-        mw_text_decode,
-        mw_text_encode,
-        mw_text_jsonencode,
-        debug_mw_text_jsondecode,
-        debug_get_page_info,
-        debug_get_page_content,
-        debug_fetch_language_name,
-        debug_fetch_language_names,
-        mw_wikibase_getlabel,
-        mw_wikibase_getdescription,
+        ctx.lua.table_from(
+            {
+                "mw_decode_python": mw_text_decode,
+                "mw_encode_python": mw_text_encode,
+                "mw_jsonencode_python": mw_text_jsonencode,
+                "mw_jsondecode_python": debug_mw_text_jsondecode,
+                "mw_python_get_page_info": debug_get_page_info,
+                "mw_python_get_page_content": debug_get_page_content,
+                "mw_python_fetch_language_name": debug_fetch_language_name,
+                "mw_python_fetch_language_names": debug_fetch_language_names,
+                "mw_wikibase_getlabel_python": mw_wikibase_getlabel,
+                "mw_wikibase_getdesc_python": mw_wikibase_getdescription,
+                "mw_current_title_python": partial(get_current_title, ctx),
+                "current_frame_python": partial(
+                    top_lua_stack, ctx.lua_frame_stack
+                ),
+            }
+        )
+    )
+
+
+def set_global_lua_variable(lua, var_name, var_value):
+    set_var_func = lua.eval(f"function(py_value) {var_name} = py_value end")
+    set_var_func(var_value)
+
+
+def set_lua_env_funcs(lua, wtp):
+    set_global_lua_variable(
+        lua, "_python_append_env", partial(append_lua_stack, wtp.lua_env_stack)
+    )
+    set_global_lua_variable(
+        lua, "_python_top_env", partial(top_lua_stack, wtp.lua_env_stack)
     )
 
 
@@ -378,9 +379,6 @@ def initialize_lua(ctx: "Wtp") -> None:
         attribute_filter=filter_attribute_access,
     )
     ctx.lua = lua
-    set_namespace_data: Callable = lua.eval(
-        "function(v) NAMESPACE_DATA = v end"
-    )
     lua_namespace_data = copy.deepcopy(ctx.NAMESPACE_DATA)
     ns_name: str
     ns_data: NamespaceDataEntry
@@ -391,7 +389,10 @@ def initialize_lua(ctx: "Wtp") -> None:
         lua_namespace_data[ns_name] = lua.table_from(  # type: ignore[assignment]
             lua_namespace_data[ns_name]
         )
-    set_namespace_data(lua.table_from(lua_namespace_data))
+    set_global_lua_variable(
+        lua, "NAMESPACE_DATA", lua.table_from(lua_namespace_data)
+    )
+    set_lua_env_funcs(lua, ctx)
 
     # Load Lua sandbox Phase 1.  This is a very minimal file that only sets
     # the Lua loader to our custom loader; we will then use it to load the
@@ -402,7 +403,7 @@ def initialize_lua(ctx: "Wtp") -> None:
         set_loader = phase1_result[1]
         clear_loaddata_cache = phase1_result[2]
         # Call the function that sets the Lua loader
-        set_loader(lambda x: lua_loader(ctx, x))
+        set_loader(partial(lua_loader, ctx))
 
     # Then load the second phase of the sandbox.  This now goes through the
     # new loader and is evaluated in the sandbox.  This mostly implements
@@ -445,7 +446,7 @@ def call_lua_sandbox(
         return "{{" + invoke_args[0] + ":" + "|".join(invoke_args[1:]) + "}}"
 
     # Initialize the Lua sandbox if not already initialized
-    if ctx.lua_depth == 0:
+    if len(ctx.lua_env_stack) == 0:
         if ctx.lua is None:
             # This is the first call to the Lua sandbox.
             # Create a Lua context and initialize it.
@@ -463,7 +464,6 @@ def call_lua_sandbox(
             ctx.lua_reset_env = phase2_ret[3]
             call_set_functions(ctx, set_functions)
 
-    ctx.lua_depth += 1
     lua = ctx.lua
 
     # Get module and function name
@@ -711,58 +711,17 @@ def call_lua_sandbox(
                 )
             return title
 
-        @lupa.unpacks_lua_table_method
-        def debugNewParserValue(frame, text, *args):
-            if len(args) > 0:
-                ctx.debug(
-                    f"LAMBDA NEWPARSERVALUE EXTRA ARGS: Lua module:{title}, "
-                    f"frame: {frame}, "
-                    f"extra args: {repr(args)}, "
-                    f"process name: {multiprocessing.current_process().name}"
-                )
-            obj = {"expand": lambda _: frame["preprocess"](frame, text)}
-            return lua.table_from(obj)
-
-        @lupa.unpacks_lua_table_method
-        def debugNewTemplateParserValue(frame, title, args, *rest_args):
-            if len(rest_args) > 0:
-                ctx.debug(
-                    "LAMBDA NEWTEMPLATEPARSERVALUE EXTRA ARGS: "
-                    f"Lua module: {frame['getTitle'](frame)}, "
-                    f"frame: {frame}, "
-                    f"extra args: {rest_args}, "
-                    f"process name: {multiprocessing.current_process().name}"
-                )
-            obj = {
-                "expand": lambda _: frame["expandTemplate"](
-                    frame, lua.table_from({"title": title, "args": args})
-                )
-            }
-            return lua.table_from(obj)
-
         # Create frame object as dictionary with default value None
         frame: Dict[str, Union["_LuaTable", Callable]] = {}
         frame["args"] = frame_args_lt
-        # argumentPairs is set in sandbox.lua
         frame["callParserFunction"] = callParserFunction
         frame["extensionTag"] = extensionTag
         frame["expandTemplate"] = expandTemplate
-        # getArgument is set in sandbox.lua
         frame["getParent"] = wrappedDebugGetParent
         frame["getTitle"] = debugGetTitle
-        # frame["getParent"] = lambda ctx: pframe
-        # frame["getTitle"] = lambda ctx: title
         frame["preprocess"] = preprocess
-        # XXX still untested:
-        frame["newParserValue"] = debugNewParserValue
-        frame["newTemplateParserValue"] = debugNewTemplateParserValue
-        # frame["newParserValue"] = lambda ctx, x: value_with_expand(
-        #     ctx, "preprocess", x
-        # )
-        # frame["newTemplateParserValue"] = lambda ctx, x: value_with_expand(
-        #     ctx, "expand", x
-        # )
-        # newChild set in sandbox.lua
+        # argumentPairs, getArgument, newChild, newParserValue,
+        # newTemplateParserValue are set in _sandbox_phase2.lua
         return lua.table_from(frame)
 
     # Create parent frame (for page being processed) and current frame
@@ -789,6 +748,7 @@ def call_lua_sandbox(
         assert ctx.lua_invoke is not None
     lua_exception: Optional[Exception] = None
     try:
+        ctx.lua_frame_stack.append(frame)
         ret: Tuple[bool, str] = ctx.lua_invoke(
             modname, modfn, frame, ctx.title, timeout
         )
@@ -815,7 +775,10 @@ def call_lua_sandbox(
             ctx.expand_stack.pop()
     # print("Lua call {} returned: ok={!r} text={!r}"
     #       .format(invoke_args, ok, text))
-    ctx.lua_depth -= 1
+    if len(ctx.lua_env_stack) > 0:
+        ctx.lua_env_stack.pop()
+    if len(ctx.lua_frame_stack) > 0:
+        ctx.lua_frame_stack.pop()
     if ok:  # XXX should this be "is True" instead of checking truthiness?
         text = str(text) if text is not None else ""
         text = unicodedata.normalize("NFC", text)
@@ -904,3 +867,18 @@ def mw_wikibase_getdescription(item_id: str) -> Optional[str]:
         return item_data.get("itemDescription", {}).get("value", item_id)
     else:
         return None
+
+
+def top_lua_stack(env_stack: deque) -> Optional["_LuaTable"]:
+    if len(env_stack) == 0:
+        return None
+    else:
+        return env_stack[-1]
+
+
+def append_lua_stack(env_stack: deque, env: "_LuaTable") -> None:
+    env_stack.append(env)
+
+
+def get_current_title(wtp: "Wtp") -> str:
+    return wtp.title
