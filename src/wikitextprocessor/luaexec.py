@@ -340,8 +340,12 @@ def call_set_functions(
                 "mw_python_get_page_content": debug_get_page_content,
                 "mw_python_fetch_language_name": debug_fetch_language_name,
                 "mw_python_fetch_language_names": debug_fetch_language_names,
-                "mw_wikibase_getlabel_python": mw_wikibase_getlabel,
-                "mw_wikibase_getdesc_python": mw_wikibase_getdescription,
+                "mw_wikibase_getlabel_python": partial(
+                    mw_wikibase_getlabel, lang_code=ctx.lang_code
+                ),
+                "mw_wikibase_getdesc_python": partial(
+                    mw_wikibase_getdescription, lang_code=ctx.lang_code
+                ),
                 "mw_current_title_python": partial(get_current_title, ctx),
                 "current_frame_python": partial(
                     top_lua_stack, ctx.lua_frame_stack
@@ -827,16 +831,21 @@ def call_lua_sandbox(
 
 
 @functools.cache
-def query_wikidata(item_id: str) -> Optional[dict]:
+def query_wikidata(item_id: str, lang_code: str) -> Optional[dict]:
     import requests
 
     r = requests.get(
         "https://query.wikidata.org/sparql",
         params={
-            "query": "SELECT ?itemLabel ?itemDescription WHERE { VALUES ?item "
-            + f"{{ wd:{item_id} }}. "
-            + "SERVICE wikibase:label { bd:serviceParam wikibase:language"
-            + ' "[AUTO_LANGUAGE],en". }}',
+            "query": f"""
+            SELECT ?itemLabel ?itemDescription WHERE {{
+              VALUES ?item {{ wd:{item_id} }}.
+              SERVICE wikibase:label {{
+                bd:serviceParam
+                wikibase:language "{lang_code},[AUTO_LANGUAGE],en".
+              }}
+            }}
+            """,
             "format": "json",
         },
         headers={"user-agent": "wikitextprocessor"},
@@ -853,16 +862,18 @@ def query_wikidata(item_id: str) -> Optional[dict]:
     return None
 
 
-def mw_wikibase_getlabel(item_id: str) -> Optional[str]:
-    item_data = query_wikidata(item_id)
+def mw_wikibase_getlabel(item_id: str, lang_code: str = "en") -> Optional[str]:
+    item_data = query_wikidata(item_id, lang_code)
     if item_data is not None:
         return item_data.get("itemLabel", {}).get("value", item_id)
     else:
         return None
 
 
-def mw_wikibase_getdescription(item_id: str) -> Optional[str]:
-    item_data = query_wikidata(item_id)
+def mw_wikibase_getdescription(
+    item_id: str, lang_code: str = "en"
+) -> Optional[str]:
+    item_data = query_wikidata(item_id, lang_code)
     if item_data is not None:
         return item_data.get("itemDescription", {}).get("value", item_id)
     else:

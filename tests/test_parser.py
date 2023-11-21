@@ -3,6 +3,7 @@
 # Copyright (c) 2020-2022 Tatu Ylonen.  See file LICENSE and https://ylonen.org
 
 import unittest
+from unittest.mock import Mock, patch
 
 from wikitextprocessor import Wtp
 from wikitextprocessor.parser import (
@@ -2461,6 +2462,32 @@ def foo(x):
         self.assertTrue(isinstance(html_node, HTMLNode))
         self.assertEqual(html_node.tag, "th")
         self.assertEqual(html_node.attrs, {"colspan": "2"})
+
+    @patch("requests.get")
+    def test_statements_parser_func_prop_number(self, mock_get):
+        mock_result = Mock()
+        mock_result.json = Mock(
+            return_value={
+                "head": {"vars": ["value"]},
+                "results": {
+                    "bindings": [
+                        {
+                            "valueLabel": {
+                                "xml:lang": "en",
+                                "type": "literal",
+                                "value": "Douglas Noël Adams",
+                            }
+                        }
+                    ]
+                },
+            }
+        )
+        mock_get.return_value = mock_result
+        self.ctx.start_page("Don't panic")
+        expanded = self.ctx.expand("{{#statements:P1477|from=Q42}}")
+        self.assertEqual(expanded, "Douglas Noël Adams")
+        expanded = self.ctx.expand("{{#statements:birth name|from=Q42}}")
+        self.assertEqual(expanded, "Douglas Noël Adams")
 
 
 # XXX implement <nowiki/> marking for links, templates
