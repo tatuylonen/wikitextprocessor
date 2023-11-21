@@ -1441,7 +1441,7 @@ def _query_wikidata_statement(prop: str, item: str, lang_code: str) -> str:
         }}
         """
     else:
-        # property lable is used
+        # property label is used
         query = f"""
         SELECT ?valueLabel WHERE {{
           wd:{item} ?prop ?value.
