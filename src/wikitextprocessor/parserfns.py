@@ -3,6 +3,7 @@
 # Copyright (c) 2020-2022 Tatu Ylonen.  See file LICENSE and https://ylonen.org
 
 import datetime
+import functools
 import html
 import math
 import re
@@ -484,7 +485,7 @@ def displaytitle_fn(
     ctx: "Wtp", fn_name: str, args: List[str], expander: Callable[[str], str]
 ) -> str:
     """Implements the DISPLAYTITLE magic word/parser function."""
-    t = expander(args[0]) if args else ""
+    # t = expander(args[0]) if args else ""
     # XXX this should at least remove html tags h1 h2 h3 h4 h5 h6 div blockquote
     # ol ul li hr table tr th td dl dd caption p ruby rb rt rtc rp br
     # Looks as if this should also set the display title for the page in ctx???
@@ -1427,6 +1428,55 @@ def unimplemented_fn(
     return "{{" + fn_name + ":" + "|".join(map(str, args)) + "}}"
 
 
+@functools.cache
+def _query_wikidata_statement(prop: str, item: str, lang_code: str) -> str:
+    import requests
+
+    if re.fullmatch(r"P\d+", prop):
+        query = f"""SELECT ?valueLabel WHERE {{
+          wd:{item} wdt:{prop} ?value.
+          SERVICE wikibase:label {{
+            bd:serviceParam wikibase:language "{lang_code},[AUTO_LANGUAGE],en".
+          }}
+        }}
+        """
+    else:
+        # property lable is used
+        query = f"""
+        SELECT ?valueLabel WHERE {{
+          wd:{item} ?prop ?value.
+          ?p wikibase:directClaim ?prop;
+            rdfs:label "{prop}"@{lang_code}.
+          SERVICE wikibase:label {{
+            bd:serviceParam wikibase:language "{lang_code},[AUTO_LANGUAGE],en".
+          }}
+        }}
+        """
+    r = requests.get(
+        "https://query.wikidata.org/sparql",
+        params={"query": query, "format": "json"},
+        headers={"user-agent": "wikitextprocessor"},
+    )
+    if r.ok:
+        result = r.json()
+        for binding in result.get("results", {}).get("bindings", []):
+            return binding.get("valueLabel", {}).get("value", "")
+    return ""
+
+
+def statements_fn(
+    ctx: "Wtp", fn_name: str, args: List[str], expander: Callable[[str], str]
+) -> str:
+    # https://www.wikidata.org/wiki/Wikidata:How_to_use_data_on_Wikimedia_projects
+    prop = ""
+    wikidata_item = ""
+    if len(args) > 0:
+        prop = args[0]
+    if len(args) > 1 and args[1].startswith("from="):
+        wikidata_item = args[1].removeprefix("from=")
+    return _query_wikidata_statement(prop, wikidata_item, ctx.lang_code)
+
+
 # This list should include names of predefined parser functions and
 # predefined variables (some of which can take arguments using the same
 # syntax as parser functions and we treat them as parser functions).
@@ -1554,7 +1604,7 @@ PARSER_FUNCTIONS = {
     "#lstx": unimplemented_fn,
     "#property": unimplemented_fn,
     "#related": unimplemented_fn,
-    "#statements": unimplemented_fn,
+    "#statements": statements_fn,
     "#target": unimplemented_fn,
     # From Help:Extension:ParserFunctions
     "#len": len_fn,
