@@ -2,13 +2,14 @@
 #
 # Copyright (c) 2020-2022 Tatu Ylonen.  See file LICENSE and https://ylonen.org
 
-import datetime
 import functools
 import html
 import math
 import re
+import sys
 import urllib.parse
 from collections.abc import Callable
+from datetime import datetime, timezone
 from typing import TYPE_CHECKING, Dict, List, Optional, Union
 
 import dateparser
@@ -411,21 +412,21 @@ def currentyear_fn(
     ctx: "Wtp", fn_name: str, args: List[str], expander: Callable[[str], str]
 ) -> str:
     """Implements the CURRENTYEAR magic word."""
-    return str(datetime.datetime.now(datetime.timezone.utc).year)
+    return str(datetime.now(timezone.utc).year)
 
 
 def currentmonth_fn(
     ctx: "Wtp", fn_name: str, args: List[str], expander: Callable[[str], str]
 ) -> str:
     """Implements the CURRENTMONTH magic word."""
-    return datetime.datetime.now(datetime.timezone.utc).strftime("%m")
+    return datetime.now(timezone.utc).strftime("%m")
 
 
 def currentmonth1_fn(
     ctx: "Wtp", fn_name: str, args: List[str], expander: Callable[[str], str]
 ) -> str:
     """Implements the CURRENTMONTH1 magic word."""
-    return str(datetime.datetime.now(datetime.timezone.utc).month)
+    return str(datetime.now(timezone.utc).month)
 
 
 def currentmonthname_fn(
@@ -433,7 +434,7 @@ def currentmonthname_fn(
 ) -> str:
     """Implements the CURRENTMONTHNAME magic word."""
     # XXX support for other languages?
-    return datetime.datetime.now(datetime.timezone.utc).strftime("%B")
+    return datetime.now(timezone.utc).strftime("%B")
 
 
 def currentmonthabbrev_fn(
@@ -441,28 +442,28 @@ def currentmonthabbrev_fn(
 ) -> str:
     """Implements the CURRENTMONTHABBREV magic word."""
     # XXX support for other languages?
-    return datetime.datetime.now(datetime.timezone.utc).strftime("%b")
+    return datetime.now(timezone.utc).strftime("%b")
 
 
 def currentday_fn(
     ctx: "Wtp", fn_name: str, args: List[str], expander: Callable[[str], str]
 ) -> str:
     """Implements the CURRENTDAY magic word."""
-    return str(datetime.datetime.now(datetime.timezone.utc).day)
+    return str(datetime.now(timezone.utc).day)
 
 
 def currentday2_fn(
     ctx: "Wtp", fn_name: str, args: List[str], expander: Callable[[str], str]
 ) -> str:
     """Implements the CURRENTDAY2 magic word."""
-    return datetime.datetime.now(datetime.timezone.utc).strftime("%d")
+    return datetime.now(timezone.utc).strftime("%d")
 
 
 def currentdow_fn(
     ctx: "Wtp", fn_name: str, args: List[str], expander: Callable[[str], str]
 ) -> str:
     """Implements the CURRENTDOW magic word."""
-    return str(datetime.datetime.now(datetime.timezone.utc).weekday())
+    return str(datetime.now(timezone.utc).weekday())
 
 
 def revisionid_fn(
@@ -1122,7 +1123,7 @@ def plural_fn(
     return expander(args[2]).strip() if len(args) >= 3 else ""
 
 
-def month_num_days(ctx: "Wtp", t: datetime.datetime) -> int:
+def month_num_days(ctx: "Wtp", t: datetime) -> int:
     mdays = [31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31]
     v = mdays[t.month - 1]
     if t.month == 2:
@@ -1133,7 +1134,7 @@ def month_num_days(ctx: "Wtp", t: datetime.datetime) -> int:
 
 time_fmt_map: Dict[
     str,
-    Union[str, Callable[["Wtp", datetime.datetime], Union[int, float, str]]],
+    Union[str, Callable[["Wtp", datetime], Union[int, float, str]]],
 ] = {
     "Y": "%Y",
     "y": "%y",
@@ -1149,7 +1150,7 @@ time_fmt_map: Dict[
     "j": lambda ctx, t: t.day,
     "d": "%d",
     "z": lambda ctx, t: (
-        t - datetime.datetime(year=t.year, month=1, day=1, tzinfo=t.tzinfo)
+        t - datetime(year=t.year, month=1, day=1, tzinfo=t.tzinfo)
     ).days,
     "W": "%V",
     "N": "%u",
@@ -1199,10 +1200,10 @@ def time_fn(
     if loc in ("", "0"):
         dt += " UTC"
 
-    t: Optional[datetime.datetime]
+    t: Optional[datetime]
     if dt.startswith("@"):
         try:
-            t = datetime.datetime.fromtimestamp(float(dt[1:]))
+            t = datetime.fromtimestamp(float(dt[1:]))
         except ValueError:
             ctx.warning(
                 "bad time syntax in {}: {!r}".format(fn_name, orig_dt),
@@ -1460,7 +1461,15 @@ def _query_wikidata_statement(prop: str, item: str, lang_code: str) -> str:
     if r.ok:
         result = r.json()
         for binding in result.get("results", {}).get("bindings", []):
-            return binding.get("valueLabel", {}).get("value", "")
+            value = binding.get("valueLabel", {}).get("value", "")
+            if prop in {"P577", "publication date"}:
+                if sys.version_info < (3, 11):
+                    value = value.removesuffix("Z")
+                try:
+                    value = datetime.fromisoformat(value).year
+                except ValueError:
+                    value = ""
+            return value
     return ""
 
 

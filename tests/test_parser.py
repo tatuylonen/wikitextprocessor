@@ -2464,7 +2464,7 @@ def foo(x):
         self.assertEqual(html_node.attrs, {"colspan": "2"})
 
     @patch("requests.get")
-    def test_statements_parser_func_prop_number(self, mock_get):
+    def test_statements_parser_func_prop_number(self, mock_requests_get):
         mock_result = Mock()
         mock_result.json = Mock(
             return_value={
@@ -2482,12 +2482,38 @@ def foo(x):
                 },
             }
         )
-        mock_get.return_value = mock_result
+        mock_requests_get.return_value = mock_result
         self.ctx.start_page("Don't panic")
         expanded = self.ctx.expand("{{#statements:P1477|from=Q42}}")
         self.assertEqual(expanded, "Douglas Noël Adams")
         expanded = self.ctx.expand("{{#statements:birth name|from=Q42}}")
         self.assertEqual(expanded, "Douglas Noël Adams")
+
+    @patch("requests.get")
+    def test_statements_publication_date(self, mock_requests_get):
+        # https://en.wiktionary.org/wiki/расплавить
+        # https://en.wiktionary.org/wiki/Template:R:ru:fr:Ganot1868
+        mock_result = Mock()
+        mock_result.json = Mock(
+            return_value={
+                "head": {"vars": ["value", "valueLabel"]},
+                "results": {
+                    "bindings": [
+                        {
+                            "valueLabel": {
+                                "datatype": "http://www.w3.org/2001/XMLSchema#dateTime",
+                                "type": "literal",
+                                "value": "1868-01-01T00:00:00Z",
+                            },
+                        }
+                    ]
+                },
+            }
+        )
+        mock_requests_get.return_value = mock_result
+        self.ctx.start_page("расплавить")
+        expanded = self.ctx.expand("{{#statements:P577|from=Q114098115}}")
+        self.assertEqual(expanded, "1868")
 
 
 # XXX implement <nowiki/> marking for links, templates
