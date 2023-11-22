@@ -1495,8 +1495,6 @@ class Wtp:
                                         sortid="core/1211",
                                     )
                                     k = 1000
-                                if num <= k:
-                                    num = k + 1
                             else:
                                 self.expand_stack.append("ARGNAME")
                                 k = expand_recurse(k, parent, True)

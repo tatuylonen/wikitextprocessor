@@ -2515,6 +2515,25 @@ def foo(x):
         expanded = self.ctx.expand("{{#statements:P577|from=Q114098115}}")
         self.assertEqual(expanded, "1868")
 
+    def test_inverse_order_template_numbered_parameter(self):
+        # https://en.wiktionary.org/wiki/落葉歸根
+        wikitext = "{{zh-x|3=CL|葉落歸根，來 時 無 口。||ref=宋·釋道原《景德傳燈錄》|collapsed=y}}"
+        self.ctx.start_page("落葉歸根")
+        tree = self.ctx.parse(wikitext)
+        template_node = tree.children[0]
+        self.assertTrue(isinstance(template_node, TemplateNode))
+        self.assertEqual(template_node.template_name, "zh-x")
+        self.assertEqual(template_node.template_parameters, {
+            1: "葉落歸根，來 時 無 口。",
+            2: "",
+            3: "CL",
+            "ref": "宋·釋道原《景德傳燈錄》",
+            "collapsed": "y",
+        })
+        self.ctx.add_page("Template:zh-x", 10, "{{{1}}}")
+        self.assertEqual(self.ctx.expand(wikitext), "葉落歸根，來 時 無 口。")
+
+
 
 # XXX implement <nowiki/> marking for links, templates
 #  - https://en.wikipedia.org/wiki/Help:Wikitext#Nowiki
