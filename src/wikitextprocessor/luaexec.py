@@ -37,6 +37,7 @@ from typing import (
 import lupa.lua51 as lupa
 from lupa.lua51 import lua_type
 
+from .interwiki import mw_site_interwikiMap
 from .parserfns import PARSER_FUNCTIONS, call_parser_function, tag_fn
 
 if TYPE_CHECKING:
@@ -350,6 +351,7 @@ def call_set_functions(
                 "current_frame_python": partial(
                     top_lua_stack, ctx.lua_frame_stack
                 ),
+                "mw_site_interwikiMap_py": partial(mw_site_interwikiMap, ctx),
             }
         )
     )

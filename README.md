@@ -138,6 +138,7 @@ def __init__(
     db_path: Optional[Union[str, Path]] = None,
     lang_code="en",
     template_override_funcs: Dict[str, Callable[[Sequence[str]], str]] = {},
+    project: str = "wiktionary",
 ):
 ```
 
@@ -161,6 +162,7 @@ the following arguments:
   the old file first.
 * `lang_code` - the language code of the dump file.
 * `template_override_funcs` - Python functions for overriding expanded template text.
+* `project` - "wiktionary" or "wikipedia".
 
 ```python
 def read_by_title(
