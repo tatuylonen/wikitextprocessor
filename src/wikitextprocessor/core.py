@@ -203,6 +203,7 @@ class Wtp:
         "template_override_funcs",
         "lua_env_stack",
         "lua_frame_stack",
+        "project",  # "wiktionary" or "wikipedia"
     )
 
     def __init__(
@@ -210,6 +211,7 @@ class Wtp:
         db_path: Optional[Union[str, Path]] = None,
         lang_code="en",
         template_override_funcs: Dict[str, Callable[[Sequence[str]], str]] = {},
+        project: str = "wiktionary",
     ):
         if isinstance(db_path, str):
             self.db_path: Optional[Path] = Path(db_path)
@@ -250,6 +252,7 @@ class Wtp:
         self.suppress_special = False
         self.lua_env_stack = deque()
         self.lua_frame_stack = deque()
+        self.project = project
 
     def create_db(self) -> None:
         if self.db_path is None:

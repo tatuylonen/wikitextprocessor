@@ -92,7 +92,7 @@ local mw_site = {
       users = 0,
       activeUsers = 0,
       admins = 0
-   }
+  }
 }
 
 function mw_site.matchNamespaceName(v, name)
@@ -147,8 +147,7 @@ function mw_site.stats.usersInGroup(filter)
 end
 
 function mw_site.interwikiMap(filter)
-   -- print("mw.site.interwikiMap called", filter)
-   return {}
+    return mw_site_interwikiMap_py()
 end
 
 return mw_site
