@@ -112,6 +112,9 @@ class NodeKind(enum.Flag):
     # Its arguments are [pagetitle].
     ROOT = enum.auto()
 
+    # Level 1 title, used in Russian Wiktionary as language title.
+    LEVEL1 = enum.auto()
+
     # Level2 subtitle.  Arguments are the title, children are what the section
     # contains.
     LEVEL2 = enum.auto()
@@ -224,18 +227,9 @@ class NodeKind(enum.Flag):
     HTML = enum.auto()
 
 
-LEVEL_NODES = frozenset(
-    [
-        NodeKind.LEVEL2,
-        NodeKind.LEVEL3,
-        NodeKind.LEVEL4,
-        NodeKind.LEVEL5,
-        NodeKind.LEVEL6,
-    ]
-)
-
 # Maps subtitle token to its kind
-subtitle_to_kind: Dict[str, NodeKind] = {
+SUBTITLE_TO_KIND: Dict[str, NodeKind] = {
+    "=": NodeKind.LEVEL1,
     "==": NodeKind.LEVEL2,
     "===": NodeKind.LEVEL3,
     "====": NodeKind.LEVEL4,
@@ -246,11 +240,10 @@ subtitle_to_kind: Dict[str, NodeKind] = {
 
 # Maps subtitle node kind to its level.  Keys include all title/subtitle nodes
 # (this is also used like a set of all subtitle kinds, including the root).
-kind_to_level: Dict[NodeKind, int] = {
-    v: len(k) for k, v in subtitle_to_kind.items()
+KIND_TO_LEVEL: Dict[NodeKind, int] = {
+    v: len(k) for k, v in SUBTITLE_TO_KIND.items()
 }
-kind_to_level[NodeKind.ROOT] = 1
-
+KIND_TO_LEVEL[NodeKind.ROOT] = 0
 
 # Node types that have arguments separated by the vertical bar (|)
 HAVE_ARGS_KINDS: Tuple[NodeKind, ...] = (
@@ -285,8 +278,7 @@ MUST_CLOSE_KINDS: Tuple[NodeKind, ...] = (
 # This means that if you have nesting capturing groups,
 # the contents will be repeated partly.
 inside_html_tags_re = re.compile(
-    r"(<(?:" + r"|".join(ALLOWED_HTML_TAGS.keys()) + r")[^><]*>)",
-    re.IGNORECASE
+    r"(<(?:" + r"|".join(ALLOWED_HTML_TAGS.keys()) + r")[^><]*>)", re.IGNORECASE
 )
 
 # We don't have specs for this, so let's assume...
@@ -568,7 +560,7 @@ def _parser_push(ctx: "Wtp", kind: NodeKind) -> WikiNode:
         node = TemplateNode(ctx.linenum)
     elif kind == NodeKind.HTML:
         node = HTMLNode(ctx.linenum)
-    elif kind in LEVEL_NODES:
+    elif kind in KIND_TO_LEVEL:
         node = LevelNode(kind, ctx.linenum)
     else:
         node = WikiNode(kind, ctx.linenum)
@@ -891,16 +883,16 @@ def subtitle_start_fn(ctx, token) -> None:
         return text_fn(ctx, token)
 
     close_begline_lists(ctx)
-    kind = subtitle_to_kind[token[1:]]
-    level = kind_to_level[kind]
+    kind = SUBTITLE_TO_KIND[token[1:]]
+    level = KIND_TO_LEVEL[kind]
 
     # Keep popping subtitles and other formats until the next subtitle
     # is of a higher level - but only if there are remaining subtitles.
     # Subtitles sometimes occur inside <noinclude> and similar tags, and we
     # don't want to force closing those.
-    while any(x.kind in kind_to_level for x in ctx.parser_stack):
+    while any(x.kind in KIND_TO_LEVEL for x in ctx.parser_stack):
         node = ctx.parser_stack[-1]
-        if kind_to_level.get(node.kind, 99) < level:
+        if KIND_TO_LEVEL.get(node.kind, 99) < level:
             break
         if node.kind == NodeKind.HTML and node.sarg not in ("span",):
             break
@@ -918,12 +910,12 @@ def subtitle_end_fn(ctx: "Wtp", token: str) -> None:
     if ctx.pre_parse:
         return text_fn(ctx, token)
 
-    kind = subtitle_to_kind[token[1:]]
+    kind = SUBTITLE_TO_KIND[token[1:]]
 
     # Keep popping formats until we get to the subtitle node
     while True:
         node = ctx.parser_stack[-1]
-        if node.kind in kind_to_level:
+        if node.kind in KIND_TO_LEVEL:
             break
         _parser_pop(ctx, True)
 
@@ -1635,7 +1627,7 @@ def list_fn(ctx: "Wtp", token: str) -> None:
 
         # Stop popping if we are at a header.  Headers cannot be used inside
         # list items.  In this case we always start a new list.
-        if node.kind in kind_to_level:
+        if node.kind in KIND_TO_LEVEL:
             break  # Always break before section header
 
         # There are various kinds of nodes that can contain lists.  We won't
@@ -1935,7 +1927,7 @@ def magicword_fn(ctx: "Wtp", token: str) -> None:
 # Regular expression for matching a token in WikiMedia text.  This is used for
 # tokenizing the input.
 token_re = re.compile(
-    r"(?m)^(={2,6})\s*(([^=]|=[^=])+?)\s*(={2,6})\s*$|"
+    r"(?m)^(={1,6})\s*(([^=]|=[^=])+?)\s*(={1,6})\s*$|"
     r"'''''|"
     r"'''|"
     r"''|"
@@ -2117,7 +2109,7 @@ def token_iter(ctx: "Wtp", text: str) -> Iterator[Tuple[bool, str]]:
                     yield False, part[pos:start]
                 pos = m.end()
                 token = m.group(0)
-                if token.startswith("=="):
+                if token.startswith("="):
                     yield True, "<" + m.group(1)
                     for x in token_iter(ctx, m.group(2)):
                         yield x
@@ -2163,9 +2155,9 @@ def process_text(ctx: "Wtp", text: str) -> None:
             # be interpreted as text.
             if token in tokenops:
                 tokenops[token](ctx, token)
-            elif token.startswith("<=="):  # Note: < added by tokenizer
+            elif token.startswith("<="):  # Note: < added by tokenizer
                 subtitle_start_fn(ctx, token)
-            elif token.startswith(">=="):  # Note: > added by tokenizer
+            elif token.startswith(">="):  # Note: > added by tokenizer
                 subtitle_end_fn(ctx, token)
             elif token.startswith("<"):  # HTML tag like construct
                 tag_fn(ctx, token)
@@ -2209,7 +2201,6 @@ def parse_encoded(ctx: "Wtp", text: str) -> WikiNode:
     try:
         # Process all tokens from the input.
         process_text(ctx, text)
-
         # We are at the end of the text.  Keep popping stack until we only have
         # the root node left.  This is used to finalize processing any nodes
         # on the stack.

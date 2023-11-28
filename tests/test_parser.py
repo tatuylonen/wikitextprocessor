@@ -2523,16 +2523,26 @@ def foo(x):
         template_node = tree.children[0]
         self.assertTrue(isinstance(template_node, TemplateNode))
         self.assertEqual(template_node.template_name, "zh-x")
-        self.assertEqual(template_node.template_parameters, {
-            1: "葉落歸根，來 時 無 口。",
-            2: "",
-            3: "CL",
-            "ref": "宋·釋道原《景德傳燈錄》",
-            "collapsed": "y",
-        })
+        self.assertEqual(
+            template_node.template_parameters,
+            {
+                1: "葉落歸根，來 時 無 口。",
+                2: "",
+                3: "CL",
+                "ref": "宋·釋道原《景德傳燈錄》",
+                "collapsed": "y",
+            },
+        )
         self.ctx.add_page("Template:zh-x", 10, "{{{1}}}")
         self.assertEqual(self.ctx.expand(wikitext), "葉落歸根，來 時 無 口。")
 
+    def test_level_1_header(self):
+        tree = self.parse("test", "=Foo=")
+        self.assertEqual(len(tree.children), 1)
+        level_node = tree.children[0]
+        self.assertTrue(isinstance(level_node, LevelNode))
+        self.assertEqual(level_node.largs, [["Foo"]])
+        self.assertEqual(len(level_node.children), 0)
 
 
 # XXX implement <nowiki/> marking for links, templates

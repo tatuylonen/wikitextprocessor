@@ -47,7 +47,7 @@ from .common import (
 )
 from .luaexec import call_lua_sandbox
 from .node_expand import NodeHandlerFnCallable, to_html, to_text, to_wikitext
-from .parser import LEVEL_NODES, NodeKind, WikiNode, parse_encoded
+from .parser import KIND_TO_LEVEL, WikiNode, parse_encoded
 from .parserfns import PARSER_FUNCTIONS, call_parser_function, init_namespaces
 from .wikihtml import ALLOWED_HTML_TAGS
 
@@ -390,7 +390,7 @@ class Wtp:
         if self.parser_stack:
             titles: List[str] = []
             for node in self.parser_stack:
-                if node.kind in LEVEL_NODES:
+                if node.kind in KIND_TO_LEVEL:
                     if not node.largs:
                         continue
                     lst = (
