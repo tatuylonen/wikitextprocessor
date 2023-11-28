@@ -3,10 +3,9 @@
 # Copyright (c) 2020-2021 Tatu Ylonen.  See file LICENSE and https://ylonen.org
 
 import unittest
-
 from unittest.mock import patch
 
-from wikitextprocessor import Wtp, Page
+from wikitextprocessor import Page, Wtp
 
 
 class NodeExpTests(unittest.TestCase):
@@ -206,7 +205,6 @@ class NodeExpTests(unittest.TestCase):
         """
         self.totext("{{blank template}}", "")
 
-
     def test_language_converter_placeholder(self) -> None:
         # "-{}-" template argument shouldn't be cleaned before invoke Lua module
         # GitHub issue #59
@@ -215,7 +213,7 @@ class NodeExpTests(unittest.TestCase):
         self.ctx.add_page(
             "Template:Ja-romanization of",
             10,
-            "{{#invoke:form of/templates|form_of_t|-{}-|withcap=1|lang=ja}}"
+            "{{#invoke:form of/templates|form_of_t|-{}-|withcap=1|lang=ja}}",
         )
         # https://zh.wiktionary.org/wiki/Module:Form_of/templates
         self.ctx.add_page(
@@ -232,11 +230,38 @@ class NodeExpTests(unittest.TestCase):
             end
             return export
             """,
-            model="Scribunto"
+            model="Scribunto",
         )
         self.ctx.db_conn.commit()
         self.ctx.start_page("test_page")
         self.assertEqual(
             self.ctx.expand("{{ja-romanization of|まんが}}"),
-            "[[まんが#日語|まんが]]</i></span> </span>"
+            "[[まんが#日語|まんが]]</i></span> </span>",
+        )
+
+    def test_lua_module_args_not_unescaped(self):
+        # https://en.wiktionary.org/wiki/Gendergap
+        self.ctx.add_page(
+            "Template:quote-journal",
+            10,
+            "{{#invoke:quote|quote_t|type=journal}}",
+        )
+        self.ctx.add_page(
+            "Module:quote",
+            828,
+            """
+            local export = {}
+            function export.quote_t(frame)
+                return frame:getParent().args.title
+            end
+            return export
+            """,
+            model="Scribunto",
+        )
+        self.ctx.start_page("Gendergap")
+        self.assertEqual(
+            self.ctx.expand(
+                "{{quote-journal|de|title=re&colon;publica 2014, der 1.}}"
+            ),
+            "re&colon;publica 2014, der 1.",
         )

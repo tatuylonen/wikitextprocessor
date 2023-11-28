@@ -490,7 +490,6 @@ def call_lua_sandbox(
             frame_args = {}
             for k, arg in args.items():
                 arg = re.sub(r"(?si)<\s*noinclude\s*/\s*>", "", arg)
-                arg = html.unescape(arg)
                 frame_args[k] = arg
         else:
             assert isinstance(args, (list, tuple))
@@ -528,7 +527,6 @@ def call_lua_sandbox(
                 # does not always like them (e.g., remove_links() in
                 # Module:links).
                 arg = re.sub(r"(?si)<\s*noinclude\s*/\s*>", "", arg)
-                arg = html.unescape(arg)
                 frame_args[k] = arg
         frame_args_lt: "_LuaTable" = lua.table_from(frame_args)  # type: ignore[union-attr]
 
