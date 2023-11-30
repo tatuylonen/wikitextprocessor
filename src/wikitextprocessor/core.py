@@ -833,29 +833,30 @@ class Wtp:
         # What is left is unpaired tables, which is an indication that a
         # template somewhere should be generating those table eventually,
         # and thus needs to be pre-expanded.
-        prev = body
-        while True:
-            unpaired_text = re.sub(
-                r"""(?sx)  # re.X, ignore whitespace and comments
-                    (^|\n) \{\|               # start of line {|
-                        (    [^\n]            # any except newline
-                        |    \n+[^{|]         # any except { or | at line start
-                        |    \n+\|[^}]        # | + any except } at linestart
-                        |    \n+\{[^|]        # { + any except | at linestart
-                        )*?
-                    \n+\s*\|\}                # |}""",
-                "",
-                prev,
-            )
-            if unpaired_text == prev:
-                break
-            prev = unpaired_text
-        # print("unpaired_text {!r}".format(unpaired_text))
-
-        # Determine if the template contains an unpaired table
-        contains_unpaired_table = (
-            re.search(r"(?s)(^|\n)(\{\||\|\})", unpaired_text) is not None
-        )
+        table_start_pos = []
+        table_end_pos = []
+        # `[[wikt:/|}]]` in Template:Mon standard keyboard
+        # and `{{l|mul|} }}` in Template:punctuation are not end of table token
+        for m in re.finditer(r"(?<!{){\||\|}(?!\s*}|])", body):
+            if m.group() == "{|":
+                table_start_pos.append(m.start())
+            else:
+                table_end_pos.append(m.end())
+        num_table_start = len(table_start_pos)
+        num_table_end = len(table_end_pos)
+        contains_unpaired_table = num_table_start != num_table_end
+        table_start = len(body)
+        table_end = table_start
+        if num_table_start > num_table_end and num_table_end > 0:
+            table_start = table_start_pos[num_table_start - num_table_end - 1]
+            table_end = table_end_pos[-1]
+        elif num_table_start < num_table_end and num_table_start > 0:
+            table_start = table_start_pos[0]
+            table_end = table_end_pos[num_table_start]
+        elif num_table_start > 0 and num_table_end > 0:
+            table_start = table_start_pos[0]
+            table_end = table_end_pos[-1]
+        unpaired_text = body[:table_start] + body[table_end:]
 
         # Determine if the template contains table element tokens
         # outside paired table start/end.  We only try to look for
@@ -1082,6 +1083,8 @@ class Wtp:
         self.expand_stack = [title]
         if self.lua_clear_loaddata_cache is not None:
             self.lua_clear_loaddata_cache()
+        self.lua_env_stack.clear()
+        self.lua_frame_stack.clear()
 
     def start_section(self, title: Optional[str]) -> None:
         """Starts processing a new section of the current page.  Calling this
