@@ -1593,7 +1593,7 @@ MORE
         self.ctx.add_page("Template:t1", 10, "{|\n! Hdr\n{{row|foo}}\n|}")
         self.ctx.start_page("Tt")
         ret = self.ctx.expand("{{t1}}")
-        self.assertEqual(ret, "{|\n! Hdr\n||bar\n| |baz\n| zap\n|}")
+        self.assertEqual(ret, "\n{|\n! Hdr\n||bar\n| |baz\n| zap\n|}")
 
     def test_template25(self):
         # This example is from
