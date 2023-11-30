@@ -59,3 +59,11 @@ def nowiki_quote(text: str) -> str:
         return _nowiki_map[m.group(0)]
 
     return re.sub(_nowiki_re, _nowiki_repl, text)
+
+def add_newline_to_expansion(text: str) -> str:
+    """https://meta.wikimedia.org/wiki/Help:Newlines_and_spaces#Automatic_newline
+    When templates (and parserfunctions) are expanded, we should check for
+    these special characters at the start and insert a newline if detected."""
+    if isinstance(text, str) and text.startswith(("*", ";", ":", "#", "{|")):
+        return "\n" + text
+    return text

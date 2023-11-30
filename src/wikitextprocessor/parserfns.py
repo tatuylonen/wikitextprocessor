@@ -14,7 +14,7 @@ from typing import TYPE_CHECKING, Dict, List, Optional, Union
 
 import dateparser
 
-from .common import MAGIC_NOWIKI_CHAR, nowiki_quote
+from .common import MAGIC_NOWIKI_CHAR, nowiki_quote, add_newline_to_expansion
 from .wikihtml import ALLOWED_HTML_TAGS
 
 if TYPE_CHECKING:
@@ -1697,4 +1697,6 @@ def call_parser_function(
             sortid="parserfns/1393",
         )
         return ""
-    return fn(ctx, fn_name, args, expander)
+
+    return add_newline_to_expansion(fn(ctx, fn_name, args, expander))
+    # return fn(ctx, fn_name, args, expander)

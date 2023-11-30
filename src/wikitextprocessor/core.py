@@ -14,6 +14,7 @@ import tempfile
 import urllib.parse
 from collections import defaultdict, deque
 from collections.abc import Sequence
+from .common import add_newline_to_expansion
 from dataclasses import dataclass
 from functools import lru_cache
 
@@ -1562,6 +1563,7 @@ class Wtp:
                     # to capture or alter the expansion
                     # print("TEMPLATE EXPANDED: {} {} -> {!r}"
                     #       .format(name, ht, t))
+                    t = add_newline_to_expansion(t)
                     if post_template_fn is not None and t:
                         t2 = post_template_fn(urllib.parse.unquote(name), ht, t)
                         if t2 is not None:
