@@ -837,7 +837,16 @@ class Wtp:
         table_end_pos = []
         # `[[wikt:/|}]]` in Template:Mon standard keyboard
         # and `{{l|mul|} }}` in Template:punctuation are not end of table token
-        for m in re.finditer(r"(?<!{){\||\|}(?!\s*}|])", body):
+        # but `|}]]` in Template:Lithuania map is a table
+        for m in re.finditer(
+            r"""
+            (?<!{){\|  # `{|` not after `{`, like `{{{|}}}`
+            |
+            \|}(?!\s*})  # `|}` not before ` }`
+            """,
+            body,
+            re.VERBOSE,
+        ):
             if m.group() == "{|":
                 table_start_pos.append(m.start())
             else:
