@@ -14,7 +14,6 @@ import tempfile
 import urllib.parse
 from collections import defaultdict, deque
 from collections.abc import Sequence
-from .common import add_newline_to_expansion
 from dataclasses import dataclass
 from functools import lru_cache
 
@@ -44,6 +43,7 @@ from .common import (
     MAGIC_LAST,
     MAGIC_NOWIKI_CHAR,
     MAX_MAGICS,
+    add_newline_to_expansion,
     nowiki_quote,
 )
 from .luaexec import call_lua_sandbox

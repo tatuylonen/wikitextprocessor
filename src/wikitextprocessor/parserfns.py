@@ -14,7 +14,7 @@ from typing import TYPE_CHECKING, Dict, List, Optional, Union
 
 import dateparser
 
-from .common import MAGIC_NOWIKI_CHAR, nowiki_quote, add_newline_to_expansion
+from .common import MAGIC_NOWIKI_CHAR, add_newline_to_expansion, nowiki_quote
 from .wikihtml import ALLOWED_HTML_TAGS
 
 if TYPE_CHECKING:
