@@ -265,3 +265,9 @@ class NodeExpTests(unittest.TestCase):
             ),
             "re&colon;publica 2014, der 1.",
         )
+
+    def test_auto_newline_before_paser_function(self):
+        # GitHub pull #150 for wiktextract issue #403
+        self.ctx.start_page("newline")
+        self.assertEqual(self.ctx.expand("{{#if: true | text}}"), "text")
+        self.assertEqual(self.ctx.expand("{{#if: true | * list}}"), "\n* list")
