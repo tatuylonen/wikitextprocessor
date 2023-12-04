@@ -188,6 +188,7 @@ local function _lua_invoke(mod_name, fn_name, frame, page_title, timeout)
     end
     -- Call the function in the module
     local st, v = pcall(fn, frame)
+    _lua_clear_timeout_hook()
     -- print("Lua sandbox:", tostring(v))
     if type(v) == "string" then
         return st, v
