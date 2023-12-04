@@ -174,11 +174,19 @@ local function _lua_set_timeout(timeout)
         _lua_current_max_time = _lua_max_time
     end
     local start_time = os.time()
-    debug.sethook(function()
-        if os.time() > start_time + _lua_current_max_time then
-            error("Lua timeout error")
-        end
-    end, "", 100000)
+    debug.sethook(
+        function()
+            if os.time() > start_time + _lua_current_max_time then
+                error("Lua timeout error")
+            end
+        end,
+        "",
+        100000
+    )
+end
+
+local function _lua_clear_timeout_hook()
+    debug.sethook()
 end
 
 -- Wiktionary uses a Module named "debug".  Force it to be loaded by
@@ -417,6 +425,7 @@ local function _lua_reset_env()
     env["xpcall"] = _orig_xpcall
     env["_lua_set_python_loader"] = _lua_set_python_loader
     env["_lua_set_timeout"] = _lua_set_timeout
+    env["_lua_clear_timeout_hook"] = _lua_clear_timeout_hook
     env["_lua_io_flush"] = _lua_io_flush
     env["_lua_reset_env"] = _lua_reset_env
     env["_orig_format"] = _orig_format
