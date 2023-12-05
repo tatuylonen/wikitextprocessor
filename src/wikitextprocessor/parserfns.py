@@ -15,6 +15,7 @@ from typing import TYPE_CHECKING, Dict, List, Optional, Union
 import dateparser
 
 from .common import MAGIC_NOWIKI_CHAR, add_newline_to_expansion, nowiki_quote
+from .interwiki import get_interwiki_map
 from .wikihtml import ALLOWED_HTML_TAGS
 
 if TYPE_CHECKING:
@@ -27,9 +28,6 @@ import warnings
 warnings.filterwarnings(
     "ignore", r".*The localize method is no longer necessary.*"
 )
-
-# The host to which generated URLs will point
-SERVER_NAME: str = "dummy.host"
 
 
 def capitalizeFirstOnly(s: str) -> str:
@@ -398,14 +396,14 @@ def server_fn(
     ctx: "Wtp", fn_name: str, args: List[str], expander: Callable[[str], str]
 ) -> str:
     """Implements the SERVER magic word."""
-    return "//{}".format(SERVER_NAME)
+    return "//" + servername_fn(ctx, fn_name, args, expander)
 
 
 def servername_fn(
     ctx: "Wtp", fn_name: str, args: List[str], expander: Callable[[str], str]
 ) -> str:
     """Implements the SERVERNAME magic word."""
-    return SERVER_NAME
+    return f"{ctx.lang_code}.{ctx.project}.org"
 
 
 def currentyear_fn(
@@ -626,25 +624,26 @@ def localurl_fn(
 def fullurl_fn(
     ctx: "Wtp", fn_name: str, args: List[str], expander: Callable[[str], str]
 ) -> str:
-    """Implements the fullurl parser function."""
-    arg0 = expander(args[0]).strip() if args else ""
-    # XXX handle interwiki prefixes in arg0
-    url = "//{}/index.php?title={}".format(
-        SERVER_NAME, urllib.parse.quote_plus(arg0)
+    """
+    Implements the fullurl and fullurle parser function.
+    https://www.mediawiki.org/wiki/Help:Magic_words#URL_data
+    """
+    page_name = expander(args[0]).strip() if args else ""
+    url = f"//{ctx.lang_code}.{ctx.project}.org/wiki/$1"
+    if ":" in page_name:
+        quote_index = page_name.index(":")
+        interwiki_prefix = page_name[:quote_index]
+        interwiki_map = get_interwiki_map(ctx.lang_code, ctx.project)
+        if interwiki_prefix in interwiki_map:
+            page_name = page_name[quote_index + 1 :]
+            url = interwiki_map[interwiki_prefix]["url"]
+
+    url = url.replace(
+        "$1", urllib.parse.quote(page_name.replace(" ", "_"), safe=":/")
     )
     if len(args) > 1:
-        for arg in args[1:]:
-            arg = expander(arg).strip()
-            m = re.match(r"^([^=]+)=(.*)$", arg)
-            if not m:
-                url += "&" + urllib.parse.quote_plus(arg)
-            else:
-                url += (
-                    "&"
-                    + urllib.parse.quote_plus(m.group(1))
-                    + "="
-                    + urllib.parse.quote_plus(m.group(2))
-                )
+        arg = expander(args[1]).strip()  # ignore rest arguments
+        url += "?" + urllib.parse.quote(arg, safe="=")
     return url
 
 
@@ -1588,6 +1587,7 @@ PARSER_FUNCTIONS = {
     "#tag": tag_fn,
     "localurl": localurl_fn,
     "fullurl": fullurl_fn,
+    "fullurle": fullurl_fn,
     "canonicalurl": unimplemented_fn,
     "filepath": unimplemented_fn,
     "urlencode": urlencode_fn,

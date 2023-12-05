@@ -658,7 +658,7 @@ MORE
     def test_fullurl1(self):
         self.parserfn(
             "{{fullurl:Test page|action=edit}}",
-            "//dummy.host/index.php?title=Test+page&action=edit",
+            "//en.wiktionary.org/wiki/Test_page?action=edit",
         )
 
     # XXX implement and test interwiki prefixes for fullurl
@@ -1269,10 +1269,10 @@ MORE
         )
 
     def test_server1(self):
-        self.parserfn("{{SERVER}}", "//dummy.host")
+        self.parserfn("{{SERVER}}", "//en.wiktionary.org")
 
     def test_servername1(self):
-        self.parserfn("{{SERVERNAME}}", "dummy.host")
+        self.parserfn("{{SERVERNAME}}", "en.wiktionary.org")
 
     def test_currentmonthabbrev1(self):
         self.ctx.start_page("test page")
@@ -4171,6 +4171,37 @@ return export
 
     def test_get_page_empty_title(self):
         self.assertEqual(self.ctx.get_page(""), None)
+
+    @patch(
+        "wikitextprocessor.parserfns.get_interwiki_map",
+        return_value={"s": {"url": "https://en.wikisource.org/wiki/$1"}}
+    )
+    def test_fullurl_interwiki(self, mock_get_interwiki_map):
+        tests = [
+            [
+                "{{fullurl:Category:Top level}}",
+                "//en.wiktionary.org/wiki/Category:Top_level",
+            ],
+            [
+                "{{fullurl:s:Electra|action=edit}}",
+                "https://en.wikisource.org/wiki/Electra?action=edit",
+            ],
+            [
+                "{{fullurl:s:es:Electra|action=edit}}",
+                "https://en.wikisource.org/wiki/es:Electra?action=edit",
+            ],
+            [
+                # https://en.wiktionary.org/wiki/bánh_tây
+                "{{fullurle:s:vi:Xứ Bắc kỳ ngày nay/1}}",
+                "https://en.wikisource.org/wiki/vi:X%E1%BB%A9_B%E1%BA%AFc_k%E1%BB%B3_ng%C3%A0y_nay/1",
+            ],
+            ["{{fullurl:title|a=a|b=b}}", "//en.wiktionary.org/wiki/title?a=a"],
+        ]
+        self.ctx.start_page("")
+        for wikitext, result in tests:
+            with self.subTest(wikitext=wikitext, result=result):
+                self.assertEqual(self.ctx.expand(wikitext), result)
+
 
 # XXX Test template_fn
 

@@ -1,7 +1,6 @@
 from functools import cache
 
 
-@cache
 def get_interwiki_data():
     import requests
 
@@ -22,7 +21,8 @@ def get_interwiki_data():
     return []
 
 
-def mw_site_interwikiMap(wtp, filter_arg=None):
+@cache
+def get_interwiki_map(lang_code, project):
     # https://www.mediawiki.org/wiki/Manual:Interwiki
     # https://www.mediawiki.org/wiki/Extension:Scribunto/Lua_reference_manual#mw.site.interwikiMap
     interwiki_map = {}
@@ -36,23 +36,33 @@ def mw_site_interwikiMap(wtp, filter_arg=None):
             "isTranscludable": False,
             "isExtraLanguageLink": False,
         }
-        if wtp.lang_code != "en":
-            if new_map["url"].startswith(f"https://en.{wtp.project}.org"):
+        if lang_code != "en":
+            if new_map["url"].startswith(f"https://en.{project}.org"):
                 new_map["isCurrentWiki"] = True
                 new_map[
                     "url"
-                ] = f"https://{wtp.lang_code}.{wtp.project}.org/wiki/$1"
+                ] = f"https://{lang_code}.{project}.org/wiki/$1"
             elif new_map["url"].startswith("https://en."):
                 new_map[
                     "url"
-                ] = f"https://{wtp.lang_code}.{new_map['url'][11:]}"
+                ] = f"https://{lang_code}.{new_map['url'][11:]}"
         if new_map["isProtocolRelative"]:
             new_map["url"] = new_map["url"].removeprefix("https:")
+        interwiki_map[result["prefix"]] = new_map
+
+    return interwiki_map
+
+
+def mw_site_interwikiMap(wtp, filter_arg=None):
+    # https://www.mediawiki.org/wiki/Manual:Interwiki
+    # https://www.mediawiki.org/wiki/Extension:Scribunto/Lua_reference_manual#mw.site.interwikiMap
+    interwiki_map = {}
+    for key, value in get_interwiki_map(wtp.lang_code, wtp.project).items():
         if (
             filter_arg is None
-            or (filter_arg == "local" and new_map["isLocal"])
-            or (filter_arg == "!local" and not new_map["isLocal"])
+            or (filter_arg == "local" and value["isLocal"])
+            or (filter_arg == "!local" and not value["isLocal"])
         ):
-            interwiki_map[result["prefix"]] = wtp.lua.table_from(new_map)
+            interwiki_map[key] = wtp.lua.table_from(value)
 
     return wtp.lua.table_from(interwiki_map)
