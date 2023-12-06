@@ -35,21 +35,3 @@ jobs:
       - run: make test
         env:
           PYTHONWARNINGS: default
-      # - uses: actions/upload-pages-artifact@v2
-      #   if: github.ref_name == 'main' && matrix.python-version == '3.12'
-      #   with:
-      #     path: htmlcov
-
-  # deploy:
-  #   if: github.ref_name == 'main'
-  #   needs: test
-  #   permissions:
-  #     pages: write
-  #     id-token: write
-  #   environment:
-  #     name: github-pages
-  #     url: ${{ steps.deployment.outputs.page_url }}
-  #   runs-on: ubuntu-latest
-  #   steps:
-  #     - id: deployment
-  #       uses: actions/deploy-pages@v2

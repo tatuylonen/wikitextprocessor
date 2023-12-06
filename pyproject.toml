@@ -50,10 +50,9 @@ dependencies = [
 [project.optional-dependencies]
 dev = [
     "black",
+    "coverage[toml]",
     "mypy",
-    "nose2[coverage_plugin]",
     "ruff",
-    "tomli; python_version <= '3.10'",  # for coverage parsing TOML file
     "types-dateparser",
     "types-lxml",
     "types-psutil",
@@ -82,7 +81,6 @@ mypy_path = "typestubs"
 
 [tool.coverage.run]
 branch = true
-concurrency = ["multiprocessing"]
 omit = ["tests/*"]
 
 [tool.black]
