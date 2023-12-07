@@ -77,6 +77,9 @@ function new_loader(modname, mod_env)
     else
         fn, msg = load(content, modname)
     end
+    if fn == nil then
+        return nil, "load '" .. modname .. "' failed: " .. msg
+    end
     setfenv(fn, mod_env)
     -- Cache the loaded module initialization function
     loader_cache[modname] = fn
