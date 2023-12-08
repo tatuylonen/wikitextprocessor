@@ -118,7 +118,7 @@ function mw_title_meta:canonicalUrl(query)
 end
 
 function mw_title_meta:getContent()
-    return mw_python_get_page_content(self.fullText)
+    return mw_python_get_page_content(self.fullText, self.namespace)
 end
 
 local mw_title = {

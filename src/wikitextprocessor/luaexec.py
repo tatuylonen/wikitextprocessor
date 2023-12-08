@@ -79,7 +79,7 @@ def lua_loader(ctx: "Wtp", modname: str) -> Optional[str]:
             # that the sandbox always gets loaded from a local file.
             data = None
         else:
-            data = ctx.read_by_title(modname, ns_data["id"])
+            data = ctx.get_page_body(modname, ns_data["id"])
     else:
         # Try to load it from a file
         path = modname
@@ -225,7 +225,7 @@ def get_page_info(ctx: "Wtp", title: str, namespace_id: int) -> "_LuaTable":
     assert ctx.lua is not None
 
     page_id = 0  # XXX collect required info in phase 1
-    page: Optional["Page"] = ctx.get_page(title, namespace_id)
+    page = ctx.get_page(title, namespace_id)
     # whether the page exists and what its id might be
     dt = {
         "id": page_id,
@@ -233,16 +233,6 @@ def get_page_info(ctx: "Wtp", title: str, namespace_id: int) -> "_LuaTable":
         "redirectTo": page.redirect_to if page is not None else None,
     }
     return ctx.lua.table_from(dt)
-
-
-def get_page_content(ctx: "Wtp", title: str) -> Optional[str]:
-    """Retrieves the full content of the page identified by the title.
-    Currently this will only return content for the current page.
-    This returns None if the page is other than the current page, and
-    False if the page does not exist (currently not implemented)."""
-
-    # Read the page by its title
-    return ctx.read_by_title(title.strip())
 
 
 def fetch_language_name(code: str, inLanguage: Optional[str]) -> str:
@@ -295,7 +285,9 @@ def call_set_functions(
             )
         return get_page_info(ctx, title, ns_id)
 
-    def debug_get_page_content(x: str, *bad_args: Any) -> Optional[str]:
+    def debug_get_page_content(
+        title: str, namespace_id: int, *bad_args: Any
+    ) -> Optional[str]:
         if bad_args:
             print(
                 f"MAKE_FRAME GET_PAGE_CONTENT DEBUG:"
@@ -303,7 +295,7 @@ def call_set_functions(
                 f" {ctx.title=},"
                 f" {multiprocessing.current_process().name}"
             )
-        return get_page_content(ctx, x)
+        return ctx.get_page_body(title, namespace_id)
 
     def debug_fetch_language_name(
         code: str, inLanguage: str, *bad_args: Any
