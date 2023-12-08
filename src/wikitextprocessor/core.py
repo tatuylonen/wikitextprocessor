@@ -1445,7 +1445,9 @@ class Wtp:
                     name = tname
 
                     # Check for undefined templates
-                    if not self.template_exists(name):
+                    if not self.page_exists(
+                        name, self.NAMESPACE_DATA["Template"]["id"]
+                    ):
                         # XXX tons of these in enwiktionary-20201201 ???
                         # self.debug("undefined template {!r}.format(tname),
                         #           sortid="core/1171")
@@ -1754,8 +1756,8 @@ class Wtp:
             ) from e
         return None
 
-    def page_exists(self, title: str) -> bool:
-        return self.get_page(title) is not None
+    def page_exists(self, title: str, namespace_id: Optional[int] = 0) -> bool:
+        return self.get_page(title, namespace_id) is not None
 
     def get_all_pages(
         self,
@@ -1787,12 +1789,6 @@ class Wtp:
                 model=result[5],
             )
 
-    def template_exists(self, name: str) -> bool:
-        return (
-            self.get_page(name, self.NAMESPACE_DATA["Template"]["id"])
-            is not None
-        )
-
     def check_template_need_expand(
         self,
         name: str,
@@ -1814,16 +1810,8 @@ class Wtp:
 
         return page.need_pre_expand
 
-    def read_by_title(
-        self, title: str, namespace_id: Optional[int] = None
-    ) -> Optional[str]:
-        """Reads the contents of the page.  Returns None if the page does
-        not exist."""
-        page = self.get_page_resolve_redirect(title, namespace_id)
-        return page.body if page is not None else None
-
     def get_page_resolve_redirect(
-        self, title: str, namespace_id: Optional[int] = None
+        self, title: str, namespace_id: int
     ) -> Optional[Page]:
         page = self.get_page(title, namespace_id)
         if page is None:
@@ -1831,6 +1819,10 @@ class Wtp:
         if page.redirect_to is not None:
             return self.get_page(page.redirect_to, namespace_id, True)
         return page
+
+    def get_page_body(self, title: str, namespace_id: int) -> Optional[str]:
+        page = self.get_page_resolve_redirect(title, namespace_id)
+        return None if page is None else page.body
 
     def parse(
         self,

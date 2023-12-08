@@ -153,7 +153,7 @@ def lst_fn(
     """Implements the #lst (alias #section etc) parser function."""
     pagetitle = expander(args[0]).strip() if args else ""
     chapter = expander(args[1]).strip() if len(args) >= 2 else ""
-    text: Optional[str] = ctx.read_by_title(pagetitle)
+    text = ctx.get_page_body(pagetitle, 0)
     if text is None:
         ctx.warning(
             "{} trying to transclude chapter {!r} from non-existent "
