@@ -80,6 +80,12 @@ To run a specific test, use the following syntax:
 python -m unittest tests.test_[module].[Module]Tests.test_[name]
 ```
 
+Python's unittest framework help and options can be accessed through:
+
+```
+python -m unittest -h
+```
+
 ### Obtaining WikiMedia dump files
 
 This package is primarily intended for processing Wiktionary and
