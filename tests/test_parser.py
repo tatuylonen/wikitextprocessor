@@ -2582,13 +2582,20 @@ def foo(x):
             "(the ability/inability to achieve a result is expressed with various verb complements, e.g. ⦃⦃t+¦cmn¦得了¦tr=-deliǎo⦄⦄)",
         )
 
-
     def test_hdr_italics(self):
         tree = self.parse("test", "=== ''nachklassisch'' ===")
         self.assertEqual(len(tree.children), 1)
         self.assertEqual(tree.children[0].kind, NodeKind.LEVEL3)
         self.assertEqual(len(tree.children[0].largs), 1)
         self.assertEqual(tree.children[0].largs[0][0].kind, NodeKind.ITALIC)
+
+    def test_language_parser_function(self):
+        self.ctx.start_page("")
+        self.assertEqual(self.ctx.expand("{{PAGELANGUAGE}}"), "en")
+        self.assertEqual(
+            self.ctx.expand("{{#language:{{PAGELANGUAGE}}}}"), "English"
+        )
+
 
 # XXX implement <nowiki/> marking for links, templates
 #  - https://en.wikipedia.org/wiki/Help:Wikitext#Nowiki
