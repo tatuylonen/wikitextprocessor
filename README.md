@@ -74,6 +74,12 @@ To run the tests, use the following command in the top-level directory:
 make test
 ```
 
+To run a specific test, use the following syntax:
+
+```
+python -m unittest tests.test_[module].[Module]Tests.test_[name]
+```
+
 ### Obtaining WikiMedia dump files
 
 This package is primarily intended for processing Wiktionary and
