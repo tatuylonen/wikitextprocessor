@@ -1924,10 +1924,12 @@ def magicword_fn(ctx: "Wtp", token: str) -> None:
     _parser_pop(ctx, False)
 
 
+# Headers need to be detected before be partition lines with ''-tokens
+header_re = re.compile(r"(?m)^(={1,6})\s*(([^=]|=[^=])+?)\s*(={1,6})\s*$")
+
 # Regular expression for matching a token in WikiMedia text.  This is used for
 # tokenizing the input.
 token_re = re.compile(
-    r"(?m)^(={1,6})\s*(([^=]|=[^=])+?)\s*(={1,6})\s*$|"
     r"'''''|"
     r"'''|"
     r"''|"
@@ -2024,6 +2026,18 @@ def token_iter(ctx: "Wtp", text: str) -> Iterator[Tuple[bool, str]]:
     lines = re.split(r"(\n+)", text)  # Lines and separators
     parts_re = re.compile(r"('{2,})")
     for line in lines:
+        # Detected headers before partitioning on "''"s
+        hm = re.match(header_re, line)
+        if hm:
+            token = hm.group(0)
+            if token.startswith("="):
+                yield True, "<" + hm.group(1)
+                # Tokenize header contents
+                for x in token_iter(ctx, hm.group(2)):
+                    yield x
+                yield True, ">" + hm.group(4)
+            continue
+        # Partition on '', so that we can detect bold/italics
         parts = re.split(parts_re, line)
         state = 0  # 1=in italic 2=in bold 3=in both
         for i, part in enumerate(parts):
@@ -2109,12 +2123,7 @@ def token_iter(ctx: "Wtp", text: str) -> Iterator[Tuple[bool, str]]:
                     yield False, part[pos:start]
                 pos = m.end()
                 token = m.group(0)
-                if token.startswith("="):
-                    yield True, "<" + m.group(1)
-                    for x in token_iter(ctx, m.group(2)):
-                        yield x
-                    yield True, ">" + m.group(4)
-                elif token.strip().startswith(("https://", "http://")):
+                if token.strip().startswith(("https://", "http://")):
                     if start > 0 and part[start - 1] == "=":
                         # treat URL in template argument as plain text
                         # otherwise it'll be converted to wikitext link: [url]
@@ -2136,7 +2145,7 @@ def process_text(ctx: "Wtp", text: str) -> None:
     certain other structures)."""
     # print("PARSER PROCESS_TEXT:", repr(text))
     for is_token, token in token_iter(ctx, text):
-        # print("process_text: token_iter yielded:", is_token, token)
+        # print(f"process_text: token_iter yielded: {is_token=}, {token=}")
         node = ctx.parser_stack[-1]
         if not is_token:
             # Process it as normal text.

@@ -2545,6 +2545,13 @@ def foo(x):
         self.assertEqual(len(level_node.children), 0)
 
 
+    def test_hdr_italics(self):
+        tree = self.parse("test", "=== ''nachklassisch'' ===")
+        self.assertEqual(len(tree.children), 1)
+        self.assertEqual(tree.children[0].kind, NodeKind.LEVEL3)
+        self.assertEqual(len(tree.children[0].largs), 1)
+        self.assertEqual(tree.children[0].largs[0][0].kind, NodeKind.ITALIC)
+
 # XXX implement <nowiki/> marking for links, templates
 #  - https://en.wikipedia.org/wiki/Help:Wikitext#Nowiki
 #  - fix test_nowiki11 and continue
