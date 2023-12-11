@@ -2544,6 +2544,44 @@ def foo(x):
         self.assertEqual(level_node.largs, [["Foo"]])
         self.assertEqual(len(level_node.children), 0)
 
+    def test_equal_sign_in_template_argument(self):
+        # remove a strange code replaces `=` in argument with `&#61;`
+        # https://en.wiktionary.org/wiki/quadratic
+        self.ctx.add_page(
+            "Template:trans-top", 10, "{{#invoke:translations|top}}"
+        )
+        self.ctx.add_page(
+            "Module:translations",
+            828,
+            """
+        local export = {}
+        function export.top(frame)
+          local args = frame:getParent().args
+          return args[1]
+        end
+
+        return export
+        """,
+        )
+        self.ctx.start_page("")
+        wikitext = "{{trans-top|1=of a class of polynomial of the form y = ax² + bx + c}}"
+        expanded = self.ctx.expand(wikitext)
+        self.assertEqual(
+            expanded, "of a class of polynomial of the form y = ax² + bx + c"
+        )
+
+        # https://en.wiktionary.org/wiki/can
+        self.ctx.add_page("Template:qualifier", 10, "({{{1|}}})")
+        self.ctx.add_page(
+            "Template:tt+", 10, "⦃⦃t+¦{{{1|}}}¦{{{2|}}}¦tr={{{tr|}}}⦄⦄"
+        )
+        wikitext = "{{qualifier|the ability/inability to achieve a result is expressed with various verb complements, e.g. {{tt+|cmn|得了|tr=-deliǎo}}}}"
+        expanded = self.ctx.expand(wikitext)
+        self.assertEqual(
+            expanded,
+            "(the ability/inability to achieve a result is expressed with various verb complements, e.g. ⦃⦃t+¦cmn¦得了¦tr=-deliǎo⦄⦄)",
+        )
+
 
 # XXX implement <nowiki/> marking for links, templates
 #  - https://en.wikipedia.org/wiki/Help:Wikitext#Nowiki

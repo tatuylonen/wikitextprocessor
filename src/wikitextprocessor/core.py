@@ -1284,25 +1284,6 @@ class Wtp:
                             k = re.sub(r"\s+", " ", k).strip()
                         v = argmap.get(k, None)
                         if v is not None:
-                            # This kludge is to stop intrusive "="s from
-                            # being parsed as parameter assignment operators
-                            # (quadratic/English, {{trans-top|1=...y = ax²...}}
-                            # when an argument is passed on somewhere else;
-                            # {{#invoke...|{{{1}}}}} ->
-                            # {{#invoke...|...y = ax²...}}, "y"-key: "ax²..."
-                            # If an equal sign inside a argument, but outside
-                            #  {{}} template braces or <> html brackets
-                            # is encountered, escape it  as the equal-sign
-                            # HTML entity.
-                            if "=" in v:
-                                nv = ""
-                                em = re.split(r"({{.+?}}|<.+?>)", v)
-                                for s in em:
-                                    if re.match(r"({{.*}}|<.*>)$", s):
-                                        nv += s
-                                    else:
-                                        nv += s.replace("=", "&#61;")
-                                v = nv
                             parts.append(v)
                             continue
                         if len(args) >= 2:
