@@ -502,14 +502,18 @@ class TemplateNode(WikiNode):
         if self._template_parameters is not None:
             return self._template_parameters
 
-        parameters = defaultdict(list)
+        final_parameters: dict[Union[str, int],
+                        Union[str, WikiNode, list[Union[str, WikiNode]]]] = dict()
+        parameters: defaultdict[Union[str, int],
+                        Union[list[Union[str, WikiNode]]]] = defaultdict(list)
+
         unnamed_parameter_index = 0
         for parameter_list in self.largs[1:]:
             is_named = False
-            parameter_name = ""
+            parameter_name: Union[str, int] = ""
             if len(parameter_list) == 0:
                 unnamed_parameter_index += 1
-                parameters[unnamed_parameter_index] = ""
+                final_parameters[unnamed_parameter_index] = ""
 
             for index, parameter in enumerate(parameter_list):
                 if index == 0:
@@ -541,17 +545,22 @@ class TemplateNode(WikiNode):
                                 )
                             continue
 
-                if is_named and len(parameter_name) > 0:
+                if (is_named and 
+                        (isinstance(parameter_name, int) 
+                        or len(parameter_name)) > 0
+                ):
                     parameters[parameter_name].append(parameter)
                 else:
                     parameters[unnamed_parameter_index].append(parameter)
 
         for p_name, p_value in parameters.items():
             if isinstance(p_value, list) and len(p_value) == 1:
-                parameters[p_name] = p_value[0]
+                final_parameters[p_name] = p_value[0]
+            else:
+                final_parameters[p_name] = p_value
 
-        self._template_parameters = parameters
-        return parameters
+        self._template_parameters = final_parameters 
+        return final_parameters
 
 
 class HTMLNode(WikiNode):
@@ -587,6 +596,7 @@ def _parser_push(ctx: "Wtp", kind: NodeKind) -> WikiNode:
     """Pushes a new node of the specified kind onto the stack."""
     assert isinstance(kind, NodeKind)
     _parser_merge_str_children(ctx)
+    node: WikiNode
     if kind == NodeKind.TEMPLATE:
         node = TemplateNode(ctx.linenum)
     elif kind == NodeKind.HTML:
