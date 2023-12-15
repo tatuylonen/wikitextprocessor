@@ -11,7 +11,9 @@ from typing import (
     Callable,
     Dict,
     List,
+    Literal,
     Optional,
+    overload,
     Set,
     Tuple,
     Union,
@@ -338,6 +340,16 @@ class WikiNode:
     def __repr__(self) -> str:
         return self.__str__()
 
+    @overload
+    def find_child(self, target_kinds: NodeKind, with_index: Literal[True]
+        ) -> Iterator[Tuple[int, "WikiNode"]]: ...
+
+    @overload
+    def find_child(
+        self, target_kinds: NodeKind,
+        with_index: Literal[False] = ...
+        ) -> Iterator["WikiNode"]: ...
+    
     def find_child(
         self,
         target_kinds: NodeKind,
@@ -361,7 +373,7 @@ class WikiNode:
         self,
         target_kinds: NodeKind,
         include_empty_str: bool = False,
-    ) -> Iterator["WikiNode"]:
+    ) -> Iterator[Union["WikiNode", str]]:
         # Find direct child nodes that don't match the target node type.
         for child in self.children:
             if isinstance(child, str) and (
@@ -413,6 +425,20 @@ class WikiNode:
             else:
                 yield node
 
+    @overload
+    def find_html(self, target_tag: str,
+        with_index: Literal[True],
+        attr_name: str,
+        attr_value: str,
+    ) -> Iterator["HTMLNode"]: ...
+
+    @overload
+    def find_html(self, target_tag: str,
+        with_index: Literal[False] = ...,
+        attr_name: str = ...,
+        attr_value: str = ...,
+    ) -> Iterator[Tuple[int, "HTMLNode"]]: ...
+
     def find_html(
         self,
         target_tag: str,
@@ -422,6 +448,9 @@ class WikiNode:
     ) -> Iterator[Union["HTMLNode", Tuple[int, "HTMLNode"]]]:
         # Find direct HTMl child nodes match the target tag and attribute.
         for index, node in self.find_child(NodeKind.HTML, True):
+            if TYPE_CHECKING:
+                assert isinstance(node, HTMLNode)
+            # node.tag is an alias for node.sarg defined in HTMLNode
             if node.tag == target_tag:
                 if len(attr_name) > 0 and attr_value not in node.attrs.get(
                     attr_name, {}
@@ -439,6 +468,8 @@ class WikiNode:
         attr_value: str = "",
     ) -> Iterator["HTMLNode"]:
         for node in self.find_child_recursively(NodeKind.HTML):
+            if TYPE_CHECKING:
+                assert isinstance(node, HTMLNode)
             if node.tag == target_tag:
                 if len(attr_name) > 0 and attr_value not in node.attrs.get(
                     attr_name, {}
@@ -459,7 +490,7 @@ class TemplateNode(WikiNode):
 
     @property
     def template_name(self) -> str:
-        return self.largs[0][0].strip()
+        return self.largs[0][0].strip() # type: ignore[union-attr]
 
     @property
     def template_parameters(
