@@ -28,12 +28,8 @@ from typing import (
     TYPE_CHECKING,
     Callable,
     DefaultDict,
-    Dict,
     Generator,
-    List,
     Optional,
-    Set,
-    Tuple,
     TypedDict,
     Union,
 )
@@ -58,14 +54,14 @@ if TYPE_CHECKING:
     from .parserfns import Namespace
 
 # Set of HTML tags that need an explicit end tag.
-PAIRED_HTML_TAGS: Set[str] = set(
+PAIRED_HTML_TAGS: set[str] = set(
     k for k, v in ALLOWED_HTML_TAGS.items() if not v.get("no-end-tag")
 )
 
 NamespaceDataEntry = TypedDict(
     "NamespaceDataEntry",
     {
-        "aliases": List[str],
+        "aliases": list[str],
         "content": bool,
         "id": int,
         "issubject": bool,
@@ -77,8 +73,8 @@ NamespaceDataEntry = TypedDict(
 
 JsonValues = Union[str, int, float, list, dict, bool, None]
 # Can't specify _LuaTable contents further, so no use specifying the Dict either
-ParentData = Tuple[str, Union["_LuaTable", Dict[Union[int, str], str]]]
-TemplateArgs = Dict[Union[int, str], str]
+ParentData = tuple[str, Union["_LuaTable", dict[Union[int, str], str]]]
+TemplateArgs = dict[Union[int, str], str]
 TemplateFnCallable = Callable[
     [
         str,  # name
@@ -103,16 +99,16 @@ class ErrorMessageData(TypedDict):
     section: str
     subsection: str
     called_from: str
-    path: Tuple[str, ...]
+    path: tuple[str, ...]
 
 
 class CollatedErrorReturnData(TypedDict):
-    errors: List[ErrorMessageData]
-    warnings: List[ErrorMessageData]
-    debugs: List[ErrorMessageData]
+    errors: list[ErrorMessageData]
+    warnings: list[ErrorMessageData]
+    debugs: list[ErrorMessageData]
 
 
-CookieData = Tuple[str, Sequence[str], bool]
+CookieData = tuple[str, Sequence[str], bool]
 
 CookieChar = str
 
@@ -211,35 +207,35 @@ class Wtp:
         self,
         db_path: Optional[Union[str, Path]] = None,
         lang_code="en",
-        template_override_funcs: Dict[str, Callable[[Sequence[str]], str]] = {},
+        template_override_funcs: dict[str, Callable[[Sequence[str]], str]] = {},
         project: str = "wiktionary",
     ):
         if isinstance(db_path, str):
             self.db_path: Optional[Path] = Path(db_path)
         else:
             self.db_path = db_path
-        self.cookies: List[CookieData] = []
-        self.errors: List[ErrorMessageData] = []
-        self.warnings: List[ErrorMessageData] = []
-        self.debugs: List[ErrorMessageData] = []
+        self.cookies: list[CookieData] = []
+        self.errors: list[ErrorMessageData] = []
+        self.warnings: list[ErrorMessageData] = []
+        self.debugs: list[ErrorMessageData] = []
         self.section: Optional[str] = None
         self.subsection: Optional[str] = None
         self.lua: Optional["LuaRuntime"] = None
         self.lua_invoke: Optional[
             Callable[
                 [str, str, "_LuaTable", str, Optional[LuaNumber]],
-                Tuple[bool, str],
+                tuple[bool, str],
             ]
         ] = None
         self.lua_reset_env: Optional[Callable[[], "_LuaTable"]] = None
         self.lua_clear_loaddata_cache: Optional[Callable[[], None]] = None
-        self.rev_ht: Dict[CookieData, str] = {}
-        self.expand_stack: List[str] = []  # XXX: this has a confusing name
-        self.parser_stack: List["WikiNode"] = []
+        self.rev_ht: dict[CookieData, str] = {}
+        self.expand_stack: list[str] = []  # XXX: this has a confusing name
+        self.parser_stack: list["WikiNode"] = []
         self.lang_code = lang_code  # dump file language code
         self.data_folder = files("wikitextprocessor") / "data" / lang_code
         self.init_namespace_data()
-        self.namespaces: Dict[int, Namespace] = {}
+        self.namespaces: dict[int, Namespace] = {}
         init_namespaces(self)
         self.create_db()
         self.template_override_funcs = template_override_funcs
@@ -251,8 +247,8 @@ class Wtp:
         self.linenum = 1
         self.pre_parse = False
         self.suppress_special = False
-        self.lua_env_stack = deque()
-        self.lua_frame_stack = deque()
+        self.lua_env_stack: deque[Optional["_LuaTable"]] = deque()
+        self.lua_frame_stack: deque[Optional["_LuaTable"]] = deque()
         self.project = project
 
     def create_db(self) -> None:
@@ -313,14 +309,14 @@ class Wtp:
 
     def build_sql_where_query(
         self,
-        namespace_ids: Optional[List[int]] = None,
+        namespace_ids: Optional[list[int]] = None,
         include_redirects: bool = True,
         model: Optional[str] = None,
         search_pattern: Optional[str] = None,
-    ) -> Tuple[str, List[Union[str, int]]]:
+    ) -> tuple[str, tuple[Union[str, int], ...]]:
         and_strs = []
         where_str = ""
-        query_values = []
+        query_values: list[Union[int, str]] = []
         if namespace_ids is not None:
             and_strs.append(
                 f"namespace_id IN ({','.join('?' * len(namespace_ids))})"
@@ -342,7 +338,7 @@ class Wtp:
 
     def saved_page_nums(
         self,
-        namespace_ids: Optional[List[int]] = None,
+        namespace_ids: Optional[list[int]] = None,
         include_redirects: bool = True,
         model: Optional[str] = None,
         search_pattern: Optional[str] = None,
@@ -367,12 +363,12 @@ class Wtp:
         with self.data_folder.joinpath("namespaces.json").open(
             encoding="utf-8"
         ) as f:
-            self.NAMESPACE_DATA: Dict[str, NamespaceDataEntry] = json.load(f)
-            self.LOCAL_NS_NAME_BY_ID: Dict[int, str] = {
+            self.NAMESPACE_DATA: dict[str, NamespaceDataEntry] = json.load(f)
+            self.LOCAL_NS_NAME_BY_ID: dict[int, str] = {
                 data["id"]: data["name"]
                 for data in self.NAMESPACE_DATA.values()
             }
-            self.NS_ID_BY_LOCAL_NAME: Dict[str, int] = {
+            self.NS_ID_BY_LOCAL_NAME: dict[str, int] = {
                 data["name"]: data["id"]
                 for data in self.NAMESPACE_DATA.values()
             }
@@ -389,7 +385,7 @@ class Wtp:
         if self.expand_stack:
             msg += " at {}".format(self.expand_stack)
         if self.parser_stack:
-            titles: List[str] = []
+            titles: list[str] = []
             for node in self.parser_stack:
                 if node.kind in KIND_TO_LEVEL:
                     if not node.largs:
@@ -530,7 +526,7 @@ class Wtp:
         """Encode all templates, template arguments, and parser function calls
         in the text, from innermost to outermost."""
 
-        def vbar_split(v: str) -> List[str]:
+        def vbar_split(v: str) -> list[str]:
             args = list(
                 m.group(1)
                 for m in re.finditer(
@@ -814,7 +810,7 @@ class Wtp:
             (title, namespace_id, body, redirect_to, need_pre_expand, model),
         )
 
-    def _analyze_template(self, name: str, body: str) -> Tuple[Set[str], bool]:
+    def _analyze_template(self, name: str, body: str) -> tuple[set[str], bool]:
         """Analyzes a template body and returns a set of the canonicalized
         names of all other templates it calls and a boolean that is True
         if it should be pre-expanded before final parsing and False if it
@@ -823,7 +819,7 @@ class Wtp:
         templates that include the given template.  This does not work for
         template and template function calls where the name is generated by
         other expansions."""
-        included_templates: Set[str] = set()
+        included_templates: set[str] = set()
         pre_expand = False
 
         # Determine if the template starts with a list item
@@ -839,6 +835,7 @@ class Wtp:
         # `[[wikt:/|}]]` in Template:Mon standard keyboard
         # and `{{l|mul|} }}` in Template:punctuation are not end of table token
         # but `|}]]` in Template:Lithuania map is a table
+        m: Union[re.Match, None]
         for m in re.finditer(
             r"""
             (?<!{){\|  # `{|` not after `{`, like `{{{|}}}`
@@ -994,12 +991,13 @@ class Wtp:
             "Analyzing which templates should be expanded before parsing"
         )
         template_ns_data = self.NAMESPACE_DATA.get("Template")
+        assert template_ns_data is not None
         template_ns_id = template_ns_data["id"]
         template_ns_local_name = template_ns_data["name"]
-        expand_stack: List[Page] = []
+        expand_stack: list[Page] = []
         # the keys of included_map are template names without
         # the namespace prefix
-        included_map: DefaultDict[str, Set[str]] = defaultdict(set)
+        included_map: DefaultDict[str, set[str]] = defaultdict(set)
 
         for page in self.get_all_pages([template_ns_id]):
             if page.body is not None:
@@ -1166,8 +1164,8 @@ class Wtp:
         pre_expand=False,
         template_fn: Optional[TemplateFnCallable] = None,
         post_template_fn: Optional[PostTemplateFnCallable] = None,
-        templates_to_expand: Optional[Set[str]] = None,
-        templates_to_not_expand: Optional[Set[str]] = None,
+        templates_to_expand: Optional[set[str]] = None,
+        templates_to_not_expand: Optional[set[str]] = None,
         expand_parserfns=True,
         expand_invoke=True,
         quiet=False,
@@ -1240,7 +1238,7 @@ class Wtp:
             def expand_args(coded: str, argmap: TemplateArgs) -> str:
                 assert isinstance(coded, str)
                 assert isinstance(argmap, dict)
-                parts: List[str] = []
+                parts: list[str] = []
                 pos = 0
                 for m in re.finditer(
                     r"[{:c}-{:c}]".format(MAGIC_FIRST, MAGIC_LAST), coded
@@ -1344,7 +1342,7 @@ class Wtp:
                 return str(ret)
 
             # Main code of expand_recurse()
-            parts: List[str] = []
+            parts: list[str] = []
             pos = 0
             for m in re.finditer(
                 r"[{:c}-{:c}]".format(MAGIC_FIRST, MAGIC_LAST), coded
@@ -1525,6 +1523,8 @@ class Wtp:
                         )
                         if template_page is not None:
                             body = template_page.body
+                            if TYPE_CHECKING:
+                                assert body is not None
                             # XXX optimize by pre-encoding bodies during
                             # preprocessing
                             # (Each template is typically used many times)
@@ -1709,7 +1709,7 @@ class Wtp:
         FROM pages
         WHERE title = ?
         """
-        query_values = [title]
+        query_values: list[Union[str, int]] = [title]
         if namespace_id is not None:
             query_str += " AND namespace_id = ?"
             query_values.append(namespace_id)
@@ -1742,7 +1742,7 @@ class Wtp:
 
     def get_all_pages(
         self,
-        namespace_ids: Optional[List[int]] = None,
+        namespace_ids: Optional[list[int]] = None,
         include_redirects: bool = True,
         model: Optional[str] = None,
         search_pattern: Optional[str] = None,
@@ -1773,8 +1773,8 @@ class Wtp:
     def check_template_need_expand(
         self,
         name: str,
-        expand_names: Optional[Set[str]] = None,
-        not_expand_names: Optional[Set[str]] = None,
+        expand_names: Optional[set[str]] = None,
+        not_expand_names: Optional[set[str]] = None,
     ) -> bool:
         page = self.get_page(name, self.NAMESPACE_DATA["Template"]["id"])
         if page is None:

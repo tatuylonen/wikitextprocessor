@@ -3,7 +3,7 @@
 # Copyright (c) 2020-2022 Tatu Ylonen.  See file LICENSE and https://ylonen.org
 
 import re
-from typing import Iterator, Dict
+from typing import Iterator
 
 
 # Character range used for marking magic sequences.  This package
@@ -30,7 +30,7 @@ MAGIC_LAST: int = 0x0010fff0
 MAX_MAGICS = MAGIC_LAST - MAGIC_FIRST + 1
 
 # Mappings performed for text inside <nowiki>...</nowiki>
-_nowiki_map: Dict[str, str] = {
+_nowiki_map: dict[str, str] = {
     # ";": "&semi;",
     # "&": "&amp;",
     "=": "&equals;",

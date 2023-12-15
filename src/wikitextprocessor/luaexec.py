@@ -266,6 +266,7 @@ def fetch_language_names(
 def call_set_functions(
     ctx: "Wtp", set_functions: Callable[["_LuaTable"], None]
 ) -> None:
+    assert ctx.lua is not None
     def debug_mw_text_jsondecode(x: str, *rest: int) -> Dict[Any, Any]:
         return mw_text_jsondecode(ctx, x, *rest)
 

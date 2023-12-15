@@ -8,7 +8,7 @@ import math
 import re
 import sys
 import urllib.parse
-from collections.abc import Callable
+from collections.abc import Callable, Sequence
 from datetime import datetime, timezone
 from typing import TYPE_CHECKING, Dict, List, Optional, Union
 
@@ -1641,7 +1641,7 @@ PARSER_FUNCTIONS = {
 def call_parser_function(
     ctx: "Wtp",
     fn_name: str,
-    args: Union[Dict[Union[int, str], str], List[str]],
+    args: Union[Dict[Union[int, str], str], Sequence[str]],
     expander: Callable[[str], str],
 ) -> str:
     """Calls the given parser function with the given arguments."""
