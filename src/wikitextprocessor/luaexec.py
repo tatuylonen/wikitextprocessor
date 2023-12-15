@@ -780,7 +780,11 @@ def call_lua_sandbox(
         text = unicodedata.normalize("NFC", text)
         return text
     if lua_exception is not None:
-        text = "".join(traceback.format_exception(lua_exception)).strip()
+        text = "".join(traceback.format_exception(
+                            type(lua_exception),
+                            lua_exception,
+                            lua_exception.__traceback__)
+                        ).strip()
     elif not isinstance(text, str):
         text = str(text)
     msg = re.sub(r".*?:\d+: ", "", text.split("\n", 1)[0])

@@ -78,6 +78,7 @@ wikitextprocessor = [
 
 [tool.mypy]
 mypy_path = "typestubs"
+python_version = 3.9
 
 [tool.coverage.run]
 branch = true
