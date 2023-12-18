@@ -1486,13 +1486,13 @@ def statements_fn(
 
 
 def pagelanguage_fn(
-    ctx: "Wtp", fn_name: str, args: List[str], expander: Callable[[str], str]
+    ctx: "Wtp", fn_name: str, args: list[str], expander: Callable[[str], str]
 ) -> str:
     return ctx.lang_code
 
 
 def language_fn(
-    ctx: "Wtp", fn_name: str, args: List[str], expander: Callable[[str], str]
+    ctx: "Wtp", fn_name: str, args: list[str], expander: Callable[[str], str]
 ) -> str:
     if len(args) > 0:
         from mediawiki_langcodes import code_to_name
