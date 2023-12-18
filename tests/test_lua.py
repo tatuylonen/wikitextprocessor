@@ -1,18 +1,19 @@
 from unittest import TestCase
-from unittest.mock import Mock, patch
-
-from wikitextprocessor import Wtp
-from wikitextprocessor.luaexec import fetch_language_name
+from unittest.mock import patch
 
 
 class TestLua(TestCase):
     def setUp(self):
+        from wikitextprocessor import Wtp
+
         self.wtp = Wtp()
 
     def tearDown(self):
         self.wtp.close_db_conn()
 
     def test_fetchlanguage(self):
+        from wikitextprocessor.luaexec import fetch_language_name
+
         self.assertEqual(fetch_language_name("fr", None), "français")
         self.assertEqual(fetch_language_name("fr", "en"), "French")
 
@@ -124,29 +125,27 @@ class TestLua(TestCase):
         self.wtp.start_page("test lua env")
         self.assertEqual(self.wtp.expand("{{#invoke:a|func}}"), "b")
 
-
-    @patch("requests.get")
-    def test_intewiki_map(self, mock_requests_get):
-        mock_result = Mock()
-        mock_result.json = Mock(
-            return_value={
-                "batchcomplete": True,
-                "query": {
-                    "interwikimap": [
-                        {
-                            "prefix": "en",
-                            "local": True,
-                            "language": "English",
-                            "bcp47": "en",
-                            "url": "https://en.wikipedia.org/wiki/$1",
-                            "protorel": False
-                        },
-                    ]
-                }
+    @patch(
+        "wikitextprocessor.interwiki.get_interwiki_data",
+        return_value=[
+            {
+                "prefix": "en",
+                "local": True,
+                "language": "English",
+                "bcp47": "en",
+                "url": "https://en.wikipedia.org/wiki/$1",
+                "protorel": False,
             }
-        )
-        mock_requests_get.return_value = mock_result
-        self.wtp.add_page("Module:test", 828, """
+        ],
+    )
+    def test_intewiki_map(self, mock_func):
+        from wikitextprocessor.interwiki import init_interwiki_map
+
+        init_interwiki_map(self.wtp)
+        self.wtp.add_page(
+            "Module:test",
+            828,
+            """
         local export = {}
 
         function export.test()
@@ -154,9 +153,10 @@ class TestLua(TestCase):
         end
 
         return export
-        """)
+        """,
+        )
         self.wtp.start_page("test")
         self.assertEqual(
             self.wtp.expand("{{#invoke:test|test}}"),
-            "https://en.wikipedia.org/wiki/$1"
+            "https://en.wikipedia.org/wiki/$1",
         )

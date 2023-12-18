@@ -11,10 +11,12 @@ import subprocess
 import sys
 import unicodedata
 from pathlib import Path
-from typing import TYPE_CHECKING, List, Optional, Set
+from typing import TYPE_CHECKING, Optional
 
 if TYPE_CHECKING:
     from .core import Wtp
+
+from .interwiki import init_interwiki_map
 
 
 def decompress_dump_file(dump_path: str) -> subprocess.Popen:
@@ -33,7 +35,7 @@ def decompress_dump_file(dump_path: str) -> subprocess.Popen:
         raise ValueError("Dump file extension is not .bz2")
 
 
-def parse_dump_xml(ctx: "Wtp", dump_path: str, namespace_ids: Set[int]) -> None:
+def parse_dump_xml(wtp: "Wtp", dump_path: str, namespace_ids: set[int]) -> None:
     from lxml import etree
 
     with decompress_dump_file(dump_path) as p:
@@ -72,7 +74,7 @@ def parse_dump_xml(ctx: "Wtp", dump_path: str, namespace_ids: Set[int]) -> None:
                     continue
                 text = page_element.findtext("revision/text", "", namespaces)
 
-            ctx.add_page(
+            wtp.add_page(
                 title,
                 namespace_id,
                 body=text,
@@ -86,10 +88,10 @@ def parse_dump_xml(ctx: "Wtp", dump_path: str, namespace_ids: Set[int]) -> None:
 
 
 def process_dump(
-    ctx: "Wtp",
+    wtp: "Wtp",
     path: str,
-    namespace_ids: Set[int],
-    overwrite_folders: Optional[List[Path]] = None,
+    namespace_ids: set[int],
+    overwrite_folders: Optional[list[Path]] = None,
     skip_extract_dump: bool = False,
     save_pages_path: Optional[Path] = None,
     skip_analyze_templates: bool = False,
@@ -109,59 +111,58 @@ def process_dump(
     # Run Phase 1 in a single thread; this mostly just extracts pages into
     # a SQLite database file.
     if not skip_extract_dump:
-        parse_dump_xml(ctx, path, namespace_ids)
+        parse_dump_xml(wtp, path, namespace_ids)
         if save_pages_path is not None:
-            save_pages_to_file(ctx, save_pages_path)
+            save_pages_to_file(wtp, save_pages_path)
+        init_interwiki_map(wtp)
 
     # Add default templates
-    template_ns = ctx.NAMESPACE_DATA.get("Template")
+    template_ns = wtp.NAMESPACE_DATA.get("Template")
     template_ns_id = template_ns["id"]
     template_ns_local_name = template_ns["name"]
-    ctx.add_page(  # magic word
+    wtp.add_page(  # magic word
         f"{template_ns_local_name}:!", template_ns_id, "|"
     )
-    ctx.add_page(
-        f"{template_ns_local_name}:=", template_ns_id, "="
-    )
-    ctx.add_page(  # {{((}} -> {{
+    wtp.add_page(f"{template_ns_local_name}:=", template_ns_id, "=")
+    wtp.add_page(  # {{((}} -> {{
         f"{template_ns_local_name}:((", template_ns_id, "&lbrace;&lbrace;"
     )
-    ctx.add_page(  # {{))}} -> }}
+    wtp.add_page(  # {{))}} -> }}
         f"{template_ns_local_name}:))", template_ns_id, "&rbrace;&rbrace;"
     )
     analyze_and_overwrite_pages(
-        ctx, overwrite_folders, skip_extract_dump, skip_analyze_templates
+        wtp, overwrite_folders, skip_extract_dump, skip_analyze_templates
     )
 
 
 def analyze_and_overwrite_pages(
-    ctx: "Wtp",
-    overwrite_folders: Optional[List[Path]],
+    wtp: "Wtp",
+    overwrite_folders: Optional[list[Path]],
     skip_extract_dump: bool,
     skip_analyze_templates: bool,
 ) -> None:
     if overwrite_folders is not None:
-        if overwrite_pages(ctx, overwrite_folders, False):
+        if overwrite_pages(wtp, overwrite_folders, False):
             # has template
             if skip_extract_dump:
-                ctx.backup_db()
-            overwrite_pages(ctx, overwrite_folders, True)
+                wtp.backup_db()
+            overwrite_pages(wtp, overwrite_folders, True)
             if not skip_analyze_templates:
-                ctx.analyze_templates()
+                wtp.analyze_templates()
         else:
-            if not skip_analyze_templates and not ctx.has_analyzed_templates():
-                ctx.analyze_templates()
+            if not skip_analyze_templates and not wtp.has_analyzed_templates():
+                wtp.analyze_templates()
             if skip_extract_dump:
-                ctx.backup_db()
-            overwrite_pages(ctx, overwrite_folders, True)
-    elif not skip_analyze_templates and not ctx.has_analyzed_templates():
-        ctx.analyze_templates()
+                wtp.backup_db()
+            overwrite_pages(wtp, overwrite_folders, True)
+    elif not skip_analyze_templates and not wtp.has_analyzed_templates():
+        wtp.analyze_templates()
     if skip_analyze_templates:
-        ctx.db_conn.commit()
+        wtp.db_conn.commit()
 
 
 def overwrite_pages(
-    ctx: "Wtp", folder_paths: List[Path], do_overwrite: bool
+    wtp: "Wtp", folder_paths: list[Path], do_overwrite: bool
 ) -> bool:
     """
     Read text from passed paths and overwrite the correspond pages in database.
@@ -177,7 +178,7 @@ def overwrite_pages(
             with folder_path.open(encoding="utf-8") as f:
                 for title, page_data in json.load(f).items():
                     is_template = overwrite_single_page(
-                        ctx,
+                        wtp,
                         title,
                         do_overwrite,
                         namespace_id=page_data.get("namespace_id"),
@@ -208,17 +209,17 @@ def overwrite_pages(
                 title = first_line[7:].strip()
                 body = f.read()
                 is_template = overwrite_single_page(
-                    ctx, title, do_overwrite, body=body
+                    wtp, title, do_overwrite, body=body
                 )
                 if not do_overwrite and is_template:
                     return True
 
-    ctx.db_conn.commit()
+    wtp.db_conn.commit()
     return False
 
 
 def overwrite_single_page(
-    ctx: "Wtp",
+    wtp: "Wtp",
     title: str,
     do_overwrite: bool,
     namespace_id: Optional[int] = None,
@@ -227,20 +228,20 @@ def overwrite_single_page(
     body: Optional[str] = None,
     model: str = "wikitext",
 ) -> bool:
-    template_ns_id = ctx.NAMESPACE_DATA.get("Template", {"id": None}).get("id")
+    template_ns_id = wtp.NAMESPACE_DATA.get("Template", {"id": None}).get("id")
     if namespace_id is None:
         if ":" in title:
             local_ns_name = title[: title.find(":")]
-            namespace_id = ctx.NS_ID_BY_LOCAL_NAME.get(local_ns_name, 0)
+            namespace_id = wtp.NS_ID_BY_LOCAL_NAME.get(local_ns_name, 0)
         else:
             namespace_id = 0
     if do_overwrite:
         if model is None:
-            module_ns_id = ctx.NAMESPACE_DATA.get("Module", {"id": None}).get(
+            module_ns_id = wtp.NAMESPACE_DATA.get("Module", {"id": None}).get(
                 "id"
             )
             model = "Scribunto" if namespace_id == module_ns_id else "wikitext"
-        ctx.add_page(
+        wtp.add_page(
             title,
             namespace_id,
             body=body,
@@ -276,7 +277,7 @@ def path_is_on_windows_partition(path: Path) -> bool:
     )
 
 
-def get_windows_invalid_chars() -> Set[str]:
+def get_windows_invalid_chars() -> set[str]:
     return set(map(chr, range(0x00, 0x20))) | set(
         ["/", "\\", ":", "*", "?", '"', "<", ">", "|"]
     )
@@ -300,10 +301,10 @@ def replace_invalid_windows_characters(s: str) -> str:
     return s
 
 
-def save_pages_to_file(ctx: "Wtp", directory: Path) -> None:
+def save_pages_to_file(wtp: "Wtp", directory: Path) -> None:
     on_windows = path_is_on_windows_partition(directory)
     name_max_length = os.pathconf("/", "PC_NAME_MAX")
-    for page in ctx.get_all_pages():
+    for page in wtp.get_all_pages():
         title = replace_invalid_substrings(page.title)
         if on_windows:
             title = replace_invalid_windows_characters(title)
