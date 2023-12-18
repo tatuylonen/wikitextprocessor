@@ -1623,7 +1623,6 @@ PARSER_FUNCTIONS = {
     "#categorytree": (categorytree_fn, True),  # This takes kwargs
     "#coordinates": unimplemented_fn,
     "#invoke": unimplemented_fn,
-    "#language": unimplemented_fn,
     "#lst": lst_fn,
     "#lsth": unimplemented_fn,
     "#lstx": unimplemented_fn,
