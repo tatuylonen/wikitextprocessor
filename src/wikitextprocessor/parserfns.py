@@ -1485,6 +1485,21 @@ def statements_fn(
     return _query_wikidata_statement(prop, wikidata_item, ctx.lang_code)
 
 
+def pagelanguage_fn(
+    ctx: "Wtp", fn_name: str, args: List[str], expander: Callable[[str], str]
+) -> str:
+    return ctx.lang_code
+
+
+def language_fn(
+    ctx: "Wtp", fn_name: str, args: List[str], expander: Callable[[str], str]
+) -> str:
+    if len(args) > 0:
+        from mediawiki_langcodes import code_to_name
+
+        return code_to_name(args[0], ctx.lang_code)
+    return ""
+
 # This list should include names of predefined parser functions and
 # predefined variables (some of which can take arguments using the same
 # syntax as parser functions and we treat them as parser functions).
@@ -1571,6 +1586,7 @@ PARSER_FUNCTIONS = {
     "DISPLAYTITLE": displaytitle_fn,
     "displaytitle": displaytitle_fn,
     "DEFAULTSORT": defaultsort_fn,
+    "PAGELANGUAGE": pagelanguage_fn,
     "lc": lc_fn,
     "lcfirst": lcfirst_fn,
     "uc": uc_fn,
@@ -1607,7 +1623,6 @@ PARSER_FUNCTIONS = {
     "#categorytree": (categorytree_fn, True),  # This takes kwargs
     "#coordinates": unimplemented_fn,
     "#invoke": unimplemented_fn,
-    "#language": unimplemented_fn,
     "#lst": lst_fn,
     "#lsth": unimplemented_fn,
     "#lstx": unimplemented_fn,
@@ -1635,6 +1650,7 @@ PARSER_FUNCTIONS = {
     "#Abschnitt-x": unimplemented_fn,
     "#trecho-x": unimplemented_fn,
     "#section-x": unimplemented_fn,
+    "#language": language_fn,
 }
 
 
