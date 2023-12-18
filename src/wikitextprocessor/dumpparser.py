@@ -11,7 +11,7 @@ import subprocess
 import sys
 import unicodedata
 from pathlib import Path
-from typing import TYPE_CHECKING, List, Optional, Set
+from typing import TYPE_CHECKING, Optional
 
 if TYPE_CHECKING:
     from .core import Wtp
@@ -33,7 +33,7 @@ def decompress_dump_file(dump_path: str) -> subprocess.Popen:
         raise ValueError("Dump file extension is not .bz2")
 
 
-def parse_dump_xml(ctx: "Wtp", dump_path: str, namespace_ids: Set[int]) -> None:
+def parse_dump_xml(ctx: "Wtp", dump_path: str, namespace_ids: set[int]) -> None:
     from lxml import etree
 
     with decompress_dump_file(dump_path) as p:
@@ -88,8 +88,8 @@ def parse_dump_xml(ctx: "Wtp", dump_path: str, namespace_ids: Set[int]) -> None:
 def process_dump(
     ctx: "Wtp",
     path: str,
-    namespace_ids: Set[int],
-    overwrite_folders: Optional[List[Path]] = None,
+    namespace_ids: set[int],
+    overwrite_folders: Optional[list[Path]] = None,
     skip_extract_dump: bool = False,
     save_pages_path: Optional[Path] = None,
     skip_analyze_templates: bool = False,
@@ -137,7 +137,7 @@ def process_dump(
 
 def analyze_and_overwrite_pages(
     ctx: "Wtp",
-    overwrite_folders: Optional[List[Path]],
+    overwrite_folders: Optional[list[Path]],
     skip_extract_dump: bool,
     skip_analyze_templates: bool,
 ) -> None:
@@ -162,7 +162,7 @@ def analyze_and_overwrite_pages(
 
 
 def overwrite_pages(
-    ctx: "Wtp", folder_paths: List[Path], do_overwrite: bool
+    ctx: "Wtp", folder_paths: list[Path], do_overwrite: bool
 ) -> bool:
     """
     Read text from passed paths and overwrite the correspond pages in database.
@@ -277,7 +277,7 @@ def path_is_on_windows_partition(path: Path) -> bool:
     )
 
 
-def get_windows_invalid_chars() -> Set[str]:
+def get_windows_invalid_chars() -> set[str]:
     return set(map(chr, range(0x00, 0x20))) | set(
         ["/", "\\", ":", "*", "?", '"', "<", ">", "|"]
     )

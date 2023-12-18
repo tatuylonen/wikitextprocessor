@@ -9,13 +9,9 @@ from collections.abc import Iterator
 from typing import (
     TYPE_CHECKING,
     Callable,
-    Dict,
-    List,
     Literal,
     Optional,
     overload,
-    Set,
-    Tuple,
     Union,
 )
 
@@ -34,7 +30,7 @@ if TYPE_CHECKING:
 
 
 # Set of tags that can be parents of "flow" parents
-HTML_FLOW_PARENTS: Set[str] = set(
+HTML_FLOW_PARENTS: set[str] = set(
     k
     for k, v in ALLOWED_HTML_TAGS.items()
     if "flow" in v.get("content", []) or "*" in v.get("content", [])
@@ -42,7 +38,7 @@ HTML_FLOW_PARENTS: Set[str] = set(
 
 # Set of tags that can be parents of "phrasing" parents (includes those
 # of flow parents since flow implies phrasing)
-HTML_PHRASING_PARENTS: Set[str] = set(
+HTML_PHRASING_PARENTS: set[str] = set(
     k
     for k, v in ALLOWED_HTML_TAGS.items()
     if "phrasing" in v.get("content", [])
@@ -51,7 +47,7 @@ HTML_PHRASING_PARENTS: Set[str] = set(
 )
 
 # Mapping from HTML tag or "text" to permitted parent tags
-HTML_PERMITTED_PARENTS: Dict[str, Set[str]] = {
+HTML_PERMITTED_PARENTS: dict[str, set[str]] = {
     k: (
         (
             HTML_FLOW_PARENTS
@@ -70,7 +66,7 @@ HTML_PERMITTED_PARENTS: Dict[str, Set[str]] = {
 HTML_PERMITTED_PARENTS["text"] = HTML_PHRASING_PARENTS
 
 # Set of HTML tag like names that we treat as literal without any warning
-SILENT_HTML_LIKE: Set[str] = set(
+SILENT_HTML_LIKE: set[str] = set(
     [
         "gu",
         "qu",
@@ -80,7 +76,7 @@ SILENT_HTML_LIKE: Set[str] = set(
 
 
 # MediaWiki magic words.  See https://www.mediawiki.org/wiki/Help:Magic_words
-MAGIC_WORDS: Set[str] = set(
+MAGIC_WORDS: set[str] = set(
     [
         "__NOTOC__",
         "__FORCETOC__",
@@ -230,7 +226,7 @@ class NodeKind(enum.Flag):
 
 
 # Maps subtitle token to its kind
-SUBTITLE_TO_KIND: Dict[str, NodeKind] = {
+SUBTITLE_TO_KIND: dict[str, NodeKind] = {
     "=": NodeKind.LEVEL1,
     "==": NodeKind.LEVEL2,
     "===": NodeKind.LEVEL3,
@@ -242,13 +238,13 @@ SUBTITLE_TO_KIND: Dict[str, NodeKind] = {
 
 # Maps subtitle node kind to its level.  Keys include all title/subtitle nodes
 # (this is also used like a set of all subtitle kinds, including the root).
-KIND_TO_LEVEL: Dict[NodeKind, int] = {
+KIND_TO_LEVEL: dict[NodeKind, int] = {
     v: len(k) for k, v in SUBTITLE_TO_KIND.items()
 }
 KIND_TO_LEVEL[NodeKind.ROOT] = 0
 
 # Node types that have arguments separated by the vertical bar (|)
-HAVE_ARGS_KINDS: Tuple[NodeKind, ...] = (
+HAVE_ARGS_KINDS: tuple[NodeKind, ...] = (
     NodeKind.LINK,
     NodeKind.TEMPLATE,
     NodeKind.TEMPLATE_ARG,
@@ -258,7 +254,7 @@ HAVE_ARGS_KINDS: Tuple[NodeKind, ...] = (
 
 
 # Node kinds that generate an error if they have not been properly closed.
-MUST_CLOSE_KINDS: Tuple[NodeKind, ...] = (
+MUST_CLOSE_KINDS: tuple[NodeKind, ...] = (
     NodeKind.ITALIC,
     NodeKind.BOLD,
     NodeKind.PRE,
@@ -289,7 +285,7 @@ inside_html_tags_re = re.compile(
 # Sometimes, args.append(children) happens, so those
 # lists can contain at least strings and WikiNodes.
 # I think there is no third list layer, maximum is args[x][y].
-WikiNodeChildrenList = List[Union[str, "WikiNode"]]
+WikiNodeChildrenList = list[Union[str, "WikiNode"]]
 WikiNodeArgsSublist = WikiNodeChildrenList  # XXX Currently identical to above
 # WikiNodeArgs = Union[str, # Just a string
 #                      List[
@@ -299,8 +295,8 @@ WikiNodeArgsSublist = WikiNodeChildrenList  # XXX Currently identical to above
 #                         ]
 #                     ]
 WikiNodeStrArg = str
-WikiNodeListArgs = List[Union[WikiNodeArgsSublist, WikiNodeChildrenList]]
-WikiNodeHTMLAttrsDict = Dict[str, str]  # XXX Probably not just HTML...
+WikiNodeListArgs = list[Union[WikiNodeArgsSublist, WikiNodeChildrenList]]
+WikiNodeHTMLAttrsDict = dict[str, str]  # XXX Probably not just HTML...
 
 
 class WikiNode:
@@ -342,7 +338,7 @@ class WikiNode:
 
     @overload
     def find_child(self, target_kinds: NodeKind, with_index: Literal[True]
-        ) -> Iterator[Tuple[int, "WikiNode"]]: ...
+        ) -> Iterator[tuple[int, "WikiNode"]]: ...
 
     @overload
     def find_child(
@@ -354,7 +350,7 @@ class WikiNode:
         self,
         target_kinds: NodeKind,
         with_index: bool = False,
-    ) -> Iterator[Union["WikiNode", Tuple[int, "WikiNode"]]]:
+    ) -> Iterator[Union["WikiNode", tuple[int, "WikiNode"]]]:
         """
         Find direct child nodes that match the target node type, also return
         the node index that could be used to divide child node list.
@@ -437,7 +433,7 @@ class WikiNode:
         with_index: Literal[False] = ...,
         attr_name: str = ...,
         attr_value: str = ...,
-    ) -> Iterator[Tuple[int, "HTMLNode"]]: ...
+    ) -> Iterator[tuple[int, "HTMLNode"]]: ...
 
     def find_html(
         self,
@@ -445,7 +441,7 @@ class WikiNode:
         with_index: bool = False,
         attr_name: str = "",
         attr_value: str = "",
-    ) -> Iterator[Union["HTMLNode", Tuple[int, "HTMLNode"]]]:
+    ) -> Iterator[Union["HTMLNode", tuple[int, "HTMLNode"]]]:
         # Find direct HTMl child nodes match the target tag and attribute.
         for index, node in self.find_child(NodeKind.HTML, True):
             if TYPE_CHECKING:
@@ -482,9 +478,9 @@ class TemplateNode(WikiNode):
     def __init__(self, linenum: int):
         super().__init__(NodeKind.TEMPLATE, linenum)
         self._template_parameters: Optional[
-            Dict[
+            dict[
                 Union[str, int],
-                Union[str, WikiNode, List[Union[str, WikiNode]]],
+                Union[str, WikiNode, list[Union[str, WikiNode]]],
             ]
         ] = None
 
@@ -495,8 +491,8 @@ class TemplateNode(WikiNode):
     @property
     def template_parameters(
         self,
-    ) -> Dict[
-        Union[str, int], Union[str, WikiNode, List[Union[str, WikiNode]]]
+    ) -> dict[
+        Union[str, int], Union[str, WikiNode, list[Union[str, WikiNode]]]
     ]:
         # Convert the list type arguments to a dictionary.
         if self._template_parameters is not None:
@@ -621,7 +617,7 @@ def _parser_merge_str_children(ctx: "Wtp") -> None:
     characters are expanded and nowiki characters removed."""
     node = ctx.parser_stack[-1]
     new_children: WikiNodeChildrenList = []
-    strings: List[str] = []
+    strings: list[str] = []
     for x in node.children:
         if isinstance(x, str):
             strings.append(x)
@@ -1280,7 +1276,7 @@ attr_assignments_re = re.compile(
 )  # to account for spaces between entities
 
 
-def check_for_attributes(ctx: "Wtp", node: WikiNode) -> Tuple[bool, str]:
+def check_for_attributes(ctx: "Wtp", node: WikiNode) -> tuple[bool, str]:
     """Check if the children of this node conform to the format of
     attribute assignment in tables"""
 
@@ -2009,7 +2005,7 @@ list_prefix_re = re.compile(r"[*:;#]+")
 
 # Dictionary mapping fixed form tokens to their handler functions.
 # Tokens that have variable form are handled in the code in token_iter().
-tokenops: Dict[str, Callable[["Wtp", str], None]] = {
+tokenops: dict[str, Callable[["Wtp", str], None]] = {
     "'''": bold_fn,
     "''": italic_fn,
     "[": elink_start_fn,
@@ -2033,7 +2029,7 @@ for x in MAGIC_WORDS:
     tokenops[x] = magicword_fn
 
 
-def bold_follows(parts: List[str], i: int) -> bool:
+def bold_follows(parts: list[str], i: int) -> bool:
     """Checks if there is a bold (''') in parts after parts[i].  We allow
     intervening italics ('')."""
     parts = parts[i + 1 :]
@@ -2045,7 +2041,7 @@ def bold_follows(parts: List[str], i: int) -> bool:
     return False
 
 
-def token_iter(ctx: "Wtp", text: str) -> Iterator[Tuple[bool, str]]:
+def token_iter(ctx: "Wtp", text: str) -> Iterator[tuple[bool, str]]:
     """Tokenizes MediaWiki page content.  This yields (is_token, text) for
     each token.  ``is_token`` is False for text and True for other tokens.
     Wikitext bold and italic are interpreted WITHIN A SINGLE LINE.  It seems
@@ -2055,7 +2051,7 @@ def token_iter(ctx: "Wtp", text: str) -> Iterator[Tuple[bool, str]]:
     # Replace single quotes inside HTML tags with MAGIC_SQUOTE_CHAR
     tag_parts = re.split(inside_html_tags_re, text)
     if len(tag_parts) > 1:
-        new_parts: List[str] = []
+        new_parts: list[str] = []
         for tp in tag_parts:
             if re.match(inside_html_tags_re, tp):
                 # we're inside an HTML tag

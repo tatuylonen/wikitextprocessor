@@ -25,12 +25,9 @@ from typing import (
     TYPE_CHECKING,
     Any,
     Callable,
-    Dict,
     ItemsView,
     Iterable,
-    List,
     Optional,
-    Tuple,
     Union,
 )
 
@@ -46,7 +43,7 @@ if TYPE_CHECKING:
     from .core import NamespaceDataEntry, Page, ParentData, Wtp
 
 # List of search paths for Lua libraries
-BUILTIN_LUA_SEARCH_PATHS: List[Tuple[str, List[str]]] = [
+BUILTIN_LUA_SEARCH_PATHS: list[tuple[str, list[str]]] = [
     # [path, ignore_modules]
     (".", ["string", "debug"]),
     ("mediawiki-extensions-Scribunto/includes/Engines/LuaCommon/lualib", []),
@@ -111,7 +108,7 @@ def mw_text_decode(text: str, decodeNamedEntities: bool) -> str:
         return html.unescape(text)
 
     # Otherwise decode only selected entities
-    parts: List[str] = []
+    parts: list[str] = []
     pos = 0
     for m in re.finditer(r"&(lt|gt|amp|quot|nbsp);", text):
         if pos < m.start():
@@ -136,7 +133,7 @@ def mw_text_decode(text: str, decodeNamedEntities: bool) -> str:
 
 def mw_text_encode(text: str, charset: str) -> str:
     """Implements the mw.text.encode function for Lua code."""
-    parts: List[str] = []
+    parts: list[str] = []
     for ch in str(text):
         if ch in charset:
             chn = ord(ch)
@@ -149,14 +146,14 @@ def mw_text_encode(text: str, charset: str) -> str:
     return "".join(parts)
 
 
-def mw_text_jsondecode(ctx: "Wtp", s: str, *rest: int) -> Dict[Any, Any]:
+def mw_text_jsondecode(ctx: "Wtp", s: str, *rest: int) -> dict[Any, Any]:
     flags = int(rest[0]) if rest else 0
-    value: Dict = json.loads(s)
+    value: dict = json.loads(s)
     assert isinstance(ctx.lua, lupa.LuaRuntime)
     # Assign locally to assure type-checker this exists
     table_from = ctx.lua.table_from
 
-    def recurse(x: Union[List, Tuple, Dict]) -> Any:
+    def recurse(x: Union[list, tuple, dict]) -> Any:
         if isinstance(x, (list, tuple)):
             return table_from(list(map(recurse, x)))
         if not isinstance(x, dict):
@@ -267,7 +264,7 @@ def call_set_functions(
     ctx: "Wtp", set_functions: Callable[["_LuaTable"], None]
 ) -> None:
     assert ctx.lua is not None
-    def debug_mw_text_jsondecode(x: str, *rest: int) -> Dict[Any, Any]:
+    def debug_mw_text_jsondecode(x: str, *rest: int) -> dict[Any, Any]:
         return mw_text_jsondecode(ctx, x, *rest)
 
     def debug_get_page_info(title: str, ns_id: int, *bad_args) -> "_LuaTable":
@@ -470,9 +467,9 @@ def call_lua_sandbox(
     modfn = expander(invoke_args[1]).strip()
 
     def make_frame(
-        pframe: Union[None, Dict, "_LuaTable"],
+        pframe: Union[None, dict, "_LuaTable"],
         title: str,
-        args: Union[Dict[Union[str, int], str], Tuple, List],
+        args: Union[dict[Union[str, int], str], tuple, list],
     ) -> "_LuaTable":
         assert isinstance(title, str)
         assert isinstance(args, (list, tuple, dict))
@@ -534,7 +531,7 @@ def call_lua_sandbox(
             if not isinstance(dt, (str, int, float, type(None))):
                 name: str = str(dt["name"] or "")
                 content: str = str(dt["content"] or "")
-                attrs: Union[Dict[Union[int, str], str], str, "_LuaTable"] = (
+                attrs: Union[dict[Union[int, str], str], str, "_LuaTable"] = (
                     dt["args"] or {}
                 )
             elif len(args) == 1:
@@ -582,11 +579,11 @@ def call_lua_sandbox(
                     "lua callParserFunction missing name", sortid="luaexec/506"
                 )
                 return ""
-            name_or_table: Union[str, "_LuaTable", Dict] = args[0]
-            new_args: Union[Dict, List]
+            name_or_table: Union[str, "_LuaTable", dict] = args[0]
+            new_args: Union[dict, list]
             if not isinstance(name_or_table, str):
                 # name is _LuaTable
-                new_args1: Union["_LuaTable", Dict, str] = name_or_table["args"]
+                new_args1: Union["_LuaTable", dict, str] = name_or_table["args"]
                 if isinstance(new_args1, str):
                     new_args = {1: new_args1}
                 else:
@@ -654,7 +651,7 @@ def call_lua_sandbox(
                 )
                 return ""
             if TYPE_CHECKING:
-                assert isinstance(dt, (_LuaTable, Dict))
+                assert isinstance(dt, (_LuaTable, dict))
             title = dt["title"] or ""
             args2 = dt["args"] or {}
             new_args = [title]
@@ -709,7 +706,7 @@ def call_lua_sandbox(
             return title
 
         # Create frame object as dictionary with default value None
-        frame: Dict[str, Union["_LuaTable", Callable]] = {}
+        frame: dict[str, Union["_LuaTable", Callable]] = {}
         frame["args"] = frame_args_lt
         frame["callParserFunction"] = callParserFunction
         frame["extensionTag"] = extensionTag
@@ -725,7 +722,7 @@ def call_lua_sandbox(
     # (for module being called)
     if parent is not None:
         parent_title: str
-        page_args: Union["_LuaTable", Dict]
+        page_args: Union["_LuaTable", dict]
         parent_title, page_args = parent
         expanded_key_args = {}
         for k, v in page_args.items():
@@ -746,7 +743,7 @@ def call_lua_sandbox(
     lua_exception: Optional[Exception] = None
     try:
         ctx.lua_frame_stack.append(frame)
-        ret: Tuple[bool, str] = ctx.lua_invoke(
+        ret: tuple[bool, str] = ctx.lua_invoke(
             modname, modfn, frame, ctx.title, timeout
         )
         # Lua functions returning multiple values will return a tuple
