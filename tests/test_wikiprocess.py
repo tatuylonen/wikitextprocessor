@@ -4201,6 +4201,7 @@ return export
         for wikitext, result in tests:
             with self.subTest(wikitext=wikitext, result=result):
                 self.assertEqual(self.ctx.expand(wikitext), result)
+        mock_get_interwiki_data.assert_called_once()
 
 
 # XXX Test template_fn

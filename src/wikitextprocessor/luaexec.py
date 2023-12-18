@@ -4,10 +4,8 @@
 # Copyright (c) Tatu Ylonen.  See file LICENSE and https://ylonen.org
 
 import copy
-import functools
 import html
 import json
-import logging
 import multiprocessing  # XXX debug, remove me
 import re
 import sys
@@ -332,10 +330,10 @@ def call_set_functions(
                 "mw_python_fetch_language_name": debug_fetch_language_name,
                 "mw_python_fetch_language_names": debug_fetch_language_names,
                 "mw_wikibase_getlabel_python": partial(
-                    mw_wikibase_getlabel, lang_code=ctx.lang_code
+                    mw_wikibase_getlabel, ctx
                 ),
                 "mw_wikibase_getdesc_python": partial(
-                    mw_wikibase_getdescription, lang_code=ctx.lang_code
+                    mw_wikibase_getdescription, ctx
                 ),
                 "mw_current_title_python": partial(get_current_title, ctx),
                 "current_frame_python": partial(
@@ -824,54 +822,16 @@ def call_lua_sandbox(
     )
 
 
-@functools.cache
-def query_wikidata(item_id: str, lang_code: str) -> Optional[dict]:
-    import requests
+def mw_wikibase_getlabel(wtp: "Wtp", item_id: str) -> str:
+    from .wikidata import query_item_label
 
-    r = requests.get(
-        "https://query.wikidata.org/sparql",
-        params={
-            "query": f"""
-            SELECT ?itemLabel ?itemDescription WHERE {{
-              VALUES ?item {{ wd:{item_id} }}.
-              SERVICE wikibase:label {{
-                bd:serviceParam
-                wikibase:language "{lang_code},[AUTO_LANGUAGE],en".
-              }}
-            }}
-            """,
-            "format": "json",
-        },
-        headers={"user-agent": "wikitextprocessor"},
-    )
-
-    if r.ok:
-        result = r.json()
-        # print(f"WIKIDATA QUERY succeeded: {item_id=}, {result=}")
-        for binding in result.get("results", {}).get("bindings", {}):
-            return binding
-    else:
-        logging.error(f"WIKIDATA QUERY failed: {item_id=} {r.text=}")
-        return None
-    return None
+    return query_item_label(wtp, item_id)
 
 
-def mw_wikibase_getlabel(item_id: str, lang_code: str = "en") -> Optional[str]:
-    item_data = query_wikidata(item_id, lang_code)
-    if item_data is not None:
-        return item_data.get("itemLabel", {}).get("value", item_id)
-    else:
-        return None
+def mw_wikibase_getdescription(wtp: "Wtp", item_id: str) -> str:
+    from .wikidata import query_item_desc
 
-
-def mw_wikibase_getdescription(
-    item_id: str, lang_code: str = "en"
-) -> Optional[str]:
-    item_data = query_wikidata(item_id, lang_code)
-    if item_data is not None:
-        return item_data.get("itemDescription", {}).get("value", item_id)
-    else:
-        return None
+    return query_item_desc(wtp, item_id)
 
 
 def top_lua_stack(env_stack: deque) -> Optional["_LuaTable"]:

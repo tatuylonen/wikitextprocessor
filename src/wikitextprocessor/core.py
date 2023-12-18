@@ -252,6 +252,8 @@ class Wtp:
         self.project = project
 
     def create_db(self) -> None:
+        from .wikidata import init_wikidata_cache
+
         if self.db_path is None:
             temp_file = tempfile.NamedTemporaryFile(
                 prefix="wikitextprocessor_tempdb", delete=False
@@ -278,6 +280,7 @@ class Wtp:
         PRAGMA journal_mode = WAL;
         """
         )
+        init_wikidata_cache(self)
 
     @property
     def backup_db_path(self) -> Path:

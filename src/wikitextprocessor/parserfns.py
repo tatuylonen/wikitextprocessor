@@ -2,11 +2,9 @@
 #
 # Copyright (c) 2020-2022 Tatu Ylonen.  See file LICENSE and https://ylonen.org
 
-import functools
 import html
 import math
 import re
-import sys
 import urllib.parse
 from collections.abc import Callable, Sequence
 from datetime import datetime, timezone
@@ -1428,61 +1426,19 @@ def unimplemented_fn(
     return "{{" + fn_name + ":" + "|".join(map(str, args)) + "}}"
 
 
-@functools.cache
-def _query_wikidata_statement(prop: str, item: str, lang_code: str) -> str:
-    import requests
-
-    if re.fullmatch(r"P\d+", prop):
-        query = f"""SELECT ?valueLabel WHERE {{
-          wd:{item} wdt:{prop} ?value.
-          SERVICE wikibase:label {{
-            bd:serviceParam wikibase:language "{lang_code},[AUTO_LANGUAGE],en".
-          }}
-        }}
-        """
-    else:
-        # property label is used
-        query = f"""
-        SELECT ?valueLabel WHERE {{
-          wd:{item} ?prop ?value.
-          ?p wikibase:directClaim ?prop;
-            rdfs:label "{prop}"@{lang_code}.
-          SERVICE wikibase:label {{
-            bd:serviceParam wikibase:language "{lang_code},[AUTO_LANGUAGE],en".
-          }}
-        }}
-        """
-    r = requests.get(
-        "https://query.wikidata.org/sparql",
-        params={"query": query, "format": "json"},
-        headers={"user-agent": "wikitextprocessor"},
-    )
-    if r.ok:
-        result = r.json()
-        for binding in result.get("results", {}).get("bindings", []):
-            value = binding.get("valueLabel", {}).get("value", "")
-            if prop in {"P577", "publication date"}:
-                if sys.version_info < (3, 11):
-                    value = value.removesuffix("Z")
-                try:
-                    value = datetime.fromisoformat(value).year
-                except ValueError:
-                    value = ""
-            return value
-    return ""
-
-
 def statements_fn(
-    ctx: "Wtp", fn_name: str, args: list[str], expander: Callable[[str], str]
+    wtp: "Wtp", fn_name: str, args: list[str], expander: Callable[[str], str]
 ) -> str:
     # https://www.wikidata.org/wiki/Wikidata:How_to_use_data_on_Wikimedia_projects
+    from .wikidata import statement_query
+
     prop = ""
     wikidata_item = ""
     if len(args) > 0:
         prop = args[0]
     if len(args) > 1 and args[1].startswith("from="):
         wikidata_item = args[1].removeprefix("from=")
-    return _query_wikidata_statement(prop, wikidata_item, ctx.lang_code)
+    return statement_query(wtp, prop, wikidata_item, wtp.lang_code)
 
 
 def pagelanguage_fn(
