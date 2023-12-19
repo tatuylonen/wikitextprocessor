@@ -631,7 +631,7 @@ def fullurl_fn(
     if ":" in page_name:
         quote_index = page_name.index(":")
         interwiki_prefix = page_name[:quote_index]
-        interwiki_map = get_interwiki_map(ctx.lang_code, ctx.project)
+        interwiki_map = get_interwiki_map(ctx)
         if interwiki_prefix in interwiki_map:
             page_name = page_name[quote_index + 1 :]
             url = interwiki_map[interwiki_prefix]["url"]
