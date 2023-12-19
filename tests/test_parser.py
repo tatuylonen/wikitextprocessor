@@ -3,7 +3,7 @@
 # Copyright (c) 2020-2022 Tatu Ylonen.  See file LICENSE and https://ylonen.org
 
 import unittest
-from unittest.mock import Mock, patch
+from unittest.mock import patch
 
 from wikitextprocessor import Wtp
 from wikitextprocessor.parser import (
@@ -2463,54 +2463,50 @@ def foo(x):
         self.assertEqual(html_node.tag, "th")
         self.assertEqual(html_node.attrs, {"colspan": "2"})
 
-    @patch("requests.get")
-    def test_statements_parser_func_prop_number(self, mock_requests_get):
-        mock_result = Mock()
-        mock_result.json = Mock(
-            return_value={
-                "head": {"vars": ["value"]},
-                "results": {
-                    "bindings": [
-                        {
-                            "valueLabel": {
-                                "xml:lang": "en",
-                                "type": "literal",
-                                "value": "Douglas Noël Adams",
-                            }
-                        }
-                    ]
-                },
-            }
-        )
-        mock_requests_get.return_value = mock_result
+    @patch(
+        "wikitextprocessor.wikidata.query_wikidata",
+        return_value={
+            "valueLabel": {"type": "literal", "value": "Douglas Noël Adams"},
+            "itemLabel": {
+                "xml:lang": "en",
+                "type": "literal",
+                "value": "Douglas Adams",
+            },
+            "itemDescription": {
+                "xml:lang": "en",
+                "type": "literal",
+                "value": "English author and humourist (1952–2001)",
+            },
+            "propLabel": {
+                "xml:lang": "en",
+                "type": "literal",
+                "value": "birth name",
+            },
+        },
+    )
+    def test_statements_parser_func(self, mock_f):
         self.ctx.start_page("Don't panic")
         expanded = self.ctx.expand("{{#statements:P1477|from=Q42}}")
         self.assertEqual(expanded, "Douglas Noël Adams")
         expanded = self.ctx.expand("{{#statements:birth name|from=Q42}}")
         self.assertEqual(expanded, "Douglas Noël Adams")
+        mock_f.assert_called_once()  # use db cache
 
-    @patch("requests.get")
-    def test_statements_publication_date(self, mock_requests_get):
+    @patch(
+        "wikitextprocessor.wikidata.query_wikidata",
+        return_value={
+            "valueLabel": {"type": "literal", "value": "1868-01-01T00:00:00Z"},
+            "itemLabel": {"type": "literal", "value": "Q114098115"},
+            "propLabel": {
+                "xml:lang": "en",
+                "type": "literal",
+                "value": "publication date",
+            },
+        },
+    )
+    def test_statements_publication_date(self, mock_f):
         # https://en.wiktionary.org/wiki/расплавить
         # https://en.wiktionary.org/wiki/Template:R:ru:fr:Ganot1868
-        mock_result = Mock()
-        mock_result.json = Mock(
-            return_value={
-                "head": {"vars": ["value", "valueLabel"]},
-                "results": {
-                    "bindings": [
-                        {
-                            "valueLabel": {
-                                "datatype": "http://www.w3.org/2001/XMLSchema#dateTime",
-                                "type": "literal",
-                                "value": "1868-01-01T00:00:00Z",
-                            },
-                        }
-                    ]
-                },
-            }
-        )
-        mock_requests_get.return_value = mock_result
         self.ctx.start_page("расплавить")
         expanded = self.ctx.expand("{{#statements:P577|from=Q114098115}}")
         self.assertEqual(expanded, "1868")

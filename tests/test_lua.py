@@ -160,3 +160,34 @@ class TestLua(TestCase):
             self.wtp.expand("{{#invoke:test|test}}"),
             "https://en.wikipedia.org/wiki/$1",
         )
+
+    @patch(
+        "wikitextprocessor.wikidata.query_wikidata",
+        return_value={
+            "itemLabel": {"value": "Humphry Davy"},
+            "itemDescription": {"value": "British chemist"},
+        },
+    )
+    def test_wikibase_label_and_desc(self, mock_func):
+        # https://en.wiktionary.org/wiki/sodium
+        # https://en.wiktionary.org/wiki/Module:coinage
+        self.wtp.add_page(
+            "Module:test",
+            828,
+            """
+        local export = {}
+
+        function export.test()
+          local coiner = "Q131761"
+          return mw.wikibase.getDescription(coiner) .. " " .. mw.wikibase.getLabel(coiner)
+        end
+
+        return export
+        """,
+        )
+        self.wtp.start_page("test")
+        self.assertEqual(
+            self.wtp.expand("{{#invoke:test|test}}"),
+            "British chemist Humphry Davy",
+        )
+        mock_func.assert_called_once()  # use db cache

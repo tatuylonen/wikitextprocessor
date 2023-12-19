@@ -4173,10 +4173,15 @@ return export
         self.assertEqual(self.ctx.get_page(""), None)
 
     @patch(
-        "wikitextprocessor.parserfns.get_interwiki_map",
-        return_value={"s": {"url": "https://en.wikisource.org/wiki/$1"}}
+        "wikitextprocessor.interwiki.get_interwiki_data",
+        return_value=[
+            {"prefix": "s", "url": "https://en.wikisource.org/wiki/$1"}
+        ],
     )
-    def test_fullurl_interwiki(self, mock_get_interwiki_map):
+    def test_fullurl_interwiki(self, mock_get_interwiki_data):
+        from wikitextprocessor.interwiki import init_interwiki_map
+
+        init_interwiki_map(self.ctx)
         tests = [
             [
                 "{{fullurl:Category:Top level}}",
@@ -4201,6 +4206,7 @@ return export
         for wikitext, result in tests:
             with self.subTest(wikitext=wikitext, result=result):
                 self.assertEqual(self.ctx.expand(wikitext), result)
+        mock_get_interwiki_data.assert_called_once()
 
 
 # XXX Test template_fn
