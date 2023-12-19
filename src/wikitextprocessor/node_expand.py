@@ -6,10 +6,7 @@ import re
 import urllib.parse
 from typing import (
                    Callable,
-                   Dict,
-                   List,
                    Optional,
-                   Tuple,
                    TYPE_CHECKING,
                    Union,
                    )
@@ -26,7 +23,7 @@ NodeHandlerFnCallable = Callable[[WikiNode],
                                 Union[None, str, list, tuple, WikiNode]
                               ]
 
-kind_to_level: Dict[NodeKind, str] = {
+kind_to_level: dict[NodeKind, str] = {
     NodeKind.LEVEL2: "==",
     NodeKind.LEVEL3: "===",
     NodeKind.LEVEL4: "====",
@@ -36,7 +33,7 @@ kind_to_level: Dict[NodeKind, str] = {
 
 
 def to_attrs(node: WikiNode) -> str:
-    parts: List[str] = []
+    parts: list[str] = []
     for k, v in node.attrs.items():
         k = str(k)
         if not v:
@@ -58,7 +55,7 @@ def to_wikitext(node: WikiNode,
     WikiNodes in the returned value."""
     assert node_handler_fn is None or callable(node_handler_fn)
 
-    def recurse(node: Union[str, WikiNode, List, Tuple]) -> str:
+    def recurse(node: Union[str, WikiNode, list, tuple]) -> str:
         if isinstance(node, str):
             # Certain constructs needs to be protected so that they don't get
             # parsed when we convert back and forth between wikitext and parsed
@@ -79,7 +76,7 @@ def to_wikitext(node: WikiNode,
                 return recurse(ret)
 
         kind = node.kind
-        parts: List[str] = []
+        parts: list[str] = []
         if kind in kind_to_level:
             tag = kind_to_level[kind]
             t = recurse(node.largs)

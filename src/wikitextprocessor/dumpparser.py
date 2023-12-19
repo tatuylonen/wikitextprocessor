@@ -43,7 +43,7 @@ def parse_dump_xml(wtp: "Wtp", dump_path: str, namespace_ids: set[int]) -> None:
         namespaces = {None: namespace_str}
         page_nums = 0
         for _, page_element in etree.iterparse(
-            p.stdout, tag=f"{{{namespace_str}}}page"
+            p.stdout, tag=f"{{{namespace_str}}}page" # type: ignore[arg-type]
         ):
             title = page_element.findtext("title", "", namespaces)
             namespace_id = int(page_element.findtext("ns", "0", namespaces))
@@ -118,6 +118,7 @@ def process_dump(
 
     # Add default templates
     template_ns = wtp.NAMESPACE_DATA.get("Template")
+    assert template_ns is not None
     template_ns_id = template_ns["id"]
     template_ns_local_name = template_ns["name"]
     wtp.add_page(  # magic word

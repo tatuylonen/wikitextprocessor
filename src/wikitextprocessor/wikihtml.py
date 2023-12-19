@@ -24,17 +24,17 @@
 # close-next lists tags that automatically close this tag.  Closing a
 # parent tag will also silently close them.  Otherwise a missing end tag
 # results in an error message.
-from typing import Dict, List, TypedDict 
+from typing import TypedDict 
 
 HTMLTagData = TypedDict('HTMLTagData',
-                        {"parents": List[str],
-                         "content": List[str],
-                         "close-next": List[str],
+                        {"parents": list[str],
+                         "content": list[str],
+                         "close-next": list[str],
                          "no-end-tag": bool,
                         },
                          total=False) # Do not require all to be present
 
-ALLOWED_HTML_TAGS: Dict[str, HTMLTagData] = {
+ALLOWED_HTML_TAGS: dict[str, HTMLTagData] = {
     "a": {
         "parents": ["phrasing"],
         "content": ["flow"]},
