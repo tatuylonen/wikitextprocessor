@@ -174,7 +174,7 @@ def save_item_cache(
     with wtp.db_conn:
         wtp.db_conn.execute(
             """
-            INSERT INTO wikidata_items (id, label, description)
+            INSERT OR IGNORE INTO wikidata_items (id, label, description)
             VALUES(?, ?, ?)
             """,
             (item_id, item_label, item_desc),
