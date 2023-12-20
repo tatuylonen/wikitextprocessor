@@ -9,7 +9,7 @@ def get_interwiki_data(wtp: "Wtp") -> list[dict[str, Union[str, bool]]]:
 
     r = requests.get(
         f"https://{wtp.lang_code}.{wtp.project}.org/w/api.php",
-        params={
+        params={  # type: ignore
             "action": "query",
             "meta": "siteinfo",
             "siprop": "interwikimap",

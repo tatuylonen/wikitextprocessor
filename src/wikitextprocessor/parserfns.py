@@ -634,7 +634,7 @@ def fullurl_fn(
         interwiki_map = get_interwiki_map(ctx)
         if interwiki_prefix in interwiki_map:
             page_name = page_name[quote_index + 1 :]
-            url = interwiki_map[interwiki_prefix]["url"]
+            url = interwiki_map[interwiki_prefix]["url"]  # type: ignore
 
     url = url.replace(
         "$1", urllib.parse.quote(page_name.replace(" ", "_"), safe=":/")

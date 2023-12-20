@@ -80,6 +80,10 @@ wikitextprocessor = [
 mypy_path = "typestubs"
 python_version = 3.9
 
+[[tool.mypy.overrides]]
+module = "importlib_resources.*"
+ignore_missing_imports = true
+
 [tool.coverage.run]
 branch = true
 omit = ["tests/*"]
