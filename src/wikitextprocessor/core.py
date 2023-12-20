@@ -247,8 +247,8 @@ class Wtp:
         self.linenum = 1
         self.pre_parse = False
         self.suppress_special = False
-        self.lua_env_stack: deque[Optional["_LuaTable"]] = deque()
-        self.lua_frame_stack: deque[Optional["_LuaTable"]] = deque()
+        self.lua_env_stack: deque["_LuaTable"] = deque()
+        self.lua_frame_stack: deque["_LuaTable"] = deque()
         self.project = project
 
     def create_db(self) -> None:
