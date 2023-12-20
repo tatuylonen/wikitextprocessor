@@ -1436,9 +1436,9 @@ def statements_fn(
     prop = ""
     wikidata_item = ""
     if len(args) > 0:
-        prop = args[0]
+        prop = expander(args[0])
     if len(args) > 1 and args[1].startswith("from="):
-        wikidata_item = args[1].removeprefix("from=")
+        wikidata_item = expander(args[1]).removeprefix("from=")
     return statement_query(wtp, prop, wikidata_item, wtp.lang_code)
 
 
