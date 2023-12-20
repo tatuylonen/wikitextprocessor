@@ -19,7 +19,10 @@ def query_wikidata(wtp: "Wtp", query: str) -> dict[str, dict[str, str]]:
         result = r.json()
         for binding in result.get("results", {}).get("bindings", []):
             return binding
-    wtp.error("WIKIDATA QUERY failed", f"{query=} {r.text=}", "query_wikidata")
+    else:
+        wtp.error(
+            "WIKIDATA QUERY failed", f"{query=} {r.text=}", "query_wikidata"
+        )
     return {}
 
 

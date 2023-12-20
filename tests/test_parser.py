@@ -2495,6 +2495,12 @@ def foo(x):
         self.assertEqual(expanded, "Douglas Noël Adams")
         expanded = self.ctx.expand("{{#statements:birth name|from=Q42}}")
         self.assertEqual(expanded, "Douglas Noël Adams")
+        # Template: https://en.wiktionary.org/wiki/Template:R:ru:STsSRJa
+        # page: https://en.wiktionary.org/wiki/резвиться
+        expanded = self.ctx.expand(
+            "{{#statements:birth name|from={{#if: true| Q42}}}}"
+        )
+        self.assertEqual(expanded, "Douglas Noël Adams")
         mock_f.assert_called_once()  # use db cache
 
     @patch(
