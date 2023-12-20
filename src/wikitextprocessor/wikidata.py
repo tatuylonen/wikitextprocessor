@@ -101,9 +101,9 @@ def save_statement_cache(
 
 
 def statement_query(wtp: "Wtp", prop: str, item_id: str, lang_code: str) -> str:
-    result = get_statement_cache(wtp, prop, item_id)
-    if result is not None:
-        return result
+    cache_value = get_statement_cache(wtp, prop, item_id)
+    if cache_value is not None:
+        return cache_value
     if re.fullmatch(r"P\d+", prop):
         prop_is_id = True
         query = f"""
@@ -150,7 +150,7 @@ def statement_query(wtp: "Wtp", prop: str, item_id: str, lang_code: str) -> str:
         if sys.version_info < (3, 11):
             value = value.removesuffix("Z")
         try:
-            value = datetime.fromisoformat(value).year
+            value = str(datetime.fromisoformat(value).year)
         except ValueError:
             value = ""
     return value
@@ -192,7 +192,7 @@ def query_item(wtp: "Wtp", item_id: str, lang_code: str) -> tuple[str, str]:
             wikibase:language "{lang_code},[AUTO_LANGUAGE],en".
           }}
         }}
-        """
+        """,
     )
     label = query_result.get("itemLabel", {}).get("value", "")
     desc = query_result.get("itemDescription", {}).get("value", "")

@@ -8,11 +8,12 @@ from collections import defaultdict
 from collections.abc import Iterator
 from typing import (
     TYPE_CHECKING,
+    Any,
     Callable,
     Literal,
     Optional,
-    overload,
     Union,
+    overload,
 )
 
 from .common import (
@@ -337,15 +338,17 @@ class WikiNode:
         return self.__str__()
 
     @overload
-    def find_child(self, target_kinds: NodeKind, with_index: Literal[True]
-        ) -> Iterator[tuple[int, "WikiNode"]]: ...
+    def find_child(
+        self, target_kinds: NodeKind, with_index: Literal[True]
+    ) -> Iterator[tuple[int, "WikiNode"]]:
+        ...
 
     @overload
     def find_child(
-        self, target_kinds: NodeKind,
-        with_index: Literal[False] = ...
-        ) -> Iterator["WikiNode"]: ...
-    
+        self, target_kinds: NodeKind, with_index: Literal[False] = ...
+    ) -> Iterator["WikiNode"]:
+        ...
+
     def find_child(
         self,
         target_kinds: NodeKind,
@@ -422,18 +425,24 @@ class WikiNode:
                 yield node
 
     @overload
-    def find_html(self, target_tag: str,
+    def find_html(
+        self,
+        target_tag: str,
         with_index: Literal[True],
         attr_name: str,
         attr_value: str,
-    ) -> Iterator["HTMLNode"]: ...
+    ) -> Iterator["HTMLNode"]:
+        ...
 
     @overload
-    def find_html(self, target_tag: str,
+    def find_html(
+        self,
+        target_tag: str,
         with_index: Literal[False] = ...,
         attr_name: str = ...,
         attr_value: str = ...,
-    ) -> Iterator[tuple[int, "HTMLNode"]]: ...
+    ) -> Iterator[tuple[int, "HTMLNode"]]:
+        ...
 
     def find_html(
         self,
@@ -474,42 +483,35 @@ class WikiNode:
                 yield node
 
 
+TemplateParameters = dict[
+    Union[str, int],
+    Union[str, WikiNode, list[Union[str, WikiNode]]],
+]
+
+
 class TemplateNode(WikiNode):
     def __init__(self, linenum: int):
         super().__init__(NodeKind.TEMPLATE, linenum)
-        self._template_parameters: Optional[
-            dict[
-                Union[str, int],
-                Union[str, WikiNode, list[Union[str, WikiNode]]],
-            ]
-        ] = None
+        self._template_parameters: Optional[TemplateParameters] = None
 
     @property
     def template_name(self) -> str:
-        return self.largs[0][0].strip() # type: ignore[union-attr]
+        return self.largs[0][0].strip()  # type: ignore[union-attr]
 
     @property
-    def template_parameters(
-        self,
-    ) -> dict[
-        Union[str, int], Union[str, WikiNode, list[Union[str, WikiNode]]]
-    ]:
+    def template_parameters(self) -> TemplateParameters:
         # Convert the list type arguments to a dictionary.
         if self._template_parameters is not None:
             return self._template_parameters
 
-        final_parameters: dict[Union[str, int],
-                        Union[str, WikiNode, list[Union[str, WikiNode]]]] = dict()
-        parameters: defaultdict[Union[str, int],
-                        Union[list[Union[str, WikiNode]]]] = defaultdict(list)
-
+        parameters: Any = defaultdict(list)
         unnamed_parameter_index = 0
         for parameter_list in self.largs[1:]:
             is_named = False
             parameter_name: Union[str, int] = ""
             if len(parameter_list) == 0:
                 unnamed_parameter_index += 1
-                final_parameters[unnamed_parameter_index] = ""
+                parameters[unnamed_parameter_index] = ""
 
             for index, parameter in enumerate(parameter_list):
                 if index == 0:
@@ -541,22 +543,17 @@ class TemplateNode(WikiNode):
                                 )
                             continue
 
-                if (is_named and 
-                        (isinstance(parameter_name, int) 
-                        or len(parameter_name)) > 0
-                ):
+                if is_named and len(parameter_name) > 0:  # type: ignore
                     parameters[parameter_name].append(parameter)
                 else:
                     parameters[unnamed_parameter_index].append(parameter)
 
         for p_name, p_value in parameters.items():
             if isinstance(p_value, list) and len(p_value) == 1:
-                final_parameters[p_name] = p_value[0]
-            else:
-                final_parameters[p_name] = p_value
+                parameters[p_name] = p_value[0]
 
-        self._template_parameters = final_parameters 
-        return final_parameters
+        self._template_parameters = dict(parameters)
+        return self._template_parameters
 
 
 class HTMLNode(WikiNode):
@@ -1828,8 +1825,9 @@ def tag_fn(ctx: "Wtp", token: str) -> None:
         if name not in ALLOWED_HTML_TAGS:
             if not name.isdigit() and not SILENT_HTML_LIKE:
                 ctx.debug(
-                    "html tag <{}{}> not allowed in WikiText"
-                    "".format(name, "/" if also_end else ""),
+                    "html tag <{}{}> not allowed in WikiText" "".format(
+                        name, "/" if also_end else ""
+                    ),
                     sortid="parser/1251",
                 )
             text_fn(ctx, token)

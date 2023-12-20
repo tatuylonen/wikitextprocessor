@@ -38,7 +38,7 @@ from .parserfns import PARSER_FUNCTIONS, call_parser_function, tag_fn
 if TYPE_CHECKING:
     from lupa.lua51 import _LuaTable
 
-    from .core import NamespaceDataEntry, Page, ParentData, Wtp
+    from .core import NamespaceDataEntry, ParentData, Wtp
 
 # List of search paths for Lua libraries
 BUILTIN_LUA_SEARCH_PATHS: list[tuple[str, list[str]]] = [
@@ -262,6 +262,7 @@ def call_set_functions(
     ctx: "Wtp", set_functions: Callable[["_LuaTable"], None]
 ) -> None:
     assert ctx.lua is not None
+
     def debug_mw_text_jsondecode(x: str, *rest: int) -> dict[Any, Any]:
         return mw_text_jsondecode(ctx, x, *rest)
 
@@ -776,11 +777,11 @@ def call_lua_sandbox(
         text = unicodedata.normalize("NFC", text)
         return text
     if lua_exception is not None:
-        text = "".join(traceback.format_exception(
-                            type(lua_exception),
-                            lua_exception,
-                            lua_exception.__traceback__)
-                        ).strip()
+        text = "".join(
+            traceback.format_exception(
+                type(lua_exception), lua_exception, lua_exception.__traceback__
+            )
+        ).strip()
     elif not isinstance(text, str):
         text = str(text)
     msg = re.sub(r".*?:\d+: ", "", text.split("\n", 1)[0])
@@ -808,8 +809,9 @@ def call_lua_sandbox(
             )
         else:
             ctx.error(
-                "LUA error in #invoke"
-                "{} parent {}".format(invoke_args, parent),
+                "LUA error in #invoke" "{} parent {}".format(
+                    invoke_args, parent
+                ),
                 trace=text,
                 sortid="luaexec/683",
             )
@@ -817,8 +819,9 @@ def call_lua_sandbox(
     if "Lua timeout error" in text:
         msg = "Lua timeout error"
     return (
-        '<strong class="error">{} in Module:{} function {}'
-        "</strong>".format(msg, html.escape(modname), html.escape(modfn))
+        '<strong class="error">{} in Module:{} function {}' "</strong>".format(
+            msg, html.escape(modname), html.escape(modfn)
+        )
     )
 
 

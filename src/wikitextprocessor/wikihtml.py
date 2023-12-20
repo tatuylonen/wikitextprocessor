@@ -24,269 +24,190 @@
 # close-next lists tags that automatically close this tag.  Closing a
 # parent tag will also silently close them.  Otherwise a missing end tag
 # results in an error message.
-from typing import TypedDict 
+from typing import TypedDict
 
-HTMLTagData = TypedDict('HTMLTagData',
-                        {"parents": list[str],
-                         "content": list[str],
-                         "close-next": list[str],
-                         "no-end-tag": bool,
-                        },
-                         total=False) # Do not require all to be present
+HTMLTagData = TypedDict(
+    "HTMLTagData",
+    {
+        "parents": list[str],
+        "content": list[str],
+        "close-next": list[str],
+        "no-end-tag": bool,
+    },
+    total=False,
+)  # Do not require all to be present
 
 ALLOWED_HTML_TAGS: dict[str, HTMLTagData] = {
-    "a": {
-        "parents": ["phrasing"],
-        "content": ["flow"]},
-    "abbr": {
-        "parents": ["phrasing"],
-        "content": ["flow"]},
-    "b": {
-        "parents": ["phrasing"],
-        "content": ["flow"]},
-    "big": {
-        "parents": ["phrasing"],
-        "content": ["phrasing"]},
-    "bdi": {
-        "parents": ["phrasing"],
-        "content": ["flow"]},
-    "bdo": {
-        "parents": ["phrasing"],
-        "content": ["flow"]},
-    "blockquote": {
-        "parents": ["flow"],
-        "content": ["flow"]},
-    "br": {
-        "parents": ["phrasing"],
-        "no-end-tag": True,
-        "content": []},
-    "caption": {
-        "parents": ["table"],
-        "content": ["flow"]},
-    "center": {
-        "parents": ["flow"],
-        "content": ["phrasing"]},
-    "chem": {
-        "parents": ["phrasing"],
-        "content": ["phrasing"]},
-    "cite": {
-        "parents": ["phrasing"],
-        "content": ["phrasing"]},
-    "code": {
-        "parents": ["phrasing"],
-        "content": ["phrasing"]},
-    "data": {
-        "parents": ["phrasing"],
-        "content": ["phrasing"]},
+    "a": {"parents": ["phrasing"], "content": ["flow"]},
+    "abbr": {"parents": ["phrasing"], "content": ["flow"]},
+    "b": {"parents": ["phrasing"], "content": ["flow"]},
+    "big": {"parents": ["phrasing"], "content": ["phrasing"]},
+    "bdi": {"parents": ["phrasing"], "content": ["flow"]},
+    "bdo": {"parents": ["phrasing"], "content": ["flow"]},
+    "blockquote": {"parents": ["flow"], "content": ["flow"]},
+    "br": {"parents": ["phrasing"], "no-end-tag": True, "content": []},
+    "caption": {"parents": ["table"], "content": ["flow"]},
+    "center": {"parents": ["flow"], "content": ["phrasing"]},
+    "chem": {"parents": ["phrasing"], "content": ["phrasing"]},
+    "cite": {"parents": ["phrasing"], "content": ["phrasing"]},
+    "code": {"parents": ["phrasing"], "content": ["phrasing"]},
+    "data": {"parents": ["phrasing"], "content": ["phrasing"]},
     "dd": {
         "parents": ["dl", "div"],
         "close-next": ["dd", "dt"],
-        "content": ["flow"]},
-    "del": {
-        "parents": ["phrasing"],
-        "content": ["phrasing"]},
-    "dfn": {
-        "parents": ["phrasing"],
-        "content": ["phrasing"]},
-    "div": {
-        "parents": ["flow", "dl"],
-        "content": ["flow"]},
-    "dl": {
-        "parents": ["flow"],
-        "content": []},
+        "content": ["flow"],
+    },
+    "del": {"parents": ["phrasing"], "content": ["phrasing"]},
+    "dfn": {"parents": ["phrasing"], "content": ["phrasing"]},
+    "div": {"parents": ["flow", "dl"], "content": ["flow"]},
+    "dl": {"parents": ["flow"], "content": []},
     "dt": {
         "parents": ["dl", "div"],
         "close-next": ["dd", "dt"],
-        "content": ["flow"]},
-    "dynamicpagelist": {
-        "parents": ["flow"],
-        "content": ["phrasing"]},
-    "em": {
-        "parents": ["phrasing"],
-        "content": ["phrasing"]},
-    "font": {
-        "parents": ["phrasing"],
-        "content": ["phrasing"]},
-    "gallery": {
-        "parents": ["flow"],
-        "content": ["phrasing"]},
-    "h1": {
-        "parents": ["flow"],
-        "content": ["phrasing"]},
-    "h2": {
-        "parents": ["flow"],
-        "content": ["phrasing"]},
-    "h3": {
-        "parents": ["flow"],
-        "content": ["phrasing"]},
-    "h4": {
-        "parents": ["flow"],
-        "content": ["phrasing"]},
-    "h5": {
-        "parents": ["flow"],
-        "content": ["phrasing"]},
-    "h6": {
-        "parents": ["flow"],
-        "content": ["phrasing"]},
-    "hiero": {
-        "parents": ["phrasing"],
-        "content": ["phrasing"]},
-    "hr": {
-        "parents": ["flow"],
-        "no-end-tag": True,
-        "content": []},
-    "i": {
-        "parents": ["phrasing"],
-        "content": ["phrasing"]},
+        "content": ["flow"],
+    },
+    "dynamicpagelist": {"parents": ["flow"], "content": ["phrasing"]},
+    "em": {"parents": ["phrasing"], "content": ["phrasing"]},
+    "font": {"parents": ["phrasing"], "content": ["phrasing"]},
+    "gallery": {"parents": ["flow"], "content": ["phrasing"]},
+    "h1": {"parents": ["flow"], "content": ["phrasing"]},
+    "h2": {"parents": ["flow"], "content": ["phrasing"]},
+    "h3": {"parents": ["flow"], "content": ["phrasing"]},
+    "h4": {"parents": ["flow"], "content": ["phrasing"]},
+    "h5": {"parents": ["flow"], "content": ["phrasing"]},
+    "h6": {"parents": ["flow"], "content": ["phrasing"]},
+    "hiero": {"parents": ["phrasing"], "content": ["phrasing"]},
+    "hr": {"parents": ["flow"], "no-end-tag": True, "content": []},
+    "i": {"parents": ["phrasing"], "content": ["phrasing"]},
     # From ImageMap extension, see
     # https://www.mediawiki.org/wiki/Extension:ImageMap
-    "imagemap": {
-        "parents": ["phrasing"],
-        "content": ["phrasing"]},
-    "includeonly": {
-        "parents": ["*"],
-        "content": ["*"]},
+    "imagemap": {"parents": ["phrasing"], "content": ["phrasing"]},
+    "includeonly": {"parents": ["*"], "content": ["*"]},
     # From InputBox extension, see
     # https://www.mediawiki.org/wiki/Extension:InputBox
-    "inputbox": {
-        "parents": ["phrasing"],
-        "content": ["phrasing"]},
-    "ins": {
-        "parents": ["phrasing"],
-        "content": ["phrasing"]},
-    "kbd": {
-        "parents": ["phrasing"],
-        "content": ["phrasing"]},
+    "inputbox": {"parents": ["phrasing"], "content": ["phrasing"]},
+    "ins": {"parents": ["phrasing"], "content": ["phrasing"]},
+    "kbd": {"parents": ["phrasing"], "content": ["phrasing"]},
     "li": {
         "parents": ["ul", "ol", "menu"],
         "close-next": ["li"],
-        "content": ["flow"]},
-    "math": {
-        "parents": ["phrasing"],
-        "content": ["phrasing"]},
-    "mark": {
-        "parents": ["phrasing"],
-        "content": ["phrasing"]},
-    "noinclude": {
-        "parents": ["*"],
-        "content": ["*"]},
-    "ol": {
-        "parents": ["flow"],
-        "content": ["flow"]},
-    "onlyinclude": {
-        "parents": ["*"],
-        "content": ["*"]},
+        "content": ["flow"],
+    },
+    "math": {"parents": ["phrasing"], "content": ["phrasing"]},
+    "mark": {"parents": ["phrasing"], "content": ["phrasing"]},
+    "noinclude": {"parents": ["*"], "content": ["*"]},
+    "ol": {"parents": ["flow"], "content": ["flow"]},
+    "onlyinclude": {"parents": ["*"], "content": ["*"]},
     "p": {
         "parents": ["flow"],
-        "close-next": ["p", "address", "article", "aside", "blockquote",
-                       "div", "dl", "fieldset", "footer", "form", "h1", "h2",
-                       "h3", "h4", "h5", "h6", "header", "hr", "menu", "nav",
-                       "ol", "pre", "section", "table", "ul"],
-        "content": ["phrasing"]},
-    "q": {
-        "parents": ["phrasing"],
-        "content": ["phrasing"]},
+        "close-next": [
+            "p",
+            "address",
+            "article",
+            "aside",
+            "blockquote",
+            "div",
+            "dl",
+            "fieldset",
+            "footer",
+            "form",
+            "h1",
+            "h2",
+            "h3",
+            "h4",
+            "h5",
+            "h6",
+            "header",
+            "hr",
+            "menu",
+            "nav",
+            "ol",
+            "pre",
+            "section",
+            "table",
+            "ul",
+        ],
+        "content": ["phrasing"],
+    },
+    "q": {"parents": ["phrasing"], "content": ["phrasing"]},
     "rb": {
         "parents": ["ruby"],
         "close-next": ["rt", "rtc", "rp", "rb"],
-        "content": ["phrasing"]},
-    "ref": {
-        "parents": ["phrasing"],
-        "content": ["phrasing"]},
+        "content": ["phrasing"],
+    },
+    "ref": {"parents": ["phrasing"], "content": ["phrasing"]},
     "references": {
         "parents": ["flow"],
         # "no-end-tag": True,
         # XXX e.g., "martyr" in Wiktionary uses this with end tag
-        "content": ["flow", "phrasing"]},
+        "content": ["flow", "phrasing"],
+    },
     "rp": {
         "parents": ["ruby"],
         "close-next": ["rt", "rtc", "rp", "rb"],
-        "content": ["text"]},
+        "content": ["text"],
+    },
     "rt": {
         "parents": ["ruby", "rtc"],
         "close-next": ["rt", "rtc", "rp", "rb"],
-        "content": ["phrasing"]},
+        "content": ["phrasing"],
+    },
     "rtc": {
         "parents": ["ruby"],
         "close-next": ["rt", "rtc", "rb"],
-        "content": ["phrasing"]},
-    "ruby": {
-        "parents": ["phrasing"],
-        "content": ["phrasing"]},
-    "s": {
-        "parents": ["phrasing"],
-        "content": ["phrasing"]},
-    "samp": {
-        "parents": ["phrasing"],
-        "content": ["phrasing"]},
-    "small": {
-        "parents": ["phrasing"],
-        "content": ["phrasing"]},
-    "span": {
-        "parents": ["phrasing"],
-        "content": ["phrasing"]},
-    "strike": {
-        "parents": ["phrasing"],
-        "content": ["phrasing"]},
-    "strong": {
-        "parents": ["phrasing"],
-        "content": ["phrasing"]},
-    "sub": {
-        "parents": ["phrasing"],
-        "content": ["phrasing"]},
-    "sup": {
-        "parents": ["phrasing"],
-        "content": ["phrasing"]},
-    "table": {
-        "parents": ["flow"],
-        "content": []},
+        "content": ["phrasing"],
+    },
+    "ruby": {"parents": ["phrasing"], "content": ["phrasing"]},
+    "s": {"parents": ["phrasing"], "content": ["phrasing"]},
+    "samp": {"parents": ["phrasing"], "content": ["phrasing"]},
+    "small": {"parents": ["phrasing"], "content": ["phrasing"]},
+    "span": {"parents": ["phrasing"], "content": ["phrasing"]},
+    "strike": {"parents": ["phrasing"], "content": ["phrasing"]},
+    "strong": {"parents": ["phrasing"], "content": ["phrasing"]},
+    "sub": {"parents": ["phrasing"], "content": ["phrasing"]},
+    "sup": {"parents": ["phrasing"], "content": ["phrasing"]},
+    "table": {"parents": ["flow"], "content": []},
     "tbody": {
         "parents": ["table"],
         "close-next": ["thead", "tbody", "tfoot"],
-        "content": []},
+        "content": [],
+    },
     "td": {
         "parents": ["tr"],
         "close-next": ["th", "td", "tr"],
-        "content": ["flow"]},
+        "content": ["flow"],
+    },
     # From TemplateStyles extension; see
     # https://www.mediawiki.org/wiki/Extension:TemplateStyles
     "templatestyles": {
         "parents": ["phrasing"],
         "no-end-tag": True,
-        "content": []},
+        "content": [],
+    },
     "tfoot": {
         "parents": ["table"],
         "close-next": ["thead", "tbody", "tfoot"],
-        "content": []},
+        "content": [],
+    },
     "th": {
         "parents": ["tr"],
         "close-next": ["th", "td", "tr"],
-        "content": ["flow"]},
+        "content": ["flow"],
+    },
     "thead": {
         "parents": ["table"],
         "close-next": ["thead", "tbody", "tfoot"],
-        "content": []},
-    "time": {
-        "parents": ["phrasing"],
-        "content": ["phrasing"]},
+        "content": [],
+    },
+    "time": {"parents": ["phrasing"], "content": ["phrasing"]},
     "tr": {
         "parents": ["table", "thead", "tfoot", "tbody"],
         "close-next": ["tr"],
-        "content": []},
-    "tt": {
-        "parents": ["phrasing"],
-        "content": ["phrasing"]},
-    "u": {
-        "parents": ["phrasing"],
-        "content": ["phrasing"]},
-    "ul": {
-        "parents": ["flow"],
-        "content": ["flow"]},
-    "var": {
-        "parents": ["phrasing"],
-        "content": ["phrasing"]},
-    "wbr": {
-        "parents": ["phrasing"],
-        "no-end-tag": True,
-        "content": []},
+        "content": [],
+    },
+    "tt": {"parents": ["phrasing"], "content": ["phrasing"]},
+    "u": {"parents": ["phrasing"], "content": ["phrasing"]},
+    "ul": {"parents": ["flow"], "content": ["flow"]},
+    "var": {"parents": ["phrasing"], "content": ["phrasing"]},
+    "wbr": {"parents": ["phrasing"], "no-end-tag": True, "content": []},
 }

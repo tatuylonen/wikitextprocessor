@@ -634,7 +634,7 @@ def fullurl_fn(
         interwiki_map = get_interwiki_map(ctx)
         if interwiki_prefix in interwiki_map:
             page_name = page_name[quote_index + 1 :]
-            url = interwiki_map[interwiki_prefix]["url"]
+            url = interwiki_map[interwiki_prefix]["url"]  # type: ignore
 
     url = url.replace(
         "$1", urllib.parse.quote(page_name.replace(" ", "_"), safe=":/")
@@ -1242,8 +1242,9 @@ def time_fn(
                 sortid="parserfns/1040",
             )
             return (
-                '<strong class="error">Bad time syntax: '
-                "{}</strong>".format(html.escape(orig_dt))
+                '<strong class="error">Bad time syntax: ' "{}</strong>".format(
+                    html.escape(orig_dt)
+                )
             )
 
     # XXX looks like we should not adjust the time
@@ -1455,6 +1456,7 @@ def language_fn(
 
         return code_to_name(args[0], ctx.lang_code)
     return ""
+
 
 # This list should include names of predefined parser functions and
 # predefined variables (some of which can take arguments using the same
