@@ -25,8 +25,8 @@ SAVED_KEYS = {"id", "name", "content", "canonical"}
 
 def main():
     """
-    Get namespace data from MediaWiki API, but the result needs manual inspection
-    because sometimes it doesn't return the English canonical name.
+    Get namespace data from MediaWiki API, but the result needs manual
+    inspection because sometimes it doesn't return the English canonical name.
     For example, the French Wiktionary API returns "Annexe" as Appendix
     namespace's canonical name.
     """

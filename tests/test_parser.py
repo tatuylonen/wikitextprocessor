@@ -1211,7 +1211,7 @@ def foo(x):
 
     # XXX reconsider how pre should work.
     # def test_pre3(self):
-    #     tree = self.parse("test", """<pre>The <pre> tag ignores [[wiki]] ''markup'' as does the <nowiki>tag</nowiki>.</pre>""")
+    #     tree = self.parse("test", """<pre>The <pre> tag ignores [[wiki]] ''markup'' as does the <nowiki>tag</nowiki>.</pre>""")  # noqa: E501
     #     self.assertEqual(len(tree.children), 1)
     #     a = tree.children[0]
     #     self.assertEqual(a.kind, NodeKind.PRE)
@@ -1952,7 +1952,7 @@ def foo(x):
 {| class="translations" role="presentation" style="width:100%;" data-gloss="country in Southern Africa"
 |-
 * Nama: {{t|naq|!Aǂkhib|m}}
-|}"""
+|}"""  # noqa: E501
         self.parse("test", text)
         self.assertEqual(self.ctx.errors, [])
         self.assertEqual(self.ctx.warnings, [])
@@ -2225,7 +2225,7 @@ def foo(x):
         """
         tree = self.parse(
             "test_page",
-            "{{#invoke:form of/templates|form_of_t|-{}-|withcap=1|lang=ja|noprimaryentrycat=}}",
+            "{{#invoke:form of/templates|form_of_t|-{}-|withcap=1|lang=ja|noprimaryentrycat=}}",  # noqa: E501
         )
         parser_fn_node = tree.children[0]
         self.assertTrue(isinstance(parser_fn_node, WikiNode))
@@ -2246,14 +2246,19 @@ def foo(x):
     def test_unused_pinyin_template_argument(self):
         # GitHub issue #72
         tree = self.parse(
-            "test_page", "{{zh-x|約 有 6 '''%'''{pā} 的 臺灣人 血型 是 A{ēi}B{bī}型。|}}"
+            "test_page",
+            "{{zh-x|約 有 6 '''%'''{pā} 的 臺灣人 血型 是 A{ēi}B{bī}型。|}}",
         )
         template_node = tree.children[0]
         self.assertTrue(isinstance(template_node, WikiNode))
         self.assertEqual(template_node.kind, NodeKind.TEMPLATE)
         self.assertEqual(
             template_node.largs,
-            [["zh-x"], ["約 有 6 '''%'''{pā} 的 臺灣人 血型 是 A{ēi}B{bī}型。"], []],
+            [
+                ["zh-x"],
+                ["約 有 6 '''%'''{pā} 的 臺灣人 血型 是 A{ēi}B{bī}型。"],
+                [],
+            ],
         )
 
     def test_template_regex_backtracking(self):
@@ -2261,10 +2266,10 @@ def foo(x):
         # part of page https://zh.wiktionary.org/wiki/路用
         tree = self.parse(
             "test_page",
-            """#* {{zh-x|人 準若 bat ^孔子字 到 真深，nā koh 加{ke} bat 白話字，也是 加{ke} 一項 ê 路用。|人若是對漢字了解很深，如果再加會白話字，也是多一項'''用處'''。|TW|ref='''1886'''，[http://pojbh.lib.ntnu.edu.tw/artical-12751.htm {{lang|zh|白話字ê利益}} (Pe̍h-oē-jī ê Lī-ek)]}}
+            r"""#* {{zh-x|人 準若 bat ^孔子字 到 真深，nā koh 加{ke} bat 白話字，也是 加{ke} 一項 ê 路用。|人若是對漢字了解很深，如果再加會白話字，也是多一項'''用處'''。|TW|ref='''1886'''，[http://pojbh.lib.ntnu.edu.tw/artical-12751.htm {{lang|zh|白話字ê利益}} (Pe̍h-oē-jī ê Lī-ek)]}}
 #* {{zh-x|卵白{pe̍h}質，伊 ê 成分 是 炭{Thàn}素，^水素，^酸素，窒{Chek}素，伊 ê 路用 是 會{ōe} hō͘ 人 ê 身軀 得{tit}著[着] 勢{sè}力{le̍k}，也 是 hō͘ 細胞 加{ke}添 新 %ê。|蛋白質，其成分是碳、氫、氧、氮，其'''用途'''是給人體提供能量並再生細胞。 |TW|ref='''1926'''，{{lang|zh|張基全}} (Tiuⁿ Ki-chôan)，[http://210.240.194.97/nmtl/dadwt/thak.asp?id=513&kw=%B2%BF%AF%C0 {{lang|zh|酒佮健康}} (Chiú kap Kiān-khong)]}}
 #* {{zh-x|腦海 中{tiong} 的 走馬燈，留{liû}戀 啥\什{siáⁿ} 路用？|腦海中的跑馬燈，留戀有什麼'''用'''？|TW|ref={{w2|zh|陳一郎}}，{{lang|zh|留戀什路用}}}}
-            """,
+            """,  # noqa: E501
         )
         first_zh_x_node = tree.children[0].children[0].children[1]
         self.assertTrue(isinstance(first_zh_x_node, WikiNode))
@@ -2361,7 +2366,7 @@ def foo(x):
         # https://fr.wiktionary.org/wiki/animal
         tree = self.parse(
             "",
-            "{{exemple|lang=fr|{{smcp|Moricet}}. — Mais pas du tout, il est à moi !<br\n/>{{smcp|Duchotel}}, ''bas à Moricet''. — Oh ! '''animal''' !|source={{w|Georges Feydeau}}, ''{{w|Monsieur chasse !}}'', 1892}}",
+            "{{exemple|lang=fr|{{smcp|Moricet}}. — Mais pas du tout, il est à moi !<br\n/>{{smcp|Duchotel}}, ''bas à Moricet''. — Oh ! '''animal''' !|source={{w|Georges Feydeau}}, ''{{w|Monsieur chasse !}}'', 1892}}",  # noqa: E501
         )
         node = tree.children[0]
         self.assertEqual(node.template_parameters.get("lang"), "fr")
@@ -2448,7 +2453,7 @@ def foo(x):
         # https://fr.wiktionary.org/wiki/Modèle:équiv-pour
         tree = self.parse(
             "",
-            '<bdi lang="fr" xml:lang="fr" class="lang-fr">[[auteur#fr|auteur]]</bdi>',
+            '<bdi lang="fr" xml:lang="fr" class="lang-fr">[[auteur#fr|auteur]]</bdi>',  # noqa: E501
         )
         self.assertTrue(isinstance(tree.children[0], HTMLNode))
         self.assertEqual(tree.children[0].tag, "bdi")
@@ -2513,7 +2518,7 @@ def foo(x):
 
     def test_inverse_order_template_numbered_parameter(self):
         # https://en.wiktionary.org/wiki/落葉歸根
-        wikitext = "{{zh-x|3=CL|葉落歸根，來 時 無 口。||ref=宋·釋道原《景德傳燈錄》|collapsed=y}}"
+        wikitext = "{{zh-x|3=CL|葉落歸根，來 時 無 口。||ref=宋·釋道原《景德傳燈錄》|collapsed=y}}"  # noqa: E501
         self.ctx.start_page("落葉歸根")
         tree = self.ctx.parse(wikitext)
         template_node = tree.children[0]
@@ -2560,7 +2565,7 @@ def foo(x):
         """,
         )
         self.ctx.start_page("")
-        wikitext = "{{trans-top|1=of a class of polynomial of the form y = ax² + bx + c}}"
+        wikitext = "{{trans-top|1=of a class of polynomial of the form y = ax² + bx + c}}"  # noqa: E501
         expanded = self.ctx.expand(wikitext)
         self.assertEqual(
             expanded, "of a class of polynomial of the form y = ax² + bx + c"
@@ -2571,11 +2576,11 @@ def foo(x):
         self.ctx.add_page(
             "Template:tt+", 10, "⦃⦃t+¦{{{1|}}}¦{{{2|}}}¦tr={{{tr|}}}⦄⦄"
         )
-        wikitext = "{{qualifier|the ability/inability to achieve a result is expressed with various verb complements, e.g. {{tt+|cmn|得了|tr=-deliǎo}}}}"
+        wikitext = "{{qualifier|the ability/inability to achieve a result is expressed with various verb complements, e.g. {{tt+|cmn|得了|tr=-deliǎo}}}}"  # noqa: E501
         expanded = self.ctx.expand(wikitext)
         self.assertEqual(
             expanded,
-            "(the ability/inability to achieve a result is expressed with various verb complements, e.g. ⦃⦃t+¦cmn¦得了¦tr=-deliǎo⦄⦄)",
+            "(the ability/inability to achieve a result is expressed with various verb complements, e.g. ⦃⦃t+¦cmn¦得了¦tr=-deliǎo⦄⦄)",  # noqa: E501
         )
 
     def test_hdr_italics(self):

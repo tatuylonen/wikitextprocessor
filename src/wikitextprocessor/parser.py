@@ -7,12 +7,11 @@ import re
 from collections import defaultdict
 from collections.abc import Iterator
 from typing import (
-    Any,
     TYPE_CHECKING,
+    Any,
     Callable,
     Literal,
     Optional,
-    overload,
     Union,
     overload,
 )
@@ -339,14 +338,16 @@ class WikiNode:
         return self.__str__()
 
     @overload
-    def find_child(self, target_kinds: NodeKind, with_index: Literal[True]
-        ) -> Iterator[tuple[int, "WikiNode"]]: ...
+    def find_child(
+        self, target_kinds: NodeKind, with_index: Literal[True]
+    ) -> Iterator[tuple[int, "WikiNode"]]:
+        ...
 
     @overload
     def find_child(
-        self, target_kinds: NodeKind,
-        with_index: Literal[False] = ...
-        ) -> Iterator["WikiNode"]: ...
+        self, target_kinds: NodeKind, with_index: Literal[False] = ...
+    ) -> Iterator["WikiNode"]:
+        ...
 
     def find_child(
         self,
@@ -424,18 +425,24 @@ class WikiNode:
                 yield node
 
     @overload
-    def find_html(self, target_tag: str,
+    def find_html(
+        self,
+        target_tag: str,
         with_index: Literal[True],
         attr_name: str,
         attr_value: str,
-    ) -> Iterator["HTMLNode"]: ...
+    ) -> Iterator["HTMLNode"]:
+        ...
 
     @overload
-    def find_html(self, target_tag: str,
+    def find_html(
+        self,
+        target_tag: str,
         with_index: Literal[False] = ...,
         attr_name: str = ...,
         attr_value: str = ...,
-    ) -> Iterator[tuple[int, "HTMLNode"]]: ...
+    ) -> Iterator[tuple[int, "HTMLNode"]]:
+        ...
 
     def find_html(
         self,
@@ -1818,8 +1825,9 @@ def tag_fn(ctx: "Wtp", token: str) -> None:
         if name not in ALLOWED_HTML_TAGS:
             if not name.isdigit() and not SILENT_HTML_LIKE:
                 ctx.debug(
-                    "html tag <{}{}> not allowed in WikiText"
-                    "".format(name, "/" if also_end else ""),
+                    "html tag <{}{}> not allowed in WikiText" "".format(
+                        name, "/" if also_end else ""
+                    ),
                     sortid="parser/1251",
                 )
             text_fn(ctx, token)

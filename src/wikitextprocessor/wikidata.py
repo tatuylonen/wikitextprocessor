@@ -192,7 +192,7 @@ def query_item(wtp: "Wtp", item_id: str, lang_code: str) -> tuple[str, str]:
             wikibase:language "{lang_code},[AUTO_LANGUAGE],en".
           }}
         }}
-        """
+        """,
     )
     label = query_result.get("itemLabel", {}).get("value", "")
     desc = query_result.get("itemDescription", {}).get("value", "")

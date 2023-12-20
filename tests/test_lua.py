@@ -179,7 +179,8 @@ class TestLua(TestCase):
 
         function export.test()
           local coiner = "Q131761"
-          return mw.wikibase.getDescription(coiner) .. " " .. mw.wikibase.getLabel(coiner)
+          return mw.wikibase.getDescription(coiner) .. " " ..
+            mw.wikibase.getLabel(coiner)
         end
 
         return export

@@ -4102,8 +4102,10 @@ return export
     def test_gsub4(self):
         self.scribunto(
             "fOOf[[]]",
-            """a = {}; a["o"] = "O";
-	               return mw.ustring.gsub("foof[[]]", ".", a);""",
+            """
+            a = {}; a["o"] = "O";
+            return mw.ustring.gsub("foof[[]]", ".", a);
+            """,
         )
 
     def test_title_1_colon_e(self) -> None:
@@ -4120,7 +4122,9 @@ return export
         """
         self.ctx.lang_code = "zh"
         # source page need_pre_expand is true
-        self.ctx.add_page("Template:意大利語", 10, body="{{NoEdit|==意大利语==}}")
+        self.ctx.add_page(
+            "Template:意大利語", 10, body="{{NoEdit|==意大利语==}}"
+        )
         self.ctx.add_page("Template:-it-", 10, redirect_to="Template:意大利語")
         self.ctx.analyze_templates()
         source_page = self.ctx.get_page("Template:-it-", 10)

@@ -49,7 +49,6 @@ dependencies = [
 
 [project.optional-dependencies]
 dev = [
-    "black",
     "coverage[toml]",
     "mypy",
     "ruff",
@@ -87,9 +86,6 @@ ignore_missing_imports = true
 [tool.coverage.run]
 branch = true
 omit = ["tests/*"]
-
-[tool.black]
-line-length = 80
 
 [tool.ruff]
 line-length = 80

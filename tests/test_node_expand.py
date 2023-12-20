@@ -226,7 +226,9 @@ class NodeExpTests(unittest.TestCase):
                     error("Incorrect first parameter")
                 end
                 local template_args = frame:getParent().args
-                return "[[" .. template_args[1] .. "#日語|-{" .. template_args[1] .."}-]]</i></span> " .. frame.args[1] .. "</span>"
+                return "[[" .. template_args[1] .. "#日語|-{" ..
+                          template_args[1] .."}-]]</i></span> " ..
+                          frame.args[1] .. "</span>"
             end
             return export
             """,

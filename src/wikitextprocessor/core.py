@@ -924,8 +924,9 @@ class Wtp:
         # Check for unpaired HTML tags
         tag_cnts: DefaultDict[str, int] = defaultdict(int)
         for m in re.finditer(
-            r"(?si)<(/)?({})\b\s*[^>]*(/)?>"
-            r"".format("|".join(PAIRED_HTML_TAGS)),
+            r"(?si)<(/)?({})\b\s*[^>]*(/)?>" r"".format(
+                "|".join(PAIRED_HTML_TAGS)
+            ),
             outside,
         ):
             start_slash = m.group(1)

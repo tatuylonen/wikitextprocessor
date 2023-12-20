@@ -5,23 +5,25 @@
 import re
 import urllib.parse
 from typing import (
-                   Callable,
-                   Optional,
-                   TYPE_CHECKING,
-                   Union,
-                   )
-from .parser import WikiNode, NodeKind
+    TYPE_CHECKING,
+    Callable,
+    Optional,
+    Union,
+)
+
+from .parser import NodeKind, WikiNode
 from .wikihtml import ALLOWED_HTML_TAGS
+
 if TYPE_CHECKING:
     from wikitextprocessor.core import (
-                                        Wtp,
-                                        TemplateFnCallable,
-                                        PostTemplateFnCallable,
-                                        )
+        PostTemplateFnCallable,
+        TemplateFnCallable,
+        Wtp,
+    )
 
-NodeHandlerFnCallable = Callable[[WikiNode],
-                                Union[None, str, list, tuple, WikiNode]
-                              ]
+NodeHandlerFnCallable = Callable[
+    [WikiNode], Union[None, str, list, tuple, WikiNode]
+]
 
 kind_to_level: dict[NodeKind, str] = {
     NodeKind.LEVEL2: "==",
@@ -44,8 +46,8 @@ def to_attrs(node: WikiNode) -> str:
     return " ".join(parts)
 
 
-def to_wikitext(node: WikiNode,
-                node_handler_fn: Optional[NodeHandlerFnCallable]=None
+def to_wikitext(
+    node: WikiNode, node_handler_fn: Optional[NodeHandlerFnCallable] = None
 ) -> str:
     """Converts a parse tree (or subtree) back to Wikitext.
     If ``node_handler_fn`` is supplied, it will be called for each WikiNode
@@ -137,20 +139,22 @@ def to_wikitext(node: WikiNode,
             parts.append(recurse(node.children))
         elif kind == NodeKind.TABLE_HEADER_CELL:
             if node.attrs:
-                parts.append("\n! {} |{}\n"
-                             .format(to_attrs(node),
-                                     recurse(node.children)))
+                parts.append(
+                    "\n! {} |{}\n".format(
+                        to_attrs(node), recurse(node.children)
+                    )
+                )
             else:
-                parts.append("\n!{}\n"
-                             .format(recurse(node.children)))
+                parts.append("\n!{}\n".format(recurse(node.children)))
         elif kind == NodeKind.TABLE_CELL:
             if node.attrs:
-                parts.append("\n| {} |{}\n"
-                             .format(to_attrs(node),
-                                     recurse(node.children)))
+                parts.append(
+                    "\n| {} |{}\n".format(
+                        to_attrs(node), recurse(node.children)
+                    )
+                )
             else:
-                parts.append("\n|{}\n"
-                             .format(recurse(node.children)))
+                parts.append("\n|{}\n".format(recurse(node.children)))
         elif kind == NodeKind.MAGIC_WORD:
             parts.append("\n{}\n".format(node.sarg))
         elif kind == NodeKind.HTML:
@@ -167,8 +171,9 @@ def to_wikitext(node: WikiNode,
                 if node.attrs:
                     parts.append(" ")
                     parts.append(to_attrs(node))
-                if ALLOWED_HTML_TAGS.get(node.sarg, {
-                        "no-end-tag": True}).get("no-end-tag"):
+                if ALLOWED_HTML_TAGS.get(node.sarg, {"no-end-tag": True}).get(
+                    "no-end-tag"
+                ):
                     parts.append(">")
                 else:
                     parts.append(" />")
@@ -190,11 +195,12 @@ def to_wikitext(node: WikiNode,
     return recurse(node)
 
 
-def to_html(ctx: "Wtp",
-            node: WikiNode,
-            template_fn: Optional["TemplateFnCallable"]=None,
-            post_template_fn: Optional["PostTemplateFnCallable"]=None,
-            node_handler_fn: Optional[NodeHandlerFnCallable]=None,
+def to_html(
+    ctx: "Wtp",
+    node: WikiNode,
+    template_fn: Optional["TemplateFnCallable"] = None,
+    post_template_fn: Optional["PostTemplateFnCallable"] = None,
+    node_handler_fn: Optional[NodeHandlerFnCallable] = None,
 ) -> str:
     """Converts the parse (sub-)tree at ``node`` to HTML, expanding all
     templates in it."""
@@ -204,27 +210,33 @@ def to_html(ctx: "Wtp",
     text = to_wikitext(node, node_handler_fn=node_handler_fn)
     # XXX we need to expand wikitext formatting.  That would best be done
     # in to_wikitext() or something similar.
-    expanded = ctx.expand(text, template_fn=template_fn,
-                          post_template_fn=post_template_fn)
+    expanded = ctx.expand(
+        text, template_fn=template_fn, post_template_fn=post_template_fn
+    )
     # print("TO_HTML: node={!r} text={!r} expanded={!r}"
     #       .format(node, text, expanded))
     return expanded
 
 
-def to_text(ctx: "Wtp",
-            node: WikiNode,
-            template_fn: Optional["TemplateFnCallable"]=None,
-            post_template_fn: Optional["PostTemplateFnCallable"]=None,
-            node_handler_fn: Optional[NodeHandlerFnCallable]=None,
+def to_text(
+    ctx: "Wtp",
+    node: WikiNode,
+    template_fn: Optional["TemplateFnCallable"] = None,
+    post_template_fn: Optional["PostTemplateFnCallable"] = None,
+    node_handler_fn: Optional[NodeHandlerFnCallable] = None,
 ) -> str:
     """Converts the parse (sub-)tree at ``node`` to plain text, expanding
     all templates in it and stripping HTML tags."""
     assert template_fn is None or callable(template_fn)
     assert post_template_fn is None or callable(post_template_fn)
     assert node_handler_fn is None or callable(node_handler_fn)
-    s = to_html(ctx, node, template_fn=template_fn,
-                post_template_fn=post_template_fn,
-                node_handler_fn=node_handler_fn)
+    s = to_html(
+        ctx,
+        node,
+        template_fn=template_fn,
+        post_template_fn=post_template_fn,
+        node_handler_fn=node_handler_fn,
+    )
     # print("TO_TEXT:", repr(s))
     s = re.sub(r"(?is)<\s*ref\s*[^>]*?>\s*.*?<\s*/\s*ref\s*>\n*", "", s)
     s = re.sub(r"(?is)<\s*/?\s*h[123456]\b[^>]*>\n*", "\n\n", s)
@@ -237,7 +249,7 @@ def to_text(ctx: "Wtp",
     s = re.sub(r"(?s)\[\[\s*Category:[^]<>]*\]\]", "", s)
     s = re.sub(r"(?s)\[\[([^]|<>]*?\|([^]]*?))\]\]", r"\2", s)
     s = re.sub(r"(?s)\[(https?:|mailto:)?//[^]\s<>]+\s+([^]]+)\]", r"\2", s)
-    #s = re.sub(r"(?s)[][]", "", s)
+    # s = re.sub(r"(?s)[][]", "", s)
     s = re.sub(r"\n\n\n+", "\n\n", s)
     # print("TO_TEXT result:", repr(s))
     return s.strip()

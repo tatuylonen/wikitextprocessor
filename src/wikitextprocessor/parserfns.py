@@ -1242,8 +1242,9 @@ def time_fn(
                 sortid="parserfns/1040",
             )
             return (
-                '<strong class="error">Bad time syntax: '
-                "{}</strong>".format(html.escape(orig_dt))
+                '<strong class="error">Bad time syntax: ' "{}</strong>".format(
+                    html.escape(orig_dt)
+                )
             )
 
     # XXX looks like we should not adjust the time
@@ -1455,6 +1456,7 @@ def language_fn(
 
         return code_to_name(args[0], ctx.lang_code)
     return ""
+
 
 # This list should include names of predefined parser functions and
 # predefined variables (some of which can take arguments using the same
