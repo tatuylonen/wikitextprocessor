@@ -688,7 +688,7 @@ MORE
         self.parserfn("{{ns:Image}}", "File")
 
     def test_ns4(self):
-        self.parserfn("{{ns:Nonexistentns}}", "")
+        self.parserfn("{{ns:Nonexistentns}}", "[[:Template:ns:Nonexistentns]]")
 
     def test_titleparts1(self):
         self.parserfn("{{#titleparts:foo}}", "foo")
