@@ -45,13 +45,12 @@ from .common import (
 from .luaexec import call_lua_sandbox
 from .node_expand import NodeHandlerFnCallable, to_html, to_text, to_wikitext
 from .parser import KIND_TO_LEVEL, WikiNode, parse_encoded
-from .parserfns import PARSER_FUNCTIONS, call_parser_function, init_namespaces
+from .parserfns import PARSER_FUNCTIONS, call_parser_function
 from .wikihtml import ALLOWED_HTML_TAGS
 
 if TYPE_CHECKING:
     from lupa.lua51 import LuaNumber, LuaRuntime, _LuaTable
 
-    from .parserfns import Namespace
 
 # Set of HTML tags that need an explicit end tag.
 PAIRED_HTML_TAGS: set[str] = set(
@@ -194,7 +193,6 @@ class Wtp:
         "NAMESPACE_DATA",
         "LOCAL_NS_NAME_BY_ID",  # Local namespace names dictionary
         "NS_ID_BY_LOCAL_NAME",
-        "namespaces",
         "lang_code",
         # Python functions for overriding template expanded text
         "template_override_funcs",
@@ -235,8 +233,6 @@ class Wtp:
         self.lang_code = lang_code  # dump file language code
         self.data_folder = files("wikitextprocessor") / "data" / lang_code
         self.init_namespace_data()
-        self.namespaces: dict[int, Namespace] = {}
-        init_namespaces(self)
         self.create_db()
         self.template_override_funcs = template_override_funcs
         self.beginning_of_line = False

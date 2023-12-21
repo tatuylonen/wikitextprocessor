@@ -685,105 +685,24 @@ def anchorencode_fn(
     return anchor
 
 
-class Namespace:
-    __slots__ = (
-        "aliases",
-        "canonicalName",
-        "defaultContentModel",
-        "hasGenderDistinction",
-        "id",
-        "isCapitalized",
-        "isContent",
-        "isIncludable",
-        "isMovable",
-        "isSubject",
-        "isTalk",
-        "name",
-        "subject",
-        "talk",
-    )
-
-    def __init__(
-        self,
-        aliases: Optional[list[str]] = None,
-        canonicalName="",
-        defaultContentModel="wikitext",
-        hasGenderDistinction=True,
-        id: Optional[int] = None,
-        isCapitalized=False,
-        isContent=False,
-        isIncludable=False,
-        isMovable=False,
-        isSubject=False,
-        isTalk=False,
-        name="",
-        subject: Optional["Namespace"] = None,
-        talk: Optional["Namespace"] = None,
-    ) -> None:
-        assert name
-        assert id is not None
-        if aliases is None:
-            aliases = []
-        self.aliases: list[str] = aliases
-        self.canonicalName = canonicalName
-        self.defaultContentModel = defaultContentModel
-        self.hasGenderDistinction = hasGenderDistinction
-        self.id = id
-        self.isCapitalized = isCapitalized
-        self.isContent = isContent
-        self.isIncludable = isIncludable
-        self.isMovable = isMovable
-        self.isSubject = isSubject
-        self.isTalk = isTalk
-        self.name = name
-        self.subject = subject
-        self.talk = talk
-
-
-def init_namespaces(ctx: "Wtp") -> None:
-    # These duplicate definitions in lua/mw_site.lua
-    for ns_can_name, ns_data in ctx.NAMESPACE_DATA.items():
-        ctx.namespaces[ns_data["id"]] = Namespace(
-            id=ns_data["id"],
-            name=ns_data["name"],
-            isSubject=ns_data["issubject"],
-            isContent=ns_data["content"],
-            isTalk=ns_data["istalk"],
-            aliases=ns_data["aliases"],
-            canonicalName=ns_can_name,
-        )
-    for ns in ctx.namespaces.values():
-        if ns.isContent and ns.id >= 0:
-            ns.talk = ctx.namespaces[ns.id + 1]
-        elif ns.isTalk:
-            ns.subject = ctx.namespaces[ns.id - 1]
-
-
 def ns_fn(
-    ctx: "Wtp", fn_name: str, args: list[str], expander: Callable[[str], str]
+    wtp: "Wtp", fn_name: str, args: list[str], expander: Callable[[str], str]
 ) -> str:
-    """Implements the ns parser function."""
-    t = expander(args[0]).strip().upper() if args else ""
-    if t and t.isdigit():
-        ns = ctx.namespaces.get(int(t))
-    else:
-        for ns in ctx.namespaces.values():
-            # print("checking", ns.name)
-            if ns.name and t == ns.name.upper():
-                break
-            if ns.canonicalName and t == ns.canonicalName.upper():
-                break
-            for a in ns.aliases:
-                if t == a.upper():
-                    break
-            else:
-                continue
-            break
-        else:
-            ns = None
-    if ns is None:
-        return ""
-    return ns.name
+    """
+    Implements the ns parser function.
+    https://www.mediawiki.org/wiki/Help:Magic_words#Namespaces_2
+    """
+    arg = expander(args[0]).strip() if args else ""
+    lc_arg = arg.lower()
+    for key, ns in wtp.NAMESPACE_DATA.items():
+        if arg.isdigit() and ns["id"] == int(arg):
+            return ns["name"]
+        if ns["name"].lower() == lc_arg or lc_arg == key.lower():
+            return ns["name"]
+        if lc_arg in [alias.lower() for alias in ns["aliases"]]:
+            return ns["name"]
+    template_ns_name = wtp.NAMESPACE_DATA["Template"]["name"]
+    return f"[[:{template_ns_name}:ns:{arg}]]"
 
 
 def titleparts_fn(
