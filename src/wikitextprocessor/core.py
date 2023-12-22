@@ -13,7 +13,7 @@ import sys
 import tempfile
 import urllib.parse
 from collections import defaultdict, deque
-from collections.abc import Sequence
+from collections.abc import Sequence, Set
 from dataclasses import dataclass
 from functools import lru_cache
 
@@ -1164,8 +1164,8 @@ class Wtp:
         pre_expand=False,
         template_fn: Optional[TemplateFnCallable] = None,
         post_template_fn: Optional[PostTemplateFnCallable] = None,
-        templates_to_expand: Optional[set[str]] = None,
-        templates_to_not_expand: Optional[set[str]] = None,
+        templates_to_expand: Optional[Set[str]] = None,
+        templates_to_not_expand: Optional[Set[str]] = None,
         expand_parserfns=True,
         expand_invoke=True,
         quiet=False,
@@ -1197,7 +1197,7 @@ class Wtp:
         assert pre_expand in (True, False)
         assert template_fn is None or callable(template_fn)
         assert post_template_fn is None or callable(post_template_fn)
-        assert isinstance(templates_to_expand, (set, type(None)))
+        assert isinstance(templates_to_expand, (set, frozenset, type(None)))
         assert self.title is not None  # start_page() must have been called
         assert quiet in (False, True)
         assert timeout is None or isinstance(timeout, (int, float))
@@ -1773,8 +1773,8 @@ class Wtp:
     def check_template_need_expand(
         self,
         name: str,
-        expand_names: Optional[set[str]] = None,
-        not_expand_names: Optional[set[str]] = None,
+        expand_names: Optional[Set[str]] = None,
+        not_expand_names: Optional[Set[str]] = None,
     ) -> bool:
         page = self.get_page(name, self.NAMESPACE_DATA["Template"]["id"])
         if page is None:
@@ -1829,8 +1829,12 @@ class Wtp:
         assert isinstance(text, str)
         assert pre_expand in (True, False)
         assert expand_all in (True, False)
-        assert additional_expand is None or isinstance(additional_expand, set)
-        assert do_not_pre_expand is None or isinstance(do_not_pre_expand, set)
+        assert additional_expand is None or isinstance(
+            additional_expand, (set, frozenset)
+        )
+        assert do_not_pre_expand is None or isinstance(
+            do_not_pre_expand, (set, frozenset)
+        )
 
         # Preprocess.  This may also add some MAGIC_NOWIKI_CHARs.
         text = self.preprocess_text(text)
