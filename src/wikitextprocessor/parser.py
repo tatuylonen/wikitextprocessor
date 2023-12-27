@@ -244,6 +244,16 @@ KIND_TO_LEVEL: dict[NodeKind, int] = {
 }
 KIND_TO_LEVEL[NodeKind.ROOT] = 0
 
+# This variable could be used in `WikiNode.find_child()` to search level nodes
+LEVEL_KIND_FLAGS = (
+    NodeKind.LEVEL1
+    | NodeKind.LEVEL2
+    | NodeKind.LEVEL3
+    | NodeKind.LEVEL4
+    | NodeKind.LEVEL5
+    | NodeKind.LEVEL6
+)
+
 # Node types that have arguments separated by the vertical bar (|)
 HAVE_ARGS_KINDS: tuple[NodeKind, ...] = (
     NodeKind.LINK,
