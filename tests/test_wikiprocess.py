@@ -4212,6 +4212,28 @@ return export
                 self.assertEqual(self.ctx.expand(wikitext), result)
         mock_get_interwiki_data.assert_called_once()
 
+    def test_transclude_page(self):
+        # https://fr.wiktionary.org/wiki/Conjugaison:français/s’abêtir
+        # The "Conjugaison" namespace name is replaced with "Sign gloss" that
+        # has the same namesapce id.
+        self.ctx.start_page("")
+        self.ctx.add_page(
+            "Sign gloss:français/abêtir",
+            116,
+            "{{Onglets conjugaison| sél ={{{sél|1}}}}}",
+        )
+        self.ctx.add_page("Template:Onglets conjugaison", 10, "{{{sél|1}}}")
+        self.ctx.add_page("Template:Foo:bar", 10, "foobar")
+        self.ctx.add_page("page", 0, "page text")
+        self.assertEqual(
+            self.ctx.expand("{{:Sign gloss:français/abêtir|sél=2}}"), "2"
+        )
+        self.assertEqual(self.ctx.expand("{{:page}}"), "page text")
+        self.assertEqual(
+            self.ctx.expand("{{Template:Onglets conjugaison|sél = 3}}"), "3"
+        )
+        self.assertEqual(self.ctx.expand("{{Foo:bar}}"), "foobar")
+
 
 # XXX Test template_fn
 

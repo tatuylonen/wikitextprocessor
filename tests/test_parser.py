@@ -2190,11 +2190,13 @@ def foo(x):
             self.assertEqual(self.ctx.errors, [])
 
     def test_file_Babel(self):
+        self.ctx.add_page("Template:isValidPageName", 10, "")
         with open("tests/Babel.txt", "r") as f:
             self.parse("Babel", f.read(), pre_expand=True)
             self.assertEqual(self.ctx.errors, [])
 
     def test_file_fi_gradation(self):
+        self.ctx.add_page("Template:fi-gradation-row", 10, "")
         with open("tests/fi-gradation.txt", "r") as f:
             self.parse("fi-gradation", f.read(), pre_expand=True)
             self.assertEqual(self.ctx.errors, [])
