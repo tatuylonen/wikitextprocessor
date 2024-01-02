@@ -5,6 +5,7 @@
 
 import copy
 import html
+import html.entities
 import json
 import multiprocessing  # XXX debug, remove me
 import re

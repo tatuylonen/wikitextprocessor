@@ -3,8 +3,6 @@
 #
 # Copyright (c) 2020-2022 Tatu Ylonen.  See file LICENSE and https://ylonen.org
 
-import html
-import html.entities
 import json
 import logging
 import re
@@ -1423,19 +1421,6 @@ class Wtp:
                     # Otherwise it must be a template expansion
                     name = tname
 
-                    # Check for undefined templates
-                    if not self.page_exists(
-                        name, self.NAMESPACE_DATA["Template"]["id"]
-                    ):
-                        # XXX tons of these in enwiktionary-20201201 ???
-                        # self.debug("undefined template {!r}.format(tname),
-                        #           sortid="core/1171")
-                        parts.append(
-                            '<strong class="error">Template:{}'
-                            "</strong>".format(html.escape(name))
-                        )
-                        continue
-
                     if name in self.template_override_funcs and not nowiki:
                         # print("Name in template_overrides: {}".format(name))
                         new_args = tuple(
@@ -1518,8 +1503,20 @@ class Wtp:
                         # print("TEMPLATE_FN {}: {} {} -> {}"
                         #      .format(template_fn, name, ht, repr(t)))
                     if t is None:
+                        ns_id = self.NAMESPACE_DATA["Template"]["id"]
+                        if ":" in name:
+                            # https://www.mediawiki.org/wiki/Help:Templates#Usage
+                            # transclude page {{:ns_name:title}} or {{:title}}
+                            name = name.removeprefix(":")
+                            if ":" in name:
+                                ns_id = self.NAMESPACE_DATA.get(
+                                    name[: name.find(":")], {}
+                                ).get("id", ns_id)  # type: ignore
+                            else:  # main namespace
+                                ns_id = 0
+
                         template_page = self.get_page_resolve_redirect(
-                            name, self.NAMESPACE_DATA["Template"]["id"]
+                            name, ns_id
                         )
                         if template_page is not None:
                             body = template_page.body
@@ -1548,11 +1545,14 @@ class Wtp:
                             )
                         else:
                             self.error(
-                                f"Empty template body {name=},"
-                                f"possibly broken redirect",
+                                f"Can't find template {name=}",
                                 sortid="core/1551/20231113",
                             )
-                            return ""
+                            parts.append(
+                                f'<strong class="error">Template:{name}'
+                                + "</strong>"
+                            )
+                            continue
 
                     # If a post_template_fn has been supplied, call it now
                     # to capture or alter the expansion
