@@ -25,7 +25,6 @@ from types import TracebackType
 from typing import (
     TYPE_CHECKING,
     Callable,
-    DefaultDict,
     Generator,
     Optional,
     TypedDict,
@@ -916,7 +915,7 @@ class Wtp:
         #     print(repr(outside))
 
         # Check for unpaired HTML tags
-        tag_cnts: DefaultDict[str, int] = defaultdict(int)
+        tag_cnts: defaultdict[str, int] = defaultdict(int)
         for m in re.finditer(
             r"(?si)<(/)?({})\b\s*[^>]*(/)?>" r"".format(
                 "|".join(PAIRED_HTML_TAGS)
@@ -995,7 +994,7 @@ class Wtp:
         expand_stack: list[Page] = []
         # the keys of included_map are template names without
         # the namespace prefix
-        included_map: DefaultDict[str, set[str]] = defaultdict(set)
+        included_map: defaultdict[str, set[str]] = defaultdict(set)
 
         for page in self.get_all_pages([template_ns_id]):
             if page.body is not None:
@@ -1544,10 +1543,6 @@ class Wtp:
                                 encoded_body, new_parent, expand_all
                             )
                         else:
-                            self.error(
-                                f"Can't find template {name=}",
-                                sortid="core/1551/20231113",
-                            )
                             parts.append(
                                 f'<strong class="error">Template:{name}'
                                 + "</strong>"
