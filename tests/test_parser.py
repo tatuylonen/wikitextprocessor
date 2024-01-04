@@ -2605,6 +2605,16 @@ def foo(x):
             self.ctx.expand("{{#language:{{PAGELANGUAGE}}}}"), "English"
         )
 
+    def test_apostrophe_in_template_arg_name(self):
+        # https://fr.wiktionary.org/wiki/Modèle:fr-conj
+        self.ctx.start_page("")
+        self.ctx.add_page(
+            "Template:fr-conj/Tableau-composé", 10, "{{{'aux.1s|}}}"
+        )
+        self.assertEqual(
+            self.ctx.expand("{{fr-conj/Tableau-composé|'aux.1s=oui}}"), "oui"
+        )
+
 
 # XXX implement <nowiki/> marking for links, templates
 #  - https://en.wikipedia.org/wiki/Help:Wikitext#Nowiki
