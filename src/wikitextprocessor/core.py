@@ -1458,7 +1458,7 @@ class Wtp:
                         arg = str(args[i])
                         k: Union[str, int]
                         m2 = re.match(
-                            r"""(?s)^\s*([^][&<>="']+?)\s*=\s*(.*?)\s*$""",
+                            r"""(?s)^\s*([^][&<>="]+?)\s*=\s*(.*?)\s*$""",
                             arg,
                         )
                         if m2:
