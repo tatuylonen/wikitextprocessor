@@ -2615,6 +2615,14 @@ def foo(x):
             self.ctx.expand("{{fr-conj/Tableau-composé|'aux.1s=oui}}"), "oui"
         )
 
+    def test_wikinode_as_template_name(self):
+        # https://fr.wiktionary.org/wiki/trempage
+        # a link is mistakenly used as template name
+        self.ctx.start_page("")
+        root = self.ctx.parse("{{{{foo}}|bar}}")
+        t_node = root.children[0]
+        self.assertEqual(t_node.template_name, "<WikiNode>")
+
 
 # XXX implement <nowiki/> marking for links, templates
 #  - https://en.wikipedia.org/wiki/Help:Wikitext#Nowiki
