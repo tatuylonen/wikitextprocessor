@@ -506,7 +506,10 @@ class TemplateNode(WikiNode):
 
     @property
     def template_name(self) -> str:
-        return self.largs[0][0].strip()  # type: ignore[union-attr]
+        if isinstance(self.largs[0][0], str):
+            return self.largs[0][0].strip()
+        else:
+            return "<WikiNode>"
 
     @property
     def template_parameters(self) -> TemplateParameters:
