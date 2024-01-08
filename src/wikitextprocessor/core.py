@@ -529,11 +529,11 @@ class Wtp:
                     # re.X = ignore whitespace and comments, re.I = ignore case
                     r"""(?xi)\|(
                             (
-                                <([-a-zA-Z0-9]+)\b[^>]*>  # html tag
-                                    [^][{}]*?             # element contents
-                                                          # (including `|`'s)
-                                    </\3\s*>              # end tag
-                            |   [^|]            # everything else
+                                <([-a-zA-Z0-9]+)\b[^>]*(?<!/)>  # html start tag
+                                    [^][{}]*?  # element contents
+                                               # (including `|`'s)
+                                    </\3\s*>   # end tag
+                            |   [^|]           # everything else
                             )*
                           )""",
                     "|" + v,  # first/only argument needs a vbar

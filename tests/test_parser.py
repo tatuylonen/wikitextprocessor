@@ -2623,6 +2623,17 @@ def foo(x):
         t_node = root.children[0]
         self.assertEqual(t_node.template_name, "<WikiNode>")
 
+    def test_html_end_tag_in_parserfn(self):
+        # https://fr.wiktionary.org/wiki/Modèle:fr-conj/Tableau-composé
+        # the parser should be able to parse the second argument
+        self.ctx.start_page("")
+        self.ctx.add_page(
+            "Template:t",
+            10,
+            "{{#if:|<nowiki /> t{{#if:|’|e <nowiki />}}|<nowiki> </nowiki>}}",
+        )
+        self.assertEqual(self.ctx.expand("{{t}}"), "<nowiki> </nowiki>")
+
 
 # XXX implement <nowiki/> marking for links, templates
 #  - https://en.wikipedia.org/wiki/Help:Wikitext#Nowiki
