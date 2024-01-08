@@ -24,4 +24,4 @@ jobs:
       - run: python -m mypy -p wikitextprocessor
       - run: python -m ruff .
       - run: python -m ruff format --diff .
-      - uses: crate-ci/typos@v1.16.25
+      - uses: crate-ci/typos@v1.17.0
