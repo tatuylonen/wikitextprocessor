@@ -1264,6 +1264,9 @@ def table_start_fn(ctx: "Wtp", token: str) -> None:
     if ctx.pre_parse:
         return text_fn(ctx, token)
 
+    if not (ctx.beginning_of_line or ctx.wsp_beginning_of_line):
+        return text_fn(ctx, token)
+
     close_begline_lists(ctx)
     _parser_push(ctx, NodeKind.TABLE)
 
@@ -1359,6 +1362,9 @@ def table_caption_fn(ctx: "Wtp", token: str) -> None:
     if ctx.pre_parse:
         return text_fn(ctx, token)
 
+    if not (ctx.beginning_of_line or ctx.wsp_beginning_of_line):
+        return text_fn(ctx, token)
+
     close_begline_lists(ctx)
     table_check_attrs(ctx)
     if not _parser_have(ctx, NodeKind.TABLE):
@@ -1382,6 +1388,11 @@ def table_hdr_cell_fn(ctx: "Wtp", token: str) -> None:
 
     # Outside tables, just interpret ! and !! as raw text
     if not _parser_have(ctx, NodeKind.TABLE):
+        return text_fn(ctx, token)
+
+    if token == "!" and (
+        not (ctx.beginning_of_line or ctx.wsp_beginning_of_line)
+    ):
         return text_fn(ctx, token)
 
     while True:
@@ -1423,6 +1434,9 @@ def table_hdr_cell_fn(ctx: "Wtp", token: str) -> None:
 def table_row_fn(ctx: "Wtp", token: str) -> None:
     """Handler function for table row separator "|-"."""
     if ctx.pre_parse:
+        return text_fn(ctx, token)
+
+    if not (ctx.beginning_of_line or ctx.wsp_beginning_of_line):
         return text_fn(ctx, token)
 
     close_begline_lists(ctx)
@@ -1560,6 +1574,9 @@ def double_vbar_fn(ctx: "Wtp", token: str) -> None:
 def table_end_fn(ctx: "Wtp", token: str) -> None:
     """Handler function for end of a table token "|}"."""
     if ctx.pre_parse:
+        return text_fn(ctx, token)
+
+    if not (ctx.beginning_of_line or ctx.wsp_beginning_of_line):
         return text_fn(ctx, token)
 
     close_begline_lists(ctx)
@@ -1977,7 +1994,7 @@ header_re = re.compile(r"(?m)^(={1,6})\s*(([^=]|=[^=])+?)\s*(={1,6})\s*$")
 
 # Regular expression for matching a token in WikiMedia text.  This is used for
 # tokenizing the input.
-token_re = re.compile(
+TOKEN_RE = re.compile(
     r"'''''|"
     r"'''|"
     r"''|"
@@ -2165,7 +2182,7 @@ def token_iter(ctx: "Wtp", text: str) -> Iterator[tuple[bool, str]]:
             pos = 0
             # Revert to single quotes from MAGIC_SQUOTE_CHAR
             part = part.replace(MAGIC_SQUOTE_CHAR, "'")
-            for m in re.finditer(token_re, part):
+            for m in re.finditer(TOKEN_RE, part):
                 start = m.start()
                 if pos != start:
                     yield False, part[pos:start]

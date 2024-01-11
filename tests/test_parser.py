@@ -1539,7 +1539,7 @@ def foo(x):
         self.assertEqual(b.children, [])
 
     def test_table_empty(self):
-        tree = self.parse("test", "{| |}")
+        tree = self.parse("test", "{| \n |}")
         self.assertEqual(len(tree.children), 1)
         t = tree.children[0]
         self.assertEqual(t.kind, NodeKind.TABLE)
@@ -1761,6 +1761,8 @@ def foo(x):
         c, h, a, b = t.children
         self.assertEqual(c.kind, NodeKind.TABLE_CAPTION)
         self.assertEqual(c.attrs.get("class"), "caption")
+        # XXX "||text\n" should be discarded, if we follow wikitext
+        # Left this here as an XXX because... This is an ok fail state for us.
         self.assertEqual(c.children, ["cap!!tion!||text\n"])
         self.assertEqual(h.kind, NodeKind.TABLE_ROW)
         self.assertEqual(len(h.children), 3)
@@ -2012,12 +2014,12 @@ def foo(x):
         self.assertEqual(len(self.ctx.debugs), 1)
 
     def test_error10(self):
-        self.parse("test", "{| ''\n|-\n'' |}")
+        self.parse("test", "{| ''\n|-\n'' \n|}")
         self.assertEqual(self.ctx.warnings, [])  # Warning now disabled
         self.assertEqual(self.ctx.debugs, [])  # Warning now disabled
 
     def test_error11(self):
-        self.parse("test", "{| ''\n|+\n'' |}")
+        self.parse("test", "{| ''\n|+\n'' \n|}")
         self.assertEqual(self.ctx.warnings, [])  # Warning now disabled
         self.assertEqual(self.ctx.debugs, [])  # Warning now disabled
 
