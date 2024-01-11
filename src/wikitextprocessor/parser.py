@@ -1977,7 +1977,7 @@ header_re = re.compile(r"(?m)^(={1,6})\s*(([^=]|=[^=])+?)\s*(={1,6})\s*$")
 
 # Regular expression for matching a token in WikiMedia text.  This is used for
 # tokenizing the input.
-token_re = re.compile(
+TOKEN_RE = re.compile(
     r"'''''|"
     r"'''|"
     r"''|"
@@ -1986,8 +1986,8 @@ token_re = re.compile(
     r"\]|"
     r"\|\}|"
     r"\{\||"
-    r"\|\+|"
-    r"\|-|"
+    r"^\s*\|\+|"  # table caption
+    r"^\s*\|-|"  # table row
     r"!!|"
     r"\s*https?://[a-zA-Z0-9.]+(/[^][{}<>|\s]*)?|"
     r"^[ \t]*!|"
@@ -2165,7 +2165,7 @@ def token_iter(ctx: "Wtp", text: str) -> Iterator[tuple[bool, str]]:
             pos = 0
             # Revert to single quotes from MAGIC_SQUOTE_CHAR
             part = part.replace(MAGIC_SQUOTE_CHAR, "'")
-            for m in re.finditer(token_re, part):
+            for m in re.finditer(TOKEN_RE, part):
                 start = m.start()
                 if pos != start:
                     yield False, part[pos:start]

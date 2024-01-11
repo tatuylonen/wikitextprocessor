@@ -2634,6 +2634,24 @@ def foo(x):
         )
         self.assertEqual(self.ctx.expand("{{t}}"), "<nowiki> </nowiki>")
 
+    def test_hypen_in_table_cell(self):
+        # https://fr.wiktionary.org/wiki/Conjugaison:français/s’abattre
+        # "|-toi" is table cell not table row
+        self.ctx.start_page("")
+        root = self.ctx.parse(
+            """{|
+|-
+|width="25%"|-toi
+|}"""
+        )
+        table_node = root.children[0]
+        self.assertEqual(table_node.kind, NodeKind.TABLE)
+        table_row = table_node.children[0]
+        self.assertEqual(table_row.kind, NodeKind.TABLE_ROW)
+        table_cell = table_row.children[0]
+        self.assertEqual(table_cell.kind, NodeKind.TABLE_CELL)
+        self.assertEqual(table_cell.children, ["-toi\n"])
+
 
 # XXX implement <nowiki/> marking for links, templates
 #  - https://en.wikipedia.org/wiki/Help:Wikitext#Nowiki
