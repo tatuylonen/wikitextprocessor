@@ -1259,13 +1259,27 @@ def colon_fn(ctx: "Wtp", token: str) -> None:
     node.children = []
 
 
+def mistokenized_start_fn(ctx: "Wtp", token: str) -> None:
+    """Handler for table start token or text + double pipe toke."""
+    if ctx.pre_parse:
+        return text_fn(ctx, token)
+
+    if not (ctx.beginning_of_line or ctx.wsp_beginning_of_line):
+        text_fn(ctx, "{")
+        return double_vbar_fn(ctx, "||")
+
+    table_start_fn(ctx, "{|")
+    return vbar_fn(ctx, "|")
+
+
 def table_start_fn(ctx: "Wtp", token: str) -> None:
     """Handler for table start token "{|"."""
     if ctx.pre_parse:
         return text_fn(ctx, token)
 
     if not (ctx.beginning_of_line or ctx.wsp_beginning_of_line):
-        return text_fn(ctx, token)
+        text_fn(ctx, "{")
+        return vbar_fn(ctx, "|")
 
     close_begline_lists(ctx)
     _parser_push(ctx, NodeKind.TABLE)
@@ -1363,7 +1377,8 @@ def table_caption_fn(ctx: "Wtp", token: str) -> None:
         return text_fn(ctx, token)
 
     if not (ctx.beginning_of_line or ctx.wsp_beginning_of_line):
-        return text_fn(ctx, token)
+        vbar_fn(ctx, "|")
+        return text_fn(ctx, "+")
 
     close_begline_lists(ctx)
     table_check_attrs(ctx)
@@ -1437,7 +1452,8 @@ def table_row_fn(ctx: "Wtp", token: str) -> None:
         return text_fn(ctx, token)
 
     if not (ctx.beginning_of_line or ctx.wsp_beginning_of_line):
-        return text_fn(ctx, token)
+        vbar_fn(ctx, "|")
+        return text_fn(ctx, "-")
 
     close_begline_lists(ctx)
     table_check_attrs(ctx)
@@ -1577,7 +1593,8 @@ def table_end_fn(ctx: "Wtp", token: str) -> None:
         return text_fn(ctx, token)
 
     if not (ctx.beginning_of_line or ctx.wsp_beginning_of_line):
-        return text_fn(ctx, token)
+        vbar_fn(ctx, "|")
+        return text_fn(ctx, "}")
 
     close_begline_lists(ctx)
     table_row_check_attrs(ctx)
@@ -2002,6 +2019,7 @@ TOKEN_RE = re.compile(
     r"\[|"
     r"\]|"
     r"\|\}|"
+    r"\{\|\||"
     r"\{\||"
     r"\|\+|"
     r"\|-|"
@@ -2039,6 +2057,7 @@ tokenops: dict[str, Callable[["Wtp", str], None]] = {
     "[": elink_start_fn,
     "]": elink_end_fn,
     "{|": table_start_fn,
+    "{||": mistokenized_start_fn,
     "|}": table_end_fn,
     "|+": table_caption_fn,
     "!": table_hdr_cell_fn,
