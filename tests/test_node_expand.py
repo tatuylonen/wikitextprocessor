@@ -142,8 +142,10 @@ class NodeExpTests(unittest.TestCase):
             "[https://wikipedia.org/x/y?a=7%255]",
         )
 
-    def test_table1(self):
-        self.backcvt("{| |}", "\n{| \n\n|}\n")
+    # This test is incorrect: the |} token requires it to be on a new
+    # line, after ^\n\s*
+    # def test_table1(self):
+    #     self.backcvt("{| |}", "\n{| \n\n|}\n")
 
     def test_table2(self):
         self.backcvt('{| class="x"\n|}', '\n{| class="x"\n\n|}\n')
