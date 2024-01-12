@@ -112,14 +112,13 @@ return export
     def test_basic4(self):
         self.parserfn(
             "Some {{unknown template}} x",
-            'Some <strong class="error">Template:unknown template'
-            "</strong> x",
+            "Some [[:Template:unknown template]] x",
         )
 
     def test_basic5(self):
         self.parserfn(
             "Some {{unknown template|arg1||arg3}}",
-            'Some <strong class="error">Template:unknown template' "</strong>",
+            "Some [[:Template:unknown template]]",
         )
 
     def test_basic6(self):
