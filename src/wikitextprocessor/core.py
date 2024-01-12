@@ -1502,7 +1502,8 @@ class Wtp:
                         # print("TEMPLATE_FN {}: {} {} -> {}"
                         #      .format(template_fn, name, ht, repr(t)))
                     if t is None:
-                        ns_id = self.NAMESPACE_DATA["Template"]["id"]
+                        template_ns = self.NAMESPACE_DATA["Template"]
+                        ns_id = template_ns["id"]
                         if ":" in name:
                             # https://www.mediawiki.org/wiki/Help:Templates#Usage
                             # transclude page {{:ns_name:title}} or {{:title}}
@@ -1543,11 +1544,8 @@ class Wtp:
                                 encoded_body, new_parent, expand_all
                             )
                         else:
-                            parts.append(
-                                f'<strong class="error">Template:{name}'
-                                + "</strong>"
-                            )
-                            continue
+                            # template doesn't exist
+                            t = f"[[:{template_ns['name']}:{name}]]"
 
                     # If a post_template_fn has been supplied, call it now
                     # to capture or alter the expansion
