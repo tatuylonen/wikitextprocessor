@@ -2689,6 +2689,23 @@ def foo(x):
         self.assertEqual(table_cell.kind, NodeKind.TABLE_CELL)
         self.assertEqual(table_cell.children, ["}Test2\n"])
 
+    def test_nowiki_in_link(self):
+        # https://fr.wiktionary.org/wiki/Conjugaison:français/abattre
+        # GitHub issue #180
+        self.ctx.start_page("")
+        root = self.ctx.parse(
+            "[[Annexe|<span>\\kə <nowiki />nu.z‿ɛ.jɔ̃.z‿a.ba.ty\\</span>]]"
+        )
+        link_node = root.children[0]
+        self.assertEqual(link_node.kind, NodeKind.LINK)
+        span_node = link_node.largs[1][0]
+        self.assertTrue(isinstance(span_node, HTMLNode))
+        self.assertEqual(
+            span_node.children, ["\\kə <nowiki />nu.z‿ɛ.jɔ̃.z‿a.ba.ty\\"]
+        )
+        root = self.ctx.parse("[<nowiki/>[link]]")
+        self.assertEqual(root.children, ["&lsqb;&lsqb;link&rsqb;&rsqb;"])
+
 
 # XXX implement <nowiki/> marking for links, templates
 #  - https://en.wikipedia.org/wiki/Help:Wikitext#Nowiki

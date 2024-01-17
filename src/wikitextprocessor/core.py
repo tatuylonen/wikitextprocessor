@@ -599,6 +599,14 @@ class Wtp:
             """Replacement function for links [[...]]."""
             nowiki = MAGIC_NOWIKI_CHAR in m.group(0)
             orig = m.group(1)
+            if MAGIC_NOWIKI_CHAR in orig:
+                # check if nowiki tag is direct child
+                root = parse_encoded(self, orig)
+                nowiki = False
+                for child in root.children:
+                    if isinstance(child, str) and "<nowiki />" in child:
+                        nowiki = True
+                        break
             args = vbar_split(orig)
             # print("REPL_LINK: orig={!r}".format(orig))
             return self._save_value("L", args, nowiki)
