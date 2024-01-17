@@ -148,36 +148,18 @@ local function _lua_invoke(mod_name, fn_name, frame, page_title, timeout)
     -- loading the module, as the module could refer to, e.g., page title
     -- during loading.
     local mod, success
-    local module_ns_name = NAMESPACE_DATA.Module.name
-    if string.sub(mod_name, 1, #module_ns_name + 1) ~= module_ns_name .. ":" then
-        local mod1 = module_ns_name .. ":" .. mod_name
-        mod = _cached_mod(mod1)
-        if not mod then
-            local initfn, msg = _new_loader(mod1, mod_env)
-            if initfn then
-                success, mod = pcall(initfn)
-                if not success then
-                    return false, ("\tLoading module failed in #invoke: " ..
-                        mod1 .. "\n" .. mod)
-                end
-                _save_mod(mod1, mod)
-            end
-        end
-    end
+    mod = _cached_mod(mod_name)
     if not mod then
-        mod = _cached_mod(mod_name)
-        if not mod then
-            local initfn, msg = _new_loader(mod_name, mod_env)
-            if initfn then
-                success, mod = pcall(initfn)
-                if not success then
-                    return false, ("\tLoading module failed in #invoke: " ..
-                        mod_name .. "\n" .. mod)
-                end
-                _save_mod(mod_name, mod)
-            else
-                error("Could not find module " .. mod_name .. ": " .. msg)
+        local initfn, msg = _new_loader(mod_name, mod_env)
+        if initfn then
+            success, mod = pcall(initfn)
+            if not success then
+                return false, ("\tLoading module failed in #invoke: " ..
+                    mod_name .. "\n" .. mod)
             end
+            _save_mod(mod_name, mod)
+        else
+            error("Could not find module " .. mod_name .. ": " .. msg)
         end
     end
     assert(mod)

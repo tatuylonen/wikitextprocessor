@@ -1687,23 +1687,30 @@ class Wtp:
         if namespace_id is not None and namespace_id != 0:
             local_ns_name = self.LOCAL_NS_NAME_BY_ID[namespace_id]
             ns_prefix = local_ns_name + ":"
-            if namespace_id in {
-                self.NAMESPACE_DATA[ns]["id"] for ns in ["Template", "Module"]
-            }:
-                # Chinese Wiktionary and English Wikipedia capitalize the first
-                # letter of template/module page titles but use lower case in
-                # Wikitext and Lua code
-                if title.startswith(ns_prefix):
-                    template_name = title[len(ns_prefix) :]
-                    upper_case_title = (
-                        ns_prefix + template_name[0].upper() + template_name[1:]
-                    )
+            if not title.startswith(ns_prefix):
+                ns_prefixes = []
+                for ns_name, ns_data in self.NAMESPACE_DATA.items():
+                    if ns_data["id"] == namespace_id:
+                        ns_prefixes.append(ns_name.lower() + ":")
+                        ns_prefixes.extend(
+                            [
+                                alias.lower() + ":"
+                                for alias in ns_data["aliases"]
+                            ]
+                        )
+                        break
+                if title.lower().startswith(tuple(ns_prefixes)):
+                    # replace lower case and alias prefix
+                    title = ns_prefix + title[title.index(":") + 1 :]
                 else:
-                    upper_case_title = ns_prefix + title[0].upper() + title[1:]
                     title = ns_prefix + title
-            elif not title.startswith(ns_prefix):
-                # Add namespace prefix
-                title = ns_prefix + title
+
+            # page title is case-sensitive except the first character
+            # https://www.mediawiki.org/wiki/Manual:Page_title#Naming_restrictions
+            template_name = title[len(ns_prefix) :]
+            upper_case_title = (
+                ns_prefix + template_name[0].upper() + template_name[1:]
+            )
 
         query_str = """
         SELECT title, namespace_id, redirect_to, need_pre_expand, body, model

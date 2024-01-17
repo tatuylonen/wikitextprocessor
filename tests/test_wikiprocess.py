@@ -1716,120 +1716,102 @@ MORE
         ret = self.ctx.expand("{{oldtemp|foo}}")
         self.assertEqual(ret, "afoob")
 
-    @patch(
-        "wikitextprocessor.core.Wtp.get_page",
-        return_value=Page(
-            title="Module:testmod",
-            namespace_id=828,
-            body="""
+    def test_invoke1(self):
+        self.ctx.start_page("Tt")
+        self.ctx.add_page(
+            "Module:testmod",
+            828,
+            """
 local export = {}
 function export.testfn(frame)
   return "in test"
 end
 return export
 """,
-        ),
-    )
-    def test_invoke1(self, mock_get_page):
-        self.ctx.start_page("Tt")
+        )
         ret = self.ctx.expand("a{{#invoke:testmod|testfn}}b")
         self.assertEqual(ret, "ain testb")
 
     def test_invoke2(self):
         self.scribunto("0", """return tostring(#frame.args)""")
 
-    @patch(
-        "wikitextprocessor.core.Wtp.get_page",
-        return_value=Page(
-            title="Module:testmod",
-            namespace_id=828,
-            body="""
+    def test_invoke4a(self):
+        self.ctx.start_page("Tt")
+        self.ctx.add_page(
+            "Module:testmod",
+            828,
+            """
 local export = {}
 function export.testfn(frame)
   return frame.args[1]
 end
 return export
 """,
-        ),
-    )
-    def test_invoke4a(self, mock_get_page):
-        self.ctx.start_page("Tt")
+        )
         ret = self.ctx.expand("{{#invoke:testmod|testfn|a|b|foo=bar}}")
         self.assertEqual(ret, "a")
 
-    @patch(
-        "wikitextprocessor.core.Wtp.get_page",
-        return_value=Page(
-            title="Module:testmod",
-            namespace_id=828,
-            body="""
+    def test_invoke4b(self):
+        self.ctx.start_page("Tt")
+        self.ctx.add_page(
+            "Module:testmod",
+            828,
+            """
 local export = {}
 function export.testfn(frame)
   return frame.args["1"]
 end
 return export
 """,
-        ),
-    )
-    def test_invoke4b(self, mock_get_page):
-        self.ctx.start_page("Tt")
+        )
         ret = self.ctx.expand("{{#invoke:testmod|testfn|a|b|foo=bar}}")
         self.assertEqual(ret, "a")
 
-    @patch(
-        "wikitextprocessor.core.Wtp.get_page",
-        return_value=Page(
-            title="Module:testmod",
-            namespace_id=828,
-            body="""
+    def test_invoke4c(self):
+        self.ctx.start_page("Tt")
+        self.ctx.add_page(
+            "Module:testmod",
+            828,
+            """
 local export = {}
 function export.testfn(frame)
   return frame.args["foo"]
 end
 return export
 """,
-        ),
-    )
-    def test_invoke4c(self, mock_get_page):
-        self.ctx.start_page("Tt")
+        )
         ret = self.ctx.expand("{{#invoke:testmod|testfn|a|b|foo=bar}}")
         self.assertEqual(ret, "bar")
 
-    @patch(
-        "wikitextprocessor.core.Wtp.get_page",
-        return_value=Page(
-            title="Module:testmod",
-            namespace_id=828,
-            body="""
+    def test_invoke5(self):
+        self.ctx.start_page("Tt")
+        self.ctx.add_page(
+            "Module:testmod",
+            828,
+            """
 local export = {}
 function export.testfn(frame)
   return frame.args.foo
 end
 return export
 """,
-        ),
-    )
-    def test_invoke5(self, mock_get_page):
-        self.ctx.start_page("Tt")
+        )
         ret = self.ctx.expand("{{#invoke:testmod|testfn|foo=bar|a}}")
         self.assertEqual(ret, "bar")
 
-    @patch(
-        "wikitextprocessor.core.Wtp.get_page",
-        return_value=Page(
-            title="Module:testmod",
-            namespace_id=828,
-            body="""
+    def test_invoke6(self):
+        self.ctx.start_page("Tt")
+        self.ctx.add_page(
+            "Module:testmod",
+            828,
+            """
 local export = {}
 function export.testfn(frame)
   return frame.args["foo"]
 end
 return export
 """,
-        ),
-    )
-    def test_invoke6(self, mock_get_page):
-        self.ctx.start_page("Tt")
+        )
         ret = self.ctx.expand("{{#invoke:testmod|testfn|foo=bar|a}}")
         self.assertEqual(ret, "bar")
 
@@ -2325,98 +2307,83 @@ return export
         return frame:callParserFunction("#tag", "div", "content")""",
         )
 
-    @patch(
-        "wikitextprocessor.core.Wtp.get_page",
-        return_value=Page(
-            title="Module:testmod",
-            namespace_id=828,
-            body="""
+    def test_frame_getArgument1(self):
+        self.ctx.start_page("Tt")
+        self.ctx.add_page(
+            "Module:testmod",
+            828,
+            """
 local export = {}
 function export.testfn(frame)
   return frame:getArgument(1).expand()
 end
 return export
-            """,
-        ),
-    )
-    def test_frame_getArgument1(self, mock_get_page):
-        self.ctx.start_page("Tt")
+""",
+        )
         ret = self.ctx.expand("{{#invoke:testmod|testfn|a|b}}")
         self.assertEqual(ret, "a")
 
-    @patch(
-        "wikitextprocessor.core.Wtp.get_page",
-        return_value=Page(
-            title="Module:testmod",
-            namespace_id=828,
-            body="""
+    def test_frame_getArgument2(self):
+        self.ctx.start_page("Tt")
+        self.ctx.add_page(
+            "Module:testmod",
+            828,
+            """
 local export = {}
 function export.testfn(frame)
   return frame:getArgument(2).expand()
 end
 return export
-            """,
-        ),
-    )
-    def test_frame_getArgument2(self, mock_get_page):
-        self.ctx.start_page("Tt")
+""",
+        )
         ret = self.ctx.expand("{{#invoke:testmod|testfn|a|b}}")
         self.assertEqual(ret, "b")
 
-    @patch(
-        "wikitextprocessor.core.Wtp.get_page",
-        return_value=Page(
-            title="Module:testmod",
-            namespace_id=828,
-            body="""
+    def test_frame_getArgument3(self):
+        self.ctx.start_page("Tt")
+        self.ctx.add_page(
+            "Module:testmod",
+            828,
+            """
 local export = {}
 function export.testfn(frame)
   return frame:getArgument(3)
 end
 return export
-            """,
-        ),
-    )
-    def test_frame_getArgument3(self, mock_get_page):
-        self.ctx.start_page("Tt")
+""",
+        )
         ret = self.ctx.expand("{{#invoke:testmod|testfn|a|b}}")
         self.assertEqual(ret, "")  # nil
 
-    @patch(
-        "wikitextprocessor.core.Wtp.get_page",
-        return_value=Page(
-            title="Module:testmod",
-            namespace_id=828,
-            body="""
+    def test_frame_getArgument4(self):
+        self.ctx.start_page("Tt")
+        self.ctx.add_page(
+            "Module:testmod",
+            828,
+            """
 local export = {}
 function export.testfn(frame)
   return frame:getArgument("foo").expand()
 end
 return export
-            """,
-        ),
-    )
-    def test_frame_getArgument4(self, mock_get_page):
-        self.ctx.start_page("Tt")
+""",
+        )
         ret = self.ctx.expand("{{#invoke:testmod|testfn|foo=bar}}")
         self.assertEqual(ret, "bar")
 
-    @patch(
-        "wikitextprocessor.core.Wtp.get_page",
-        return_value=Page(
-            title="Module:testmod",
-            namespace_id=828,
-            body="""
+    def test_frame_getArgument5(self):
+        self.ctx.start_page("Tt")
+        self.ctx.add_page(
+            "Module:testmod",
+            828,
+            """
 local export = {}
 function export.testfn(frame)
   return frame:getArgument{name = "foo"}.expand()
 end
 return export
-            """,
-        ),
-    )
-    def test_frame_getArgument5(self, mock_get_page):
-        self.ctx.start_page("Tt")
+""",
+        )
         ret = self.ctx.expand("{{#invoke:testmod|testfn|foo=bar}}")
         self.assertEqual(ret, "bar")
 
@@ -2473,12 +2440,12 @@ return export
         ret = self.ctx.expand("{{#invoke:testmod|testfn|foo=bar}}")
         self.assertEqual(ret, "afooab")
 
-    @patch(
-        "wikitextprocessor.core.Wtp.get_page",
-        return_value=Page(
-            title="Module:testmod",
-            namespace_id=828,
-            body="""
+    def test_frame_argumentPairs1(self):
+        self.ctx.start_page("Tt")
+        self.ctx.add_page(
+            "Module:testmod",
+            828,
+            """
 local export = {}
 function export.testfn(frame)
   local ret = ""
@@ -2489,19 +2456,16 @@ function export.testfn(frame)
 end
 return export
 """,
-        ),
-    )
-    def test_frame_argumentPairs1(self, mock_get_page):
-        self.ctx.start_page("Tt")
+        )
         ret = self.ctx.expand("{{#invoke:testmod|testfn|foo=bar}}")
         self.assertEqual(ret, "|foo=bar")
 
-    @patch(
-        "wikitextprocessor.core.Wtp.get_page",
-        return_value=Page(
-            title="Module:testmod",
-            namespace_id=828,
-            body="""
+    def test_frame_argumentPairs2(self):
+        self.ctx.start_page("Tt")
+        self.ctx.add_page(
+            "Module:testmod",
+            828,
+            """
 local export = {}
 function export.testfn(frame)
   local ret = ""
@@ -2512,10 +2476,7 @@ function export.testfn(frame)
 end
 return export
 """,
-        ),
-    )
-    def test_frame_argumentPairs2(self, mock_get_page):
-        self.ctx.start_page("Tt")
+        )
         ret = self.ctx.expand("{{#invoke:testmod|testfn|a|b}}")
         self.assertEqual(ret, "|1=a|2=b")
 
@@ -3325,23 +3286,20 @@ return export
         return mw.uri.buildQueryString({foo="b ar", x=1})""",
         )
 
-    @patch(
-        "wikitextprocessor.core.Wtp.get_page",
-        return_value=Page(
-            title="Module:testmod",
-            namespace_id=828,
-            body=r"""
+    def test_mw_uri12(self):
+        self.ctx.start_page("Tt")
+        self.ctx.add_page(
+            "Module:testmod",
+            828,
+            """
 local export = {}
 function export.testfn(frame)
-   local q = mw.uri.parseQueryString("a=1&b=a+b&c")
+   local q = mw.uri.parseQueryString('a=1&b=a+b&c')
    return tostring(q.a) .. tostring(q.b) .. tostring(q.c) .. tostring(q.d)
 end
 return export
 """,
-        ),
-    )
-    def test_mw_uri12(self, mock_get_page):
-        self.ctx.start_page("Tt")
+        )
         ret = self.ctx.expand("{{#invoke:testmod|testfn}}")
         self.assertEqual(ret, "1a bfalsenil")
 
@@ -3886,21 +3844,7 @@ return export
         return mw.title.getCurrentTitle().text""",
         )
 
-    @patch(
-        "wikitextprocessor.core.Wtp.get_page",
-        return_value=Page(
-            title="Module:testmod",
-            namespace_id=828,
-            body="""
-            local title = mw.title.getCurrentTitle().text
-            local export = {}
-            function export.testfn(frame)
-               return title
-            end
-            return export""",
-        ),
-    )
-    def test_mw_title59(self, mock_get_page):
+    def test_mw_title59(self):
         # Turns out some modules save information betweem calls - at least
         # page title.  Thus it is necessary to reload modules for each page.
         # This tests that change in title when moving to next page is
@@ -3908,6 +3852,17 @@ return export
 
         # First invocation to the module
         self.ctx.start_page("pt1")
+        self.ctx.add_page(
+            "Module:testmod",
+            828,
+            """
+            local title = mw.title.getCurrentTitle().text
+            local export = {}
+            function export.testfn(frame)
+               return title
+            end
+            return export""",
+        )
         ret = self.ctx.expand("{{#invoke:testmod|testfn}}")
         self.assertEqual(ret, "pt1")
         # Call again within same page, title should remain
@@ -3929,22 +3884,19 @@ return export
         return x[1] .. v[1] .. x.foo[1] .. v.foo[1]""",
         )
 
-    @patch(
-        "wikitextprocessor.core.Wtp.get_page",
-        return_value=Page(
-            title="Module:testmod",
-            namespace_id=828,
-            body="""
+    def test_mw_clone99(self):
+        self.ctx.start_page("Tt")
+        self.ctx.add_page(
+            "Module:testmod",
+            828,
+            """
             local export = {}
             function export.testfn(frame)
                local c = mw.clone(frame.args)
                return c[1] .. c.foo .. tostring(c.nonex)
             end
             return export""",
-        ),
-    )
-    def test_mw_clone99(self, mock_get_page):
-        self.ctx.start_page("Tt")
+        )
         ret = self.ctx.expand("{{#invoke:testmod|testfn|a|foo=bar}}")
         self.assertEqual(ret, "abarnil")
 
@@ -3983,23 +3935,20 @@ return export
         return string.format("%.4X", 4.7)""",
         )
 
-    @patch(
-        "wikitextprocessor.core.Wtp.get_page",
-        return_value=Page(
-            title="Module:testmod",
-            namespace_id=828,
-            body=r"""
+    def test_sandbox1(self):
+        # For security, Python should not be callable from Lua modules
+        self.ctx.start_page("Tt")
+        self.ctx.add_page(
+            "Module:testmod",
+            828,
+            """
 local export = {}
 function export.testfn(frame)
-    return python.eval("1")
+    return python.eval('1')
 end
 return export
 """,
-        ),
-    )
-    def test_sandbox1(self, mock_get_page):
-        # For security, Python should not be callable from Lua modules
-        self.ctx.start_page("Tt")
+        )
         ret = self.ctx.expand("{{#invoke:testmod|testfn}}")
         self.assertTrue(ret.startswith('<strong class="error">'))
 
@@ -4232,6 +4181,16 @@ return export
             self.ctx.expand("{{Template:Onglets conjugaison|sél = 3}}"), "3"
         )
         self.assertEqual(self.ctx.expand("{{Foo:bar}}"), "foobar")
+
+    def test_namespace_prefixes(self):
+        page = Page(
+            "Template:title", 10, body="template text", model="wikitext"
+        )
+        self.ctx.add_page("Template:title", 10, page.body)
+        self.assertEqual(self.ctx.get_page("T:title", 10), page)
+        self.assertEqual(self.ctx.get_page("t:title", 10), page)
+        self.ctx.start_page("")
+        self.assertEqual(self.ctx.expand("{{t:title}}"), page.body)
 
 
 # XXX Test template_fn

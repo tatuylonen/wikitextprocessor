@@ -60,25 +60,8 @@ def lua_loader(ctx: "Wtp", modname: str) -> Optional[str]:
     # print("LUA_LOADER IN PYTHON:", modname)
     assert isinstance(modname, str)
     modname = modname.strip()
-    ns_data = ctx.NAMESPACE_DATA["Module"]
-    local_ns_prefix = ns_data["name"] + ":"
-    ns_prefixes = tuple(alias + ":" for alias in ns_data["aliases"])
-    if local_ns_prefix != "Module:":
-        ns_prefixes = ns_prefixes + ("Module:",)
-    if modname.startswith(ns_prefixes):
-        modname = local_ns_prefix + modname[modname.find(":") + 1 :]
-
-    # Local name usually not used in Lua code
-    if modname.startswith(local_ns_prefix):
-        # First try to load it as a module
-        if modname.startswith(local_ns_prefix + "_"):
-            # Module names starting with _ are considered internal and cannot be
-            # loaded from the dump file for security reasons.  This is to ensure
-            # that the sandbox always gets loaded from a local file.
-            data = None
-        else:
-            data = ctx.get_page_body(modname, ns_data["id"])
-    else:
+    data = ctx.get_page_body(modname, ctx.NAMESPACE_DATA["Module"]["id"])
+    if data is None:
         # Try to load it from a file
         path = modname
         path = re.sub(r"[\0-\037]", "", path)  # Remove control chars, e.g. \n
@@ -88,7 +71,6 @@ def lua_loader(ctx: "Wtp", modname: str) -> Optional[str]:
         path = re.sub(r"\.\.+", ".", path)  # Replace .. and longer by .
         path = re.sub(r"^//+", "", path)  # Remove initial slashes
         path += ".lua"
-        data = None
 
         for prefix, exceptions in BUILTIN_LUA_SEARCH_PATHS:
             if modname in exceptions:
@@ -415,6 +397,7 @@ def initialize_lua(ctx: "Wtp") -> None:
 
     # Set Python functions for Lua
     call_set_functions(ctx, set_functions)
+    add_empty_sandbox_lua_module(ctx)
 
 
 def call_lua_sandbox(
@@ -853,3 +836,15 @@ def append_lua_stack(env_stack: deque, env: "_LuaTable") -> None:
 
 def get_current_title(wtp: "Wtp") -> str:
     return wtp.title
+
+
+def add_empty_sandbox_lua_module(wtp: "Wtp") -> None:
+    # prevent untrusted Lua code run sandbox
+    ns = wtp.NAMESPACE_DATA["Module"]
+    ns_name = ns["name"]
+    ns_id = ns["id"]
+    if not wtp.page_exists(f"{ns_name}:_sandbox_phase1", ns_id):
+        wtp.add_page(
+            f"{ns_name}:_sandbox_phase1", ns_id, body="", model="Scribunto"
+        )
+        wtp.db_conn.commit()
