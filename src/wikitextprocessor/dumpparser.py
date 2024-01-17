@@ -117,24 +117,26 @@ def process_dump(
             save_pages_to_file(wtp, save_pages_path)
         init_interwiki_map(wtp)
 
-    # Add default templates
-    template_ns = wtp.NAMESPACE_DATA.get("Template")
-    assert template_ns is not None
-    template_ns_id = template_ns["id"]
-    template_ns_local_name = template_ns["name"]
-    wtp.add_page(  # magic word
-        f"{template_ns_local_name}:!", template_ns_id, "|"
-    )
-    wtp.add_page(f"{template_ns_local_name}:=", template_ns_id, "=")
-    wtp.add_page(  # {{((}} -> {{
-        f"{template_ns_local_name}:((", template_ns_id, "&lbrace;&lbrace;"
-    )
-    wtp.add_page(  # {{))}} -> }}
-        f"{template_ns_local_name}:))", template_ns_id, "&rbrace;&rbrace;"
-    )
+    add_default_templates(wtp)
     analyze_and_overwrite_pages(
         wtp, overwrite_folders, skip_extract_dump, skip_analyze_templates
     )
+
+
+def add_default_templates(wtp: "Wtp") -> None:
+    ns = wtp.NAMESPACE_DATA["Template"]
+    ns_id = ns["id"]
+    ns_local_name = ns["name"]
+    default_templates = {
+        "!": "|",  # magic word
+        "=": "=",
+        "((": "&lbrace;&lbrace;",  # {{((}} -> {{
+        "))": "&rbrace;&rbrace;",  # {{))}} -> }}
+    }
+    for title, body in default_templates.items():
+        title = f"{ns_local_name}:{title}"
+        if not wtp.page_exists(title, ns_id):
+            wtp.add_page(title, ns_id, body)
 
 
 def analyze_and_overwrite_pages(
