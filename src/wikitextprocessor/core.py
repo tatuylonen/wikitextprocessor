@@ -1866,7 +1866,7 @@ class Wtp:
 
     def node_to_wikitext(
         self,
-        node: WikiNode,
+        node: Union[str, WikiNode],
         node_handler_fn: Optional[NodeHandlerFnCallable] = None,
     ) -> str:
         """Converts the given parse tree node back to Wikitext."""

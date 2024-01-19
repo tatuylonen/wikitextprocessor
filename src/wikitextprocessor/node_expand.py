@@ -47,7 +47,7 @@ def to_attrs(node: WikiNode) -> str:
 
 
 def to_wikitext(
-    node: WikiNode, node_handler_fn: Optional[NodeHandlerFnCallable] = None
+    node: Union[str, WikiNode], node_handler_fn: Optional[NodeHandlerFnCallable] = None
 ) -> str:
     """Converts a parse tree (or subtree) back to Wikitext.
     If ``node_handler_fn`` is supplied, it will be called for each WikiNode
