@@ -237,7 +237,6 @@ local _orig_tostring = tostring
 
 local _orig_VERSION = _VERSION
 local _orig_assert = assert
-local _orig_debug = new_debug
 local _orig_error = error
 local _orig_getmetatable = getmetatable
 local _orig_ipairs = ipairs
@@ -256,7 +255,6 @@ local _orig_tonumber = tonumber
 local _orig_type = type
 local _orig_unpack = unpack
 local _orig_xpcall = xpcall
-local _orig_new_require = new_require
 
 -- package is not really used anywhere in the Wiktionary module
 -- codebase, EXCEPT ja-translit uses package.loaders as a test
@@ -416,7 +414,7 @@ local function _lua_reset_env()
     env["rawequal"] = _orig_rawequal
     env["rawget"] = _orig_rawget
     env["rawset"] = _orig_rawset
-    env["require"] = _orig_new_require
+    env["require"] = new_require
     env["select"] = _orig_select
     env["setmetatable"] = _orig_setmetatable
     env["string"] = _orig_string
