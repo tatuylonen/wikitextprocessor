@@ -20,7 +20,6 @@ if sys.version_info < (3, 10):
 else:
     from importlib.resources import files
 
-from .parser import GeneralNode
 from pathlib import Path
 from types import TracebackType
 from typing import (
@@ -42,7 +41,12 @@ from .common import (
 )
 from .luaexec import call_lua_sandbox
 from .node_expand import NodeHandlerFnCallable, to_html, to_text, to_wikitext
-from .parser import KIND_TO_LEVEL, WikiNode, parse_encoded
+from .parser import (
+    KIND_TO_LEVEL,
+    GeneralNode,
+    WikiNode,
+    parse_encoded,
+)
 from .parserfns import PARSER_FUNCTIONS, call_parser_function
 from .wikihtml import ALLOWED_HTML_TAGS
 
