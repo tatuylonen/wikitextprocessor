@@ -507,7 +507,10 @@ class TemplateNode(WikiNode):
     @property
     def template_name(self) -> str:
         if isinstance(self.largs[0][0], str):
-            return self.largs[0][0].strip()
+            name = self.largs[0][0].strip()
+            if ":" in name:  # remove prefix
+                name = name[name.index(":") + 1 :]
+            return name
         else:
             return "<WikiNode>"
 
