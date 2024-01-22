@@ -20,6 +20,7 @@ if sys.version_info < (3, 10):
 else:
     from importlib.resources import files
 
+from .parser import GeneralNode
 from pathlib import Path
 from types import TracebackType
 from typing import (
@@ -1881,7 +1882,7 @@ class Wtp:
 
     def node_to_wikitext(
         self,
-        node: Union[str, WikiNode],
+        node: GeneralNode,
         node_handler_fn: Optional[NodeHandlerFnCallable] = None,
     ) -> str:
         """Converts the given parse tree node back to Wikitext."""
@@ -1890,7 +1891,7 @@ class Wtp:
 
     def node_to_html(
         self,
-        node: WikiNode,
+        node: GeneralNode,
         template_fn: Optional[TemplateFnCallable] = None,
         post_template_fn: Optional[PostTemplateFnCallable] = None,
         node_handler_fn: Optional[NodeHandlerFnCallable] = None,

@@ -11,7 +11,12 @@ from typing import (
     Union,
 )
 
-from .parser import NodeKind, WikiNode
+from .parser import (
+    GeneralNode,
+    NodeKind,
+    WikiNode,
+    WikiNodeListArgs,
+)
 from .wikihtml import ALLOWED_HTML_TAGS
 
 if TYPE_CHECKING:
@@ -21,9 +26,7 @@ if TYPE_CHECKING:
         Wtp,
     )
 
-NodeHandlerFnCallable = Callable[
-    [WikiNode], Union[None, str, list, tuple, WikiNode]
-]
+NodeHandlerFnCallable = Callable[[WikiNode], Union[None, GeneralNode]]
 
 kind_to_level: dict[NodeKind, str] = {
     NodeKind.LEVEL2: "==",
@@ -47,7 +50,7 @@ def to_attrs(node: WikiNode) -> str:
 
 
 def to_wikitext(
-    node: Union[str, WikiNode],
+    node: GeneralNode,
     node_handler_fn: Optional[NodeHandlerFnCallable] = None,
 ) -> str:
     """Converts a parse tree (or subtree) back to Wikitext.
@@ -58,7 +61,7 @@ def to_wikitext(
     WikiNodes in the returned value."""
     assert node_handler_fn is None or callable(node_handler_fn)
 
-    def recurse(node: Union[str, WikiNode, list, tuple]) -> str:
+    def recurse(node: Union[GeneralNode, WikiNodeListArgs]) -> str:
         if isinstance(node, str):
             # Certain constructs needs to be protected so that they don't get
             # parsed when we convert back and forth between wikitext and parsed
@@ -82,7 +85,8 @@ def to_wikitext(
         parts: list[str] = []
         if kind in kind_to_level:
             tag = kind_to_level[kind]
-            t = recurse(node.largs)
+            t = recurse(node.largs)  # This is where WikiNodeListArgs is needed
+            # if you were wondering...
             parts.append("\n{} {} {}\n".format(tag, t, tag))
             parts.append(recurse(node.children))
         elif kind == NodeKind.HLINE:
@@ -198,7 +202,7 @@ def to_wikitext(
 
 def to_html(
     ctx: "Wtp",
-    node: WikiNode,
+    node: GeneralNode,
     template_fn: Optional["TemplateFnCallable"] = None,
     post_template_fn: Optional["PostTemplateFnCallable"] = None,
     node_handler_fn: Optional[NodeHandlerFnCallable] = None,
@@ -221,7 +225,7 @@ def to_html(
 
 def to_text(
     ctx: "Wtp",
-    node: WikiNode,
+    node: GeneralNode,
     template_fn: Optional["TemplateFnCallable"] = None,
     post_template_fn: Optional["PostTemplateFnCallable"] = None,
     node_handler_fn: Optional[NodeHandlerFnCallable] = None,

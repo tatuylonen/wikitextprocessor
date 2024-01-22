@@ -306,7 +306,7 @@ WikiNodeArgsSublist = WikiNodeChildrenList  # XXX Currently identical to above
 #                         ]
 #                     ]
 WikiNodeStrArg = str
-WikiNodeListArgs = list[Union[WikiNodeArgsSublist, WikiNodeChildrenList]]
+WikiNodeListArgs = list[WikiNodeArgsSublist]
 WikiNodeHTMLAttrsDict = dict[str, str]  # XXX Probably not just HTML...
 
 
@@ -492,6 +492,20 @@ class WikiNode:
                     continue
                 yield node
 
+
+# We have many functions that can take any 'level' of a WikiNode tree,
+# which includes lists (and tuples, although that might be rare or even
+# non-existent in the codebase.
+GeneralNode = Union[str,
+                    WikiNode,
+                    list[Union[
+                        str,
+                        WikiNode]],
+                    tuple[Union[
+                        str,
+                        WikiNode],
+                        ...]
+                    ]
 
 TemplateParameters = dict[
     Union[str, int],
