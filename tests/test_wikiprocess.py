@@ -4190,7 +4190,11 @@ return export
         self.assertEqual(self.ctx.get_page("T:title", 10), page)
         self.assertEqual(self.ctx.get_page("t:title", 10), page)
         self.ctx.start_page("")
-        self.assertEqual(self.ctx.expand("{{t:title}}"), page.body)
+        wikitext = "{{t:title}}"
+        self.assertEqual(self.ctx.expand(wikitext), page.body)
+        root = self.ctx.parse(wikitext)
+        template_node = root.children[0]
+        self.assertEqual(template_node.template_name, "title")
 
 
 # XXX Test template_fn
