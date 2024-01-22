@@ -496,16 +496,9 @@ class WikiNode:
 # We have many functions that can take any 'level' of a WikiNode tree,
 # which includes lists (and tuples, although that might be rare or even
 # non-existent in the codebase.
-GeneralNode = Union[str,
-                    WikiNode,
-                    list[Union[
-                        str,
-                        WikiNode]],
-                    tuple[Union[
-                        str,
-                        WikiNode],
-                        ...]
-                    ]
+GeneralNode = Union[
+    str, WikiNode, list[Union[str, WikiNode]], tuple[Union[str, WikiNode], ...]
+]
 
 TemplateParameters = dict[
     Union[str, int],
