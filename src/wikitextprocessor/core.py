@@ -25,7 +25,7 @@ from types import TracebackType
 from typing import (
     TYPE_CHECKING,
     Callable,
-    Generator,
+    Iterator,
     Optional,
     TypedDict,
     Union,
@@ -1759,7 +1759,7 @@ class Wtp:
         include_redirects: bool = True,
         model: Optional[str] = None,
         search_pattern: Optional[str] = None,
-    ) -> Generator[Page, None, None]:
+    ) -> Iterator[Page]:
         query_str = """
         SELECT title, namespace_id, redirect_to, need_pre_expand, body, model
         FROM pages
