@@ -300,11 +300,11 @@ local mw_language = {
 }
 
 function mw_language.fetchLanguageName(code, inLanguage)
-   return mw_python_fetch_language_name(code, inLanguage)
+   return mw_python_fetch_language_name(code, inLanguage or "")
 end
 
 function mw_language.fetchLanguageNames(inLanguage, include)
-   return mw_python_fetch_language_names(inLanguage, include)
+   return mw_python_fetch_language_names(inLanguage or "", include or "")
 end
 
 function mw_language.getContentLanguage()
