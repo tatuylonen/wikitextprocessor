@@ -12,10 +12,24 @@ class TestLua(TestCase):
         self.wtp.close_db_conn()
 
     def test_fetchlanguage(self):
-        from wikitextprocessor.luaexec import fetch_language_name
-
-        self.assertEqual(fetch_language_name("fr", None), "français")
-        self.assertEqual(fetch_language_name("fr", "en"), "French")
+        self.wtp.add_page(
+            "Module:test",
+            828,
+            body="""
+            local export = {}
+            function export.test()
+              value = mw.language.fetchLanguageName("fr")
+              value = value .. " " .. mw.language.fetchLanguageName("fr", "en")
+              return value
+            end
+            return export
+            """,
+            model="Scribunto",
+        )
+        self.wtp.start_page("")
+        self.assertEqual(
+            self.wtp.expand("{{#invoke:test|test}}"), "français French"
+        )
 
     def test_isolated_lua_env(self):
         # each Lua moudle uses by `#invoke` runs in cloned environment

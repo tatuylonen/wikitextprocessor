@@ -7,7 +7,6 @@ import copy
 import html
 import html.entities
 import json
-import multiprocessing  # XXX debug, remove me
 import re
 import sys
 import traceback
@@ -129,9 +128,8 @@ def mw_text_encode(text: str, charset: str) -> str:
     return "".join(parts)
 
 
-def mw_text_jsondecode(ctx: "Wtp", s: str, *rest: int) -> dict[Any, Any]:
-    flags = int(rest[0]) if rest else 0
-    value: dict = json.loads(s)
+def mw_text_jsondecode(ctx: "Wtp", s: str, flags: int) -> dict[Any, Any]:
+    value = json.loads(s)
     assert isinstance(ctx.lua, lupa.LuaRuntime)
     # Assign locally to assure type-checker this exists
     table_from = ctx.lua.table_from
@@ -167,9 +165,7 @@ def mw_text_jsondecode(ctx: "Wtp", s: str, *rest: int) -> dict[Any, Any]:
     return value
 
 
-def mw_text_jsonencode(s: Any, *rest) -> str:
-    flags = int(rest[0]) if rest else 0
-
+def mw_text_jsonencode(s: str, flags: int) -> str:
     def recurse(x) -> Any:
         if isinstance(x, (str, int, float, type(None), type(True))):
             return x
@@ -215,7 +211,7 @@ def get_page_info(ctx: "Wtp", title: str, namespace_id: int) -> "_LuaTable":
     return ctx.lua.table_from(dt)
 
 
-def fetch_language_name(code: str, inLanguage: Optional[str]) -> str:
+def fetch_language_name(code: str, in_language: str) -> str:
     """
     This function is called from Lua code as part of the mw.language
     implementation.  This maps a language code to its name.
@@ -223,11 +219,11 @@ def fetch_language_name(code: str, inLanguage: Optional[str]) -> str:
     """
     from mediawiki_langcodes import code_to_name
 
-    return code_to_name(code, inLanguage or "")
+    return code_to_name(code, in_language)
 
 
 def fetch_language_names(
-    ctx: "Wtp", inLanguage: Optional[str], include: Optional[str]
+    ctx: "Wtp", in_language: str, include: str
 ) -> "_LuaTable":
     """This function is called from Lua code as part of the mw.language
     implementation.  This returns a list of known language names."""
@@ -235,7 +231,7 @@ def fetch_language_names(
 
     names = {
         lang_code: lang_name
-        for lang_code, lang_name in get_all_names(inLanguage or "")
+        for lang_code, lang_name in get_all_names(in_language)
     }
     return ctx.lua.table_from(names)  # type: ignore[union-attr]
     # ⇑⇑ tells mypy to ignore an 'error';
@@ -243,66 +239,16 @@ def fetch_language_names(
     # ctx.lua.table_from should never be None.
 
 
+def get_page_content(
+    wtp: "Wtp", title: str, namespace_id: int
+) -> Optional[str]:
+    return wtp.get_page_body(title, namespace_id)
+
+
 def call_set_functions(
     ctx: "Wtp", set_functions: Callable[["_LuaTable"], None]
 ) -> None:
     assert ctx.lua is not None
-
-    def debug_mw_text_jsondecode(x: str, *rest: int) -> dict[Any, Any]:
-        return mw_text_jsondecode(ctx, x, *rest)
-
-    def debug_get_page_info(title: str, ns_id: int, *bad_args) -> "_LuaTable":
-        """Debug wrapper; *bad_args are a debugging parameter list that should
-        not be populated, ever, but does; somewhere, the references to
-        these functions in particular are being scrambled and the functions
-        get parameters meant for other functions!"""
-        if bad_args:  # Somehow, the functions have been scrambled in memory
-            # and this function is being called with too many
-            # argument
-            print(
-                f"MAKE_FRAME GET_PAGE_INFO DEBUG:"
-                f" {repr(bad_args)},"
-                f" {ctx.title=},"
-                f" {multiprocessing.current_process().name}"
-            )
-        return get_page_info(ctx, title, ns_id)
-
-    def debug_get_page_content(
-        title: str, namespace_id: int, *bad_args: Any
-    ) -> Optional[str]:
-        if bad_args:
-            print(
-                f"MAKE_FRAME GET_PAGE_CONTENT DEBUG:"
-                f" {repr(bad_args)},"
-                f" {ctx.title=},"
-                f" {multiprocessing.current_process().name}"
-            )
-        return ctx.get_page_body(title, namespace_id)
-
-    def debug_fetch_language_name(
-        code: str, inLanguage: str, *bad_args: Any
-    ) -> str:
-        if bad_args:
-            print(
-                f"MAKE_FRAME FETCH_LANGUAGE_NAME DEBUG:"
-                f" {repr(bad_args)},"
-                f" {ctx.title=},"
-                f" {multiprocessing.current_process().name}"
-            )
-        return fetch_language_name(code, inLanguage)
-
-    def debug_fetch_language_names(
-        inLanguage: str, include: str, *bad_args: Any
-    ) -> "_LuaTable":
-        if bad_args:
-            print(
-                f"MAKE_FRAME FETCH_LANGUAGE_NAMES DEBUG:"
-                f" {repr(bad_args)},"
-                f" {ctx.title=},"
-                f" {multiprocessing.current_process().name}"
-            )
-        return fetch_language_names(ctx, inLanguage, include)
-
     # Set functions that are implemented in Python
     set_functions(
         ctx.lua.table_from(
@@ -310,11 +256,13 @@ def call_set_functions(
                 "mw_decode_python": mw_text_decode,
                 "mw_encode_python": mw_text_encode,
                 "mw_jsonencode_python": mw_text_jsonencode,
-                "mw_jsondecode_python": debug_mw_text_jsondecode,
-                "mw_python_get_page_info": debug_get_page_info,
-                "mw_python_get_page_content": debug_get_page_content,
-                "mw_python_fetch_language_name": debug_fetch_language_name,
-                "mw_python_fetch_language_names": debug_fetch_language_names,
+                "mw_jsondecode_python": partial(mw_text_jsondecode, ctx),
+                "mw_python_get_page_info": partial(get_page_info, ctx),
+                "mw_python_get_page_content": partial(get_page_content, ctx),
+                "mw_python_fetch_language_name": fetch_language_name,
+                "mw_python_fetch_language_names": partial(
+                    fetch_language_names, ctx
+                ),
                 "mw_wikibase_getlabel_python": partial(
                     mw_wikibase_getlabel, ctx
                 ),
@@ -452,7 +400,7 @@ def call_lua_sandbox(
     modfn = expander(invoke_args[1]).strip()
 
     def make_frame(
-        pframe: Union[None, dict, "_LuaTable"],
+        pframe: Optional["_LuaTable"],
         title: str,
         args: Union[dict[Union[str, int], str], tuple, list],
     ) -> "_LuaTable":
@@ -648,22 +596,15 @@ def call_lua_sandbox(
             ctx.expand_stack.pop()
             return ret
 
-        def debugGetParent(frame: "_LuaTable", *args) -> "_LuaTable":
-            if args:
-                ctx.debug(
-                    f"LAMBDA GETPARENT EXTRA ARGS: Lua module:{title}, "
-                    f"frame: {frame}, "
-                    f"extra args: {repr(args)}, "
-                    f"process name: {multiprocessing.current_process().name}"
-                )
-            if TYPE_CHECKING:
-                assert isinstance(pframe, _LuaTable)
+        def lua_get_parent(
+            frame: "_LuaTable", *ignore
+        ) -> Optional["_LuaTable"]:
             return pframe
 
         # XXX this is actually pretty generic and could be used
         # to wrap any python function in a lua function wrapper if
         # needed; could this be turned into a *decorator*?
-        # debugGetParent needed to be wrapped because there's a
+        # lua_get_parent needed to be wrapped because there's a
         # en.wikiPEDIA module that tested type(x.getParent) == 'function'
         # for some silly reason; if that turns up elsewhere, here's
         # a solution.
@@ -678,16 +619,7 @@ def call_lua_sandbox(
         """
         )
 
-        wrappedDebugGetParent = lua_wrapper_generator(debugGetParent)
-
-        def debugGetTitle(frame: "_LuaTable", *args) -> str:
-            if args:
-                ctx.debug(
-                    f"LAMBDA GETTITLE EXTRA ARGS: Lua module:{title}, "
-                    f"frame: {frame}, "
-                    f"extra args: {repr(args)}, "
-                    f"process name: {multiprocessing.current_process().name}"
-                )
+        def lua_get_title(frame: "_LuaTable", *ignore) -> str:
             return title
 
         # Create frame object as dictionary with default value None
@@ -696,8 +628,8 @@ def call_lua_sandbox(
         frame["callParserFunction"] = callParserFunction
         frame["extensionTag"] = extensionTag
         frame["expandTemplate"] = expandTemplate
-        frame["getParent"] = wrappedDebugGetParent
-        frame["getTitle"] = debugGetTitle
+        frame["getParent"] = lua_wrapper_generator(lua_get_parent)
+        frame["getTitle"] = lua_get_title
         frame["preprocess"] = preprocess
         # argumentPairs, getArgument, newChild, newParserValue,
         # newTemplateParserValue are set in _sandbox_phase2.lua
