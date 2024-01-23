@@ -507,15 +507,16 @@ TemplateParameters = dict[
 
 
 class TemplateNode(WikiNode):
-    def __init__(self, linenum: int):
+    def __init__(self, linenum: int, ns_prefixes: tuple[str, ...]):
         super().__init__(NodeKind.TEMPLATE, linenum)
         self._template_parameters: Optional[TemplateParameters] = None
+        self._ns_prefixes = ns_prefixes
 
     @property
     def template_name(self) -> str:
         if isinstance(self.largs[0][0], str):
             name = self.largs[0][0].strip()
-            if ":" in name:  # remove prefix
+            if name.lower().startswith(self._ns_prefixes):  # remove prefix
                 name = name[name.index(":") + 1 :]
             return name
         else:
@@ -614,7 +615,7 @@ def _parser_push(ctx: "Wtp", kind: NodeKind) -> WikiNode:
     _parser_merge_str_children(ctx)
     node: WikiNode
     if kind == NodeKind.TEMPLATE:
-        node = TemplateNode(ctx.linenum)
+        node = TemplateNode(ctx.linenum, ctx.namespace_prefixes("Template"))
     elif kind == NodeKind.HTML:
         node = HTMLNode(ctx.linenum)
     elif kind in KIND_TO_LEVEL:
