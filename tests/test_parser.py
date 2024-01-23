@@ -2706,6 +2706,23 @@ def foo(x):
         root = self.ctx.parse("[<nowiki/>[link]]")
         self.assertEqual(root.children, ["&lsqb;&lsqb;link&rsqb;&rsqb;"])
 
+    def test_template_node_template_name_prop(self):
+        tests = [
+            ["{{:page_in_main_ns}}", ":page_in_main_ns"],  # transclude page
+            ["{{Template:title}}", "title"],
+            ["{{t:title}}", "title"],  # alias
+            # template name could have ":"
+            # https://en.wiktionary.org/wiki/Template:RQ:Schuster_Hepaticae
+            ["{{RQ:Schuster Hepaticae}}", "RQ:Schuster Hepaticae"],
+        ]
+        self.ctx.start_page("")
+        for wikitext, title in tests:
+            with self.subTest(wikitext=wikitext, title=title):
+                root = self.ctx.parse(wikitext)
+                template_node = root.children[0]
+                self.assertTrue(isinstance(template_node, TemplateNode))
+                self.assertEqual(template_node.template_name, title)
+
 
 # XXX implement <nowiki/> marking for links, templates
 #  - https://en.wikipedia.org/wiki/Help:Wikitext#Nowiki

@@ -4182,7 +4182,7 @@ return export
         )
         self.assertEqual(self.ctx.expand("{{Foo:bar}}"), "foobar")
 
-    def test_namespace_prefixes(self):
+    def test_get_page_with_namespace_prefixes(self):
         page = Page(
             "Template:title", 10, body="template text", model="wikitext"
         )
@@ -4190,11 +4190,7 @@ return export
         self.assertEqual(self.ctx.get_page("T:title", 10), page)
         self.assertEqual(self.ctx.get_page("t:title", 10), page)
         self.ctx.start_page("")
-        wikitext = "{{t:title}}"
-        self.assertEqual(self.ctx.expand(wikitext), page.body)
-        root = self.ctx.parse(wikitext)
-        template_node = root.children[0]
-        self.assertEqual(template_node.template_name, "title")
+        self.assertEqual(self.ctx.expand("{{t:title}}"), page.body)
 
 
 # XXX Test template_fn

@@ -1693,18 +1693,9 @@ class Wtp:
             local_ns_name = self.LOCAL_NS_NAME_BY_ID[namespace_id]
             ns_prefix = local_ns_name + ":"
             if not title.startswith(ns_prefix):
-                ns_prefixes = []
-                for ns_name, ns_data in self.NAMESPACE_DATA.items():
-                    if ns_data["id"] == namespace_id:
-                        ns_prefixes.append(ns_name.lower() + ":")
-                        ns_prefixes.extend(
-                            [
-                                alias.lower() + ":"
-                                for alias in ns_data["aliases"]
-                            ]
-                        )
-                        break
-                if title.lower().startswith(tuple(ns_prefixes)):
+                if title.lower().startswith(
+                    self.namespace_prefixes("Template")
+                ):
                     # replace lower case and alias prefix
                     title = ns_prefix + title[title.index(":") + 1 :]
                 else:
@@ -1924,6 +1915,24 @@ class Wtp:
             post_template_fn=post_template_fn,
             node_handler_fn=node_handler_fn,
         )
+
+    def namespace_prefixes(
+        self, namespace: str, lower: bool = True
+    ) -> tuple[str, ...]:
+        """Based on given namespace name, create a tuple of aliases"""
+        if namespace in self.NAMESPACE_DATA:
+            prefixes = tuple(
+                map(
+                    lambda x: x.lower() + ":" if lower else x + ":",
+                    [self.NAMESPACE_DATA[namespace]["name"]]
+                    + self.NAMESPACE_DATA[namespace]["aliases"],
+                )
+            )
+            if namespace != self.NAMESPACE_DATA[namespace]["name"]:
+                prefixes += (namespace.lower() + ":",)
+            return prefixes
+        else:
+            return ()
 
 
 def is_chinese_subtitle_template(wtp: Wtp, title: str) -> bool:
