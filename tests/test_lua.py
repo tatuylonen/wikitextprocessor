@@ -206,3 +206,53 @@ class TestLua(TestCase):
             "British chemist Humphry Davy",
         )
         mock_func.assert_called_once()  # use db cache
+
+    def test_extension_tag_nowiki_strip_marker(self):
+        # GitHub issue tatuylonen/wiktextract#238
+        self.wtp.add_page(
+            "Module:test",
+            828,
+            """
+        local export = {}
+
+        function export.test(frame)
+          return frame:extensionTag("nowiki", "") ..
+            frame:extensionTag("nowiki", "")
+        end
+
+        return export
+        """,
+        )
+        self.wtp.start_page("test")
+        self.assertEqual(
+            self.wtp.expand("{{#invoke:test|test}}"),
+            """\x7f'"`UNIQ--nowiki-00000000-QINU`"'\x7f"""
+            """\x7f'"`UNIQ--nowiki-00000001-QINU`"'\x7f""",
+        )
+
+    def test_preprocess_heading_strip_marker(self):
+        # GitHub issue tatuylonen/wiktextract#238
+        self.wtp.add_page(
+            "Module:test",
+            828,
+            """
+        local export = {}
+
+        function export.test(frame)
+          return frame:preprocess("==a==") ..
+            frame:preprocess("==a==") ..
+            frame:preprocess("==b==") ..
+            frame:preprocess("=b=")
+        end
+
+        return export
+        """,
+        )
+        self.wtp.start_page("test")
+        self.assertEqual(
+            self.wtp.expand("{{#invoke:test|test}}"),
+            """==\x7f'"`UNIQ--h-0-QINU`"'\x7fa=="""
+            """==\x7f'"`UNIQ--h-0-QINU`"'\x7fa=="""
+            """==\x7f'"`UNIQ--h-1-QINU`"'\x7fb=="""
+            """=\x7f'"`UNIQ--h-2-QINU`"'\x7fb=""",
+        )

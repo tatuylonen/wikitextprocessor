@@ -201,6 +201,7 @@ class Wtp:
         "lua_env_stack",
         "lua_frame_stack",
         "project",  # "wiktionary" or "wikipedia"
+        "strip_marker_cache",
     )
 
     def __init__(
@@ -248,6 +249,7 @@ class Wtp:
         self.lua_env_stack: deque["_LuaTable"] = deque()
         self.lua_frame_stack: deque["_LuaTable"] = deque()
         self.project = project
+        self.strip_marker_cache: defaultdict[str, int] = defaultdict(int)
 
     def create_db(self) -> None:
         from .wikidata import init_wikidata_cache
@@ -1103,6 +1105,7 @@ class Wtp:
             self.lua_clear_loaddata_cache()
         self.lua_env_stack.clear()
         self.lua_frame_stack.clear()
+        self.strip_marker_cache.clear()
 
     def start_section(self, title: Optional[str]) -> None:
         """Starts processing a new section of the current page.  Calling this
@@ -1933,6 +1936,23 @@ class Wtp:
             return prefixes
         else:
             return ()
+
+    def create_strip_marker(self, node: str, content: str) -> str:
+        # https://www.mediawiki.org/wiki/Strip_marker
+        # GitHub issue tatuylonen/wiktextract#238
+        if node == "nowiki":
+            num = self.strip_marker_cache.get(node, 0)
+            num_str = format(num, "08x")
+            self.strip_marker_cache[node] = num + 1
+        else:
+            num = self.strip_marker_cache.get(
+                content, self.strip_marker_cache.get("preprocess", 0)
+            )
+            num_str = str(num)
+            if content not in self.strip_marker_cache:
+                self.strip_marker_cache["preprocess"] += 1
+                self.strip_marker_cache[content] = num
+        return f"""\x7f'"`UNIQ--{node}-{num_str}-QINU`"'\x7f"""
 
 
 def is_chinese_subtitle_template(wtp: Wtp, title: str) -> bool:

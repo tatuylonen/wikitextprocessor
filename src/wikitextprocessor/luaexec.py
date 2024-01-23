@@ -462,11 +462,9 @@ def call_lua_sandbox(
                 return ""
             dt = args[0]
             if not isinstance(dt, (str, int, float, type(None))):
-                name: str = str(dt["name"] or "")
-                content: str = str(dt["content"] or "")
-                attrs: Union[dict[Union[int, str], str], str, "_LuaTable"] = (
-                    dt["args"] or {}
-                )
+                name = str(dt["name"] or "")
+                content = str(dt["content"] or "")
+                attrs = dt["args"] or {}
             elif len(args) == 1:
                 name = str(args[0])
                 content = ""
@@ -480,11 +478,6 @@ def call_lua_sandbox(
                 content = str(args[1] or "")
                 attrs = args[2] or {}
             if isinstance(attrs, ItemsView) or lua_type(attrs) == "table":
-                if TYPE_CHECKING:
-                    # Because Lupa doesn't let us import _LuaTable directly,
-                    # this work-around is needed to convince the type-checker.
-                    # lua_type() is completely opaque.
-                    assert isinstance(attrs, (ItemsView, _LuaTable))
                 attrs2 = list(
                     v
                     if isinstance(k, int)
@@ -497,13 +490,16 @@ def call_lua_sandbox(
                 assert isinstance(attrs, str)
                 attrs2 = [attrs]
 
-            ctx.expand_stack.append("extensionTag()")
-            ret: str = tag_fn(
-                ctx, "#tag", [name, content] + attrs2, lambda x: x
-            )  # Already expanded
-            ctx.expand_stack.pop()
-            # Expand any templates from the result
-            ret = preprocess(frame, ret)
+            if name == "nowiki":
+                ret = ctx.create_strip_marker("nowiki", "")
+            else:
+                ctx.expand_stack.append("extensionTag()")
+                ret = tag_fn(
+                    ctx, "#tag", [name, content] + attrs2, lambda x: x
+                )  # Already expanded
+                ctx.expand_stack.pop()
+                # Expand any templates from the result
+                ret = preprocess(frame, ret)
             return ret
 
         def callParserFunction(frame: "_LuaTable", *args: Any) -> str:
@@ -562,13 +558,22 @@ def call_lua_sandbox(
                 v = str(candidate["text"] or "")
             else:
                 v = candidate
-            # Expand all templates, in case the Lua code actually
-            # inspects the output.
-            v = ctx._encode(v)
-            ctx.expand_stack.append("frame:preprocess()")
-            ret = expand_all_templates(v)
-            ctx.expand_stack.pop()
-            return ret
+
+            if (m := re.fullmatch(r"(=+)([^=]+)\1", v)) is not None:
+                return (
+                    m.group(1)
+                    + ctx.create_strip_marker("h", m.group(0))
+                    + m.group(2)
+                    + m.group(1)
+                )
+            else:
+                # Expand all templates, in case the Lua code actually
+                # inspects the output.
+                v = ctx._encode(v)
+                ctx.expand_stack.append("frame:preprocess()")
+                ret = expand_all_templates(v)
+                ctx.expand_stack.pop()
+                return ret
 
         def expandTemplate(frame: "_LuaTable", *args) -> str:
             if len(args) < 1:
@@ -583,8 +588,6 @@ def call_lua_sandbox(
                     sortid="luaexec/566",
                 )
                 return ""
-            if TYPE_CHECKING:
-                assert isinstance(dt, (_LuaTable, dict))
             title = dt["title"] or ""
             args2 = dt["args"] or {}
             new_args = [title]
