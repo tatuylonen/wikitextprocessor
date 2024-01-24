@@ -497,7 +497,8 @@ class WikiNode:
 # which includes lists (and tuples, although that might be rare or even
 # non-existent in the codebase.
 GeneralNode = Union[
-    str, WikiNode, list[Union[str, WikiNode]], tuple[Union[str, WikiNode], ...]
+    str, WikiNode, list[Union[str, WikiNode]], tuple[Union[str, WikiNode], ...],
+    list[str], list[WikiNode], tuple[str, ...], tuple[WikiNode, ...],
 ]
 
 TemplateParameters = dict[
