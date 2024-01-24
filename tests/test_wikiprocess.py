@@ -4191,6 +4191,13 @@ return export
         self.assertEqual(self.ctx.get_page("t:title", 10), page)
         self.ctx.start_page("")
         self.assertEqual(self.ctx.expand("{{t:title}}"), page.body)
+        module_page = Page(
+            "Module:title", 828, body="module text", model="Scribunto"
+        )
+        self.ctx.add_page(
+            "Module:title", 828, module_page.body, model="Scribunto"
+        )
+        self.assertEqual(self.ctx.get_page("mod:title", 828), module_page)
 
 
 # XXX Test template_fn

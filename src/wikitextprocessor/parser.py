@@ -615,7 +615,10 @@ def _parser_push(ctx: "Wtp", kind: NodeKind) -> WikiNode:
     _parser_merge_str_children(ctx)
     node: WikiNode
     if kind == NodeKind.TEMPLATE:
-        node = TemplateNode(ctx.linenum, ctx.namespace_prefixes("Template"))
+        node = TemplateNode(
+            ctx.linenum,
+            ctx.namespace_prefixes(ctx.NAMESPACE_DATA["Template"]["id"]),
+        )
     elif kind == NodeKind.HTML:
         node = HTMLNode(ctx.linenum)
     elif kind in KIND_TO_LEVEL:

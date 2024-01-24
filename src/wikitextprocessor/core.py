@@ -1697,7 +1697,7 @@ class Wtp:
             ns_prefix = local_ns_name + ":"
             if not title.startswith(ns_prefix):
                 if title.lower().startswith(
-                    self.namespace_prefixes("Template")
+                    self.namespace_prefixes(namespace_id)
                 ):
                     # replace lower case and alias prefix
                     title = ns_prefix + title[title.index(":") + 1 :]
@@ -1920,22 +1920,24 @@ class Wtp:
         )
 
     def namespace_prefixes(
-        self, namespace: str, lower: bool = True
+        self, ns_id: int, lower: bool = True
     ) -> tuple[str, ...]:
         """Based on given namespace name, create a tuple of aliases"""
-        if namespace in self.NAMESPACE_DATA:
-            prefixes = tuple(
-                map(
-                    lambda x: x.lower() + ":" if lower else x + ":",
-                    [self.NAMESPACE_DATA[namespace]["name"]]
-                    + self.NAMESPACE_DATA[namespace]["aliases"],
+        for ns, ns_data in self.NAMESPACE_DATA.items():
+            if ns_data["id"] == ns_id:
+                prefixes = tuple(
+                    map(
+                        lambda x: x.lower() + ":" if lower else x + ":",
+                        [ns_data["name"]] + ns_data["aliases"],
+                    )
                 )
-            )
-            if namespace != self.NAMESPACE_DATA[namespace]["name"]:
-                prefixes += (namespace.lower() + ":",)
-            return prefixes
-        else:
-            return ()
+                if ns != ns_data["name"]:
+                    if lower:
+                        ns = ns.lower()
+                    prefixes += (ns + ":",)
+                return prefixes
+
+        return ()
 
     def create_strip_marker(self, node: str, content: str) -> str:
         # https://www.mediawiki.org/wiki/Strip_marker
