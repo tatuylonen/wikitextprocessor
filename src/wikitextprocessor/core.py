@@ -81,7 +81,7 @@ TemplateFnCallable = Callable[
         str,  # name
         TemplateArgs,  # arguments
     ],
-    str,  # expanded output
+    Optional[str],  # expanded output
 ]
 PostTemplateFnCallable = Callable[
     [
@@ -89,7 +89,7 @@ PostTemplateFnCallable = Callable[
         TemplateArgs,  # arguments
         str,  # previously expanded from templatefn
     ],
-    str,  # finalized expanded output
+    Optional[str],  # finalized expanded output
 ]
 
 
@@ -1817,10 +1817,10 @@ class Wtp:
         text: str,
         pre_expand=False,
         expand_all=False,
-        additional_expand=None,
-        do_not_pre_expand=None,
-        template_fn=None,
-        post_template_fn=None,
+        additional_expand: Optional[set[str]] = None,
+        do_not_pre_expand: Optional[set[str]] = None,
+        template_fn: Optional[TemplateFnCallable] = None,
+        post_template_fn: Optional[PostTemplateFnCallable] = None,
     ) -> WikiNode:
         """Parses the given text into a parse tree (WikiNode tree).  If
         ``pre_expand`` is True, then before parsing this will expand
