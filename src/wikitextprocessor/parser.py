@@ -396,7 +396,7 @@ class WikiNode:
         self,
         start_node: "WikiNode",
         current_node: Union["WikiNode", str],
-        target_kinds: NodeKind,
+        target_kinds: Union[list[NodeKind], NodeKind],
     ) -> Iterator["WikiNode"]:
         # Find nodes in WikiNode.children and WikiNode.largs recursively.
         # Search WikiNode.largs probably is not needed, add it because the
@@ -415,12 +415,14 @@ class WikiNode:
                     )
 
     def find_child_recursively(
-        self, target_kinds: NodeKind
+        self, target_kinds: Union[list[NodeKind], NodeKind]
     ) -> Iterator["WikiNode"]:
         # Similar to `find_child()` but also search nested nodes.
         yield from self._find_node_recursively(self, self, target_kinds)
 
-    def contain_node(self, target_kinds: NodeKind) -> bool:
+    def contain_node(
+        self, target_kinds: Union[list[NodeKind], NodeKind]
+    ) -> bool:
         for node in self._find_node_recursively(self, self, target_kinds):
             return True
         return False
