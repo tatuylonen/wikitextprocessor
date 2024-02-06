@@ -106,19 +106,25 @@ from typing import Any
 from wikitextprocessor import Wtp, WikiNode, NodeKind, Page
 from wikitextprocessor.dumpparser import process_dump
 
-def page_handler(page: Page, wtp: Wtp | None = None) -> Any:
-    tree = wtp.parse(page.body, pre_expand=True)
+def page_handler(wtp: Wtp, page: Page) -> Any:
     # process parse tree
-    # value = wtp.node_to_wikitext(node)
+    tree = wtp.parse(page.body)
+    # or get expanded plain text
+    text = wtp.expand(page.body)
 
-wtp = Wtp()
+wtp = Wtp(
+    db_path="en_20230801.db", lang_code="en", project="wiktionary"
+)
+
+# extract dump file then save pages to SQLite file
 process_dump(
     wtp,
     "enwiktionary-20230801-pages-articles.xml.bz2",
-    {0, 10, 110, 828},  # namespace id
+    {0, 10, 110, 828},  # namespace id, can be found at the start of dump file
 )
+
 for _ in map(
-    partial(page_handler, wtp=wtp), wtp.get_all_pages([0])
+    partial(page_handler, wtp), wtp.get_all_pages([0])
 ):
     pass
 ```
