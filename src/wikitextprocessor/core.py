@@ -1577,7 +1577,14 @@ class Wtp:
                     self.expand_stack.pop()  # template name
                     parts.append(t)
                 elif kind == "A":
-                    parts.append(self._unexpanded_arg(args, nowiki))
+                    if nowiki:
+                        parts.append(self._unexpanded_arg(args, nowiki))
+                        continue
+                    self.expand_stack.append("ARGVAL-NO-TEMPLATE")
+                    t = expand_args(ch, {})
+                    self.expand_stack.pop()
+                    parts.append(t)
+                    continue
                 elif kind == "L":
                     if nowiki:
                         parts.append(self._unexpanded_link(args, nowiki))
