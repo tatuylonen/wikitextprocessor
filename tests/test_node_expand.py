@@ -118,6 +118,9 @@ class NodeExpTests(unittest.TestCase):
     def test_templatearg3(self):
         self.backcvt("{{{a|}}}", "{{{a|}}}")
 
+    def test_templatearg3a(self):
+        self.backcvt("{{{|a}}}", "{{{|a}}}")
+
     def test_templatearg4(self):
         self.backcvt("{{{{{templ}}}}}", "{{{{{templ}}}}}")
 
@@ -194,6 +197,22 @@ class NodeExpTests(unittest.TestCase):
 
     def test_text5(self):
         self.totext("foo<ref x=1>bar</ref> z", "foo z")
+
+    def test_text6(self):
+        # Undefined "foo"
+        self.totext("{{{foo}}}", "{{{foo}}}")
+
+    def test_text7(self):
+        # default to "foo"
+        self.totext("{{{|foo}}}", "foo")
+
+    def test_text8(self):
+        # default to "foo"
+        self.totext("{{{bar|foo}}}", "foo")
+
+    def test_text9(self):
+        # default to "foo"
+        self.totext("{{{bar|{{{baz|foo}}}}}}", "foo")
 
     @patch(
         "wikitextprocessor.Wtp.get_page",
