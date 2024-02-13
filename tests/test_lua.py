@@ -256,3 +256,37 @@ class TestLua(TestCase):
             """==\x7f'"`UNIQ--h-1-QINU`"'\x7fb=="""
             """=\x7f'"`UNIQ--h-2-QINU`"'\x7fb=""",
         )
+
+    def test_mw_html(self):
+        self.wtp.add_page(
+            "Module:test",
+            828,
+            # body="""
+            # local export = {}
+            # function export.test()
+            #   value = mw.language.fetchLanguageName("fr")
+            #   value = value .. " " .. mw.language.fetchLanguageName("fr", "en")
+            #   return value
+            # end
+            # return export
+            # """,
+            body="""
+            local export = {}
+            function export.test()
+                local wikiHtml = mw.html.create( '' )
+                wikiHtml:tag('span')
+                        :wikitext('foo')
+                        :done()
+                return tostring(wikiHtml)
+            end
+            return export
+            """,
+            model="Scribunto",
+        )
+        self.wtp.start_page("")
+        self.assertEqual(
+            # Should not result in "<><span>foo</span>" or
+            # <><span>foo</span></> due to the empty string in `create('')`
+            self.wtp.expand("{{#invoke:test|test}}"),
+            "<span>foo</span>",
+        )
