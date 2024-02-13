@@ -261,15 +261,6 @@ class TestLua(TestCase):
         self.wtp.add_page(
             "Module:test",
             828,
-            # body="""
-            # local export = {}
-            # function export.test()
-            #   value = mw.language.fetchLanguageName("fr")
-            #   value = value .. " " .. mw.language.fetchLanguageName("fr", "en")
-            #   return value
-            # end
-            # return export
-            # """,
             body="""
             local export = {}
             function export.test()
