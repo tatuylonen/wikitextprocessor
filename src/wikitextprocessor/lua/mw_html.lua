@@ -27,7 +27,11 @@ function mw_html.create(tagName, args)
    end
    local obj = Html:new()
    obj._parent = nil
-   obj._tagName = tagName -- can be nil
+   if tagName == "" then
+      obj._tagName = nil
+   else
+      obj._tagName = tagName -- can be nil
+   end
    obj._attrs = {}
    obj._css = {}
    obj._children = {}
