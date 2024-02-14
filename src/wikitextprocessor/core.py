@@ -75,7 +75,7 @@ NamespaceDataEntry = TypedDict(
 JsonValues = Union[str, int, float, list, dict, bool, None]
 # Can't specify _LuaTable contents further, so no use specifying the Dict either
 ParentData = tuple[str, Union["_LuaTable", dict[Union[int, str], str]]]
-TemplateArgs = dict[Union[int, str], str]
+TemplateArgs = Union[dict[Union[int, str], str]]
 TemplateFnCallable = Callable[
     [
         str,  # name
