@@ -34,8 +34,8 @@ from typing import (
 from .common import (
     MAGIC_FIRST,
     MAGIC_LAST,
-    MAGIC_NOWIKI_CHAR,
     MAGIC_LBRACKET_CHAR,
+    MAGIC_NOWIKI_CHAR,
     MAGIC_RBRACKET_CHAR,
     MAX_MAGICS,
     add_newline_to_expansion,
