@@ -1431,8 +1431,10 @@ class Wtp:
                     tname = re.sub(r"<noinclude\s*/>", "", tname)
 
                     # Strip safesubst: and subst: prefixes
-                    # XXX if safesubst -> invert expand mode and strip 'safesubst:' from tname
-                    # XXX if subst -> invert expand mode, strip only if expand mode is true
+                    # XXX if safesubst -> invert expand mode and strip
+                    # 'safesubst:' from tname
+                    # XXX if subst -> invert expand mode, strip
+                    # only if expand mode is true
                     tname = (
                         tname.strip()
                         .removeprefix("subst:")
