@@ -147,6 +147,7 @@ return export
     def test_basic12(self):
         self.parserfn("a[[foo|bar]]b", "a[[foo|bar]]b")
 
+
     @patch(
         "wikitextprocessor.core.Wtp.get_page",
         return_value=Page(

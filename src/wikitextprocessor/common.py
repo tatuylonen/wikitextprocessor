@@ -21,6 +21,15 @@ MAGIC_NOWIKI_CHAR: str = chr(MAGIC_NOWIKI)
 MAGIC_SINGLE_QUOTE: int = next(mnum)
 MAGIC_SQUOTE_CHAR: str = chr(MAGIC_SINGLE_QUOTE)
 
+# I couldn't figure out a way to escape square brackets for single
+# bracket entities that aren't actually external urls in the magic character
+# encoding loops, so here are some temp escapes.
+
+MAGIC_LEFT_SBRACKET: int = next(mnum)
+MAGIC_LBRACKET_CHAR: str = chr(MAGIC_LEFT_SBRACKET)
+MAGIC_RIGHT_SBRACKET: int = next(mnum)
+MAGIC_RBRACKET_CHAR: str = chr(MAGIC_RIGHT_SBRACKET)
+
 # Magic characters used to store templates and other expandable
 # text while the stuff around them are being parsed.
 MAGIC_FIRST: int = next(mnum)

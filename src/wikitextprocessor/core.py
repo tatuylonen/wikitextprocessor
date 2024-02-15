@@ -35,6 +35,8 @@ from .common import (
     MAGIC_FIRST,
     MAGIC_LAST,
     MAGIC_NOWIKI_CHAR,
+    MAGIC_LBRACKET_CHAR,
+    MAGIC_RBRACKET_CHAR,
     MAX_MAGICS,
     add_newline_to_expansion,
     nowiki_quote,
@@ -155,6 +157,27 @@ class BegLineDisableManager:
         self.ctx.begline_disable_counter -= 1
         if self.ctx.begline_disable_counter < 1:
             self.ctx.begline_enabled = True
+
+
+URL_STARTS = (
+    "http://",
+    "https://",
+    "ssh://",
+    "gopher://",
+    "irc://",
+    "ircs://",
+    "ftp://",
+    "ftps://",
+    "sftp://",
+    "news://",
+    "nntp://",
+    "worldwind://",
+    "telnet://",
+    "svn://",
+    "git://",
+    "mms://",
+    "mailto:",
+)
 
 
 class Wtp:
@@ -623,6 +646,8 @@ class Wtp:
             used to replace bracketed sections, such as [...]."""
             nowiki = MAGIC_NOWIKI_CHAR in m.group(0)
             orig = m.group(1)
+            if not orig.startswith(URL_STARTS):
+                return MAGIC_LBRACKET_CHAR + orig + MAGIC_RBRACKET_CHAR
             args = [orig]
             return self._save_value("E", args, nowiki)
 
@@ -745,6 +770,8 @@ class Wtp:
         # text = re.sub(r"[^|]\}", r"\1&rbrace;", text)
         # text = re.sub(r"[^|]\}", r"\1&rbrace;", text)
         # text = re.sub(r"\|", "&vert;", text)
+        text = re.sub(MAGIC_LBRACKET_CHAR, "[", text)
+        text = re.sub(MAGIC_RBRACKET_CHAR, "]", text)
         return text
 
     def _template_to_body(self, title: str, text: Optional[str]) -> str:
@@ -1328,6 +1355,8 @@ class Wtp:
                     )
                     parts.append(m.group(0))
                 parts.append(coded[pos:])
+                # print(f"{parts=}")
+
                 return "".join(parts)
 
             def expand_parserfn(fn_name: str, args: Sequence[str]) -> str:
@@ -1345,6 +1374,7 @@ class Wtp:
                     if not expand_invoke:
                         return "{{#invoke:" + "|".join(args) + "}}"
                     ret = invoke_fn(args, expander, parent)
+                    # print(f"invoke: {ret=!r}")
                 else:
                     ret = call_parser_function(self, fn_name, args, expander)
                 self.expand_stack.pop()  # fn_name
@@ -1401,6 +1431,8 @@ class Wtp:
                     tname = re.sub(r"<noinclude\s*/>", "", tname)
 
                     # Strip safesubst: and subst: prefixes
+                    # XXX if safesubst -> invert expand mode and strip 'safesubst:' from tname
+                    # XXX if subst -> invert expand mode, strip only if expand mode is true
                     tname = (
                         tname.strip()
                         .removeprefix("subst:")
@@ -1416,9 +1448,11 @@ class Wtp:
                         if fn_name in PARSER_FUNCTIONS or fn_name.startswith(
                             "#"
                         ):
+                            self.expand_stack.append(fn_name)
                             ret = expand_parserfn(
                                 fn_name, (tname[ofs + 1 :].lstrip(),) + args[1:]
                             )
+                            self.expand_stack.pop()
                             parts.append(ret)
                             continue
 
@@ -1680,6 +1714,13 @@ class Wtp:
         # Convert the special <nowiki /> character back to <nowiki />.
         # This is done at the end of normal expansion.
         text = re.sub(MAGIC_NOWIKI_CHAR, "<nowiki />", text)
+
+        # broken external url kludge: we don't want to have external
+        # urls that are not correct, but we can't just return the
+        # brackets as is inside the substitution loop, because that breaks
+        # the loop, so we replace the characters and now return them.
+        text = re.sub(MAGIC_LBRACKET_CHAR, "[", text)
+        text = re.sub(MAGIC_RBRACKET_CHAR, "]", text)
         # print("    _finalize_expand:{!r}".format(text))
         return text
 
@@ -1858,6 +1899,7 @@ class Wtp:
             text = self.expand(
                 text, template_fn=template_fn, post_template_fn=post_template_fn
             )
+            # print(f"PARSE EXPAND ALL: {text=!r}")
         elif pre_expand or additional_expand:
             text = self.expand(
                 text,
