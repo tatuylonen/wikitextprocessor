@@ -1132,6 +1132,38 @@ dasfasddasfdas
         self.assertEqual(self.ctx.debugs, [])
         self.assertEqual(tree.children, ["Ed[ward] Foo"])
 
+    def test_url7(self):
+        """External url entities should start with a valid url prefix"""
+        tree = self.parse("test", """[foo]""")
+        self.assertEqual(self.ctx.errors, [])
+        self.assertEqual(self.ctx.warnings, [])
+        self.assertEqual(self.ctx.debugs, [])
+        self.assertEqual(len(tree.children), 1)
+        self.assertEqual(tree.children[0], "[foo]")
+
+    def test_url8(self):
+        tree = self.parse("test", """[foo
+]""")
+        self.assertEqual(self.ctx.errors, [])
+        self.assertEqual(self.ctx.warnings, [])
+        self.assertEqual(self.ctx.debugs, [])
+        self.assertEqual(tree.children, ["[foo\n]"])
+
+    def test_url9(self):
+        """External url entities should not contain newlines.
+        but the url itself becomes a url entity sandwiched by
+        the strings."""
+        tree = self.parse("test", """[https://foo
+bar]""")
+        self.assertEqual(self.ctx.errors, [])
+        self.assertEqual(self.ctx.warnings, [])
+        self.assertEqual(self.ctx.debugs, [])
+        self.assertEqual(len(tree.children), 3)
+        self.assertEqual(tree.children[0], "[")
+        self.assertEqual(tree.children[2], "\nbar]")
+        self.assertEqual(tree.children[1].kind, NodeKind.URL)
+        self.assertEqual(tree.children[1].largs, [['https://foo']])
+
     def test_preformatted1(self):
         tree = self.parse(
             "test",

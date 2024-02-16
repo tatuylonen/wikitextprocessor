@@ -30,6 +30,27 @@ MAGIC_LBRACKET_CHAR: str = chr(MAGIC_LEFT_SBRACKET)
 MAGIC_RIGHT_SBRACKET: int = next(mnum)
 MAGIC_RBRACKET_CHAR: str = chr(MAGIC_RIGHT_SBRACKET)
 
+# Strings used to identify valid [https://external links]
+URL_STARTS = (
+    "http://",
+    "https://",
+    "ssh://",
+    "gopher://",
+    "irc://",
+    "ircs://",
+    "ftp://",
+    "ftps://",
+    "sftp://",
+    "news://",
+    "nntp://",
+    "worldwind://",
+    "telnet://",
+    "svn://",
+    "git://",
+    "mms://",
+    "mailto:",
+)
+
 # Magic characters used to store templates and other expandable
 # text while the stuff around them are being parsed.
 MAGIC_FIRST: int = next(mnum)

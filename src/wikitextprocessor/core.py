@@ -38,6 +38,7 @@ from .common import (
     MAGIC_NOWIKI_CHAR,
     MAGIC_RBRACKET_CHAR,
     MAX_MAGICS,
+    URL_STARTS,
     add_newline_to_expansion,
     nowiki_quote,
 )
@@ -157,27 +158,6 @@ class BegLineDisableManager:
         self.ctx.begline_disable_counter -= 1
         if self.ctx.begline_disable_counter < 1:
             self.ctx.begline_enabled = True
-
-
-URL_STARTS = (
-    "http://",
-    "https://",
-    "ssh://",
-    "gopher://",
-    "irc://",
-    "ircs://",
-    "ftp://",
-    "ftps://",
-    "sftp://",
-    "news://",
-    "nntp://",
-    "worldwind://",
-    "telnet://",
-    "svn://",
-    "git://",
-    "mms://",
-    "mailto:",
-)
 
 
 class Wtp:
@@ -688,7 +668,7 @@ class Wtp:
                         break
                     prev2 = text
                 # Encode external links: [something]
-                text = re.sub(r"\[([^][{}<>|]+)\]", repl_extlink, text)
+                text = re.sub(r"\[([^][{}<>|\n]+)\]", repl_extlink, text)
                 # Encode template arguments: {{{arg}}}, {{{..{|..|}..}}}
                 text = re.sub(
                     r"\{"

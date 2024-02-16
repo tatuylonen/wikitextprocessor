@@ -2077,8 +2077,8 @@ list_prefix_re = re.compile(r"[*:;#]+")
 tokenops: dict[str, Callable[["Wtp", str], None]] = {
     "'''": bold_fn,
     "''": italic_fn,
-    "[": elink_start_fn,
-    "]": elink_end_fn,
+    "[": text_fn,
+    "]": text_fn,
     "{|": table_start_fn,
     "{||": mistokenized_start_fn,
     "|}": table_end_fn,
