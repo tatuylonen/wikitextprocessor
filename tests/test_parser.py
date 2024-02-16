@@ -1142,8 +1142,11 @@ dasfasddasfdas
         self.assertEqual(tree.children[0], "[foo]")
 
     def test_url8(self):
-        tree = self.parse("test", """[foo
-]""")
+        tree = self.parse(
+            "test",
+            """[foo
+]""",
+        )
         self.assertEqual(self.ctx.errors, [])
         self.assertEqual(self.ctx.warnings, [])
         self.assertEqual(self.ctx.debugs, [])
@@ -1153,8 +1156,11 @@ dasfasddasfdas
         """External url entities should not contain newlines.
         but the url itself becomes a url entity sandwiched by
         the strings."""
-        tree = self.parse("test", """[https://foo
-bar]""")
+        tree = self.parse(
+            "test",
+            """[https://foo
+bar]""",
+        )
         self.assertEqual(self.ctx.errors, [])
         self.assertEqual(self.ctx.warnings, [])
         self.assertEqual(self.ctx.debugs, [])
@@ -1162,7 +1168,37 @@ bar]""")
         self.assertEqual(tree.children[0], "[")
         self.assertEqual(tree.children[2], "\nbar]")
         self.assertEqual(tree.children[1].kind, NodeKind.URL)
-        self.assertEqual(tree.children[1].largs, [['https://foo']])
+        self.assertEqual(tree.children[1].largs, [["https://foo"]])
+
+    def test_url10(self):
+        tree = self.parse("test", """[https://foo""")
+        self.assertEqual(self.ctx.errors, [])
+        self.assertEqual(self.ctx.warnings, [])
+        self.assertEqual(self.ctx.debugs, [])
+        self.assertEqual(len(tree.children), 2)
+        self.assertEqual(tree.children[0], "[")
+        self.assertEqual(tree.children[1].kind, NodeKind.URL)
+        self.assertEqual(tree.children[1].largs, [["https://foo"]])
+
+    def test_url11(self):
+        # TECHNICALLY this should result in the URL entity and
+        # the LINK element to be sibling nodes (Wikimedia parser
+        # untangles nested <a>-elements in this case, which is sensible),
+        # but for purposes of our parser that could be assigned to a
+        # post-processing step if needed. Keeping the parse tree intact
+        # like this lets you reverse the parsing easier.
+        tree = self.parse("test", """[https://foo [[bar]]]""")
+        self.assertEqual(self.ctx.errors, [])
+        self.assertEqual(self.ctx.warnings, [])
+        self.assertEqual(self.ctx.debugs, [])
+        self.assertEqual(len(tree.children), 1)
+        url_node = tree.children[0]
+        self.assertEqual(url_node.kind, NodeKind.URL)
+        url_str = url_node.largs[0][0]
+        self.assertEqual(url_str, "https://foo")
+        link_node = url_node.largs[1][0]
+        self.assertEqual(link_node.kind, NodeKind.LINK)
+        self.assertEqual(link_node.largs, [["bar"]])
 
     def test_preformatted1(self):
         tree = self.parse(
