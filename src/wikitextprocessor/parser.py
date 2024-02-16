@@ -1062,39 +1062,6 @@ def bold_fn(ctx: "Wtp", token: str) -> None:
         _parser_push(ctx, NodeKind.ITALIC)
 
 
-def elink_start_fn(ctx: "Wtp", token: str) -> None:
-    """Processes an external link start token "["."""
-    if ctx.pre_parse:
-        return text_fn(ctx, token)
-
-    close_begline_lists(ctx)
-    _parser_push(ctx, NodeKind.URL)
-
-
-def elink_end_fn(ctx: "Wtp", token: str) -> None:
-    """Processes an external link end token "]"."""
-    if ctx.pre_parse:
-        return text_fn(ctx, token)
-
-    close_begline_lists(ctx)
-    if not _parser_have(ctx, NodeKind.URL):
-        return text_fn(ctx, token)
-    while True:
-        node = ctx.parser_stack[-1]
-        if node.kind == NodeKind.URL:
-            _parser_pop(ctx, False)
-            break
-        if node.kind in (
-            NodeKind.TEMPLATE,
-            NodeKind.TEMPLATE_ARG,
-            NodeKind.LINK,
-            NodeKind.ITALIC,
-            NodeKind.BOLD,
-        ):
-            return text_fn(ctx, token)
-        _parser_pop(ctx, True)
-
-
 def url_fn(ctx: "Wtp", token: str) -> None:
     """Processes an URL written as URL in the text (an external link is
     automatically generated)."""
@@ -2039,8 +2006,6 @@ TOKEN_RE = re.compile(
     r"'''|"
     r"''|"
     r"\n|"
-    r"\[|"
-    r"\]|"
     r"\|\}|"
     r"\{\|\||"
     r"\{\||"
@@ -2077,8 +2042,6 @@ list_prefix_re = re.compile(r"[*:;#]+")
 tokenops: dict[str, Callable[["Wtp", str], None]] = {
     "'''": bold_fn,
     "''": italic_fn,
-    "[": text_fn,
-    "]": text_fn,
     "{|": table_start_fn,
     "{||": mistokenized_start_fn,
     "|}": table_end_fn,
