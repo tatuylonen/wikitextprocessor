@@ -231,7 +231,7 @@ def fetch_language_names(
 
     names = {
         lang_code: lang_name
-        for lang_code, lang_name in get_all_names(in_language)
+        for lang_code, lang_name in get_all_names(in_language, include == "")
     }
     return ctx.lua.table_from(names)  # type: ignore[union-attr]
     # ⇑⇑ tells mypy to ignore an 'error';
