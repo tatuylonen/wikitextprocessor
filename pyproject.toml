@@ -89,6 +89,8 @@ omit = ["tests/*"]
 
 [tool.ruff]
 line-length = 80
+
+[tool.ruff.lint]
 select = [
     "E",  # pycodestyle error
     "F",  # Pyflakes
