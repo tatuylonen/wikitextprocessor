@@ -715,7 +715,7 @@ class Wtp:
             # Replace template invocation
             text = re.sub(
                 r"\{" + MAGIC_NOWIKI_CHAR + r"?\{((?:"
-                r"[^{}](?:{[^{}])?|"  # lone possible { and also default "any"
+                r"[^{}]{?|"  # lone possible { and also default "any"
                 r"}(?=[^{}])|"  # lone `}`, (?=...) is not consumed (lookahead)
                 r"-{}-|"  # GitHub issue #59 Chinese wiktionary special `-{}-`
                 r"}{|"  # latex argument: "<math>\frac{1}{2}</math>"
