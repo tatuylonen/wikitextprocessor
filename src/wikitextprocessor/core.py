@@ -1270,6 +1270,7 @@ class Wtp:
                     ch = m.group(0)
                     idx = ord(ch) - MAGIC_FIRST
                     kind, args, nowiki = self.cookies[idx]
+                    # print(f"{kind=}, {args=}, {argmap=}")
                     assert isinstance(args, tuple)
                     if nowiki:
                         # If this template/link/arg has <nowiki />, then just
@@ -1279,7 +1280,10 @@ class Wtp:
                     if kind == "T":
                         # Template transclusion or parser function call.
                         # Expand its arguments.
-                        new_args = tuple(expand_args(x, argmap) for x in args)
+                        new_args = tuple(
+                            expand_args(x, argmap).removesuffix("\n")
+                            for x in args
+                        )
                         parts.append(self._save_value(kind, new_args, nowiki))
                         continue
                     if kind == "A":
@@ -1302,7 +1306,7 @@ class Wtp:
                             k = re.sub(r"\s+", " ", k).strip()
                         v = argmap.get(k, None)
                         if v is not None:
-                            parts.append(v)
+                            parts.append(v.removesuffix("\n"))
                             continue
                         if len(args) >= 2:
                             self.expand_stack.append("ARG-DEFVAL")

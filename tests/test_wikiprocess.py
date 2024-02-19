@@ -4199,7 +4199,17 @@ return export
         )
         self.assertEqual(self.ctx.get_page("mod:title", 828), module_page)
 
-
+    def test_unnamed_template_arg_end_in_newline(self):
+        # https://ru.wiktionary.org/wiki/adygejski
+        # newline at the end of unnamed template argument should be removed
+        self.ctx.add_page("Template:test", 10, "{{{1}}}")
+        self.ctx.start_page("")
+        self.assertEqual(
+            self.ctx.expand("{{test| \n unnamed1 \n}}"), " \n unnamed1 "
+        )
+        self.assertEqual(
+            self.ctx.expand("{{test| \n {{test|unnamed2}} \n}}"), " \n unnamed2 "
+        )
 # XXX Test template_fn
 
 # XXX test post_template_fn
