@@ -2807,6 +2807,15 @@ def foo(x):
                 self.assertEqual(template.template_name, "m")
                 self.assertEqual(template.template_parameters, params)
 
+    def test_left_curly_bracket_in_template2(self):
+        # https://en.wiktionary.org/wiki/llave
+        # GitHub issue: tatuylonen/wiktextract#499
+        self.ctx.start_page("llave")
+        root = self.ctx.parse("{{m|mul|{{ }}")
+        string = self.ctx.node_to_wikitext(root)
+        self.assertTrue(isinstance(string, str))
+        self.assertEqual(string, "{{m|mul|{{ }}")
+
 
 # XXX implement <nowiki/> marking for links, templates
 #  - https://en.wikipedia.org/wiki/Help:Wikitext#Nowiki
