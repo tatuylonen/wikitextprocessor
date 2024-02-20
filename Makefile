@@ -2,6 +2,7 @@
 # Run "make clean" to remove automatically generated files
 ruff:
 	python -m ruff --diff src/wikitextprocessor
+	python -m ruff --diff tests
 test:
 	python -m unittest discover -b -s tests
 test_coverage:
