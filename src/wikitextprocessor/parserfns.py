@@ -1097,6 +1097,10 @@ time_fmt_map: dict[
 }
 
 
+# This format is in Python datatime library's format
+MEDIAWIKI_TIMESTAMP_FORMAT = "%Y%m%d%H%M%S"
+
+
 def time_fn(
     ctx: "Wtp", fn_name: str, args: list[str], expander: Callable[[str], str]
 ) -> str:
@@ -1155,6 +1159,12 @@ def time_fn(
                     else:
                         delta = add_time - now
                     t = main_date + delta
+        if t is None and orig_dt.isdecimal() and len(orig_dt) == 14:
+            # could be MediaWiki timestamp
+            try:
+                t = datetime.strptime(orig_dt, MEDIAWIKI_TIMESTAMP_FORMAT)
+            except ValueError:
+                pass
         if t is None:
             ctx.warning(
                 "unrecognized time syntax in {}: {!r}".format(fn_name, orig_dt),
@@ -1377,6 +1387,12 @@ def language_fn(
     return ""
 
 
+def current_timestamp_fn(
+    wtp: "Wtp", fn_name: str, args: list[str], expander: Callable[[str], str]
+) -> str:
+    return datetime.now().strftime(MEDIAWIKI_TIMESTAMP_FORMAT)
+
+
 # This list should include names of predefined parser functions and
 # predefined variables (some of which can take arguments using the same
 # syntax as parser functions and we treat them as parser functions).
@@ -1426,7 +1442,7 @@ PARSER_FUNCTIONS = {
     "CURRENTTIME": unimplemented_fn,
     "CURRENTHOUR": unimplemented_fn,
     "CURRENTWEEK": unimplemented_fn,
-    "CURRENTTIMESTAMP": unimplemented_fn,
+    "CURRENTTIMESTAMP": current_timestamp_fn,
     "LOCALYEAR": unimplemented_fn,
     "LOCALMONTH": unimplemented_fn,
     "LOCALMONTHNAME": unimplemented_fn,
