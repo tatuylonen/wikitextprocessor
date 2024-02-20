@@ -412,7 +412,7 @@ def call_lua_sandbox(
         if isinstance(args, dict):
             frame_args = {}
             for k, arg in args.items():
-                arg = re.sub(r"(?si)<\s*noinclude\s*/\s*>", "", arg)
+                arg = re.sub(r"(?si)(<\s*noinclude\s*/\s*>|\n$)", "", arg)
                 frame_args[k] = arg
         else:
             assert isinstance(args, (list, tuple))
@@ -449,7 +449,7 @@ def call_lua_sandbox(
                 # (e.g., Template:cop-fay-conj-table), whereas Lua code
                 # does not always like them (e.g., remove_links() in
                 # Module:links).
-                arg = re.sub(r"(?si)<\s*noinclude\s*/\s*>", "", arg)
+                arg = re.sub(r"(?si)(<\s*noinclude\s*/\s*>|\n$)", "", arg)
                 frame_args[k] = arg
         frame_args_lt: "_LuaTable" = lua.table_from(frame_args)  # type: ignore[union-attr]
 
