@@ -1387,6 +1387,12 @@ def language_fn(
     return ""
 
 
+def current_timestamp_fn(
+    wtp: "Wtp", fn_name: str, args: list[str], expander: Callable[[str], str]
+) -> str:
+    return datetime.now().strftime(MEDIAWIKI_TIMESTAMP_FORMAT)
+
+
 # This list should include names of predefined parser functions and
 # predefined variables (some of which can take arguments using the same
 # syntax as parser functions and we treat them as parser functions).
@@ -1436,7 +1442,7 @@ PARSER_FUNCTIONS = {
     "CURRENTTIME": unimplemented_fn,
     "CURRENTHOUR": unimplemented_fn,
     "CURRENTWEEK": unimplemented_fn,
-    "CURRENTTIMESTAMP": unimplemented_fn,
+    "CURRENTTIMESTAMP": current_timestamp_fn,
     "LOCALYEAR": unimplemented_fn,
     "LOCALMONTH": unimplemented_fn,
     "LOCALMONTHNAME": unimplemented_fn,
