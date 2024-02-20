@@ -4203,12 +4203,29 @@ return export
         # https://ru.wiktionary.org/wiki/adygejski
         # newline at the end of unnamed template argument should be removed
         self.ctx.add_page("Template:test", 10, "{{{1}}}")
+        self.ctx.add_page("Template:testlua", 10, "{{#invoke:test|test|{{{1}}}}}")
+        self.ctx.add_page(
+            "Module:test",
+            828,
+            """
+            local export = {}
+
+            function export.test(frame)
+              return frame:getParent().args[1] .. "-" .. frame.args[1]
+            end
+
+            return export
+            """,)
         self.ctx.start_page("")
         self.assertEqual(
             self.ctx.expand("{{test| \n unnamed1 \n}}"), " \n unnamed1 "
         )
         self.assertEqual(
-            self.ctx.expand("{{test| \n {{test|unnamed2}} \n}}"), " \n unnamed2 "
+            self.ctx.expand("{{test| \n {{test|unnamed2}} \n}}"),
+            " \n unnamed2 ",
+        )
+        self.assertEqual(
+            self.ctx.expand("{{testlua| \n unnamed3 \n}}"), " \n unnamed3 - \n unnamed3"
         )
 # XXX Test template_fn
 
