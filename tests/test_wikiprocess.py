@@ -2590,6 +2590,16 @@ return export
         return frame:extensionTag("not_allowed_tag")""",
         )
 
+    def test_frame_extensionTag6(self):
+        # Sometimes an extensionTag call might return a table of arguments
+        # with values that are not strings; this is a fixed bug
+        self.scribunto(
+            '<ref class="1.4" id="1">some text</ref>',
+            """
+        return frame:extensionTag{name="ref", content="some text",
+        args={class=1.4, id=1}}""",
+        )
+
     def test_frame_newChild1(self):
         self.scribunto(
             "",
