@@ -205,6 +205,7 @@ class Wtp:
         "lua_frame_stack",
         "project",  # "wiktionary" or "wikipedia"
         "strip_marker_cache",
+        "ALLOWED_EXTENSION_TAGS",
     )
 
     def __init__(
@@ -253,6 +254,7 @@ class Wtp:
         self.lua_frame_stack: deque["_LuaTable"] = deque()
         self.project = project
         self.strip_marker_cache: defaultdict[str, int] = defaultdict(int)
+        self.ALLOWED_EXTENSION_TAGS: set[str] = {"nowiki"}
 
     def create_db(self) -> None:
         from .wikidata import init_wikidata_cache

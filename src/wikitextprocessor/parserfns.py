@@ -184,7 +184,7 @@ def tag_fn(
 ) -> str:
     """Implements #tag parser function."""
     tag = expander(args[0]).lower() if args else ""
-    if tag not in ALLOWED_HTML_TAGS and tag != "nowiki":
+    if tag not in ALLOWED_HTML_TAGS and tag not in ctx.ALLOWED_EXTENSION_TAGS:
         ctx.warning(
             "#tag creating non-allowed tag <{}> - omitted".format(tag),
             sortid="parserfns/156",
