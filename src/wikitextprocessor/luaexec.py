@@ -481,7 +481,7 @@ def call_lua_sandbox(
                 attrs2 = list(
                     v
                     if isinstance(k, int)
-                    else '{}="{}"'.format(k, html.escape(v, quote=True))
+                    else '{}="{}"'.format(k, html.escape(str(v), quote=True))
                     for k, v in sorted(attrs.items(), key=lambda x: str(x[0]))
                 )
             elif not attrs:
