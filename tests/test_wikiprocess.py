@@ -3123,6 +3123,17 @@ return export
         return tostring(t)""",
         )
 
+    def test_mw_html11b(self):
+        self.scribunto(
+            '<div class="bar foo"></div>',
+            """
+        local t = mw.html.create("div")
+        t:addClass("bar")
+        :addClass()
+        :addClass("foo")
+        return tostring(t)""",
+        )
+
     def test_mw_html12(self):
         self.scribunto(
             '<div style="foo:bar;"></div>',
@@ -3139,6 +3150,17 @@ return export
         local t = mw.html.create("div")
         t:cssText("foo:bar;")
         t:cssText("width:300px")
+        return tostring(t)""",
+        )
+
+    def test_mw_html13b(self):
+        self.scribunto(
+            '<div style="foo:bar;width:300px;"></div>',
+            """
+        local t = mw.html.create("div")
+        t:cssText("foo:bar;")
+        :cssText()
+        :cssText("width:300px")
         return tostring(t)""",
         )
 
@@ -3216,6 +3238,16 @@ return export
             """
         local t = mw.html.create("div")
         t:css("foo", "bar")
+        return tostring(t)""",
+        )
+
+    def test_mw_html22(self):
+        self.scribunto(
+            "<span></span>",
+            """
+        local t = mw.html.create('span')
+        :addClass( nil  )
+        :wikitext( nil )
         return tostring(t)""",
         )
 
