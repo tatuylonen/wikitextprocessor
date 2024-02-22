@@ -85,9 +85,11 @@ ALLOWED_HTML_TAGS: dict[str, HTMLTagData] = {
     "includeonly": {"parents": ["*"], "content": ["*"]},
     # From InputBox extension, see
     # https://www.mediawiki.org/wiki/Extension:InputBox
+    "indicator": {"parents": ["phrasing"], "content": ["phrasing"]},
     "inputbox": {"parents": ["phrasing"], "content": ["phrasing"]},
     "ins": {"parents": ["phrasing"], "content": ["phrasing"]},
     "kbd": {"parents": ["phrasing"], "content": ["phrasing"]},
+    "langconvert": {"parents": ["phrasing"], "content": ["phrasing"]},
     "li": {
         "parents": ["ul", "ol", "menu"],
         "close-next": ["li"],

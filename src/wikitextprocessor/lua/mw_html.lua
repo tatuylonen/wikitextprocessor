@@ -152,11 +152,11 @@ function Html:getAttr(name)
 end
 
 function Html:addClass(new_class)
-   if new_class == nil then return end
+   if new_class == nil then return self end
    local classes = self:getAttr("class") or ""
    local new_classes = {}
    for cl in mw.ustring.gmatch(classes, "([^%s]+)") do
-      if cl == new_class then return end
+      if cl == new_class then return self end
    end
    if classes == "" then
       classes = new_class
@@ -174,7 +174,7 @@ function Html:css(name, value)
             self:css(k, v)
          end
       end
-      return
+      return self
    end
    self._css[name] = value
    return self
