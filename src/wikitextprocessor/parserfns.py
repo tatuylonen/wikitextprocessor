@@ -14,7 +14,6 @@ import dateparser
 
 from .common import MAGIC_NOWIKI_CHAR, add_newline_to_expansion, nowiki_quote
 from .interwiki import get_interwiki_map
-from .wikihtml import ALLOWED_HTML_TAGS
 
 if TYPE_CHECKING:
     # Reached only by mypy or other type-checker
@@ -184,7 +183,7 @@ def tag_fn(
 ) -> str:
     """Implements #tag parser function."""
     tag = expander(args[0]).lower() if args else ""
-    if tag not in ALLOWED_HTML_TAGS and tag not in ctx.ALLOWED_EXTENSION_TAGS:
+    if tag not in ctx.allowed_html_tags and tag != "nowiki":
         ctx.warning(
             "#tag creating non-allowed tag <{}> - omitted".format(tag),
             sortid="parserfns/156",
