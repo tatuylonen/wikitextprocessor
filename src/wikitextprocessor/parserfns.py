@@ -1392,6 +1392,16 @@ def current_timestamp_fn(
     return datetime.now().strftime(MEDIAWIKI_TIMESTAMP_FORMAT)
 
 
+def coordinates_fn(
+    wtp: "Wtp", fn_name: str, args: list[str], expander: Callable[[str], str]
+) -> str:
+    # According to the GeoData (not Maps) #coordinate parser function source
+    # code, #coordinates only returns an empty string or an error string.
+    # https://github.com/wikimedia/mediawiki-extensions-GeoData/blob/c025f10fd88d1d72655bc43599071c4dddaab1f8/includes/CoordinatesParserFunction.php#L42
+    return ""
+
+
+
 # This list should include names of predefined parser functions and
 # predefined variables (some of which can take arguments using the same
 # syntax as parser functions and we treat them as parser functions).
@@ -1513,7 +1523,7 @@ PARSER_FUNCTIONS = {
     "#switch": switch_fn,
     "#babel": unimplemented_fn,
     "#categorytree": (categorytree_fn, True),  # This takes kwargs
-    "#coordinates": unimplemented_fn,
+    "#coordinates": coordinates_fn,
     "#invoke": unimplemented_fn,
     "#lst": lst_fn,
     "#lsth": unimplemented_fn,
