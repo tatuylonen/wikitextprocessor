@@ -49,18 +49,15 @@ from .parser import (
     GeneralNode,
     WikiNode,
     parse_encoded,
+    set_html_tag_data,
+    set_inside_html_tags_re,
 )
 from .parserfns import PARSER_FUNCTIONS, call_parser_function
-from .wikihtml import ALLOWED_HTML_TAGS
+from .wikihtml import ALLOWED_HTML_TAGS, HTMLTagData
 
 if TYPE_CHECKING:
     from lupa.lua51 import LuaNumber, LuaRuntime, _LuaTable
 
-
-# Set of HTML tags that need an explicit end tag.
-PAIRED_HTML_TAGS: set[str] = set(
-    k for k, v in ALLOWED_HTML_TAGS.items() if not v.get("no-end-tag")
-)
 
 NamespaceDataEntry = TypedDict(
     "NamespaceDataEntry",
@@ -205,7 +202,10 @@ class Wtp:
         "lua_frame_stack",
         "project",  # "wiktionary" or "wikipedia"
         "strip_marker_cache",
-        "ALLOWED_EXTENSION_TAGS",
+        "allowed_html_tags",
+        "html_permitted_parents",
+        "paired_html_tags",
+        "inside_html_tags_re",
     )
 
     def __init__(
@@ -214,6 +214,7 @@ class Wtp:
         lang_code="en",
         template_override_funcs: dict[str, Callable[[Sequence[str]], str]] = {},
         project: str = "wiktionary",
+        extension_tags: Optional[dict[str, HTMLTagData]] = None,
     ):
         if isinstance(db_path, str):
             self.db_path: Optional[Path] = Path(db_path)
@@ -254,7 +255,19 @@ class Wtp:
         self.lua_frame_stack: deque["_LuaTable"] = deque()
         self.project = project
         self.strip_marker_cache: defaultdict[str, int] = defaultdict(int)
-        self.ALLOWED_EXTENSION_TAGS: set[str] = {"nowiki"}
+        self.allowed_html_tags: dict[str, HTMLTagData] = ALLOWED_HTML_TAGS
+        if extension_tags is not None:
+            self.allowed_html_tags.update(extension_tags)
+        # Set of HTML tags that need an explicit end tag.
+        self.paired_html_tags: set[str] = set(
+            k
+            for k, v in self.allowed_html_tags.items()
+            if not v.get("no-end-tag")
+        )
+        self.html_permitted_parents: dict[str, set[str]] = set_html_tag_data(
+            self
+        )
+        self.inside_html_tags_re: re.Pattern = set_inside_html_tags_re(self)
 
     def create_db(self) -> None:
         from .wikidata import init_wikidata_cache
@@ -942,7 +955,7 @@ class Wtp:
         tag_cnts: defaultdict[str, int] = defaultdict(int)
         for m in re.finditer(
             r"(?si)<(/)?({})\b\s*[^>]*(/)?>" r"".format(
-                "|".join(PAIRED_HTML_TAGS)
+                "|".join(self.paired_html_tags)
             ),
             outside,
         ):

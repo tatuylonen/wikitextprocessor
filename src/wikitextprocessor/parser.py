@@ -24,47 +24,51 @@ from .common import (
     nowiki_quote,
 )
 from .parserfns import PARSER_FUNCTIONS
-from .wikihtml import ALLOWED_HTML_TAGS
 
 if TYPE_CHECKING:
     from .core import Wtp
 
 
-# Set of tags that can be parents of "flow" parents
-HTML_FLOW_PARENTS: set[str] = set(
-    k
-    for k, v in ALLOWED_HTML_TAGS.items()
-    if "flow" in v.get("content", []) or "*" in v.get("content", [])
-)
-
-# Set of tags that can be parents of "phrasing" parents (includes those
-# of flow parents since flow implies phrasing)
-HTML_PHRASING_PARENTS: set[str] = set(
-    k
-    for k, v in ALLOWED_HTML_TAGS.items()
-    if "phrasing" in v.get("content", [])
-    or "flow" in v.get("content", [])
-    or "*" in v.get("content", [])
-)
-
-# Mapping from HTML tag or "text" to permitted parent tags
-HTML_PERMITTED_PARENTS: dict[str, set[str]] = {
-    k: (
-        (
-            HTML_FLOW_PARENTS
-            if "flow" in v.get("parents", []) or "*" in v.get("parents", [])
-            else set()
-        )
-        | (
-            HTML_PHRASING_PARENTS
-            if "phrasing" in v.get("parents", []) or "*" in v.get("parents", [])
-            else set()
-        )
-        | set(v.get("parents", []))
+def set_html_tag_data(ctx: "Wtp") -> dict[str, set[str]]:
+    # Set of tags that can be parents of "flow" parents
+    html_flow_parents: set[str] = set(
+        k
+        for k, v in ctx.allowed_html_tags.items()
+        if "flow" in v.get("content", []) or "*" in v.get("content", [])
     )
-    for k, v in ALLOWED_HTML_TAGS.items()
-}
-HTML_PERMITTED_PARENTS["text"] = HTML_PHRASING_PARENTS
+
+    # Set of tags that can be parents of "phrasing" parents (includes those
+    # of flow parents since flow implies phrasing)
+    html_phrasing_parents = set(
+        k
+        for k, v in ctx.allowed_html_tags.items()
+        if "phrasing" in v.get("content", [])
+        or "flow" in v.get("content", [])
+        or "*" in v.get("content", [])
+    )
+
+    # Mapping from HTML tag or "text" to permitted parent tags
+    html_permitted_parents = {
+        k: (
+            (
+                html_flow_parents
+                if "flow" in v.get("parents", []) or "*" in v.get("parents", [])
+                else set()
+            )
+            | (
+                html_phrasing_parents
+                if "phrasing" in v.get("parents", [])
+                or "*" in v.get("parents", [])
+                else set()
+            )
+            | set(v.get("parents", []))
+        )
+        for k, v in ctx.allowed_html_tags.items()
+    }
+    html_permitted_parents["text"] = html_phrasing_parents
+
+    return html_permitted_parents
+
 
 # Set of HTML tag like names that we treat as literal without any warning
 SILENT_HTML_LIKE: set[str] = set(
@@ -286,9 +290,14 @@ MUST_CLOSE_KINDS: tuple[NodeKind, ...] = (
 # the iterator; otherwise it skips the splitting pattern.
 # This means that if you have nesting capturing groups,
 # the contents will be repeated partly.
-inside_html_tags_re = re.compile(
-    r"(<(?:" + r"|".join(ALLOWED_HTML_TAGS.keys()) + r")[^><]*>)", re.IGNORECASE
-)
+
+
+def set_inside_html_tags_re(ctx: "Wtp") -> re.Pattern:
+    return re.compile(
+        r"(<(?:" + r"|".join(ctx.allowed_html_tags.keys()) + r")[^><]*>)",
+        re.IGNORECASE,
+    )
+
 
 # We don't have specs for this, so let's assume...
 # HTML nodes have args be strings.
@@ -1817,7 +1826,7 @@ def tag_fn(ctx: "Wtp", token: str) -> None:
         # valid HTML tags in template arguments (tags like <math> can and
         # do occur in them).
         if (
-            name not in ALLOWED_HTML_TAGS
+            name not in ctx.allowed_html_tags
             and _parser_have(ctx, NodeKind.TEMPLATE)
             or _parser_have(ctx, NodeKind.TEMPLATE_ARG)
         ):
@@ -1859,7 +1868,7 @@ def tag_fn(ctx: "Wtp", token: str) -> None:
 
         # Give a warning on unsupported HTML tags.  WikiText limits the set of
         # tags that are allowed.
-        if name not in ALLOWED_HTML_TAGS:
+        if name not in ctx.allowed_html_tags:
             if not name.isdigit() and not SILENT_HTML_LIKE:
                 ctx.debug(
                     "html tag <{}{}> not allowed in WikiText" "".format(
@@ -1873,7 +1882,7 @@ def tag_fn(ctx: "Wtp", token: str) -> None:
         # Automatically close parent HTML tags that should be ended by this tag
         # until we have a parent that is not a HTML tag or that is an allowed
         # parent for this node
-        permitted_parents = HTML_PERMITTED_PARENTS.get(name, set())
+        permitted_parents = ctx.html_permitted_parents.get(name, set())
         while True:
             node = ctx.parser_stack[-1]
             if node.kind == NodeKind.URL and not node.children:
@@ -1885,7 +1894,7 @@ def tag_fn(ctx: "Wtp", token: str) -> None:
                 break
             if node.sarg in permitted_parents:
                 break
-            close_next = ALLOWED_HTML_TAGS.get(node.sarg, {}).get(
+            close_next = ctx.allowed_html_tags.get(node.sarg, {}).get(
                 "close-next", []
             )
             # Warn about unclosed tag unless it is one we close automatically
@@ -1898,7 +1907,7 @@ def tag_fn(ctx: "Wtp", token: str) -> None:
 
         # If the tag contains a trailing slash or it is an empty tag,
         # close it immediately.
-        no_end_tag = ALLOWED_HTML_TAGS.get(name, {}).get("no-end-tag")
+        no_end_tag = ctx.allowed_html_tags.get(name, {}).get("no-end-tag")
         if no_end_tag or also_end:
             _parser_pop(ctx, False)
         return
@@ -1937,7 +1946,7 @@ def tag_fn(ctx: "Wtp", token: str) -> None:
 
     # Give a warning on unsupported HTML tags.  WikiText limits the set of
     # tags that are allowed.
-    if name not in ALLOWED_HTML_TAGS and name != "nowiki":
+    if name not in ctx.allowed_html_tags and name != "nowiki":
         ctx.debug(
             "html tag </{}> not allowed in WikiText" "".format(name),
             sortid="parser/1320",
@@ -1979,7 +1988,7 @@ def tag_fn(ctx: "Wtp", token: str) -> None:
         if node.kind == NodeKind.HTML:
             # If close-next is set, then end tag is optional and can be closed
             # implicitly by closing the parent tag
-            close_next2 = ALLOWED_HTML_TAGS.get(node.sarg, {}).get(
+            close_next2 = ctx.allowed_html_tags.get(node.sarg, {}).get(
                 "close-next", None
             )
             if close_next2:
@@ -2082,11 +2091,11 @@ def token_iter(ctx: "Wtp", text: str) -> Iterator[tuple[bool, str]]:
     on the same line."""
     assert isinstance(text, str)
     # Replace single quotes inside HTML tags with MAGIC_SQUOTE_CHAR
-    tag_parts = re.split(inside_html_tags_re, text)
+    tag_parts = re.split(ctx.inside_html_tags_re, text)
     if len(tag_parts) > 1:
         new_parts: list[str] = []
         for tp in tag_parts:
-            if re.match(inside_html_tags_re, tp):
+            if re.match(ctx.inside_html_tags_re, tp):
                 # we're inside an HTML tag
                 tp = tp.replace("'", MAGIC_SQUOTE_CHAR)
                 tp = tp.replace("\n", "")
