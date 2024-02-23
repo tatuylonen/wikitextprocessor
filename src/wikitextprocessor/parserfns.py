@@ -1359,6 +1359,17 @@ def statements_fn(
     wtp: "Wtp", fn_name: str, args: list[str], expander: Callable[[str], str]
 ) -> str:
     # https://www.wikidata.org/wiki/Wikidata:How_to_use_data_on_Wikimedia_projects
+    # XXX? This implementation doesn't implement the fancy things #statements
+    # generates, like links or images
+    return property_fn(wtp, fn_name, args, expander)
+
+
+def property_fn(
+    wtp: "Wtp", fn_name: str, args: list[str], expander: Callable[[str], str]
+) -> str:
+    # #property is meant to be for pulling bare bones data, I guess.
+    # Does not pull correct data, for example coordinates
+
     from .wikidata import statement_query
 
     prop = ""
@@ -1530,7 +1541,7 @@ PARSER_FUNCTIONS = {
     "#lst": lst_fn,
     "#lsth": unimplemented_fn,
     "#lstx": unimplemented_fn,
-    "#property": unimplemented_fn,
+    "#property": property_fn,
     "#related": unimplemented_fn,
     "#statements": statements_fn,
     "#target": unimplemented_fn,
