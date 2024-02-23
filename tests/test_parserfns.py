@@ -18,3 +18,10 @@ class TestParserFunctions(TestCase):
             self.wtp.expand("{{#time:j F Y|20130914013636}}"),
             "14 September 2013",
         )
+
+    def test_coordinates_fn(self) -> None:
+        self.wtp.start_page("Test")
+        self.assertEqual(
+            self.wtp.expand("{{#coordinates|foo|bar|baz}}"),
+            "",
+        )
