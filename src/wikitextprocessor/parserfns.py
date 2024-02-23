@@ -1397,9 +1397,11 @@ def coordinates_fn(
 ) -> str:
     # According to the GeoData (not Maps) #coordinate parser function source
     # code, #coordinates only returns an empty string or an error string.
-    # https://github.com/wikimedia/mediawiki-extensions-GeoData/blob/c025f10fd88d1d72655bc43599071c4dddaab1f8/includes/CoordinatesParserFunction.php#L42
+    # https://github.com/wikimedia/
+    # mediawiki-extensions-GeoData/blob/
+    # c025f10fd88d1d72655bc43599071c4dddaab1f8/
+    # includes/CoordinatesParserFunction.php#L42
     return ""
-
 
 
 # This list should include names of predefined parser functions and
