@@ -281,3 +281,50 @@ class TestLua(TestCase):
             self.wtp.expand("{{#invoke:test|test}}"),
             "<span>foo</span>",
         )
+
+    @patch(
+        "wikitextprocessor.wikidata.query_wikidata",
+        return_value={
+            "item": {"value": "http://www.wikidata.org/entity/Q42"},
+            "itemLabel": {"value": "Douglas Adams"},
+            "itemDescription": {
+                "value": "English author and humourist (1952–2001)"
+            },
+        },
+    )
+    def test_wikibase_getEntityIdForTitle(self, mock_query) -> None:
+        self.wtp.add_page(
+            "Module:test",
+            828,
+            """
+local export = {}
+function export.test(frame)
+  local a = mw.wikibase.getEntityIdForTitle("Douglas Adams", "enwiki")
+  local b = mw.wikibase.getEntityIdForTitle("Douglas Adams", "enwiki")
+  return  a .. b
+end
+return export""",
+            model="Scribunto",
+        )
+        self.wtp.start_page("")
+        self.assertEqual(self.wtp.expand("{{#invoke:test|test}}"), "Q42Q42")
+        mock_query.assert_called_once()  # use db cache
+
+    @patch("wikitextprocessor.wikidata.query_wikidata", return_value={})
+    def test_wikibase_getEntityIdForTitle_no_result(self, mock_query):
+        self.wtp.add_page(
+            "Module:test",
+            828,
+            """
+local export = {}
+function export.test(frame)
+  local a = mw.wikibase.getEntityIdForTitle("not exist page", "enwiki")
+  local b = mw.wikibase.getEntityIdForTitle("not exist page", "enwiki")
+  return a
+end
+return export""",
+            model="Scribunto",
+        )
+        self.wtp.start_page("")
+        self.assertEqual(self.wtp.expand("{{#invoke:test|test}}"), "")
+        mock_query.assert_called_once()  # use db cache

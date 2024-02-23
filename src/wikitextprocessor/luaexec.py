@@ -269,6 +269,12 @@ def call_set_functions(
                 "mw_wikibase_getdesc_python": partial(
                     mw_wikibase_getdescription, ctx
                 ),
+                "mw_wikibase_getEntityIdForCurrentPage_py": partial(
+                    mw_wikibase_getEntityIdForCurrentPage, ctx
+                ),
+                "mw_wikibase_getEntityIdForTitle_py": partial(
+                    mw_wikibase_getEntityIdForTitle, ctx
+                ),
                 "mw_current_title_python": partial(get_current_title, ctx),
                 "current_frame_python": partial(
                     top_lua_stack, ctx.lua_frame_stack
@@ -756,6 +762,20 @@ def mw_wikibase_getdescription(wtp: "Wtp", item_id: str) -> str:
     from .wikidata import query_item_desc
 
     return query_item_desc(wtp, item_id)
+
+
+def mw_wikibase_getEntityIdForCurrentPage(wtp: "Wtp") -> Optional[str]:
+    from .wikidata import query_entity_id_for_title
+
+    return query_entity_id_for_title(wtp, wtp.title, "")
+
+
+def mw_wikibase_getEntityIdForTitle(
+    wtp: "Wtp", title: str, site_id: str
+) -> Optional[str]:
+    from .wikidata import query_entity_id_for_title
+
+    return query_entity_id_for_title(wtp, title, site_id)
 
 
 def top_lua_stack(env_stack: deque) -> Optional["_LuaTable"]:

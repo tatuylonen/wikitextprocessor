@@ -3,15 +3,20 @@
 --
 -- Copyright (c) 2021 Tatu Ylonen.  See file LICENSE and https://ylonen.org
 
+-- https://doc.wikimedia.org/Wikibase/master/php/docs_topics_lua.html
 local mw_wikibase = {
 }
 
 function mw_wikibase.getEntity(id)
-   return nil
+    return nil
+end
+
+function mw_wikibase.getEntityIdForCurrentPage()
+    return mw_wikibase_getEntityIdForCurrentPage_py()
 end
 
 function mw_wikibase.getEntityIdForTitle(pageTitle, globalSiteId)
-   return nil
+    return mw_wikibase_getEntityIdForTitle_py(pageTitle, globalSiteId)
 end
 
 function mw_wikibase.getEntityUrl(id)
