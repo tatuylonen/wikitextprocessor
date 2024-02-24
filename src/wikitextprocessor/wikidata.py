@@ -1,7 +1,7 @@
 import re
 import sys
 from datetime import datetime
-from typing import TYPE_CHECKING, Union
+from typing import TYPE_CHECKING, Optional
 
 if TYPE_CHECKING:
     from .core import Wtp
@@ -51,11 +51,19 @@ def init_wikidata_cache(wtp: "Wtp") -> None:
     FOREIGN KEY(item_id) REFERENCES wikidata_items(id),
     FOREIGN KEY(property_id) REFERENCES wikidata_properties(id)
     );
+
+    CREATE TABLE IF NOT EXISTS wiki_articles(
+        name TEXT,
+        site_id TEXT,
+        item_id TEXT,
+        PRIMARY KEY(name, site_id, item_id),
+        FOREIGN KEY(item_id) REFERENCES wikidata_items(id)
+    );
     """
     )
 
 
-def get_statement_cache(wtp: "Wtp", prop: str, item: str) -> Union[str, None]:
+def get_statement_cache(wtp: "Wtp", prop: str, item: str) -> Optional[str]:
     query = """SELECT value FROM wikidata_property_values
     JOIN wikidata_items ON wikidata_property_values.item_id = wikidata_items.id
     JOIN wikidata_properties
@@ -78,15 +86,9 @@ def save_statement_cache(
     prop_id: str,
     prop_label: str,
     prop_value: str,
-):
+) -> None:
     with wtp.db_conn:
-        wtp.db_conn.execute(
-            """
-            INSERT OR IGNORE INTO wikidata_items (id, label, description)
-            VALUES(?, ?, ?)
-            """,
-            (item_id, item_label, item_desc),
-        )
+        insert_item(wtp, item_id, item_label, item_desc)
         wtp.db_conn.execute(
             """
             INSERT OR IGNORE INTO wikidata_properties (id, label)
@@ -159,7 +161,7 @@ def statement_query(wtp: "Wtp", prop: str, item_id: str, lang_code: str) -> str:
     return value
 
 
-def get_item_cache(wtp: "Wtp", item_id: str) -> Union[tuple[str, str], None]:
+def get_item_cache(wtp: "Wtp", item_id: str) -> Optional[tuple[str, str]]:
     for result in wtp.db_conn.execute(
         "SELECT label, description FROM wikidata_items WHERE id = ?",
         (item_id,),
@@ -168,17 +170,14 @@ def get_item_cache(wtp: "Wtp", item_id: str) -> Union[tuple[str, str], None]:
     return None
 
 
-def save_item_cache(
-    wtp: "Wtp", item_id: str, item_label: str, item_desc: str
-) -> None:
-    with wtp.db_conn:
-        wtp.db_conn.execute(
-            """
+def insert_item(wtp: "Wtp", item_id: str, item_label: str, item_desc: str):
+    wtp.db_conn.execute(
+        """
             INSERT OR IGNORE INTO wikidata_items (id, label, description)
             VALUES(?, ?, ?)
             """,
-            (item_id, item_label, item_desc),
-        )
+        (item_id, item_label, item_desc),
+    )
 
 
 def query_item(wtp: "Wtp", item_id: str, lang_code: str) -> tuple[str, str]:
@@ -199,7 +198,8 @@ def query_item(wtp: "Wtp", item_id: str, lang_code: str) -> tuple[str, str]:
     )
     label = query_result.get("itemLabel", {}).get("value", "")
     desc = query_result.get("itemDescription", {}).get("value", "")
-    save_item_cache(wtp, item_id, label, desc)
+    with wtp.db_conn:
+        insert_item(wtp, item_id, label, desc)
     return label, desc
 
 
@@ -209,3 +209,72 @@ def query_item_label(wtp: "Wtp", item_id: str) -> str:
 
 def query_item_desc(wtp: "Wtp", item_id: str) -> str:
     return query_item(wtp, item_id, wtp.lang_code)[1]
+
+
+def get_entity_id_cache(wtp: "Wtp", title: str, site_id: str) -> Optional[str]:
+    query = "SELECT item_id FROM wiki_articles WHERE name = ? AND site_id = ?"
+    for (item_id,) in wtp.db_conn.execute(query, (title, site_id)):
+        return item_id
+    return "not found"
+
+
+def save_entity_id_cache(
+    wtp: "Wtp",
+    title: str,
+    site_id: str,
+    item_id: Optional[str],
+    item_label: str,
+    item_desc: str,
+) -> None:
+    with wtp.db_conn:
+        if item_id is not None:
+            insert_item(wtp, item_id, item_label, item_desc)
+        wtp.db_conn.execute(
+            """
+            INSERT OR IGNORE INTO wiki_articles (name, site_id, item_id)
+            VALUES (?, ?, ?)
+            """,
+            (title, site_id, item_id),
+        )
+
+
+def query_entity_id_for_title(
+    wtp: "Wtp", title: str, site_id: str
+) -> Optional[str]:
+    cache = get_entity_id_cache(wtp, title, site_id)
+    if cache != "not found":
+        return cache
+    if site_id is None or site_id == "":
+        site_id = wtp.lang_code + wtp.project
+    lang_code = site_id[:2]
+    project = site_id[2:]
+    if project == "wiki":
+        project = "wikipedia"
+    wiki_url = f"https://{lang_code}.{project}.org/"
+    query_result = query_wikidata(
+        wtp,
+        f"""
+        SELECT ?item ?itemLabel ?itemDescription WHERE {{
+          ?url rdf:type schema:Article;
+            schema:about ?item;
+            schema:isPartOf <{wiki_url}>;
+            schema:name "{title}"@{lang_code}.
+          SERVICE wikibase:label {{
+            bd:serviceParam
+            wikibase:language "{lang_code},[AUTO_LANGUAGE],en".
+          }}
+        }}
+        """,
+    )
+    item_id = query_result.get("item", {}).get("value")
+    if item_id is not None:
+        item_id = item_id.rsplit("/", 1)[-1]
+    save_entity_id_cache(
+        wtp,
+        title,
+        site_id,
+        item_id,
+        query_result.get("itemLabel", {}).get("value", ""),
+        query_result.get("itemDescription", {}).get("value", ""),
+    )
+    return item_id

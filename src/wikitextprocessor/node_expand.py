@@ -176,6 +176,9 @@ def to_wikitext(
                 if node.attrs:
                     parts.append(" ")
                     parts.append(to_attrs(node))
+                # We're using ALLOWED_HTML_TAGS here because we don't have
+                # ctx.allowed_html_tags in this function, and it doesn't
+                # *really* matter if there's an extract / at the end.
                 if ALLOWED_HTML_TAGS.get(node.sarg, {"no-end-tag": True}).get(
                     "no-end-tag"
                 ):

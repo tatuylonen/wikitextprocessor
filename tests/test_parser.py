@@ -2816,6 +2816,24 @@ def foo(x):
         self.assertTrue(isinstance(string, str))
         self.assertEqual(string, "{{m|mul|{{ }}")
 
+    def test_extension_tags(self):
+        # Extension tags can be arbitrary, but we don't want to allow
+        # just anything inside HTML-tag-like entities, and we also
+        # need some basic data on how the tag is supposed to behave.
+        extension_tags = {
+            "foo": {"parents": ["phrasing"], "content": ["phrasing"]},
+        }
+        self.ctx = Wtp(
+            extension_tags=extension_tags,
+        )
+        self.ctx.start_page("test")
+        root = self.ctx.parse("<foo>bar</foo>")
+        self.assertEqual(len(root.children), 1)
+        e = root.children[0]
+        self.assertEqual(e.kind, NodeKind.HTML)
+        self.assertEqual(len(e.children), 1)
+        self.assertEqual(e.children[0], "bar")
+
 
 # XXX implement <nowiki/> marking for links, templates
 #  - https://en.wikipedia.org/wiki/Help:Wikitext#Nowiki

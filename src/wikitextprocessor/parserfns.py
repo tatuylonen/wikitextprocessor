@@ -14,7 +14,6 @@ import dateparser
 
 from .common import MAGIC_NOWIKI_CHAR, add_newline_to_expansion, nowiki_quote
 from .interwiki import get_interwiki_map
-from .wikihtml import ALLOWED_HTML_TAGS
 
 if TYPE_CHECKING:
     # Reached only by mypy or other type-checker
@@ -184,7 +183,7 @@ def tag_fn(
 ) -> str:
     """Implements #tag parser function."""
     tag = expander(args[0]).lower() if args else ""
-    if tag not in ALLOWED_HTML_TAGS and tag not in ctx.ALLOWED_EXTENSION_TAGS:
+    if tag not in ctx.allowed_html_tags and tag != "nowiki":
         ctx.warning(
             "#tag creating non-allowed tag <{}> - omitted".format(tag),
             sortid="parserfns/156",
@@ -1393,6 +1392,18 @@ def current_timestamp_fn(
     return datetime.now().strftime(MEDIAWIKI_TIMESTAMP_FORMAT)
 
 
+def coordinates_fn(
+    wtp: "Wtp", fn_name: str, args: list[str], expander: Callable[[str], str]
+) -> str:
+    # According to the GeoData (not Maps) #coordinate parser function source
+    # code, #coordinates only returns an empty string or an error string.
+    # https://github.com/wikimedia/
+    # mediawiki-extensions-GeoData/blob/
+    # c025f10fd88d1d72655bc43599071c4dddaab1f8/
+    # includes/CoordinatesParserFunction.php#L42
+    return ""
+
+
 # This list should include names of predefined parser functions and
 # predefined variables (some of which can take arguments using the same
 # syntax as parser functions and we treat them as parser functions).
@@ -1514,7 +1525,7 @@ PARSER_FUNCTIONS = {
     "#switch": switch_fn,
     "#babel": unimplemented_fn,
     "#categorytree": (categorytree_fn, True),  # This takes kwargs
-    "#coordinates": unimplemented_fn,
+    "#coordinates": coordinates_fn,
     "#invoke": unimplemented_fn,
     "#lst": lst_fn,
     "#lsth": unimplemented_fn,
