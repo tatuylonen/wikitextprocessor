@@ -1,7 +1,7 @@
 # Definition of the processing context for Wikitext processing, and code for
 # expanding templates, parser functions, and Lua macros.
 #
-# Copyright (c) 2020-2022 Tatu Ylonen.  See file LICENSE and https://ylonen.org
+# Copyright (c) 2020-2022, 2024 Tatu Ylonen.  See file LICENSE and https://ylonen.org
 
 import json
 import logging
@@ -247,6 +247,9 @@ class Wtp:
         self.begline_disable_counter = 0
         self.begline_disabled = BegLineDisableManager(self)
         self.wsp_beginning_of_line = False
+        self.title = None
+        self.section = None
+        self.subsection = None
         self.linenum = 1
         self.pre_parse = False
         self.suppress_special = False
