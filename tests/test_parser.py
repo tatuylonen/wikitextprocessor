@@ -2823,9 +2823,7 @@ def foo(x):
         extension_tags = {
             "foo": {"parents": ["phrasing"], "content": ["phrasing"]},
         }
-        self.ctx = Wtp(
-            extension_tags=extension_tags,
-        )
+        self.ctx.allowed_html_tags.update(extension_tags)
         self.ctx.start_page("test")
         root = self.ctx.parse("<foo>bar</foo>")
         self.assertEqual(len(root.children), 1)
@@ -2833,6 +2831,14 @@ def foo(x):
         self.assertEqual(e.kind, NodeKind.HTML)
         self.assertEqual(len(e.children), 1)
         self.assertEqual(e.children[0], "bar")
+
+    def test_slash_in_html_attr_value(self):
+        # https://de.wiktionary.org/wiki/axitiosus
+        self.ctx.start_page("axitiosus")
+        root = self.ctx.parse("<ref name=Ernout/Meillte>{{template}}</ref>")
+        ref_node = root.children[0]
+        self.assertIsInstance(ref_node, HTMLNode)
+        self.assertEqual(ref_node.tag, "ref")
 
 
 # XXX implement <nowiki/> marking for links, templates

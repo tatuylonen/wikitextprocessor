@@ -1812,7 +1812,7 @@ def tag_fn(ctx: "Wtp", token: str) -> None:
     # Try to parse it as a start tag
     m = re.match(
         r"""<([-a-zA-Z0-9]+)\s*((\b[-a-zA-Z0-9:]+(\s*=\s*("[^"]*"|"""
-        r"""'[^']*'|[^ \t\n"'`=<>/]*))?\s*)*)(/?)\s*>""",
+        r"""'[^']*'|[^ \t\n"'`=<>]*))?\s*)*)(/?)>""",
         token,
     )
     if m:
@@ -1919,8 +1919,7 @@ def tag_fn(ctx: "Wtp", token: str) -> None:
     else:
         m = re.match(r"</([-a-zA-Z0-9]+)\s*>", token)
         if m is None:
-            print("Could not match end tag token: {!r}".format(token))
-            assert False
+            raise Exception("Could not match end tag token: {!r}".format(token))
         name = m.group(1)
         name = name.lower()
 
