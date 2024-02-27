@@ -1812,7 +1812,7 @@ def tag_fn(ctx: "Wtp", token: str) -> None:
     # Try to parse it as a start tag
     m = re.match(
         r"""<([-a-zA-Z0-9]+)\s*((\b[-a-zA-Z0-9:]+(\s*=\s*("[^"]*"|"""
-        r"""'[^']*'|[^ \t\n"'`=<>]*))?\s*)*)(/?)\s*>""",
+        r"""'[^']*'|[^ \t\n"'`=<>]*))?\s*)*)(/?)>""",
         token,
     )
     if m:
