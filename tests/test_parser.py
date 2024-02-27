@@ -2834,6 +2834,14 @@ def foo(x):
         self.assertEqual(len(e.children), 1)
         self.assertEqual(e.children[0], "bar")
 
+    def test_slash_in_html_attr_value(self):
+        # https://de.wiktionary.org/wiki/axitiosus
+        self.ctx.start_page("axitiosus")
+        root = self.ctx.parse("<ref name=Ernout/Meillte>{{template}}</ref>")
+        ref_node = root.children[0]
+        self.assertIsInstance(ref_node, HTMLNode)
+        self.assertEqual(ref_node.tag, "ref")
+
 
 # XXX implement <nowiki/> marking for links, templates
 #  - https://en.wikipedia.org/wiki/Help:Wikitext#Nowiki
