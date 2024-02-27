@@ -2823,9 +2823,7 @@ def foo(x):
         extension_tags = {
             "foo": {"parents": ["phrasing"], "content": ["phrasing"]},
         }
-        self.ctx = Wtp(
-            extension_tags=extension_tags,
-        )
+        self.ctx.allowed_html_tags.update(extension_tags)
         self.ctx.start_page("test")
         root = self.ctx.parse("<foo>bar</foo>")
         self.assertEqual(len(root.children), 1)
