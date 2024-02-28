@@ -157,6 +157,64 @@ class BegLineDisableManager:
             self.ctx.begline_enabled = True
 
 
+LINKS = (
+    # `[[something<abcd>]]`
+    # XXX this regex seems to be too complex,
+    # could you replace it with just [^][{}]*?
+    r"\["
+    + MAGIC_NOWIKI_CHAR
+    + r"?\[("
+    # I spent a lot of willpower on this monstrosity.
+    + r"((?!\]\])[^[\n])*(?!\[[\n]+\])((?!\[\[)[^]\n])+"
+    #   ( no ]] ) ( no [ ) ( no [...] )( no [[) (no ]) 
+    + r")\]"
+    + MAGIC_NOWIKI_CHAR
+    + r"?\]"
+)
+
+LINKS_RE = re.compile(LINKS)
+
+# Encode external links: [something]
+EXTERNAL_LINKS = r"\[([^][{}<>|\n]+)\]"
+
+EXTERNAL_LINKS_RE = re.compile(EXTERNAL_LINKS)
+
+# Encode template arguments: {{{arg}}}, {{{..{|..|}..}}}
+TEMPLATE_ARGUMENTS = (
+    r"\{"
+    + MAGIC_NOWIKI_CHAR
+    + r"?\{"
+    + MAGIC_NOWIKI_CHAR
+    + r"?\{(("
+    + r"[^{}]|"  # No curly brackets (except inside cookies)
+    + r"\{\|[^{}]*\|\}"  # Outermost table brackets accepted?
+    + r")*?)\}"
+    + MAGIC_NOWIKI_CHAR
+    + r"?\}"
+    + MAGIC_NOWIKI_CHAR
+    + r"?\}"
+)
+
+TEMPLATE_ARGUMENTS_RE = re.compile(TEMPLATE_ARGUMENTS)
+
+TEMPLATES = (
+    r"\{" + MAGIC_NOWIKI_CHAR + r"?\{((?:"
+    r"[^{}]{?|"  # lone possible { and also default "any"
+    r"}(?=[^{}])|"  # lone `}`, (?=...) is not consumed (lookahead)
+    r"-{}-|"  # GitHub issue #59 Chinese wiktionary special `-{}-`
+    r"}{|"  # latex argument: "<math>\frac{1}{2}</math>"
+    r")+?)\}" + MAGIC_NOWIKI_CHAR + r"?\}"
+)
+
+TEMPLATES_RE = re.compile(TEMPLATES)
+
+ALL_BRACKETS_RE = re.compile(
+    r"("
+    + r"|".join((LINKS, EXTERNAL_LINKS, TEMPLATE_ARGUMENTS, TEMPLATES))
+    + r")"
+)
+
+
 class Wtp:
     """Context used for processing wikitext and for expanding templates,
     parser functions and Lua macros.  The intended usage pattern is to
@@ -625,6 +683,15 @@ class Wtp:
 
         def repl_link(m: re.Match) -> CookieChar:
             """Replacement function for links [[...]]."""
+            m2 = re.search(
+                # check to see if link contains something that should be
+                # handled first
+                ALL_BRACKETS_RE,
+                m.group(0)[2:-2],
+            )
+            if m2:
+                # print(f"{m.group(0)=}, {m.group(0)=}")
+                return m.group(0)
             nowiki = MAGIC_NOWIKI_CHAR in m.group(0)
             orig = m.group(1)
             if MAGIC_NOWIKI_CHAR in orig:
@@ -669,16 +736,7 @@ class Wtp:
                 # Encode links.
                 while True:
                     text = re.sub(
-                        # `[[something<abcd>]]`
-                        # XXX this regex seems to be too complex,
-                        # could you replace it with just [^][{}]*?
-                        r"\["
-                        + MAGIC_NOWIKI_CHAR
-                        + r"?\[("
-                        + r"[^][{}]+"  # any one char except brackets
-                        + r")\]"
-                        + MAGIC_NOWIKI_CHAR
-                        + r"?\]",
+                        LINKS_RE,
                         repl_link,
                         text,
                     )
@@ -686,21 +744,10 @@ class Wtp:
                         break
                     prev2 = text
                 # Encode external links: [something]
-                text = re.sub(r"\[([^][{}<>|\n]+)\]", repl_extlink, text)
+                text = re.sub(EXTERNAL_LINKS_RE, repl_extlink, text)
                 # Encode template arguments: {{{arg}}}, {{{..{|..|}..}}}
                 text = re.sub(
-                    r"\{"
-                    + MAGIC_NOWIKI_CHAR
-                    + r"?\{"
-                    + MAGIC_NOWIKI_CHAR
-                    + r"?\{(("
-                    + r"[^{}]|"  # No curly brackets (except inside cookies)
-                    + r"\{\|[^{}]*\|\}"  # Outermost table brackets accepted?
-                    + r")*?)\}"
-                    + MAGIC_NOWIKI_CHAR
-                    + r"?\}"
-                    + MAGIC_NOWIKI_CHAR
-                    + r"?\}",
+                    TEMPLATE_ARGUMENTS_RE,
                     repl_arg,
                     text,
                 )
@@ -732,12 +779,7 @@ class Wtp:
                     break
             # Replace template invocation
             text = re.sub(
-                r"\{" + MAGIC_NOWIKI_CHAR + r"?\{((?:"
-                r"[^{}]{?|"  # lone possible { and also default "any"
-                r"}(?=[^{}])|"  # lone `}`, (?=...) is not consumed (lookahead)
-                r"-{}-|"  # GitHub issue #59 Chinese wiktionary special `-{}-`
-                r"}{|"  # latex argument: "<math>\frac{1}{2}</math>"
-                r")+?)\}" + MAGIC_NOWIKI_CHAR + r"?\}",
+                TEMPLATES_RE,
                 repl_templ,
                 text,
             )
