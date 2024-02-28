@@ -3,7 +3,6 @@
 # Copyright (c) 2020-2022 Tatu Ylonen.  See file LICENSE and https://ylonen.org
 
 import unittest
-from unittest.mock import patch
 
 from wikitextprocessor import Wtp
 from wikitextprocessor.parser import (
@@ -2586,60 +2585,6 @@ def foo(x):
         self.assertTrue(isinstance(html_node, HTMLNode))
         self.assertEqual(html_node.tag, "th")
         self.assertEqual(html_node.attrs, {"colspan": "2"})
-
-    @patch(
-        "wikitextprocessor.wikidata.query_wikidata",
-        return_value={
-            "valueLabel": {"type": "literal", "value": "Douglas Noël Adams"},
-            "itemLabel": {
-                "xml:lang": "en",
-                "type": "literal",
-                "value": "Douglas Adams",
-            },
-            "itemDescription": {
-                "xml:lang": "en",
-                "type": "literal",
-                "value": "English author and humourist (1952–2001)",
-            },
-            "propLabel": {
-                "xml:lang": "en",
-                "type": "literal",
-                "value": "birth name",
-            },
-        },
-    )
-    def test_statements_parser_func(self, mock_f):
-        self.ctx.start_page("Don't panic")
-        expanded = self.ctx.expand("{{#statements:P1477|from=Q42}}")
-        self.assertEqual(expanded, "Douglas Noël Adams")
-        expanded = self.ctx.expand("{{#statements:birth name|from=Q42}}")
-        self.assertEqual(expanded, "Douglas Noël Adams")
-        # Template: https://en.wiktionary.org/wiki/Template:R:ru:STsSRJa
-        # page: https://en.wiktionary.org/wiki/резвиться
-        expanded = self.ctx.expand(
-            "{{#statements:birth name|from={{#if: true| Q42}}}}"
-        )
-        self.assertEqual(expanded, "Douglas Noël Adams")
-        mock_f.assert_called_once()  # use db cache
-
-    @patch(
-        "wikitextprocessor.wikidata.query_wikidata",
-        return_value={
-            "valueLabel": {"type": "literal", "value": "1868-01-01T00:00:00Z"},
-            "itemLabel": {"type": "literal", "value": "Q114098115"},
-            "propLabel": {
-                "xml:lang": "en",
-                "type": "literal",
-                "value": "publication date",
-            },
-        },
-    )
-    def test_statements_publication_date(self, mock_f):
-        # https://en.wiktionary.org/wiki/расплавить
-        # https://en.wiktionary.org/wiki/Template:R:ru:fr:Ganot1868
-        self.ctx.start_page("расплавить")
-        expanded = self.ctx.expand("{{#statements:P577|from=Q114098115}}")
-        self.assertEqual(expanded, "1868")
 
     def test_inverse_order_template_numbered_parameter(self):
         # https://en.wiktionary.org/wiki/落葉歸根

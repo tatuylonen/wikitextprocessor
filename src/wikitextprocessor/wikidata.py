@@ -40,6 +40,7 @@ def init_wikidata_cache(wtp: "Wtp") -> None:
     CREATE TABLE IF NOT EXISTS wikidata_properties(
     id TEXT UNIQUE,
     label TEXT,
+    datatype TEXT,
     PRIMARY KEY(id, label)
     );
 
@@ -63,8 +64,10 @@ def init_wikidata_cache(wtp: "Wtp") -> None:
     )
 
 
-def get_statement_cache(wtp: "Wtp", prop: str, item: str) -> Optional[str]:
-    query = """SELECT value FROM wikidata_property_values
+def get_statement_cache(
+    wtp: "Wtp", prop: str, item: str
+) -> Optional[tuple[str, Optional[str]]]:
+    query = """SELECT value, datatype FROM wikidata_property_values
     JOIN wikidata_items ON wikidata_property_values.item_id = wikidata_items.id
     JOIN wikidata_properties
       ON wikidata_property_values.property_id = wikidata_properties.id
@@ -73,8 +76,8 @@ def get_statement_cache(wtp: "Wtp", prop: str, item: str) -> Optional[str]:
         query += "wikidata_property_values.property_id = ?"
     else:
         query += "wikidata_properties.label = ?"
-    for (value,) in wtp.db_conn.execute(query, (item, prop)):
-        return value
+    for data in wtp.db_conn.execute(query, (item, prop)):
+        return data
     return None
 
 
@@ -86,15 +89,16 @@ def save_statement_cache(
     prop_id: str,
     prop_label: str,
     prop_value: str,
+    prop_type: Optional[str],
 ) -> None:
     with wtp.db_conn:
         insert_item(wtp, item_id, item_label, item_desc)
         wtp.db_conn.execute(
             """
-            INSERT OR IGNORE INTO wikidata_properties (id, label)
-            VALUES(?, ?)
+            INSERT OR IGNORE INTO wikidata_properties (id, label, datatype)
+            VALUES(?, ?, ?)
             """,
-            (prop_id, prop_label),
+            (prop_id, prop_label, prop_type),
         )
         wtp.db_conn.execute(
             """
@@ -105,14 +109,33 @@ def save_statement_cache(
         )
 
 
+def format_statement_result(
+    value: str, datatype: Optional[str], prop: str
+) -> str:
+    if datatype == "http://www.w3.org/2001/XMLSchema#dateTime":
+        # The date value will be formatted in day-month-year format.
+        if sys.version_info < (3, 11):
+            value = value.removesuffix("Z")
+        try:
+            date_time = datetime.fromisoformat(value)
+            if prop in ("P577", "publication date"):
+                value = str(date_time.year)
+            else:
+                value = date_time.strftime("%d %B %Y")
+        except ValueError:
+            value = ""
+    return value
+
+
 def statement_query(wtp: "Wtp", prop: str, item_id: str, lang_code: str) -> str:
     cache_value = get_statement_cache(wtp, prop, item_id)
     if cache_value is not None:
-        return cache_value
+        return format_statement_result(cache_value[0], cache_value[1], prop)
     if re.fullmatch(r"P\d+", prop):
         prop_is_id = True
         query = f"""
-        SELECT ?valueLabel ?itemLabel ?itemDescription ?propLabel WHERE {{
+        SELECT ?value ?itemLabel ?itemDescription ?propLabel
+        WHERE {{
           VALUES ?item {{ wd:{item_id} }}
           VALUES ?prop {{ wd:{prop} }}
           ?item wdt:{prop} ?value.
@@ -125,7 +148,7 @@ def statement_query(wtp: "Wtp", prop: str, item_id: str, lang_code: str) -> str:
         # property label is used
         prop_is_id = False
         query = f"""
-        SELECT ?valueLabel ?itemLabel ?itemDescription ?p WHERE {{
+        SELECT ?value ?itemLabel ?itemDescription ?p WHERE {{
           VALUES ?item {{ wd:{item_id} }}
           ?item ?prop ?value.
           ?p wikibase:directClaim ?prop;
@@ -137,7 +160,8 @@ def statement_query(wtp: "Wtp", prop: str, item_id: str, lang_code: str) -> str:
         """
 
     result = query_wikidata(wtp, query)
-    value = result.get("valueLabel", {}).get("value", "")
+    value = result.get("value", {}).get("value", "")
+    datatype = result.get("value", {}).get("datatype")
     save_statement_cache(
         wtp,
         item_id,
@@ -150,15 +174,9 @@ def statement_query(wtp: "Wtp", prop: str, item_id: str, lang_code: str) -> str:
         if not prop_is_id
         else result.get("propLabel", {}).get("value", ""),
         value,
+        datatype,
     )
-    if prop in {"P577", "publication date"}:
-        if sys.version_info < (3, 11):
-            value = value.removesuffix("Z")
-        try:
-            value = str(datetime.fromisoformat(value).year)
-        except ValueError:
-            value = ""
-    return value
+    return format_statement_result(value, datatype, prop)
 
 
 def get_item_cache(wtp: "Wtp", item_id: str) -> Optional[tuple[str, str]]:
