@@ -225,7 +225,7 @@ def fullpagename_fn(
     ctx: "Wtp", fn_name: str, args: list[str], expander: Callable[[str], str]
 ) -> str:
     """Implements the FULLPAGENAME magic word/parser function."""
-    t = expander(args[0]) if args else ctx.title
+    t = expander(args[0]) if args else ctx.title or "PAGENAME_ERROR"
     t = re.sub(r"\s+", " ", t)
     t = t.strip()
     ofs = t.find(":")
@@ -270,7 +270,7 @@ def pagename_fn(
     ctx: "Wtp", fn_name: str, args: list[str], expander: Callable[[str], str]
 ) -> str:
     """Implements the PAGENAME magic word/parser function."""
-    t = expander(args[0]) if args else ctx.title
+    t = expander(args[0]) if args else ctx.title or "PAGENAME_ERROR"
     t = re.sub(r"\s+", " ", t)
     t = t.strip()
     ofs = t.find(":")
@@ -286,7 +286,7 @@ def basepagename_fn(
     ctx: "Wtp", fn_name: str, args: list[str], expander: Callable[[str], str]
 ) -> str:
     """Implements the BASEPAGENAME magic word/parser function."""
-    t = expander(args[0]) if args else ctx.title
+    t = expander(args[0]) if args else ctx.title or "PAGENAME_ERROR"
     t = re.sub(r"\s+", " ", t)
     t = t.strip()
     ofs = t.rfind("/")
@@ -299,7 +299,7 @@ def rootpagename_fn(
     ctx: "Wtp", fn_name: str, args: list[str], expander: Callable[[str], str]
 ) -> str:
     """Implements the ROOTPAGENAME magic word/parser function."""
-    t = expander(args[0]) if args else ctx.title
+    t = expander(args[0]) if args else ctx.title or "PAGENAME_ERROR"
     t = re.sub(r"\s+", " ", t)
     t = t.strip()
     ofs = t.find("/")
@@ -312,7 +312,7 @@ def subpagename_fn(
     ctx: "Wtp", fn_name: str, args: list[str], expander: Callable[[str], str]
 ) -> str:
     """Implements the SUBPAGENAME magic word/parser function."""
-    t = expander(args[0]) if args else ctx.title
+    t = expander(args[0]) if args else ctx.title or "PAGENAME_ERROR"
     t = re.sub(r"\s+", " ", t)
     t = t.strip()
     ofs = t.rfind("/")
@@ -326,7 +326,10 @@ def talkpagename_fn(
     ctx: "Wtp", fn_name: str, args: list[str], expander: Callable[[str], str]
 ) -> str:
     """Implements the TALKPAGENAME magic word."""
-    ofs = ctx.title.find(":")
+    if ctx.title is not None:
+        ofs = ctx.title.find(":")
+    else:
+        return "ERROR_PAGENAME"
     if ofs < 0:
         return ctx.NAMESPACE_DATA["Talk"]["name"] + ":" + ctx.title
     else:
@@ -353,7 +356,7 @@ def namespace_fn(
     ctx: "Wtp", fn_name: str, args: list[str], expander: Callable[[str], str]
 ) -> str:
     """Implements the NAMESPACE magic word/parser function."""
-    t = expander(args[0]) if args else ctx.title
+    t = expander(args[0]) if args else ctx.title or "ERROR_NAMESPACE"
     t = re.sub(r"\s+", " ", t)
     t = t.strip()
     ofs = t.find(":")
@@ -370,7 +373,7 @@ def subjectspace_fn(
 ) -> str:
     """Implements the SUBJECTSPACE magic word/parser function.  This
     implementation is very minimal."""
-    t = expander(args[0]) if args else ctx.title
+    t = expander(args[0]) if args else ctx.title or "ERROR_NAMESPACE"
     for prefix in ctx.NAMESPACE_DATA:
         if t.startswith(prefix + ":"):
             return prefix
@@ -382,7 +385,7 @@ def talkspace_fn(
 ) -> str:
     """Implements the TALKSPACE magic word/parser function.  This
     implementation is very minimal."""
-    t = expander(args[0]) if args else ctx.title
+    t = expander(args[0]) if args else ctx.title or "ERROR_NAMESPACE"
     for prefix in ctx.NAMESPACE_DATA:
         if t.startswith(prefix + ":"):
             return ctx.NAMESPACE_DATA[prefix + " talk"]["name"]
@@ -606,7 +609,7 @@ def localurl_fn(
     ctx: "Wtp", fn_name: str, args: list[str], expander: Callable[[str], str]
 ) -> str:
     """Implements the localurl parser function."""
-    arg0 = expander(args[0]).strip() if args else ctx.title
+    arg0 = expander(args[0]).strip() if args else ctx.title or "ERROR_URL"
     arg1 = expander(args[1]).strip() if len(args) >= 2 else ""
     # XXX handle interwiki prefixes in arg0
     if arg1:

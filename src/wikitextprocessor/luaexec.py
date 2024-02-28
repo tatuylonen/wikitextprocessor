@@ -670,7 +670,7 @@ def call_lua_sandbox(
     try:
         ctx.lua_frame_stack.append(frame)
         ret: tuple[bool, str] = ctx.lua_invoke(
-            modname, modfn, frame, ctx.title, timeout
+            modname, modfn, frame, ctx.title or "ERROR_TITLE", timeout
         )
         # Lua functions returning multiple values will return a tuple
         # as would be normal in Python.
@@ -767,7 +767,7 @@ def mw_wikibase_getdescription(wtp: "Wtp", item_id: str) -> str:
 def mw_wikibase_getEntityIdForCurrentPage(wtp: "Wtp") -> Optional[str]:
     from .wikidata import query_entity_id_for_title
 
-    return query_entity_id_for_title(wtp, wtp.title, "")
+    return query_entity_id_for_title(wtp, wtp.title or "ERROR_TITLE", "")
 
 
 def mw_wikibase_getEntityIdForTitle(
@@ -790,7 +790,7 @@ def append_lua_stack(env_stack: deque, env: "_LuaTable") -> None:
 
 
 def get_current_title(wtp: "Wtp") -> str:
-    return wtp.title
+    return wtp.title or "ERROR_TITLE"
 
 
 def add_empty_sandbox_lua_module(wtp: "Wtp") -> None:
