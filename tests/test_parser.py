@@ -1059,6 +1059,42 @@ dasfasddasfdas
         b = a.largs[0][-1]
         self.assertEqual(b.kind, NodeKind.LINK)
 
+    def test_link7(self):
+        tree = self.parse("test", "[[foo|bar}}}]]")
+        link = tree.children[0]
+        self.assertEqual(link.kind, NodeKind.LINK)
+        self.assertEqual(link.largs, [["foo"], ["bar}}}"]])
+
+    def test_link8(self):
+        tree = self.parse("test", "[[foo| bar] ]]")
+        # print_tree(tree)
+        link = tree.children[0]
+        self.assertEqual(link.kind, NodeKind.LINK)
+        self.assertEqual(link.largs, [["foo"], [" bar] "]])
+
+    def test_link9(self):
+        tree = self.parse("test", "[[foo| [bar]]")
+        # print_tree(tree)
+        link = tree.children[0]
+        self.assertEqual(link.kind, NodeKind.LINK)
+        self.assertEqual(link.largs, [["foo"], [" [bar"]])
+
+    def test_link10(self):
+        tree = self.parse("test", "[[foo| [bar] ]]")
+        # print_tree(tree)
+        link = tree.children[0]
+        self.assertEqual(link.kind, NodeKind.LINK)
+        self.assertEqual(link.largs, [["foo"], [" [bar] "]])
+
+    # def test_link11(self):
+    # I can't get this to work. Our parser is too different from how
+    # wikimedia does it.
+    #     tree = self.parse("test", "[[foo| [bar]]]")
+    #     print_tree(tree)
+    #     link = tree.children[0]
+    #     self.assertEqual(link.kind, NodeKind.LINK)
+    #     self.assertEqual(link.largs, [["foo"], [" [bar]"]])
+
     def test_link_trailing(self):
         tree = self.parse("test", "[[Help]]ing heal")
         self.assertEqual(len(tree.children), 2)
@@ -1575,6 +1611,17 @@ def foo(x):
         self.assertEqual(tt.kind, NodeKind.TEMPLATE_ARG)
         self.assertEqual(tt.largs, [["1"], []])
         self.assertEqual(tt.children, [])
+
+    # def test_templatevar6(self):
+    # This is difficult to test in sandbox mode on the Wiki side, because
+    # there will never be an argument called "foo[" or anything with a
+    # a reserved character...
+    #     tree = self.parse("test", "{{{foo[}}}")
+    #     self.assertEqual(len(tree.children), 1)
+    #     b = tree.children[0]
+    #     self.assertEqual(b.kind, NodeKind.TEMPLATE_ARG)
+    #     self.assertEqual(b.largs, [["foo["]])
+    #     self.assertEqual(b.children, [])
 
     def test_parserfn1(self):
         tree = self.parse("test", "{{CURRENTYEAR}}x")
