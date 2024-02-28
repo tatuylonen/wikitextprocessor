@@ -157,7 +157,7 @@ class BegLineDisableManager:
             self.ctx.begline_enabled = True
 
 
-links = (
+LINKS = (
     # `[[something<abcd>]]`
     # XXX this regex seems to be too complex,
     # could you replace it with just [^][{}]*?
@@ -172,15 +172,15 @@ links = (
     + r"?\]"
 )
 
-links_re = re.compile(links)
+LINKS_RE = re.compile(LINKS)
 
 # Encode external links: [something]
-external_links = r"\[([^][{}<>|\n]+)\]"
+EXTERNAL_LINKS = r"\[([^][{}<>|\n]+)\]"
 
-external_links_re = re.compile(external_links)
+EXTERNAL_LINKS_RE = re.compile(EXTERNAL_LINKS)
 
 # Encode template arguments: {{{arg}}}, {{{..{|..|}..}}}
-template_arguments = (
+TEMPLATE_ARGUMENTS = (
     r"\{"
     + MAGIC_NOWIKI_CHAR
     + r"?\{"
@@ -195,9 +195,9 @@ template_arguments = (
     + r"?\}"
 )
 
-template_arguments_re = re.compile(template_arguments)
+TEMPLATE_ARGUMENTS_RE = re.compile(TEMPLATE_ARGUMENTS)
 
-templates = (
+TEMPLATES = (
     r"\{" + MAGIC_NOWIKI_CHAR + r"?\{((?:"
     r"[^{}]{?|"  # lone possible { and also default "any"
     r"}(?=[^{}])|"  # lone `}`, (?=...) is not consumed (lookahead)
@@ -206,11 +206,11 @@ templates = (
     r")+?)\}" + MAGIC_NOWIKI_CHAR + r"?\}"
 )
 
-templates_re = re.compile(templates)
+TEMPLATES_RE = re.compile(TEMPLATES)
 
-all_brackets_re = re.compile(
+ALL_BRACKETS_RE = re.compile(
     r"("
-    + r"|".join((links, external_links, template_arguments, templates))
+    + r"|".join((LINKS, EXTERNAL_LINKS, TEMPLATE_ARGUMENTS, TEMPLATES))
     + r")"
 )
 
@@ -686,7 +686,7 @@ class Wtp:
             m2 = re.search(
                 # check to see if link contains something that should be
                 # handled first
-                all_brackets_re,
+                ALL_BRACKETS_RE,
                 m.group(0)[2:-2],
             )
             if m2:
@@ -736,7 +736,7 @@ class Wtp:
                 # Encode links.
                 while True:
                     text = re.sub(
-                        links_re,
+                        LINKS_RE,
                         repl_link,
                         text,
                     )
@@ -744,10 +744,10 @@ class Wtp:
                         break
                     prev2 = text
                 # Encode external links: [something]
-                text = re.sub(external_links_re, repl_extlink, text)
+                text = re.sub(EXTERNAL_LINKS_RE, repl_extlink, text)
                 # Encode template arguments: {{{arg}}}, {{{..{|..|}..}}}
                 text = re.sub(
-                    template_arguments_re,
+                    TEMPLATE_ARGUMENTS_RE,
                     repl_arg,
                     text,
                 )
@@ -779,7 +779,7 @@ class Wtp:
                     break
             # Replace template invocation
             text = re.sub(
-                templates_re,
+                TEMPLATES_RE,
                 repl_templ,
                 text,
             )
