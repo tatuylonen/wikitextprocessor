@@ -166,7 +166,7 @@ LINKS = (
     + r"?\[("
     # I spent a lot of willpower on this monstrosity.
     + r"((?!\]\])[^[\n])*(?!\[[\n]+\])((?!\[\[)[^]\n])+"
-    #   ( no ]] ) ( no [ ) ( no [...] )( no [[) (no ]) 
+    #   ( no ]] ) ( no [ ) ( no [...] )( no [[) (no ])
     + r")\]"
     + MAGIC_NOWIKI_CHAR
     + r"?\]"
@@ -306,7 +306,7 @@ class Wtp:
         self.begline_disable_counter = 0
         self.begline_disabled = BegLineDisableManager(self)
         self.wsp_beginning_of_line = False
-        self.title = None
+        self.title: Optional[str] = None
         self.section = None
         self.subsection = None
         self.linenum = 1
@@ -459,10 +459,10 @@ class Wtp:
         assert isinstance(kind, str)
         assert isinstance(msg, str)
         assert isinstance(trace, (str, type(None)))
-        loc = self.title
-        if self.section:
+        loc = self.title or "ERROR_TITLE"
+        if self.section is not None:
             loc += "/" + self.section
-        if self.subsection:
+        if self.subsection is not None:
             loc += "/" + self.subsection
         if self.expand_stack:
             msg += " at {}".format(self.expand_stack)
@@ -501,7 +501,7 @@ class Wtp:
             {
                 "msg": msg,
                 "trace": trace or "",
-                "title": self.title,
+                "title": self.title or "ERROR_TITLE",
                 "section": self.section or "",
                 "subsection": self.subsection or "",
                 "called_from": sortid,
@@ -523,7 +523,7 @@ class Wtp:
             {
                 "msg": msg,
                 "trace": trace or "",
-                "title": self.title,
+                "title": self.title or "ERROR_TITLE",
                 "section": self.section or "",
                 "subsection": self.subsection or "",
                 "called_from": sortid,
@@ -545,7 +545,7 @@ class Wtp:
             {
                 "msg": msg,
                 "trace": trace or "",
-                "title": self.title,
+                "title": self.title or "ERROR_TITLE",
                 "section": self.section or "",
                 "subsection": self.subsection or "",
                 "called_from": sortid,
