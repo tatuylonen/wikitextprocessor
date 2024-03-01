@@ -1426,7 +1426,7 @@ def pagesize_fn(
     if not args:
         return '<strong class="error">No arguments given to #pagesize</strong>'
     page_name = args[0]
-    comma_formatting = not args[1].strip() == "R" if len(args) >= 2 else True
+    comma_formatting = args[1].strip() == "R" if len(args) >= 2 else False
 
     # XXX When the Sqlite library supports octet_length(), change this to
     # SELECT octet_length(body) instead.
