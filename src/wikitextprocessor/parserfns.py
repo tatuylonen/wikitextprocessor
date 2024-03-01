@@ -8,6 +8,7 @@ import re
 import urllib.parse
 from collections.abc import Callable, Sequence
 from datetime import datetime, timezone
+from sqlite3 import ProgrammingError
 from typing import TYPE_CHECKING, Optional, Union
 
 import dateparser
@@ -1417,6 +1418,39 @@ def coordinates_fn(
     # includes/CoordinatesParserFunction.php#L42
     return ""
 
+def pagesize_fn(
+    wtp: "Wtp", fn_name: str, args: list[str], expander: Callable[[str], str]
+) -> str:
+    # Return size of page in bytes. If "R" is given, format the number without
+    # commas, otherwise format number with comma thousand separators
+    if not args:
+        return '<strong class="error">No arguments given to #pagesize</strong>'
+    page_name = args[0]
+    comma_formatting = not args[1].strip() == "R" if len(args) >= 2 else True
+
+    # XXX When the Sqlite library supports octet_length(), change this to
+    # SELECT octet_length(body) instead.
+    # XXX refactor page name transformation code in get_page into its own
+    # function and use here.
+    query_str = """SELECT length(cast(body AS blob)) from pages
+                   WHERE title = ? LIMIT 1;"""
+
+    try:
+        for result in wtp.db_conn.execute(query_str, (page_name,)):
+            result = result[0]
+            if comma_formatting:
+                return f"{result:,}"
+
+            return f"{result}"
+    except ProgrammingError as e:
+        raise ProgrammingError(
+            f"{' '.join(e.args)}"
+            f" Current database file path: {wtp.db_path}"
+        ) from e
+
+
+    return "0"
+
 
 # This list should include names of predefined parser functions and
 # predefined variables (some of which can take arguments using the same
@@ -1495,7 +1529,7 @@ PARSER_FUNCTIONS = {
     "NUMBEROFADMINS": unimplemented_fn,
     "NUMBEROFACTIVEUSERS": unimplemented_fn,
     "PAGEID": unimplemented_fn,
-    "PAGESIZE": unimplemented_fn,
+    "PAGESIZE": pagesize_fn,
     "PROTECTIONLEVEL": unimplemented_fn,
     "PROTECTIONEXPIRY": unimplemented_fn,
     "PENDINGCHANGELEVEL": unimplemented_fn,
