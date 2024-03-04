@@ -1440,6 +1440,22 @@ def pagesize_fn(
     return "0"
 
 
+def filepath_fn(
+    wtp: "Wtp", fn_name: str, args: list[str], expander: Callable[[str], str]
+) -> str:
+    # meaningless function in the context of parsing wikitext without
+    # access to the whole Mediawiki server core thingies.
+    # Return a dummy url in the form "//unimplemented/filepath.foo"
+
+    # The Scribunto PHP code parser function seems to also return
+    # an array [ $url, "nowiki" => true], but aren't all return values
+    # meant to be strings here? Testing it in the sandbox (using the
+    # 'nowiki' parameter) didn't give different results.
+    if not args:
+        return ""
+    return rf"//unimplemented/{args[0]}"
+
+
 # This list should include names of predefined parser functions and
 # predefined variables (some of which can take arguments using the same
 # syntax as parser functions and we treat them as parser functions).
@@ -1545,7 +1561,7 @@ PARSER_FUNCTIONS = {
     "fullurl": fullurl_fn,
     "fullurle": fullurl_fn,
     "canonicalurl": unimplemented_fn,
-    "filepath": unimplemented_fn,
+    "filepath": filepath_fn,
     "urlencode": urlencode_fn,
     "anchorencode": anchorencode_fn,
     "ns": ns_fn,
