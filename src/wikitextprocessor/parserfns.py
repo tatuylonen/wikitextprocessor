@@ -8,7 +8,6 @@ import re
 import urllib.parse
 from collections.abc import Callable, Sequence
 from datetime import datetime, timezone
-from sqlite3 import ProgrammingError
 from typing import TYPE_CHECKING, Optional, Union
 
 import dateparser
@@ -1418,6 +1417,7 @@ def coordinates_fn(
     # includes/CoordinatesParserFunction.php#L42
     return ""
 
+
 def pagesize_fn(
     wtp: "Wtp", fn_name: str, args: list[str], expander: Callable[[str], str]
 ) -> str:
@@ -1428,26 +1428,14 @@ def pagesize_fn(
     page_name = args[0]
     comma_formatting = args[1].strip() == "R" if len(args) >= 2 else False
 
-    # XXX When the Sqlite library supports octet_length(), change this to
-    # SELECT octet_length(body) instead.
-    # XXX refactor page name transformation code in get_page into its own
-    # function and use here.
-    query_str = """SELECT length(cast(body AS blob)) from pages
-                   WHERE title = ? LIMIT 1;"""
-
-    try:
-        for result in wtp.db_conn.execute(query_str, (page_name,)):
-            result = result[0]
-            if comma_formatting:
-                return f"{result:,}"
-
-            return f"{result}"
-    except ProgrammingError as e:
-        raise ProgrammingError(
-            f"{' '.join(e.args)}"
-            f" Current database file path: {wtp.db_path}"
-        ) from e
-
+    body = wtp.get_page_body(page_name, None)
+    if body is None:
+        return '<strong class="error">Page not found for PAGESIZE</strong>'
+    body_length = len(body.encode("utf-8"))
+    if comma_formatting:
+        return f"{body_length:,}"
+    else:
+        return f"{body_length}"
 
     return "0"
 
