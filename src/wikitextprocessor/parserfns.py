@@ -1418,6 +1418,28 @@ def coordinates_fn(
     return ""
 
 
+def pagesize_fn(
+    wtp: "Wtp", fn_name: str, args: list[str], expander: Callable[[str], str]
+) -> str:
+    # Return size of page in bytes. If "R" is given, format the number without
+    # commas, otherwise format number with comma thousand separators
+    if not args:
+        return '<strong class="error">No arguments given to #pagesize</strong>'
+    page_name = args[0]
+    comma_formatting = args[1].strip() == "R" if len(args) >= 2 else False
+
+    body = wtp.get_page_body(page_name, None)
+    if body is None:
+        return '<strong class="error">Page not found for PAGESIZE</strong>'
+    body_length = len(body.encode("utf-8"))
+    if comma_formatting:
+        return f"{body_length:,}"
+    else:
+        return f"{body_length}"
+
+    return "0"
+
+
 # This list should include names of predefined parser functions and
 # predefined variables (some of which can take arguments using the same
 # syntax as parser functions and we treat them as parser functions).
@@ -1495,7 +1517,7 @@ PARSER_FUNCTIONS = {
     "NUMBEROFADMINS": unimplemented_fn,
     "NUMBEROFACTIVEUSERS": unimplemented_fn,
     "PAGEID": unimplemented_fn,
-    "PAGESIZE": unimplemented_fn,
+    "PAGESIZE": pagesize_fn,
     "PROTECTIONLEVEL": unimplemented_fn,
     "PROTECTIONEXPIRY": unimplemented_fn,
     "PENDINGCHANGELEVEL": unimplemented_fn,

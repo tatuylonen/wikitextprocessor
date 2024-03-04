@@ -1893,7 +1893,7 @@ class Wtp:
         return page.need_pre_expand
 
     def get_page_resolve_redirect(
-        self, title: str, namespace_id: int
+        self, title: str, namespace_id: Optional[int]
     ) -> Optional[Page]:
         page = self.get_page(title, namespace_id)
         if page is None:
@@ -1902,7 +1902,9 @@ class Wtp:
             return self.get_page(page.redirect_to, namespace_id, True)
         return page
 
-    def get_page_body(self, title: str, namespace_id: int) -> Optional[str]:
+    def get_page_body(
+        self, title: str, namespace_id: Optional[int]
+    ) -> Optional[str]:
         page = self.get_page_resolve_redirect(title, namespace_id)
         return None if page is None else page.body
 

@@ -27,6 +27,27 @@ class TestParserFunctions(TestCase):
             "",
         )
 
+    def test_pagesize_fn(self) -> None:
+        self.wtp.add_page("sizetestA", 0, body="AAAAAAA" * 1000)
+        self.wtp.add_page("sizetestB", 0, body="ÄÄÄÄÄÄÄ" * 1000)
+        self.wtp.start_page("Test")
+        self.assertEqual(
+            self.wtp.expand("{{PAGESIZE:sizetestA|R}}"),
+            "7,000",
+        )
+        self.assertEqual(
+            self.wtp.expand("{{PAGESIZE:sizetestB|R}}"),
+            "14,000",
+        )
+        self.assertEqual(
+            self.wtp.expand("{{PAGESIZE:sizetestA}}"),
+            "7000",
+        )
+        self.assertEqual(
+            self.wtp.expand("{{PAGESIZE:sizetestB}}"),
+            "14000",
+        )
+
     @patch(
         "wikitextprocessor.wikidata.query_wikidata",
         return_value={
