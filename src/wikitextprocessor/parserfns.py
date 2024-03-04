@@ -1456,6 +1456,14 @@ def filepath_fn(
     return rf"//unimplemented/{args[0]}"
 
 
+def protectionlevel_fn(
+    ctx: "Wtp", fn_name: str, args: list[str], expander: Callable[[str], str]
+) -> str:
+    """Implements the PROTECTIONLEVEL magic word."""
+    # Returns an empty string to indicate that the page is not protected."""
+    return ""
+
+
 # This list should include names of predefined parser functions and
 # predefined variables (some of which can take arguments using the same
 # syntax as parser functions and we treat them as parser functions).
@@ -1534,7 +1542,7 @@ PARSER_FUNCTIONS = {
     "NUMBEROFACTIVEUSERS": unimplemented_fn,
     "PAGEID": unimplemented_fn,
     "PAGESIZE": pagesize_fn,
-    "PROTECTIONLEVEL": unimplemented_fn,
+    "PROTECTIONLEVEL": protectionlevel_fn,
     "PROTECTIONEXPIRY": unimplemented_fn,
     "PENDINGCHANGELEVEL": unimplemented_fn,
     "PAGESINCATEGORY": unimplemented_fn,
