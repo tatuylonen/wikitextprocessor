@@ -652,10 +652,15 @@ class Wtp:
             # I know CookieChar == str, this is just for documentation.
             """Replacement function for templates {{name|...}} and parser
             functions."""
-            nowiki = MAGIC_NOWIKI_CHAR in m.group(0)
-            v = m.group(1)
-            args = vbar_split(v)
-            if not args or not args[0]:
+            whole_match = m.group(0)
+            nowiki = False
+            if (
+                MAGIC_NOWIKI_CHAR
+                in whole_match[: m.start(1)] + whole_match[m.end(1) :]
+            ):
+                nowiki = True  # <nowiki/> inside `{{` or `}}`
+            args = vbar_split(m.group(1))
+            if len(args) == 0 or args[0] == "":
                 # Templates without a first argument (template name)
                 # are just rendered as text in wikimedia stuff.
                 return (
@@ -663,6 +668,14 @@ class Wtp:
                     + "&vert;".join(args)
                     + "&rbrace;&rbrace;"
                 )
+            if ":" not in args[0] and MAGIC_NOWIKI_CHAR in args[0]:
+                nowiki = True  # <nowiki/> before first pipe
+            if (
+                ":" in args[0]
+                and MAGIC_NOWIKI_CHAR in args[0][: args[0].index(":")]
+            ):
+                nowiki = True  # <nowiki/> before parser function name
+
             # print("REPL_TEMPL: args={}".format(args))
             return self._save_value("T", args, nowiki)
 

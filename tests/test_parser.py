@@ -2694,7 +2694,7 @@ def foo(x):
             10,
             "{{#if:|<nowiki /> t{{#if:|’|e <nowiki />}}|<nowiki> </nowiki>}}",
         )
-        self.assertEqual(self.ctx.expand("{{t}}"), "<nowiki> </nowiki>")
+        self.assertEqual(self.ctx.expand("{{t}}"), " ")
 
     def test_hypen_in_table_cell(self):
         # https://fr.wiktionary.org/wiki/Conjugaison:français/s’abattre
@@ -2831,6 +2831,28 @@ def foo(x):
         ref_node = root.children[0]
         self.assertIsInstance(ref_node, HTMLNode)
         self.assertEqual(ref_node.tag, "ref")
+
+    def test_nowiki_breaks_parsing_template(self):
+        # https://en.wikipedia.org/wiki/Help:Wikitext#Displaying_template_calls
+        self.ctx.start_page("")
+        self.ctx.add_page("Template:t", 10, "template body")
+        cases = [
+            ("{<nowiki/>{t}}", "&lbrace;&lbrace;t&rbrace;&rbrace;"),
+            ("{{<nowiki/> t}}", "&lbrace;&lbrace;<nowiki /> t&rbrace;&rbrace;"),
+            (
+                "{{ t <nowiki/> }}",
+                "&lbrace;&lbrace; t <nowiki /> &rbrace;&rbrace;",
+            ),
+            ("{{ t | <nowiki/> }}", "template body"),
+            (
+                "{{ #ifeq<nowiki/>: inYes | inYes | outYes | outNo }}",
+                "&lbrace;&lbrace; #ifeq<nowiki />: inYes &vert; inYes &vert; outYes &vert; outNo &rbrace;&rbrace;",  # noqa: E501
+            ),
+            ("{{ #ifeq: inYes<nowiki/> | inYes | outYes | outNo }}", "outNo"),
+        ]
+        for wikitext, result in cases:
+            with self.subTest(wkitext=wikitext, result=result):
+                self.assertEqual(self.ctx.expand(wikitext), result)
 
 
 # XXX implement <nowiki/> marking for links, templates
