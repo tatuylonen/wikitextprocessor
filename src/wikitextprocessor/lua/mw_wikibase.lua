@@ -23,6 +23,10 @@ function mw_wikibase.getEntityUrl(id)
    return nil
 end
 
+function mw_wikibase.getBadge(id, globalSiteId)
+   return {}
+end
+
 function mw_wikibase.getLabel(id)
     return mw_wikibase_getlabel_python(id)
 end
