@@ -48,6 +48,30 @@ class TestParserFunctions(TestCase):
             "14000",
         )
 
+    def test_filepath_fn1(self) -> None:
+        self.wtp.start_page("Test")
+        self.assertEqual(
+            self.wtp.expand("{{filepath:foo.jpg}}"), "//unimplemented/foo.jpg"
+        )
+
+    def test_filepath_fn2(self) -> None:
+        self.wtp.start_page("Test")
+        self.assertEqual(
+            self.wtp.expand("{{filepath:foo.jpg|nowiki}}"),
+            "//unimplemented/foo.jpg",
+        )
+
+    def test_filepath_fn3(self) -> None:
+        self.wtp.start_page("Test")
+        self.assertEqual(
+            self.wtp.expand("{{filepath:foo.jpg|300|nowiki}}"),
+            "//unimplemented/foo.jpg",
+        )
+
+    def test_filepath_fn4(self) -> None:
+        self.wtp.start_page("Test")
+        self.assertEqual(self.wtp.expand("{{filepath}}"), "")
+
     @patch(
         "wikitextprocessor.wikidata.query_wikidata",
         return_value={
