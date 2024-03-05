@@ -359,14 +359,12 @@ class WikiNode:
     @overload
     def find_child(
         self, target_kinds: NodeKind, with_index: Literal[True]
-    ) -> Iterator[tuple[int, "WikiNode"]]:
-        ...
+    ) -> Iterator[tuple[int, "WikiNode"]]: ...
 
     @overload
     def find_child(
         self, target_kinds: NodeKind, with_index: Literal[False] = ...
-    ) -> Iterator["WikiNode"]:
-        ...
+    ) -> Iterator["WikiNode"]: ...
 
     def find_child(
         self,
@@ -452,8 +450,7 @@ class WikiNode:
         with_index: Literal[True],
         attr_name: str,
         attr_value: str,
-    ) -> Iterator["HTMLNode"]:
-        ...
+    ) -> Iterator["HTMLNode"]: ...
 
     @overload
     def find_html(
@@ -462,8 +459,7 @@ class WikiNode:
         with_index: Literal[False] = ...,
         attr_name: str = ...,
         attr_value: str = ...,
-    ) -> Iterator[tuple[int, "HTMLNode"]]:
-        ...
+    ) -> Iterator[tuple[int, "HTMLNode"]]: ...
 
     def find_html(
         self,
