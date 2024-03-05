@@ -1226,8 +1226,8 @@ class Wtp:
         def _nowiki_sub_fn(m: re.Match) -> CookieChar:
             """This function escapes the contents of a <nowiki> ... </nowiki>
             pair."""
-            text = m.group(1)
-            return self._save_value("N", (text,), False)
+            nowiki_content = m.group(1)
+            return self._save_value("N", (nowiki_content,), True)
 
         text = re.sub(
             r"(?si)<nowiki\s*>(.*?)</nowiki\s*>", _nowiki_sub_fn, text
@@ -1624,6 +1624,7 @@ class Wtp:
                             # Determine if the template starts with a list item
                             if body.startswith(("#", "*", ";", ":")):
                                 body = "\n" + body
+                            body = self.preprocess_text(body)
                             encoded_body = self._encode(body)
                             # Expand template arguments recursively.
                             # The arguments are already expanded.
