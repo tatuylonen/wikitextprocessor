@@ -264,7 +264,8 @@ local _orig_xpcall = xpcall
 -- with a new loaders table (not a function, but a list of functions)
 -- where only the second entry returns a function that returns the
 -- result of trying to get a new loader...
-local new_package = { loaders = { nil, new_loader } }
+local new_package = { loaders = { nil, new_loader },
+                      loaded = {} }
 
 local retained_modules = {
     coroutine = true,
