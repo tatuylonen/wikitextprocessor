@@ -23,7 +23,7 @@ function mw_wikibase.getEntityUrl(id)
    return nil
 end
 
-function mw_wikibase.getBadge(id, globalSiteId)
+function mw_wikibase.getBadges(id, globalSiteId)
    return {}
 end
 

@@ -310,6 +310,28 @@ return export""",
         self.assertEqual(self.wtp.expand("{{#invoke:test|test}}"), "Q42Q42")
         mock_query.assert_called_once()  # use db cache
 
+    def test_wikibase_getBadge(self) -> None:
+        # getBadge is unimplemented, because we don't really need badge data
+        # for parsing. If this test fails, someone might have implemented
+        # getBadge properly, so you need to implement this as a proper test.
+        self.wtp.add_page(
+            "Module:test",
+            828,
+            """
+local export = {}
+function export.test(frame)
+  local a = mw.wikibase.getBadges("Douglas Adams", "enwiki")
+  if type(a) == 'table' and next(a) == nil then
+      return 'foo'
+  end
+  return  'bar'
+end
+return export""",
+            model="Scribunto",
+        )
+        self.wtp.start_page("")
+        self.assertEqual(self.wtp.expand("{{#invoke:test|test}}"), "foo")
+
     @patch("wikitextprocessor.wikidata.query_wikidata", return_value={})
     def test_wikibase_getEntityIdForTitle_no_result(self, mock_query):
         self.wtp.add_page(
