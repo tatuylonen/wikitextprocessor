@@ -350,3 +350,42 @@ return export""",
         self.wtp.start_page("")
         self.assertEqual(self.wtp.expand("{{#invoke:test|test}}"), "")
         mock_query.assert_called_once()  # use db cache
+
+    def test_ext_data_get(self) -> None:
+        # mw.ext.data.get is unimplemented; we do not want to pull data from
+        # commons. Usually mw.ext.data.get loads data from static .tab files
+        # and converts them to JSON -> table (with certain specific fields,
+        # like .schema), but when retrieval fails it returns a { false } table.
+        self.wtp.add_page(
+            "Module:test",
+            828,
+            """
+local export = {}
+function export.test(frame)
+  local a = mw.ext.data.get("Douglas Adams", "_")
+  _, val = next(a)
+  if type(a) ~= 'table' then
+      return 'bar'
+  end
+  if a.schema == nil then
+      return 'bar'
+  end
+  if a.schema.fields == nil then
+      return 'bar'
+  end
+  if type(a.schema.fields) ~= "table" then
+      return 'bar'
+  end
+  if a.data == nil then
+      return 'bar'
+  end
+  if type(a.data) ~= "table" then
+      return 'bar'
+  end
+  return  'foo'
+end
+return export""",
+            model="Scribunto",
+        )
+        self.wtp.start_page("")
+        self.assertEqual(self.wtp.expand("{{#invoke:test|test}}"), "foo")
