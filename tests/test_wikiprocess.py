@@ -4274,6 +4274,21 @@ return export
             " \n unnamed3 - \n unnamed3 ",
         )
 
+    def test_nowiki_in_template_body(self):
+        # GH issue #233
+        # https://fr.wikipedia.org/wiki/Modèle:Admissibilité_à_vérifier
+        self.ctx.start_page("")
+        self.ctx.add_page(
+            "Template:t",
+            10,
+            "template body <nowiki>{{t}}</nowiki>",
+        )
+        text = self.ctx.expand("{{t}}")
+        self.assertEqual(
+            text,
+            "template body &lbrace;&lbrace;t&rbrace;&rbrace;",
+        )
+
 
 # XXX Test template_fn
 
