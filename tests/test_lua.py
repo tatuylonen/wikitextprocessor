@@ -310,7 +310,7 @@ return export""",
         self.assertEqual(self.wtp.expand("{{#invoke:test|test}}"), "Q42Q42")
         mock_query.assert_called_once()  # use db cache
 
-    def test_wikibase_getBadge(self) -> None:
+    def test_wikibase_getBadges(self) -> None:
         # getBadge is unimplemented, because we don't really need badge data
         # for parsing. If this test fails, someone might have implemented
         # getBadge properly, so you need to implement this as a proper test.
@@ -356,6 +356,7 @@ return export""",
         # commons. Usually mw.ext.data.get loads data from static .tab files
         # and converts them to JSON -> table (with certain specific fields,
         # like .schema), but when retrieval fails it returns a { false } table.
+        # https://fr.wikipedia.org/wiki/Module:Tabular_data
         self.wtp.add_page(
             "Module:test",
             828,
