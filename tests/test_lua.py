@@ -310,7 +310,7 @@ return export""",
         self.assertEqual(self.wtp.expand("{{#invoke:test|test}}"), "Q42Q42")
         mock_query.assert_called_once()  # use db cache
 
-    def test_wikibase_getBadge(self) -> None:
+    def test_wikibase_getBadges(self) -> None:
         # getBadge is unimplemented, because we don't really need badge data
         # for parsing. If this test fails, someone might have implemented
         # getBadge properly, so you need to implement this as a proper test.
@@ -350,3 +350,43 @@ return export""",
         self.wtp.start_page("")
         self.assertEqual(self.wtp.expand("{{#invoke:test|test}}"), "")
         mock_query.assert_called_once()  # use db cache
+
+    def test_ext_data_get(self) -> None:
+        # mw.ext.data.get is unimplemented; we do not want to pull data from
+        # commons. Usually mw.ext.data.get loads data from static .tab files
+        # and converts them to JSON -> table (with certain specific fields,
+        # like .schema), but when retrieval fails it returns a { false } table.
+        # https://fr.wikipedia.org/wiki/Module:Tabular_data
+        self.wtp.add_page(
+            "Module:test",
+            828,
+            """
+local export = {}
+function export.test(frame)
+  local a = mw.ext.data.get("Douglas Adams", "_")
+  _, val = next(a)
+  if type(a) ~= 'table' then
+      return 'bar'
+  end
+  if a.schema == nil then
+      return 'bar'
+  end
+  if a.schema.fields == nil then
+      return 'bar'
+  end
+  if type(a.schema.fields) ~= "table" then
+      return 'bar'
+  end
+  if a.data == nil then
+      return 'bar'
+  end
+  if type(a.data) ~= "table" then
+      return 'bar'
+  end
+  return  'foo'
+end
+return export""",
+            model="Scribunto",
+        )
+        self.wtp.start_page("")
+        self.assertEqual(self.wtp.expand("{{#invoke:test|test}}"), "foo")
