@@ -2086,11 +2086,11 @@ def token_iter(ctx: "Wtp", text: str) -> Iterator[tuple[bool, str]]:
     on the same line."""
     assert isinstance(text, str)
     # Replace single quotes inside HTML tags with MAGIC_SQUOTE_CHAR
-    tag_parts = re.split(ctx.inside_html_tags_re, text)
+    tag_parts = ctx.inside_html_tags_re.split(text)
     if len(tag_parts) > 1:
         new_parts: list[str] = []
         for tp in tag_parts:
-            if re.match(ctx.inside_html_tags_re, tp):
+            if ctx.inside_html_tags_re.match(tp):
                 # we're inside an HTML tag
                 tp = tp.replace("'", MAGIC_SQUOTE_CHAR)
                 tp = tp.replace("\n", "")
@@ -2101,7 +2101,7 @@ def token_iter(ctx: "Wtp", text: str) -> Iterator[tuple[bool, str]]:
     parts_re = re.compile(r"('{2,})")
     for line in lines:
         # Detected headers before partitioning on "''"s
-        hm = re.match(header_re, line)
+        hm = header_re.match(line)
         if hm:
             token = hm.group(0)
             if token.startswith("="):
@@ -2191,7 +2191,7 @@ def token_iter(ctx: "Wtp", text: str) -> Iterator[tuple[bool, str]]:
             pos = 0
             # Revert to single quotes from MAGIC_SQUOTE_CHAR
             part = part.replace(MAGIC_SQUOTE_CHAR, "'")
-            for m in re.finditer(TOKEN_RE, part):
+            for m in TOKEN_RE.finditer(part):
                 start = m.start()
                 if pos != start:
                     yield False, part[pos:start]

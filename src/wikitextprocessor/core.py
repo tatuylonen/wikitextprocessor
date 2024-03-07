@@ -33,10 +33,10 @@ from typing import (
 
 from .common import (
     MAGIC_FIRST,
-    MAGIC_LAST,
     MAGIC_LBRACKET_CHAR,
     MAGIC_NOWIKI_CHAR,
     MAGIC_RBRACKET_CHAR,
+    MAGIC_RE_PATTERN,
     MAX_MAGICS,
     URL_STARTS,
     add_newline_to_expansion,
@@ -696,10 +696,9 @@ class Wtp:
 
         def repl_link(m: re.Match) -> CookieChar:
             """Replacement function for links [[...]]."""
-            m2 = re.search(
+            m2 = ALL_BRACKETS_RE.search(
                 # check to see if link contains something that should be
                 # handled first
-                ALL_BRACKETS_RE,
                 m.group(0)[2:-2],
             )
             if m2:
@@ -748,22 +747,14 @@ class Wtp:
                 prev2 = text
                 # Encode links.
                 while True:
-                    text = re.sub(
-                        LINKS_RE,
-                        repl_link,
-                        text,
-                    )
+                    text = LINKS_RE.sub(repl_link, text)
                     if text == prev2:
                         break
                     prev2 = text
                 # Encode external links: [something]
-                text = re.sub(EXTERNAL_LINKS_RE, repl_extlink, text)
+                text = EXTERNAL_LINKS_RE.sub(repl_extlink, text)
                 # Encode template arguments: {{{arg}}}, {{{..{|..|}..}}}
-                text = re.sub(
-                    TEMPLATE_ARGUMENTS_RE,
-                    repl_arg,
-                    text,
-                )
+                text = TEMPLATE_ARGUMENTS_RE.sub(repl_arg, text)
                 if text == prev2:
                     # When everything else has been done, see if we can find
                     # template arguments that have one missing closing bracket.
@@ -791,11 +782,7 @@ class Wtp:
                     #     continue
                     break
             # Replace template invocation
-            text = re.sub(
-                TEMPLATES_RE,
-                repl_templ,
-                text,
-            )
+            text = TEMPLATES_RE.sub(repl_templ, text)
             # We keep looping until there is no change during the iteration
             if text == prev:
                 # When everything else has been done, see if we can find
@@ -823,8 +810,8 @@ class Wtp:
         # text = re.sub(r"[^|]\}", r"\1&rbrace;", text)
         # text = re.sub(r"[^|]\}", r"\1&rbrace;", text)
         # text = re.sub(r"\|", "&vert;", text)
-        text = re.sub(MAGIC_LBRACKET_CHAR, "[", text)
-        text = re.sub(MAGIC_RBRACKET_CHAR, "]", text)
+        text = text.replace(MAGIC_LBRACKET_CHAR, "[")
+        text = text.replace(MAGIC_RBRACKET_CHAR, "]")
         return text
 
     def _template_to_body(self, title: str, text: Optional[str]) -> str:
@@ -1333,9 +1320,7 @@ class Wtp:
                 assert isinstance(argmap, dict)
                 parts: list[str] = []
                 pos = 0
-                for m in re.finditer(
-                    r"[{:c}-{:c}]".format(MAGIC_FIRST, MAGIC_LAST), coded
-                ):
+                for m in MAGIC_RE_PATTERN.finditer(coded):
                     new_pos = m.start()
                     if new_pos > pos:
                         parts.append(coded[pos:new_pos])
@@ -1444,9 +1429,7 @@ class Wtp:
             # Main code of expand_recurse()
             parts: list[str] = []
             pos = 0
-            for m in re.finditer(
-                r"[{:c}-{:c}]".format(MAGIC_FIRST, MAGIC_LAST), coded
-            ):
+            for m in MAGIC_RE_PATTERN.finditer(coded):
                 new_pos = m.start()
                 if new_pos > pos:
                     parts.append(coded[pos:new_pos])
@@ -1765,22 +1748,20 @@ class Wtp:
         # We might get them from, e.g., unexpanded_template()
         while True:
             prev = text
-            text = re.sub(
-                r"[{:c}-{:c}]".format(MAGIC_FIRST, MAGIC_LAST), magic_repl, text
-            )
+            text = MAGIC_RE_PATTERN.sub(magic_repl, text)
             if prev == text:
                 break
 
         # Convert the special <nowiki /> character back to <nowiki />.
         # This is done at the end of normal expansion.
-        text = re.sub(MAGIC_NOWIKI_CHAR, "<nowiki />", text)
+        text = text.replace(MAGIC_NOWIKI_CHAR, "<nowiki />")
 
         # broken external url kludge: we don't want to have external
         # urls that are not correct, but we can't just return the
         # brackets as is inside the substitution loop, because that breaks
         # the loop, so we replace the characters and now return them.
-        text = re.sub(MAGIC_LBRACKET_CHAR, "[", text)
-        text = re.sub(MAGIC_RBRACKET_CHAR, "]", text)
+        text = text.replace(MAGIC_LBRACKET_CHAR, "[")
+        text = text.replace(MAGIC_RBRACKET_CHAR, "]")
         # print("    _finalize_expand:{!r}".format(text))
         return text
 
