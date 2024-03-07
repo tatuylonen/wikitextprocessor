@@ -33,10 +33,10 @@ from typing import (
 
 from .common import (
     MAGIC_FIRST,
-    MAGIC_LAST,
     MAGIC_LBRACKET_CHAR,
     MAGIC_NOWIKI_CHAR,
     MAGIC_RBRACKET_CHAR,
+    MAGIC_RE_PATTERN,
     MAX_MAGICS,
     URL_STARTS,
     add_newline_to_expansion,
@@ -1333,9 +1333,7 @@ class Wtp:
                 assert isinstance(argmap, dict)
                 parts: list[str] = []
                 pos = 0
-                for m in re.finditer(
-                    r"[{:c}-{:c}]".format(MAGIC_FIRST, MAGIC_LAST), coded
-                ):
+                for m in MAGIC_RE_PATTERN.finditer(coded):
                     new_pos = m.start()
                     if new_pos > pos:
                         parts.append(coded[pos:new_pos])
@@ -1444,9 +1442,7 @@ class Wtp:
             # Main code of expand_recurse()
             parts: list[str] = []
             pos = 0
-            for m in re.finditer(
-                r"[{:c}-{:c}]".format(MAGIC_FIRST, MAGIC_LAST), coded
-            ):
+            for m in MAGIC_RE_PATTERN.finditer(coded):
                 new_pos = m.start()
                 if new_pos > pos:
                     parts.append(coded[pos:new_pos])
@@ -1765,9 +1761,7 @@ class Wtp:
         # We might get them from, e.g., unexpanded_template()
         while True:
             prev = text
-            text = re.sub(
-                r"[{:c}-{:c}]".format(MAGIC_FIRST, MAGIC_LAST), magic_repl, text
-            )
+            text = MAGIC_RE_PATTERN.sub(magic_repl, text)
             if prev == text:
                 break
 

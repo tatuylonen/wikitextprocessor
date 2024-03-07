@@ -1,4 +1,5 @@
-from .core import MAGIC_FIRST, MAGIC_LAST, Page, Wtp
+from .common import MAGIC_FIRST, MAGIC_LAST
+from .core import Page, Wtp
 from .parser import NodeKind, WikiNode
 
 __all__ = (

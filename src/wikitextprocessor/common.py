@@ -56,6 +56,7 @@ URL_STARTS = (
 MAGIC_FIRST: int = next(mnum)
 MAGIC_LAST: int = 0x0010FFF0
 MAX_MAGICS = MAGIC_LAST - MAGIC_FIRST + 1
+MAGIC_RE_PATTERN = re.compile(r"[{:c}-{:c}]".format(MAGIC_FIRST, MAGIC_LAST))
 
 # Mappings performed for text inside <nowiki>...</nowiki>
 _nowiki_map: dict[str, str] = {
