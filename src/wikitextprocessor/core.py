@@ -823,8 +823,8 @@ class Wtp:
         # text = re.sub(r"[^|]\}", r"\1&rbrace;", text)
         # text = re.sub(r"[^|]\}", r"\1&rbrace;", text)
         # text = re.sub(r"\|", "&vert;", text)
-        text = re.sub(MAGIC_LBRACKET_CHAR, "[", text)
-        text = re.sub(MAGIC_RBRACKET_CHAR, "]", text)
+        text = text.replace(MAGIC_LBRACKET_CHAR, "[")
+        text = text.replace(MAGIC_RBRACKET_CHAR, "]")
         return text
 
     def _template_to_body(self, title: str, text: Optional[str]) -> str:
@@ -1773,14 +1773,14 @@ class Wtp:
 
         # Convert the special <nowiki /> character back to <nowiki />.
         # This is done at the end of normal expansion.
-        text = re.sub(MAGIC_NOWIKI_CHAR, "<nowiki />", text)
+        text = text.replace(MAGIC_NOWIKI_CHAR, "<nowiki />")
 
         # broken external url kludge: we don't want to have external
         # urls that are not correct, but we can't just return the
         # brackets as is inside the substitution loop, because that breaks
         # the loop, so we replace the characters and now return them.
-        text = re.sub(MAGIC_LBRACKET_CHAR, "[", text)
-        text = re.sub(MAGIC_RBRACKET_CHAR, "]", text)
+        text = text.replace(MAGIC_LBRACKET_CHAR, "[")
+        text = text.replace(MAGIC_RBRACKET_CHAR, "]")
         # print("    _finalize_expand:{!r}".format(text))
         return text
 
