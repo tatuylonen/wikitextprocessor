@@ -1464,6 +1464,46 @@ def protectionlevel_fn(
     return ""
 
 
+def localyear_fn(
+    ctx: "Wtp", fn_name: str, args: list[str], expander: Callable[[str], str]
+) -> str:
+    """Implements the LOCALYEAR magic word."""
+    utc_dt = datetime.now(timezone.utc)
+    return str(utc_dt.astimezone().year)
+
+
+def localmonth_fn(
+    ctx: "Wtp", fn_name: str, args: list[str], expander: Callable[[str], str]
+) -> str:
+    """Implements the LOCALMONTH magic word."""
+    utc_dt = datetime.now(timezone.utc)
+    return utc_dt.astimezone().strftime("%m")
+
+
+def localday_fn(
+    ctx: "Wtp", fn_name: str, args: list[str], expander: Callable[[str], str]
+) -> str:
+    """Implements the LOCALDAY magic word."""
+    utc_dt = datetime.now(timezone.utc)
+    return utc_dt.astimezone().strftime("%-d")
+
+
+def localday2_fn(
+    ctx: "Wtp", fn_name: str, args: list[str], expander: Callable[[str], str]
+) -> str:
+    """Implements the LOCALDAY2 magic word, with a possible leading zero."""
+    utc_dt = datetime.now(timezone.utc)
+    return utc_dt.astimezone().strftime("%d")
+
+
+def localhour_fn(
+    ctx: "Wtp", fn_name: str, args: list[str], expander: Callable[[str], str]
+) -> str:
+    """Implements the LOCALHOUR magic word."""
+    utc_dt = datetime.now(timezone.utc)
+    return utc_dt.astimezone().strftime("%H")
+
+
 # This list should include names of predefined parser functions and
 # predefined variables (some of which can take arguments using the same
 # syntax as parser functions and we treat them as parser functions).
@@ -1514,12 +1554,12 @@ PARSER_FUNCTIONS = {
     "CURRENTHOUR": unimplemented_fn,
     "CURRENTWEEK": unimplemented_fn,
     "CURRENTTIMESTAMP": current_timestamp_fn,
-    "LOCALYEAR": unimplemented_fn,
-    "LOCALMONTH": unimplemented_fn,
+    "LOCALYEAR": localyear_fn,
+    "LOCALMONTH": localmonth_fn,
     "LOCALMONTHNAME": unimplemented_fn,
     "LOCALMONTHABBREV": unimplemented_fn,
-    "LOCALDAY": unimplemented_fn,
-    "LOCALDAY2": unimplemented_fn,
+    "LOCALDAY": localday_fn,
+    "LOCALDAY2": localday2_fn,
     "LOCALDOW": unimplemented_fn,
     "LOCALDAYNAME": unimplemented_fn,
     "LOCALTIME": unimplemented_fn,
