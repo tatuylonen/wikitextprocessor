@@ -4289,6 +4289,29 @@ return export
             "template body &lbrace;&lbrace;t&rbrace;&rbrace;",
         )
 
+    def test_invoke_aliases(self):
+        # Some wikipedias (fr.wikipedia.org) have aliases for #invoke
+        self.ctx.start_page("test")
+        self.ctx.invoke_aliases = self.ctx.invoke_aliases | {"#infooque"}
+        self.ctx.add_page(
+            "Module:test",
+            828,
+            """
+            local export = {}
+
+            function export.test()
+              return "foo"
+            end
+
+            return export
+            """,
+        )
+        text = self.ctx.expand("{{#infooque|test|test}}")
+        self.assertEqual(
+            text,
+            "foo",
+        )
+
 
 # XXX Test template_fn
 
