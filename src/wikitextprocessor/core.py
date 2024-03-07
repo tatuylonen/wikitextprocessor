@@ -696,10 +696,9 @@ class Wtp:
 
         def repl_link(m: re.Match) -> CookieChar:
             """Replacement function for links [[...]]."""
-            m2 = re.search(
+            m2 = ALL_BRACKETS_RE.search(
                 # check to see if link contains something that should be
                 # handled first
-                ALL_BRACKETS_RE,
                 m.group(0)[2:-2],
             )
             if m2:
@@ -748,22 +747,14 @@ class Wtp:
                 prev2 = text
                 # Encode links.
                 while True:
-                    text = re.sub(
-                        LINKS_RE,
-                        repl_link,
-                        text,
-                    )
+                    text = LINKS_RE.sub(repl_link, text)
                     if text == prev2:
                         break
                     prev2 = text
                 # Encode external links: [something]
-                text = re.sub(EXTERNAL_LINKS_RE, repl_extlink, text)
+                text = EXTERNAL_LINKS_RE.sub(repl_extlink, text)
                 # Encode template arguments: {{{arg}}}, {{{..{|..|}..}}}
-                text = re.sub(
-                    TEMPLATE_ARGUMENTS_RE,
-                    repl_arg,
-                    text,
-                )
+                text = TEMPLATE_ARGUMENTS_RE.sub(repl_arg, text)
                 if text == prev2:
                     # When everything else has been done, see if we can find
                     # template arguments that have one missing closing bracket.
@@ -791,11 +782,7 @@ class Wtp:
                     #     continue
                     break
             # Replace template invocation
-            text = re.sub(
-                TEMPLATES_RE,
-                repl_templ,
-                text,
-            )
+            text = TEMPLATES_RE.sub(repl_templ, text)
             # We keep looping until there is no change during the iteration
             if text == prev:
                 # When everything else has been done, see if we can find
