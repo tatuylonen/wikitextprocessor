@@ -464,6 +464,20 @@ def currentdow_fn(
     return str(datetime.now(timezone.utc).weekday())
 
 
+def currentweek_fn(
+    ctx: "Wtp", fn_name: str, args: list[str], expander: Callable[[str], str]
+) -> str:
+    """Implements the CURRENTWEEK magic word."""
+    return datetime.now(timezone.utc).strftime("%W")
+
+
+def localweek_fn(
+    ctx: "Wtp", fn_name: str, args: list[str], expander: Callable[[str], str]
+) -> str:
+    """Implements the LOCALWEEK magic word."""
+    return datetime.now(timezone.utc).astimezone().strftime("%W")
+
+
 def revisionid_fn(
     ctx: "Wtp", fn_name: str, args: list[str], expander: Callable[[str], str]
 ) -> str:
@@ -1552,7 +1566,7 @@ PARSER_FUNCTIONS = {
     "CURRENTDAYNAME": unimplemented_fn,
     "CURRENTTIME": unimplemented_fn,
     "CURRENTHOUR": unimplemented_fn,
-    "CURRENTWEEK": unimplemented_fn,
+    "CURRENTWEEK": currentweek_fn,
     "CURRENTTIMESTAMP": current_timestamp_fn,
     "LOCALYEAR": localyear_fn,
     "LOCALMONTH": localmonth_fn,
@@ -1564,7 +1578,7 @@ PARSER_FUNCTIONS = {
     "LOCALDAYNAME": unimplemented_fn,
     "LOCALTIME": unimplemented_fn,
     "LOCALHOUR": unimplemented_fn,
-    "LOCALWEEK": unimplemented_fn,
+    "LOCALWEEK": localweek_fn,
     "LOCALTIMESTAMP": unimplemented_fn,
     "REVISIONID": revisionid_fn,
     "REVISIONDAY": unimplemented_fn,
