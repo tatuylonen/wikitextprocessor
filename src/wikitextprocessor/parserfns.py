@@ -26,6 +26,9 @@ warnings.filterwarnings(
     "ignore", r".*The localize method is no longer necessary.*"
 )
 
+# https://www.mediawiki.org/wiki/Help:Extension:ParserFunctions
+# https://www.mediawiki.org/wiki/Help:Magic_words
+
 
 def capitalizeFirstOnly(s: str) -> str:
     if s:
@@ -1522,6 +1525,13 @@ def localday2_fn(
     return utc_dt.astimezone().strftime("%d")
 
 
+def localdow_fn(
+    ctx: "Wtp", fn_name: str, args: list[str], expander: Callable[[str], str]
+) -> str:
+    # Day of the week (unpadded number), 0 (for Sunday) through 6 (for Saturday)
+    return str(datetime.now(timezone.utc).astimezone().isoweekday() % 7)
+
+
 def localhour_fn(
     ctx: "Wtp", fn_name: str, args: list[str], expander: Callable[[str], str]
 ) -> str:
@@ -1586,7 +1596,7 @@ PARSER_FUNCTIONS = {
     "LOCALMONTHABBREV": localmonthabbrev_fn,
     "LOCALDAY": localday_fn,
     "LOCALDAY2": localday2_fn,
-    "LOCALDOW": unimplemented_fn,
+    "LOCALDOW": localdow_fn,
     "LOCALDAYNAME": unimplemented_fn,
     "LOCALTIME": unimplemented_fn,
     "LOCALHOUR": unimplemented_fn,
