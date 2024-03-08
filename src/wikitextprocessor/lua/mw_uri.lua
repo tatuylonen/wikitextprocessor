@@ -170,7 +170,7 @@ function Uri:parse(s)
    -- parse any trailing fragment
    if s ~= "" then
       if mw.ustring.sub(s, 1, 1) ~= "#" then
-         print("Uri:parse unexpected stuff at end:", s)
+         -- print("Uri:parse unexpected stuff at end:", s)
          s = ""
       else
          local frag = mw.ustring.sub(s, 2)
