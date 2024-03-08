@@ -84,33 +84,19 @@ def lua_loader(ctx: "Wtp", modname: str) -> Optional[str]:
     return data
 
 
+html_entities_re = re.compile(r"&(lt|gt|amp|quot|nbsp|#[xX]?[0-9A-Fa-f]+);")
+
+
+def replace_specific_entities(m: re.Match) -> str:
+    return html.unescape(m.group(0))
+
+
 def mw_text_decode(text: str, decodeNamedEntities: bool) -> str:
     """Implements the mw.text.decode function for Lua code."""
     if decodeNamedEntities:
         return html.unescape(text)
 
-    # Otherwise decode only selected entities
-    parts: list[str] = []
-    pos = 0
-    for m in re.finditer(r"&(lt|gt|amp|quot|nbsp);", text):
-        if pos < m.start():
-            parts.append(text[pos : m.start()])
-        pos = m.end()
-        tag = m.group(1)
-        if tag == "lt":
-            parts.append("<")
-        elif tag == "gt":
-            parts.append(">")
-        elif tag == "amp":
-            parts.append("&")
-        elif tag == "quot":
-            parts.append('"')
-        elif tag == "nbsp":
-            parts.append("\xa0")
-        else:
-            assert False
-    parts.append(text[pos:])
-    return "".join(parts)
+    return html_entities_re.sub(replace_specific_entities, text)
 
 
 def mw_text_encode(text: str, charset: str) -> str:
