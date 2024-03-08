@@ -264,6 +264,7 @@ class Wtp:
         "html_permitted_parents",
         "paired_html_tags",
         "inside_html_tags_re",
+        "invoke_aliases",
     )
 
     def __init__(
@@ -273,6 +274,7 @@ class Wtp:
         template_override_funcs: dict[str, Callable[[Sequence[str]], str]] = {},
         project: str = "wiktionary",
         extension_tags: Optional[dict[str, HTMLTagData]] = None,
+        invoke_aliases: Optional[set[str]] = None,
     ):
         if isinstance(db_path, str):
             self.db_path: Optional[Path] = Path(db_path)
@@ -329,6 +331,10 @@ class Wtp:
             self
         )
         self.inside_html_tags_re: re.Pattern = set_inside_html_tags_re(self)
+        if invoke_aliases is not None:
+            self.invoke_aliases = {"#invoke"} | invoke_aliases
+        else:
+            self.invoke_aliases = {"#invoke"}
 
     def create_db(self) -> None:
         from .wikidata import init_wikidata_cache
@@ -1412,7 +1418,7 @@ class Wtp:
                 def expander(arg: str) -> str:
                     return expand_recurse(arg, parent, True)
 
-                if fn_name == "#invoke":
+                if fn_name in self.invoke_aliases:
                     if not expand_invoke:
                         return "{{#invoke:" + "|".join(args) + "}}"
                     ret = invoke_fn(args, expander, parent)
