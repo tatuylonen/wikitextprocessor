@@ -4099,9 +4099,7 @@ return export
         )
 
     def test_gsub5(self):
-        self.scribunto(
-            "42", """return string.gsub("x2A", "x%x+", "42");"""
-        )
+        self.scribunto("42", """return string.gsub("x2A", "x%x+", "42");""")
 
     def test_title_1_colon_e(self) -> None:
         self.scribunto("1:e", "return mw.title.new('1:e').text")
