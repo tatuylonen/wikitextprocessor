@@ -1494,6 +1494,18 @@ def localmonth_fn(
     return utc_dt.astimezone().strftime("%m")
 
 
+def localmonthname_fn(
+    ctx: "Wtp", fn_name: str, args: list[str], expander: Callable[[str], str]
+) -> str:
+    return datetime.now(timezone.utc).astimezone().strftime("%B")
+
+
+def localmonthabbrev_fn(
+    ctx: "Wtp", fn_name: str, args: list[str], expander: Callable[[str], str]
+) -> str:
+    return datetime.now(timezone.utc).astimezone().strftime("%b")
+
+
 def localday_fn(
     ctx: "Wtp", fn_name: str, args: list[str], expander: Callable[[str], str]
 ) -> str:
@@ -1570,8 +1582,8 @@ PARSER_FUNCTIONS = {
     "CURRENTTIMESTAMP": current_timestamp_fn,
     "LOCALYEAR": localyear_fn,
     "LOCALMONTH": localmonth_fn,
-    "LOCALMONTHNAME": unimplemented_fn,
-    "LOCALMONTHABBREV": unimplemented_fn,
+    "LOCALMONTHNAME": localmonthname_fn,
+    "LOCALMONTHABBREV": localmonthabbrev_fn,
     "LOCALDAY": localday_fn,
     "LOCALDAY2": localday2_fn,
     "LOCALDOW": unimplemented_fn,
