@@ -84,7 +84,7 @@ def lua_loader(ctx: "Wtp", modname: str) -> Optional[str]:
     return data
 
 
-html_entities_re = re.compile(r"&(lt|gt|amp|quot|nbsp|#[xX]?[0-9A-Fa-f]+);")
+HTML_DECODE_RE = re.compile(r"&(?:lt|gt|amp|quot|nbsp|#x?[a-zA-Z0-9]+);")
 
 
 def replace_specific_entities(m: re.Match) -> str:
@@ -92,11 +92,12 @@ def replace_specific_entities(m: re.Match) -> str:
 
 
 def mw_text_decode(text: str, decodeNamedEntities: bool) -> str:
-    """Implements the mw.text.decode function for Lua code."""
+    # https://www.mediawiki.org/wiki/Extension:Scribunto/Lua_reference_manual#mw.text.decode
+    # https://github.com/wikimedia/mediawiki-extensions-Scribunto/blob/c03d734c06812c9ee454c263f468d72894f6419c/includes/Engines/LuaCommon/lualib/mw.text.lua#L58-L89
     if decodeNamedEntities:
         return html.unescape(text)
 
-    return html_entities_re.sub(replace_specific_entities, text)
+    return HTML_DECODE_RE.sub(replace_specific_entities, text)
 
 
 def mw_text_encode(text: str, charset: str) -> str:

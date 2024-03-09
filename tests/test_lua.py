@@ -390,3 +390,23 @@ return export""",
         )
         self.wtp.start_page("")
         self.assertEqual(self.wtp.expand("{{#invoke:test|test}}"), "foo")
+
+    def test_text_decode(self):
+        # GH pr #244
+        self.wtp.add_page(
+            "Module:test",
+            828,
+            """
+local export = {}
+function export.test(frame)
+  local a = mw.text.decode("&lt;-&vert;-&#124;-&#x7c;")
+  local b = mw.text.decode("&lt;-&vert;-&#124;-&#x7c;", true)
+  return a .. "--" .. b
+end
+return export""",
+            model="Scribunto",
+        )
+        self.wtp.start_page("")
+        self.assertEqual(
+            self.wtp.expand("{{#invoke:test|test}}"), "<-&vert;-|-|--<-|-|-|"
+        )
