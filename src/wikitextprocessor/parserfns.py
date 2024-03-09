@@ -463,8 +463,7 @@ def currentday2_fn(
 def currentdow_fn(
     ctx: "Wtp", fn_name: str, args: list[str], expander: Callable[[str], str]
 ) -> str:
-    """Implements the CURRENTDOW magic word."""
-    return str(datetime.now(timezone.utc).weekday())
+    return str(datetime.now(timezone.utc).isoweekday() % 7)
 
 
 def currentweek_fn(
