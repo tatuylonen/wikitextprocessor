@@ -480,6 +480,15 @@ def localweek_fn(
     return datetime.now(timezone.utc).astimezone().strftime("%W")
 
 
+def local_timestamp_fn(
+    wtp: "Wtp", fn_name: str, args: list[str], expander: Callable[[str], str]
+) -> str:
+    """Implements the LOCALTIMESTAMP magic word."""
+    return datetime.now(timezone.utc)\
+        .astimezone()\
+        .strftime(MEDIAWIKI_TIMESTAMP_FORMAT)
+
+
 def revisionid_fn(
     ctx: "Wtp", fn_name: str, args: list[str], expander: Callable[[str], str]
 ) -> str:
@@ -1600,7 +1609,7 @@ PARSER_FUNCTIONS = {
     "LOCALTIME": unimplemented_fn,
     "LOCALHOUR": unimplemented_fn,
     "LOCALWEEK": localweek_fn,
-    "LOCALTIMESTAMP": unimplemented_fn,
+    "LOCALTIMESTAMP": local_timestamp_fn,
     "REVISIONID": revisionid_fn,
     "REVISIONDAY": unimplemented_fn,
     "REVISIONDAY2": unimplemented_fn,
