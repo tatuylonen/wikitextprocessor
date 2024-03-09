@@ -466,6 +466,27 @@ def currentdow_fn(
     return str(datetime.now(timezone.utc).isoweekday() % 7)
 
 
+def currentdayname_fn(
+    ctx: "Wtp", fn_name: str, args: list[str], expander: Callable[[str], str]
+) -> str:
+    """Implements the CURRENTDAYNAME magic word."""
+    return datetime.now(timezone.utc).strftime("%A")
+
+
+def currenttime_fn(
+    ctx: "Wtp", fn_name: str, args: list[str], expander: Callable[[str], str]
+) -> str:
+    """Implements the CURRENTTIME magic word."""
+    return datetime.now(timezone.utc).strftime("%H:%M")
+
+
+def currenthour_fn(
+    ctx: "Wtp", fn_name: str, args: list[str], expander: Callable[[str], str]
+) -> str:
+    """Implements the CURRENTHOUR magic word."""
+    return datetime.now(timezone.utc).strftime("%H")
+
+
 def currentweek_fn(
     ctx: "Wtp", fn_name: str, args: list[str], expander: Callable[[str], str]
 ) -> str:
@@ -1542,12 +1563,24 @@ def localdow_fn(
     return str(datetime.now(timezone.utc).astimezone().isoweekday() % 7)
 
 
+def localdayname_fn(
+    ctx: "Wtp", fn_name: str, args: list[str], expander: Callable[[str], str]
+) -> str:
+    return datetime.now(timezone.utc).astimezone().strftime("%A")
+
+
+def localtime_fn(
+    ctx: "Wtp", fn_name: str, args: list[str], expander: Callable[[str], str]
+) -> str:
+    """Implements the LOCALTIME magic word."""
+    return datetime.now(timezone.utc).astimezone().strftime("%H:%M")
+
+
 def localhour_fn(
     ctx: "Wtp", fn_name: str, args: list[str], expander: Callable[[str], str]
 ) -> str:
     """Implements the LOCALHOUR magic word."""
-    utc_dt = datetime.now(timezone.utc)
-    return utc_dt.astimezone().strftime("%H")
+    return datetime.now(timezone.utc).astimezone().strftime("%H")
 
 
 # This list should include names of predefined parser functions and
@@ -1595,9 +1628,9 @@ PARSER_FUNCTIONS = {
     "CURRENTDAY": currentday_fn,
     "CURRENTDAY2": currentday2_fn,
     "CUEEWNTDOW": currentdow_fn,
-    "CURRENTDAYNAME": unimplemented_fn,
-    "CURRENTTIME": unimplemented_fn,
-    "CURRENTHOUR": unimplemented_fn,
+    "CURRENTDAYNAME": currentdayname_fn,
+    "CURRENTTIME": currenttime_fn,
+    "CURRENTHOUR": currenthour_fn,
     "CURRENTWEEK": currentweek_fn,
     "CURRENTTIMESTAMP": current_timestamp_fn,
     "LOCALYEAR": localyear_fn,
@@ -1607,9 +1640,9 @@ PARSER_FUNCTIONS = {
     "LOCALDAY": localday_fn,
     "LOCALDAY2": localday2_fn,
     "LOCALDOW": localdow_fn,
-    "LOCALDAYNAME": unimplemented_fn,
-    "LOCALTIME": unimplemented_fn,
-    "LOCALHOUR": unimplemented_fn,
+    "LOCALDAYNAME": localdayname_fn,
+    "LOCALTIME": localtime_fn,
+    "LOCALHOUR": localhour_fn,
     "LOCALWEEK": localweek_fn,
     "LOCALTIMESTAMP": local_timestamp_fn,
     "REVISIONID": revisionid_fn,
