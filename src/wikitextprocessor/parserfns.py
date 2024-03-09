@@ -484,9 +484,11 @@ def local_timestamp_fn(
     wtp: "Wtp", fn_name: str, args: list[str], expander: Callable[[str], str]
 ) -> str:
     """Implements the LOCALTIMESTAMP magic word."""
-    return datetime.now(timezone.utc)\
+    return (
+        datetime.now(timezone.utc)
         .astimezone()\
         .strftime(MEDIAWIKI_TIMESTAMP_FORMAT)
+    )
 
 
 def revisionid_fn(
