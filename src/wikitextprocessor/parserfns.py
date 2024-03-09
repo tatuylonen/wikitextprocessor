@@ -486,7 +486,7 @@ def local_timestamp_fn(
     """Implements the LOCALTIMESTAMP magic word."""
     return (
         datetime.now(timezone.utc)
-        .astimezone()\
+        .astimezone()
         .strftime(MEDIAWIKI_TIMESTAMP_FORMAT)
     )
 
