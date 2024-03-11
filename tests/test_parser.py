@@ -2843,7 +2843,7 @@ def foo(x):
                 "{{ t <nowiki/> }}",
                 "&lbrace;&lbrace; t <nowiki /> &rbrace;&rbrace;",
             ),
-            ("{{ t | <nowiki/> }}", "template body"),
+            ("random text {{ t | <nowiki/> }}", "random text template body"),
             (
                 "{{ #ifeq<nowiki/>: inYes | inYes | outYes | outNo }}",
                 "&lbrace;&lbrace; #ifeq<nowiki />: inYes &vert; inYes &vert; outYes &vert; outNo &rbrace;&rbrace;",  # noqa: E501
