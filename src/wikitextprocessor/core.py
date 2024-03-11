@@ -660,10 +660,9 @@ class Wtp:
             functions."""
             whole_match = m.group(0)
             nowiki = False
-            if (
-                MAGIC_NOWIKI_CHAR
-                in whole_match[: m.start(1)] + whole_match[m.end(1) :]
-            ):
+            if whole_match.startswith(
+                "{" + MAGIC_NOWIKI_CHAR
+            ) or whole_match.endswith(MAGIC_NOWIKI_CHAR + "}"):
                 nowiki = True  # <nowiki/> inside `{{` or `}}`
             args = vbar_split(m.group(1))
             if len(args) == 0 or args[0] == "":
@@ -674,11 +673,13 @@ class Wtp:
                     + "&vert;".join(args)
                     + "&rbrace;&rbrace;"
                 )
-            if ":" not in args[0] and MAGIC_NOWIKI_CHAR in args[0]:
+            first_arg = args[0].strip()
+            if not first_arg.startswith("#") and MAGIC_NOWIKI_CHAR in args[0]:
                 nowiki = True  # <nowiki/> before first pipe
             if (
-                ":" in args[0]
-                and MAGIC_NOWIKI_CHAR in args[0][: args[0].index(":")]
+                first_arg.startswith("#")
+                and ":" in first_arg
+                and MAGIC_NOWIKI_CHAR in first_arg[: first_arg.index(":")]
             ):
                 nowiki = True  # <nowiki/> before parser function name
 
