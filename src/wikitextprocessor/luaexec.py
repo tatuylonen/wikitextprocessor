@@ -84,7 +84,8 @@ def lua_loader(ctx: "Wtp", modname: str) -> Optional[str]:
     return data
 
 
-HTML_DECODE_RE = re.compile(r"&(?:lt|gt|amp|quot|nbsp|#x?[a-zA-Z0-9]+);")
+# the last pattern is for HTML named entity hex numbers
+HTML_DECODE_RE = re.compile(r"&(?:lt|gt|amp|quot|nbsp|#[xX]?[0-9A-Fa-f]+);")
 
 
 def replace_specific_entities(m: re.Match) -> str:
