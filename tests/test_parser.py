@@ -2854,6 +2854,21 @@ def foo(x):
             with self.subTest(wkitext=wikitext, result=result):
                 self.assertEqual(self.ctx.expand(wikitext), result)
 
+    def test_html_end_tag_slash_after_attr(self):
+        # the "/" in "/>" should not be parsed as attribute value
+        # https://en.wiktionary.org/wiki/abstract
+        # GH issue tatuylonen/wiktextract#535
+        self.ctx.start_page("abstract")
+        root = self.ctx.parse("""{{en-adj|more|er}}<ref name=dict/>
+# {{lb|en|obsolete}} Derived; extracted.""")
+        self.assertEqual(len(root.children), 4)
+        self.assertIsInstance(root.children[0], TemplateNode)
+        self.assertEqual(root.children[0].template_name, "en-adj")
+        self.assertIsInstance(root.children[1], HTMLNode)
+        self.assertEqual(root.children[1].tag, "ref")
+        self.assertEqual(root.children[2], "\n")
+        self.assertEqual(root.children[3].kind, NodeKind.LIST)
+
 
 # XXX implement <nowiki/> marking for links, templates
 #  - https://en.wikipedia.org/wiki/Help:Wikitext#Nowiki
