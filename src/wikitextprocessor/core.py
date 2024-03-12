@@ -265,6 +265,8 @@ class Wtp:
         "paired_html_tags",
         "inside_html_tags_re",
         "invoke_aliases",
+        "file_aliases",
+        "file_aliases_re",
     )
 
     def __init__(
@@ -275,6 +277,7 @@ class Wtp:
         project: str = "wiktionary",
         extension_tags: Optional[dict[str, HTMLTagData]] = None,
         invoke_aliases: Optional[set[str]] = None,
+        file_aliases: Optional[set[str]] = None,
     ):
         if isinstance(db_path, str):
             self.db_path: Optional[Path] = Path(db_path)
@@ -335,6 +338,14 @@ class Wtp:
             self.invoke_aliases = {"#invoke"} | invoke_aliases
         else:
             self.invoke_aliases = {"#invoke"}
+        if file_aliases is not None:
+            self.file_aliases = file_aliases | {"File", "Image"}
+            self.file_aliases_re = re.compile(
+                r"(?si)({})\s*:".format(r"|".join(file_aliases))
+            )
+        else:
+            self.file_aliases = {"File", "Image"}
+            self.file_aliases_re = re.compile(r"(?si)(File|Image)\s*:")
 
     def create_db(self) -> None:
         from .wikidata import init_wikidata_cache
