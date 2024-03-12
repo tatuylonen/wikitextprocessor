@@ -1808,15 +1808,14 @@ def tag_fn(ctx: "Wtp", token: str) -> None:
     # Try to parse it as a start tag
     m = re.match(
         r"""<([-a-zA-Z0-9]+)\s*((\b[-a-zA-Z0-9:]+(\s*=\s*("[^"]*"|"""
-        r"""'[^']*'|[^ \t\n"'`=<>]*))?\s*)*)(/?)>""",
+        r"""'[^']*'|[^ \t\n"'`=<>]*))?\s*)*)/?>""",
         token,
     )
-    if m:
+    if m is not None:
         # This is a start tag
-        name = m.group(1)
+        name = m.group(1).lower()
         attrs = m.group(2)
-        also_end = m.group(6) == "/"
-        name = name.lower()
+        also_end = m.group(0).endswith("/>")
 
         # Some templates have markers like <1> in their arguments.  Only parse
         # valid HTML tags in template arguments (tags like <math> can and
