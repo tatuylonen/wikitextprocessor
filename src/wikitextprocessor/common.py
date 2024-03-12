@@ -49,6 +49,11 @@ URL_STARTS = (
     "git://",
     "mms://",
     "mailto:",
+    "//",  # Internal only! // is a wikitext short-hand for "use the url_start
+    # that this page has, so //fr.wikipedia.org > https://fr.wiki...
+    # when appropriate. For internal use, let's just allow it so that
+    # URL parsing doesn't break when something generates an un-
+    # processed URL like this.
 )
 
 # Magic characters used to store templates and other expandable

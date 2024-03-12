@@ -1,6 +1,6 @@
 # Run "make test" to run tests
 # Run "make clean" to remove automatically generated files
-ruff:
+rcheck:
 	python -m ruff check --diff src/wikitextprocessor
 	python -m ruff check --diff tests
 test:
