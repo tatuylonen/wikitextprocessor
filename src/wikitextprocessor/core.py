@@ -341,11 +341,11 @@ class Wtp:
         if file_aliases is not None:
             self.file_aliases = file_aliases | {"File", "Image"}
             self.file_aliases_re = re.compile(
-                r"(?si)({})\s*:".format(r"|".join(file_aliases))
+                r"(?si)\s*({})\s*:".format(r"|".join(self.file_aliases))
             )
         else:
             self.file_aliases = {"File", "Image"}
-            self.file_aliases_re = re.compile(r"(?si)(File|Image)\s*:")
+            self.file_aliases_re = re.compile(r"(?si)\s*(File|Image)\s*:")
 
     def create_db(self) -> None:
         from .wikidata import init_wikidata_cache
