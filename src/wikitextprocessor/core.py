@@ -265,8 +265,6 @@ class Wtp:
         "paired_html_tags",
         "inside_html_tags_re",
         "invoke_aliases",
-        "file_aliases",
-        "file_aliases_re",
     )
 
     def __init__(
@@ -334,18 +332,9 @@ class Wtp:
             self
         )
         self.inside_html_tags_re: re.Pattern = set_inside_html_tags_re(self)
+        self.invoke_aliases = {"#invoke"}
         if invoke_aliases is not None:
-            self.invoke_aliases = {"#invoke"} | invoke_aliases
-        else:
-            self.invoke_aliases = {"#invoke"}
-        if file_aliases is not None:
-            self.file_aliases = file_aliases | {"File", "Image"}
-            self.file_aliases_re = re.compile(
-                r"(?si)\s*({})\s*:".format(r"|".join(self.file_aliases))
-            )
-        else:
-            self.file_aliases = {"File", "Image"}
-            self.file_aliases_re = re.compile(r"(?si)\s*(File|Image)\s*:")
+            self.invoke_aliases |= invoke_aliases
 
     def create_db(self) -> None:
         from .wikidata import init_wikidata_cache
@@ -2030,21 +2019,21 @@ class Wtp:
         )
 
     def namespace_prefixes(
-        self, ns_id: int, lower: bool = True
+        self, ns_id: int, lower: bool = True, suffix: str = ":"
     ) -> tuple[str, ...]:
         """Based on given namespace name, create a tuple of aliases"""
         for ns, ns_data in self.NAMESPACE_DATA.items():
             if ns_data["id"] == ns_id:
                 prefixes = tuple(
                     map(
-                        lambda x: x.lower() + ":" if lower else x + ":",
+                        lambda x: x.lower() + suffix if lower else x + suffix,
                         [ns_data["name"]] + ns_data["aliases"],
                     )
                 )
                 if ns != ns_data["name"]:
                     if lower:
                         ns = ns.lower()
-                    prefixes += (ns + ":",)
+                    prefixes += (ns + suffix,)
                 return prefixes
 
         return ()
