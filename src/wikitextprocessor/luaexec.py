@@ -12,6 +12,7 @@ import sys
 import traceback
 import unicodedata
 from collections import deque
+from datetime import datetime
 from functools import partial
 
 if sys.version_info < (3, 10):
@@ -33,7 +34,13 @@ import lupa.lua51 as lupa
 from lupa.lua51 import lua_type
 
 from .interwiki import mw_site_interwikiMap
-from .parserfns import PARSER_FUNCTIONS, call_parser_function, tag_fn
+from .parserfns import (
+    PARSER_FUNCTIONS,
+    call_parser_function,
+    format_with_wiki_timeformat,
+    parse_timestamp,
+    tag_fn,
+)
 
 if TYPE_CHECKING:
     from lupa.lua51 import _LuaTable
@@ -233,6 +240,20 @@ def get_page_content(
     return wtp.get_page_body(title, namespace_id)
 
 
+def mw_language_format_date_python(
+    ctx: "Wtp", fmt: str, timestamp: str, loc: str
+) -> str:
+    # parse timestamp
+    if timestamp:
+        dt = parse_timestamp(ctx, "Lua:mw.language:formatDate", loc, timestamp)
+        if isinstance(dt, str):
+            # something went wrong, return error string?
+            return dt
+        return format_with_wiki_timeformat(ctx, dt, fmt)
+    else:
+        return format_with_wiki_timeformat(ctx, datetime.now(), fmt)
+
+
 def call_set_functions(
     ctx: "Wtp", set_functions: Callable[["_LuaTable"], None]
 ) -> None:
@@ -268,6 +289,9 @@ def call_set_functions(
                     top_lua_stack, ctx.lua_frame_stack
                 ),
                 "mw_site_interwikiMap_py": partial(mw_site_interwikiMap, ctx),
+                "mw_language_format_date_python": partial(
+                    mw_language_format_date_python, ctx
+                ),
             }
         )
     )

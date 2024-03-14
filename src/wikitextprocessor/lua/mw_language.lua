@@ -155,12 +155,11 @@ end
 
 function Language:formatDate(format, timestamp, localtime)
     -- XXX currently ignores localtime
-    if format == "U" then
-        timestamp = os.time()
-    elseif not timestamp then
+    if not timestamp and not format then
         timestamp = os.date("%Y-%m-%d %X")
+    else
+        timestamp = mw_language_format_date_python(format, timestamp, localtime)
     end
-    -- XXX actually format the time.  See
     -- https://www.mediawiki.org/wiki/Help:Extension:ParserFunctions#.23time
     -- form supported timestamp formats and format specification.
     return timestamp
