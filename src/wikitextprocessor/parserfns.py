@@ -1143,6 +1143,7 @@ time_fmt_map: dict[
     "r": lambda ctx, t: t.strftime("%a, %d %b %Y %H:%M:%S {}").format(
         t.strftime("%z")[:5]
     ),
+    "%": "%%",  # in case there's a stray % in the original Wiki-side format
     # XXX non-gregorian calendar values
 }
 
@@ -1151,16 +1152,30 @@ time_fmt_map: dict[
 MEDIAWIKI_TIMESTAMP_FORMAT = "%Y%m%d%H%M%S"
 
 
-def time_fn(
-    ctx: "Wtp", fn_name: str, args: list[str], expander: Callable[[str], str]
-) -> str:
-    """Implements the #time parser function."""
-    fmt = expander(args[0]).strip() if args else ""
-    dt = expander(args[1]).strip() if len(args) >= 2 else ""
-    # unused `lang`?
-    # lang = expander(args[2]).strip() if len(args) >= 3 else "en"
-    loc = expander(args[3]).strip() if len(args) >= 4 else ""
+def format_with_wiki_timeformat(ctx: "Wtp", t: datetime, fmt: str) -> str:
+    def fmt_repl(m: re.Match) -> str:
+        f = m.group(0)
+        if len(f) > 1 and f.startswith('"') and f.endswith('"'):
+            return f[1:-1]
+        if f in time_fmt_map:
+            v = time_fmt_map[f]
+            if isinstance(v, str):
+                return v
+            assert callable(v)
+            v2 = v(ctx, t)
+            if not isinstance(v2, str):
+                v2 = str(v2)
+            return v2
+        return f
 
+    fmt = re.sub(r'(x[mijkot]?)?[^"]|"[^"]*"', fmt_repl, fmt)
+
+    return t.strftime(fmt)
+
+
+def parse_timestamp(
+    ctx: "Wtp", fn_name: str, loc: str, dt: str
+) -> Union[datetime, str]:
     orig_dt = dt
     dt = re.sub(r"\+", " in ", dt)
     if not dt:
@@ -1173,7 +1188,7 @@ def time_fn(
     t: Optional[datetime]
     if dt.startswith("@"):
         try:
-            t = datetime.fromtimestamp(float(dt[1:]))
+            return datetime.fromtimestamp(float(dt[1:]))
         except ValueError:
             ctx.warning(
                 "bad time syntax in {}: {!r}".format(fn_name, orig_dt),
@@ -1225,28 +1240,30 @@ def time_fn(
                     html.escape(orig_dt)
                 )
             )
+    return t
+
+
+def time_fn(
+    ctx: "Wtp", fn_name: str, args: list[str], expander: Callable[[str], str]
+) -> str:
+    """Implements the #time parser function."""
+    fmt = expander(args[0]).strip() if args else ""
+    dt = expander(args[1]).strip() if len(args) >= 2 else ""
+    # unused `lang`?
+    # lang = expander(args[2]).strip() if len(args) >= 3 else "en"
+    loc = expander(args[3]).strip() if len(args) >= 4 else ""
 
     # XXX looks like we should not adjust the time
     # if t.utcoffset():
     #    t -= t.utcoffset()
 
-    def fmt_repl(m: re.Match) -> str:
-        f = m.group(0)
-        if len(f) > 1 and f.startswith('"') and f.endswith('"'):
-            return f[1:-1]
-        if f in time_fmt_map:
-            v = time_fmt_map[f]
-            if isinstance(v, str):
-                return v
-            assert callable(v)
-            v2 = v(ctx, t)
-            if not isinstance(v2, str):
-                v2 = str(v2)
-            return v2
-        return f
+    t = parse_timestamp(ctx, fn_name, loc, dt)
+    if isinstance(t, str):
+        # return error message
+        return t
+    ret = format_with_wiki_timeformat(ctx, t, fmt)
 
-    fmt = re.sub(r'(x[mijkot]?)?[^"]|"[^"]*"', fmt_repl, fmt)
-    return t.strftime(fmt)
+    return ret
 
 
 def len_fn(
