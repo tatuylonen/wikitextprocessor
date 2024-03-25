@@ -40,7 +40,7 @@ requires-python = ">=3.9"
 dependencies = [
     "dateparser",
     "importlib_resources; python_version < '3.10'",
-    "lupa @ git+https://github.com/scoder/lupa.git",
+    "lupa",
     "lxml",
     "mediawiki_langcodes",
     "psutil",
