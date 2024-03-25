@@ -257,6 +257,8 @@ def mw_language_format_date_python(
 def call_set_functions(
     ctx: "Wtp", set_functions: Callable[["_LuaTable"], None]
 ) -> None:
+    from .wikidata import mw_wikibase_getEntity
+
     assert ctx.lua is not None
     # Set functions that are implemented in Python
     set_functions(
@@ -292,6 +294,7 @@ def call_set_functions(
                 "mw_language_format_date_python": partial(
                     mw_language_format_date_python, ctx
                 ),
+                "mw_wikibase_getEntity_py": partial(mw_wikibase_getEntity, ctx),
             }
         )
     )

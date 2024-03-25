@@ -2,6 +2,15 @@ from unittest import TestCase
 from unittest.mock import patch
 
 
+class MockRequests:
+    def __init__(self, ok, result):
+        self.ok = ok
+        self.result = result
+
+    def json(self):
+        return self.result
+
+
 class TestLua(TestCase):
     def setUp(self):
         from wikitextprocessor import Wtp
@@ -410,3 +419,25 @@ return export""",
         self.assertEqual(
             self.wtp.expand("{{#invoke:test|test}}"), "<-&vert;-|-|--<-|-|-|"
         )
+
+    @patch(
+        "requests.get",
+        return_value=MockRequests(True, {"entities": {"Q42": {"id": "Q42"}}}),
+    )
+    def test_wikidata_get_entity(self, mock_request):
+        self.wtp.add_page(
+            "Module:test",
+            828,
+            """
+local export = {}
+function export.test(frame)
+  local a = mw.wikibase.getEntity("Q42")
+  local b = mw.wikibase.getEntity("Q42")
+  return a:getId() .. b:getId()
+end
+return export""",
+            model="Scribunto",
+        )
+        self.wtp.start_page("")
+        self.assertEqual(self.wtp.expand("{{#invoke:test|test}}"), "Q42Q42")
+        mock_request.assert_called_once()
