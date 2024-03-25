@@ -4,11 +4,12 @@
 -- Copyright (c) 2021 Tatu Ylonen.  See file LICENSE and https://ylonen.org
 
 -- https://doc.wikimedia.org/Wikibase/master/php/docs_topics_lua.html
-local mw_wikibase = {
-}
+local mw_wikibase = {}
 
 function mw_wikibase.getEntity(id)
-    return nil
+    local entity_data = mw_wikibase_getEntity_py(id)
+    local entityModule = require("mw.wikibase.entity")
+    return entityModule.create(entity_data)
 end
 
 function mw_wikibase.getEntityIdForCurrentPage()
