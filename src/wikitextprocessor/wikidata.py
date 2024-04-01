@@ -213,14 +213,26 @@ def get_item_cache(wtp: "Wtp", item_id: str) -> Optional[WikiDataItem]:
 
 
 def insert_item(wtp: "Wtp", item: WikiDataItem) -> None:
-    wtp.db_conn.execute(
-        """
-        INSERT OR IGNORE INTO wikidata_items
-        (id, label, description, entity_data)
-        VALUES(?, ?, ?, ?)
-        """,
-        (item.item_id, item.label, item.description, item.entity_data),
-    )
+    if len(item.entity_data) > 0:
+        wtp.db_conn.execute(
+            """
+            INSERT INTO wikidata_items
+            (id, label, description, entity_data)
+            VALUES(?, ?, ?, ?)
+            ON CONFLICT(id) DO UPDATE SET
+            entity_data=excluded.entity_data
+            """,
+            (item.item_id, item.label, item.description, item.entity_data),
+        )
+    else:
+        wtp.db_conn.execute(
+            """
+            INSERT OR IGNORE INTO wikidata_items
+            (id, label, description, entity_data)
+            VALUES(?, ?, ?, ?)
+            """,
+            (item.item_id, item.label, item.description, item.entity_data),
+        )
 
 
 def query_item(wtp: "Wtp", item_id: str, lang_code: str) -> WikiDataItem:
@@ -377,4 +389,4 @@ def mw_wikibase_getEntity(wtp: "Wtp", item_id: Optional[str]) -> Any:
     entity_data = get_entity_data(wtp, item_id)
     if entity_data is None or wtp.lua is None:
         return None
-    return wtp.lua.table_from(entity_data)
+    return wtp.lua.table_from(entity_data, recursive=True)  # type:ignore

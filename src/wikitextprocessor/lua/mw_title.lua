@@ -105,8 +105,10 @@ end
 
 function mw_title_meta:fullUrl(query, proto)
     local uri = mw.uri.fullUrl(self.fullText, query)
-    if proto ~= nil and proto ~= "" then uri = proto .. ":" .. uri end
-    return uri
+    if proto ~= nil and proto ~= "" then uri.proto = proto end
+    uri.fragment = self.fragment
+    uri:update()
+    return tostring(uri)
 end
 
 function mw_title_meta:localUrl(query)

@@ -93,7 +93,11 @@ function mw_wikibase.getBestStatements(entityId, propertyId)
 end
 
 function mw_wikibase.getAllStatements(entityId, propertyId)
-   return {}
+    local entity = mw.wikibase.getEntity(entityId)
+    if entity ~= nil then
+        return entity.claims[propertyId] or {}
+    end
+    return {}
 end
 
 function mw_wikibase.getReferencedEntityId(fromEntityId, propertyId, toIds)
