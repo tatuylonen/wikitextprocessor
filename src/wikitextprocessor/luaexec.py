@@ -45,7 +45,7 @@ from .parserfns import (
 if TYPE_CHECKING:
     from lupa.lua51 import _LuaTable
 
-    from .core import NamespaceDataEntry, ParentData, Wtp
+    from .core import ParentData, Wtp
 
 # List of search paths for Lua libraries
 BUILTIN_LUA_SEARCH_PATHS: list[tuple[str, list[str]]] = [
@@ -328,18 +328,10 @@ def initialize_lua(ctx: "Wtp") -> None:
         attribute_filter=filter_attribute_access,
     )
     ctx.lua = lua
-    lua_namespace_data = copy.deepcopy(ctx.NAMESPACE_DATA)
-    ns_name: str
-    ns_data: NamespaceDataEntry
-    for ns_name, ns_data in lua_namespace_data.items():
-        for k, v in ns_data.items():
-            if isinstance(v, list):
-                lua_namespace_data[ns_name][k] = lua.table_from(v)  # type: ignore[literal-required]
-        lua_namespace_data[ns_name] = lua.table_from(  # type: ignore[assignment]
-            lua_namespace_data[ns_name]
-        )
     set_global_lua_variable(
-        lua, "NAMESPACE_DATA", lua.table_from(lua_namespace_data)
+        lua,
+        "NAMESPACE_DATA",
+        lua.table_from(copy.deepcopy(ctx.NAMESPACE_DATA), recursive=True),  # type: ignore
     )
     set_lua_env_funcs(lua, ctx)
 

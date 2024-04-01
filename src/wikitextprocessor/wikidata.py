@@ -389,4 +389,4 @@ def mw_wikibase_getEntity(wtp: "Wtp", item_id: Optional[str]) -> Any:
     entity_data = get_entity_data(wtp, item_id)
     if entity_data is None or wtp.lua is None:
         return None
-    return wtp.lua.table_from(entity_data)
+    return wtp.lua.table_from(entity_data, recursive=True)  # type:ignore
