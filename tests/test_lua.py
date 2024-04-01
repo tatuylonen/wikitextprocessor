@@ -441,3 +441,34 @@ return export""",
         self.wtp.start_page("")
         self.assertEqual(self.wtp.expand("{{#invoke:test|test}}"), "Q42Q42")
         mock_request.assert_called_once()
+
+    @patch(
+        "requests.get",
+        return_value=MockRequests(
+            True,
+            {
+                "entities": {
+                    "Q42": {
+                        "id": "Q42",
+                        "claims": {
+                            "P31": [{"type": "statement", "rank": "normal"}]
+                        },
+                    }
+                }
+            },
+        ),
+    )
+    def test_wikidata_get_all_statements(self, mock_request):
+        self.wtp.add_page(
+            "Module:test",
+            828,
+            """
+local export = {}
+function export.test(frame)
+  return mw.wikibase.getAllStatements("Q42", "P31")[1].type
+end
+return export""",
+            model="Scribunto",
+        )
+        self.wtp.start_page("")
+        self.assertEqual(self.wtp.expand("{{#invoke:test|test}}"), "statement")
