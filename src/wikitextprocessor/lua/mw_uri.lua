@@ -249,9 +249,11 @@ function mw_uri.fullUrl(page, query)
    local uri = Uri:new{}
    uri:extend({title=page})
    uri:extend(query)
-   local ret = "//" .. uri.hostPort .. uri.relativePath
-   if fragment ~= "" then ret = ret .. "#" .. fragment end
-   return ret
+   if fragment ~= "" then
+       uri.fragment = fragment
+       uri:update()
+   end
+   return uri
 end
 
 function mw_uri.canonicalUrl(page, query)

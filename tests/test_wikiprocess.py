@@ -3361,9 +3361,8 @@ return export
 
     def test_mw_uri16(self):
         self.scribunto(
-            "//wiki.local/w/index.php?action=edit&title=Example",
-            r"""
-        return mw.uri.fullUrl("Example", {action="edit"})""",
+            "https://wiki.local/w/index.php?action=edit&title=Example",
+            'return tostring(mw.uri.fullUrl("Example", {action="edit"}))',
         )
 
     def test_mw_title1(self):
@@ -3837,10 +3836,11 @@ return export
 
     def test_mw_title54(self):
         self.scribunto(
-            "http://wiki.local/w/index.php?" "a=1&title=Test%2Ffoo%2Fb+ar#Frag",
-            r"""
-        local t = mw.title.makeTitle("Main", "Test/foo/b ar", "Frag")
-        return t:fullUrl({a=1}, "http")""",
+            "https://wiki.local/w/index.php?a=1&title=Test%2Ffoo%2Fb+ar#Frag",
+            """
+            local t = mw.title.makeTitle("Main", "Test/foo/b ar", "Frag")
+            return t:fullUrl({a=1}, "http")
+            """,
         )
 
     def test_mw_title55(self):
