@@ -537,7 +537,7 @@ def call_lua_sandbox(
                 for arg in args[1:]:
                     if isinstance(arg, (int, float, str)):
                         new_args.append(str(arg))
-                    else:
+                    elif isinstance(arg, dict) or lua_type(arg) == "table":
                         for k, v in sorted(
                             arg.items(), key=lambda x: str(x[0])
                         ):
