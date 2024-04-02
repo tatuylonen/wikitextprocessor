@@ -1266,6 +1266,21 @@ def time_fn(
     return ret
 
 
+def timel_fn(
+    wtp: "Wtp",
+    fn_name: str,
+    args: Union[list[str], tuple[str, ...]],
+    expander: Callable[[str], str],
+) -> str:
+    # `local` parameter set to true
+    if isinstance(args, tuple):
+        args = list(args)
+    while len(args) < 3:
+        args.append("")
+    args.append("1")
+    return time_fn(wtp, fn_name, args, expander)
+
+
 def len_fn(
     ctx: "Wtp", fn_name: str, args: list[str], expander: Callable[[str], str]
 ) -> str:
@@ -1698,7 +1713,7 @@ PARSER_FUNCTIONS = {
     "padright": padright_fn,
     "plural": plural_fn,
     "#time": time_fn,
-    "#timel": unimplemented_fn,
+    "#timel": timel_fn,
     "gender": unimplemented_fn,
     "#tag": tag_fn,
     "localurl": localurl_fn,

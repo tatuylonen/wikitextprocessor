@@ -155,3 +155,12 @@ class TestParserFunctions(TestCase):
         self.wtp.start_page("")
         expanded = self.wtp.expand("{{#statements:date of birth|from=Q42}}")
         self.assertEqual(expanded, "11 March 1952")
+
+    def test_timel(self):
+        from datetime import datetime, timezone
+
+        self.wtp.start_page("")
+        expanded = self.wtp.expand("{{#timel:c}}")
+        time = datetime.fromisoformat(expanded)
+        delta = datetime.now(timezone.utc) - time
+        self.assertLess(abs(delta.total_seconds()), 1)
