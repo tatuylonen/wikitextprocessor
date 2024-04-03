@@ -472,3 +472,22 @@ return export""",
         )
         self.wtp.start_page("")
         self.assertEqual(self.wtp.expand("{{#invoke:test|test}}"), "statement")
+
+    def test_pass_nil_to_callParserFunction(self):
+        # https://de.wiktionary.org/wiki/anachoreta
+        # https://de.wiktionary.org/wiki/Modul:DateTime#L-1218
+        self.wtp.add_page(
+            "Module:test",
+            828,
+            """
+local export = {}
+function export.test(frame)
+  return frame:callParserFunction("#tag", "a", "text", nil)
+end
+return export""",
+            model="Scribunto",
+        )
+        self.wtp.start_page("")
+        self.assertEqual(
+            self.wtp.expand("{{#invoke:test|test}}"), "<a>text</a>"
+        )
