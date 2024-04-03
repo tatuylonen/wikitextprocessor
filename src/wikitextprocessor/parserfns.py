@@ -1615,6 +1615,18 @@ def localhour_fn(
     return datetime.now(timezone.utc).astimezone().strftime("%H")
 
 
+def number_of_pages_fn(
+    wtp: "Wtp", fn_name: str, args: list[str], expander: Callable[[str], str]
+) -> str:
+    return str(wtp.saved_page_nums())
+
+
+def number_of_articles_fn(
+    wtp: "Wtp", fn_name: str, args: list[str], expander: Callable[[str], str]
+) -> str:
+    return str(wtp.saved_page_nums([0], False))
+
+
 # This list should include names of predefined parser functions and
 # predefined variables (some of which can take arguments using the same
 # syntax as parser functions and we treat them as parser functions).
@@ -1684,8 +1696,8 @@ PARSER_FUNCTIONS = {
     "REVISIONYEAR": unimplemented_fn,
     "REVISIONTIMESTAMP": unimplemented_fn,
     "REVISIONUSER": revisionuser_fn,
-    "NUMBEROFPAGES": unimplemented_fn,
-    "NUMBEROFARTICLES": unimplemented_fn,
+    "NUMBEROFPAGES": number_of_pages_fn,
+    "NUMBEROFARTICLES": number_of_articles_fn,
     "NUMBEROFFILES": unimplemented_fn,
     "NUMBEROFEDITS": unimplemented_fn,
     "NUMBEROFUSERS": unimplemented_fn,
