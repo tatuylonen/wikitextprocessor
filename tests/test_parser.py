@@ -1094,6 +1094,15 @@ dasfasddasfdas
     #     self.assertEqual(link.kind, NodeKind.LINK)
     #     self.assertEqual(link.largs, [["foo"], [" [bar]"]])
 
+    def test_link12(self):
+        # Apparently, the text portion of a link is allowed newlines, after
+        # the | pipe.
+        tree = self.parse("test", "[[foo|\n[bar]]")
+        # print_tree(tree)
+        link = tree.children[0]
+        self.assertEqual(link.kind, NodeKind.LINK)
+        self.assertEqual(link.largs, [["foo"], ["\n[bar"]])
+
     def test_link_trailing(self):
         tree = self.parse("test", "[[Help]]ing heal")
         self.assertEqual(len(tree.children), 2)

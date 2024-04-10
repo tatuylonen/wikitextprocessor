@@ -161,16 +161,34 @@ LINKS = (
     # `[[something<abcd>]]`
     # XXX this regex seems to be too complex,
     # could you replace it with just [^][{}]*?
-    r"\["
+    r"(?<!\[)"
+    + r"\["
     + MAGIC_NOWIKI_CHAR
     + r"?\[("
-    # I spent a lot of willpower on this monstrosity.
-    + r"((?!\]\])[^[\n])*(?!\[[\n]+\])((?!\[\[)[^]\n])+"
-    #   ( no ]] ) ( no [ ) ( no [...] )( no [[) (no ])
+    + r"(((?!\]\])[^[\|\n])*((?!\[\[)[^]\n])+)"
+    + r"(\|(((?!\]\])[^[])*((?!\[\[)[^]])+))?"  # after pipe no newlines, optnl.
     + r")\]"
     + MAGIC_NOWIKI_CHAR
     + r"?\]"
 )
+# (?<!\[)    # negative lookbehind,
+#            # [[[ breaks the link completely,
+#            # the whole thing is not parsed as a link or url
+# \[MAGIC_NOWIKI?\[      # start brackets
+# (, optnl.
+#   (
+#     (?!\]\])    # negative lookahead, no ]] allowed
+#     [^[\n]
+#   )*    # no [ or newlines allowed
+#   (
+#      (?!\[\[)   # no [[ allowed
+#      [^]\n]    # no ] or newlines
+#   )+
+# )
+# (\|  # after a |, newlines are allowed, the below is the same as above
+#   (((?!\]\])[^[])*((?!\[\[)[^]])+)
+# )?
+# \]MAGIC_NOWIKI?\]
 
 LINKS_RE = re.compile(LINKS)
 
