@@ -150,7 +150,11 @@ def categorytree_fn(
 def lst_fn(
     ctx: "Wtp", fn_name: str, args: list[str], expander: Callable[[str], str]
 ) -> str:
-    """Implements the #lst (alias #section etc) parser function."""
+    """
+    Implements the #lst (alias #section etc) parser function.
+
+    https://www.mediawiki.org/wiki/Extension:Labeled_Section_Transclusion#Transclude_any_marked_part
+    """
     pagetitle = expander(args[0]).strip() if args else ""
     chapter = expander(args[1]).strip() if len(args) >= 2 else ""
     text = ctx.get_page_body(pagetitle, 0)
@@ -164,8 +168,7 @@ def lst_fn(
 
     parts: list[str] = []
     for m in re.finditer(
-        r"(?si)<\s*section\s+begin={}\s*/\s*>(.*?)"
-        r"<\s*section\s+end={}\s*/\s*>".format(
+        r'(?si)<section\s+begin="?{}"?\s*/>(.*?)<section\s+end="?{}"?\s*/>'.format(
             re.escape(chapter), re.escape(chapter)
         ),
         text,
