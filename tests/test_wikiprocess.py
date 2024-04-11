@@ -370,10 +370,10 @@ return export
             title="Test title",
             namespace_id=0,
             body="""
-<section begin=foo />
+<section begin="foo" />
 === Test section ===
 A
-<section end=foo />
+<section end="foo" />
 
 === Other section ===
 B
@@ -382,13 +382,13 @@ B
 MORE
 <section end=foo />
 
-<section begin=bar />
+<section begin="bar" />
 NOT
-<section end=bar />
+<section end="bar" />
 """,
         ),
     )
-    def test_lst1(self, mock_get_page):
+    def test_lst_fn(self, mock_get_page):
         self.ctx.start_page("Tt")
         ret = self.ctx.expand("{{#lst:testpage|foo}}")
         self.assertEqual(
