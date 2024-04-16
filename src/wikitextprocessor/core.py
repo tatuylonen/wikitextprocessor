@@ -741,6 +741,12 @@ class Wtp:
                         break
             args = vbar_split(orig)
             # print("REPL_LINK: orig={!r}".format(orig))
+            if not any(s.strip() for s in args):
+                # empty [[ ]] links should really be rendered as
+                # [[#Language]], where language is the section we're in,
+                # but if something relies on this behavior I will eat my
+                # chocolate hat. Let's just return escaped brackets.
+                return "&#91;&#91;" + m.group(0)[2:-2] + "&#93;&#93;"
             return self._save_value("L", args, nowiki)
 
         def repl_extlink(m: re.Match) -> CookieChar:
