@@ -3,6 +3,7 @@
 # Copyright (c) 2020-2022 Tatu Ylonen.  See file LICENSE and https://ylonen.org
 
 import html
+import logging
 import math
 import re
 import urllib.parse
@@ -25,6 +26,12 @@ import warnings
 warnings.filterwarnings(
     "ignore", r".*The localize method is no longer necessary.*"
 )
+
+# attempt at suppressing a bunch of unnecessary logging messages
+# polluting wiktextract.log. `logging` is not used in wikitextprocessor
+# otherwise
+logging.getLogger("datetime").setLevel(logging.WARNING)
+logging.getLogger("dateparser").setLevel(logging.WARNING)
 
 # https://www.mediawiki.org/wiki/Help:Extension:ParserFunctions
 # https://www.mediawiki.org/wiki/Help:Magic_words
