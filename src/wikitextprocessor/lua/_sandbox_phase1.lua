@@ -134,7 +134,7 @@ local function new_loadData(modname)
         return loaddata_cache[modname]
     end
     -- Load the module and create initialization function
-    local fn, msg = new_loader(modname)
+    local fn, msg = new_loader(modname, mw_clone(env))
     assert(fn, msg)
     local ret = fn()
 
