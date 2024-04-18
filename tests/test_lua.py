@@ -491,3 +491,32 @@ return export""",
         self.assertEqual(
             self.wtp.expand("{{#invoke:test|test}}"), "<a>text</a>"
         )
+
+    def test_mw_loaddata_run_in_isolated_env(self):
+        # GH issue #90, #258
+        self.wtp.add_page(
+            "Module:Citation/CS1",
+            828,
+            """
+require ('strict');  -- check use of undefined global variable
+local export = {}
+function export.citation(frame)
+  return mw.loadData('Module:Citation/CS1/Configuration');
+end
+return export""",
+            model="Scribunto",
+        )
+        self.wtp.add_page(
+            "Module:Citation/CS1/Configuration",
+            828,
+            """
+uncategorized_namespaces_t = {[2]=true};  -- no error here
+return "Configuration"
+""",
+            model="Scribunto",
+        )
+        self.wtp.start_page("")
+        self.assertEqual(
+            self.wtp.expand("{{#invoke:Citation/CS1|citation}}"),
+            "Configuration",
+        )
