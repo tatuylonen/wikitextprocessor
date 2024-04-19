@@ -741,11 +741,17 @@ class Wtp:
                         break
             args = vbar_split(orig)
             # print("REPL_LINK: orig={!r}".format(orig))
-            if not any(s.strip() for s in args):
+
+            if (len(args) == 2 and "#" in args[0] and args[1] == "") or (
+                not any(s.strip() for s in args)
+            ):
                 # empty [[ ]] links should really be rendered as
                 # [[#Language]], where language is the section we're in,
                 # but if something relies on this behavior I will eat my
                 # chocolate hat. Let's just return escaped brackets.
+                # If there are two args in vbar and the first one contains
+                # a `#` and the other is empty, likewise. More than two in
+                # args means the link has at least one `|` character...
                 return "&#91;&#91;" + m.group(0)[2:-2] + "&#93;&#93;"
             return self._save_value("L", args, nowiki)
 
