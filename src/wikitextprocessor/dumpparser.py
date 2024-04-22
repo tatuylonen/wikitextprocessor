@@ -4,7 +4,6 @@
 
 import hashlib
 import json
-import logging
 import os
 import shutil
 import subprocess
@@ -17,6 +16,7 @@ if TYPE_CHECKING:
     from .core import Wtp
 
 from .interwiki import init_interwiki_map
+from .logging_utils import logger
 
 
 def decompress_dump_file(dump_path: str) -> subprocess.Popen:
@@ -85,7 +85,7 @@ def parse_dump_xml(wtp: "Wtp", dump_path: str, namespace_ids: set[int]) -> None:
             page_element.clear(keep_tail=True)
             page_nums += 1
             if page_nums % 10000 == 0:
-                logging.info(f"  ... {page_nums} raw pages collected")
+                logger.info(f"  ... {page_nums} raw pages collected")
 
 
 def process_dump(
@@ -103,11 +103,11 @@ def process_dump(
     file with some preprocessing.  The Wtp.reprocess() must then be
     called to actually process the data."""
 
-    logging.info(
+    logger.info(
         f"skip_extract_dump: {skip_extract_dump}, save_pages_path: "
         f"{str(save_pages_path)}"
     )
-    logging.info(f"dump file path: {path}")
+    logger.info(f"dump file path: {path}")
 
     # Run Phase 1 in a single thread; this mostly just extracts pages into
     # a SQLite database file.
@@ -175,7 +175,7 @@ def overwrite_pages(
     """
     for folder_path in folder_paths:
         if not folder_path.exists():
-            logging.warning(f"Override path: {folder_path} doesn't exist.")
+            logger.warning(f"Override path: {folder_path} doesn't exist.")
             continue
 
         if folder_path.is_file() and folder_path.suffix == ".json":
@@ -204,7 +204,7 @@ def overwrite_pages(
             with file_path.open(encoding="utf-8") as f:
                 first_line = f.readline()
                 if not first_line.startswith("TITLE: "):
-                    logging.error(
+                    logger.error(
                         "First line of file supplied with --override must be "
                         '"TITLE: <page title>" (The page title for this would '
                         "normally start with Module:"

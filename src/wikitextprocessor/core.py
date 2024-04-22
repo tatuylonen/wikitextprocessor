@@ -42,6 +42,7 @@ from .common import (
     add_newline_to_expansion,
     nowiki_quote,
 )
+from .logging_utils import logger
 from .luaexec import call_lua_sandbox
 from .node_expand import NodeHandlerFnCallable, to_html, to_text, to_wikitext
 from .parser import (
@@ -294,6 +295,7 @@ class Wtp:
         extension_tags: Optional[dict[str, HTMLTagData]] = None,
         invoke_aliases: Optional[set[str]] = None,
         file_aliases: Optional[set[str]] = None,
+        quiet: bool = False,
     ):
         if isinstance(db_path, str):
             self.db_path: Optional[Path] = Path(db_path)
@@ -353,6 +355,8 @@ class Wtp:
         self.invoke_aliases = {"#invoke"}
         if invoke_aliases is not None:
             self.invoke_aliases |= invoke_aliases
+        if not quiet:
+            logger.setLevel(logging.DEBUG)
 
     def create_db(self) -> None:
         from .wikidata import init_wikidata_cache
@@ -1103,7 +1107,7 @@ class Wtp:
         tags.  Such templates generally need to be expanded before
         parsing the page."""
 
-        logging.info(
+        logger.info(
             "Analyzing which templates should be expanded before parsing"
         )
         template_ns_data = self.NAMESPACE_DATA.get("Template")
