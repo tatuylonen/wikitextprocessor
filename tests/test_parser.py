@@ -2510,7 +2510,7 @@ def foo(x):
             unnamed_parameter[2].template_parameters, {1: "Duchotel"}
         )
         self.assertEqual(
-            unnamed_parameter[3], ", ''bas à Moricet''. — Oh ! '''animal'''!"
+            unnamed_parameter[3], ", ''bas à Moricet''. — Oh ! '''animal''' !"
         )
         source_parameter = node.template_parameters.get("source")
         self.assertEqual(source_parameter[0].template_name, "w")
