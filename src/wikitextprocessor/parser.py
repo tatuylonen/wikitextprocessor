@@ -359,14 +359,12 @@ class WikiNode:
     @overload
     def find_child(
         self, target_kinds: NodeKind, with_index: Literal[True]
-    ) -> Iterator[tuple[int, "WikiNode"]]:
-        ...
+    ) -> Iterator[tuple[int, "WikiNode"]]: ...
 
     @overload
     def find_child(
         self, target_kinds: NodeKind, with_index: Literal[False] = ...
-    ) -> Iterator["WikiNode"]:
-        ...
+    ) -> Iterator["WikiNode"]: ...
 
     def find_child(
         self,
@@ -452,8 +450,7 @@ class WikiNode:
         with_index: Literal[True],
         attr_name: str,
         attr_value: str,
-    ) -> Iterator["HTMLNode"]:
-        ...
+    ) -> Iterator["HTMLNode"]: ...
 
     @overload
     def find_html(
@@ -462,8 +459,7 @@ class WikiNode:
         with_index: Literal[False] = ...,
         attr_name: str = ...,
         attr_value: str = ...,
-    ) -> Iterator[tuple[int, "HTMLNode"]]:
-        ...
+    ) -> Iterator[tuple[int, "HTMLNode"]]: ...
 
     def find_html(
         self,
@@ -2038,7 +2034,7 @@ token_list: list[str] = [
 # the regex cannot distinguish if a token is at the beginning of a line
 # or just the beginning of a partitioned string. The most performant thing
 # seems to be to have two versions of the regex, one used at the beginning
-# of a line (after a newline) and another in othe parts of a line; this
+# of a line (after a newline) and another in other parts of a line; this
 # only costs switching between the two regex patterns inside the for loop.
 TOKEN_RE_BEGINNING_OF_LINE = re.compile(r"|".join(token_list))
 TOKEN_RE_NO_CARET = re.compile(

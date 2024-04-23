@@ -2758,6 +2758,26 @@ def foo(x):
         self.assertEqual(table_cell.kind, NodeKind.TABLE_CELL)
         self.assertEqual(table_cell.children, ["}Test2\n"])
 
+    def test_italics_in_table_header(self):
+        self.ctx.start_page("")
+        root = self.ctx.parse(
+            """{|
+!''Italics'' !!colspan="2"|bar
+|}"""
+        )
+        table_node = root.children[0]
+        self.assertEqual(table_node.kind, NodeKind.TABLE)
+        table_row = table_node.children[0]
+        self.assertEqual(table_row.kind, NodeKind.TABLE_ROW)
+        table_header_cell = table_row.children[0]
+        self.assertEqual(table_header_cell.kind, NodeKind.TABLE_HEADER_CELL)
+        self.assertEqual(table_header_cell.children[0].kind, NodeKind.ITALIC)
+        self.assertEqual(table_header_cell.children[1], " ")
+        table_header_cell = table_row.children[1]
+        self.assertEqual(table_header_cell.kind, NodeKind.TABLE_HEADER_CELL)
+        self.assertEqual(table_header_cell.children[0], "bar\n")
+        self.assertEqual(table_header_cell.attrs, {"colspan": "2"})
+
     def test_nowiki_in_link(self):
         # https://fr.wiktionary.org/wiki/Conjugaison:français/abattre
         # GitHub issue #180
@@ -2868,8 +2888,10 @@ def foo(x):
         # https://en.wiktionary.org/wiki/abstract
         # GH issue tatuylonen/wiktextract#535
         self.ctx.start_page("abstract")
-        root = self.ctx.parse("""{{en-adj|more|er}}<ref name=dict/>
-# {{lb|en|obsolete}} Derived; extracted.""")
+        root = self.ctx.parse(
+            """{{en-adj|more|er}}<ref name=dict/>
+# {{lb|en|obsolete}} Derived; extracted."""
+        )
         self.assertEqual(len(root.children), 4)
         self.assertIsInstance(root.children[0], TemplateNode)
         self.assertEqual(root.children[0].template_name, "en-adj")
