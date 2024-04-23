@@ -2002,35 +2002,43 @@ def magicword_fn(ctx: "Wtp", token: str) -> None:
 # Headers need to be detected before be partition lines with ''-tokens
 header_re = re.compile(r"(?m)^(={1,6})\s*(([^=]|=[^=])+?)\s*(={1,6})\s*$")
 
-# Regular expression for matching a token in WikiMedia text.  This is used for
-# tokenizing the input.
-TOKEN_RE = re.compile(
-    r"'''''|"
-    r"'''|"
-    r"''|"
-    r"\n|"
-    r"\|\}|"
-    r"\{\|\||"
-    r"\{\||"
-    r"\|\+|"
-    r"\|-|"
-    r"!!|"
-    r"\s*https?://[a-zA-Z0-9.]+(/[^][{}<>|\s]*)?|"
-    r"^[ \t]*!|"
-    r"\|\||"
-    r"\||"
-    r"^----+|"
-    r"^[*:;#]+|"
-    r"[ \t]+\n*|"
-    r":|"  # sometimes special when not beginning of line
-    r"<<[-a-zA-Z0-9/]*>>|"
+token_list: list[str] = [
+    r"'''''",
+    r"'''",
+    r"''",
+    r"\n",
+    r"\|\}",
+    r"\{\|\|",
+    r"\{\|",
+    r"\|\+",
+    r"\|-",
+    r"!!",
+    r"\s*https?://[a-zA-Z0-9.]+(/[^][{}<>|\s]*)?",
+    r"^[ \t]*!",
+    r"\|\|",
+    r"\|",
+    r"^----+",
+    r"^[*:;#]+",
+    r"[ \t]+\n*",
+    r":",  # sometimes special when not beginning of line
+    r"<<[-a-zA-Z0-9/]*>>",
     r"""<[-a-zA-Z0-9]+\s*(\b[-a-zA-Z0-9:]+(\s*=\s*("[^<>"]*"|"""  # HTML start
-    r"""'[^<>']*'|[^ \t\n"'`=<>]*))?\s*)*/?>|"""  # HTML start tag
-    r"</[-a-zA-Z0-9]+\s*>|"
-    r"("
-    + r"|".join(r"\b{}\b".format(x) for x in MAGIC_WORDS)
-    + r")|"
-    + r"[{:c}-{:c}]".format(MAGIC_FIRST, MAGIC_LAST)
+    r"""'[^<>']*'|[^ \t\n"'`=<>]*))?\s*)*/?>""",  # HTML start tag
+    r"</[-a-zA-Z0-9]+\s*>",
+    r"(" + r"|".join(r"\b{}\b".format(x) for x in MAGIC_WORDS) + r")",
+    r"[{:c}-{:c}]".format(MAGIC_FIRST, MAGIC_LAST),
+]
+# Regular expressions for matching a token in WikiMedia text.  This is used for
+# tokenizing the input.
+# Because we partition each line on italics and bold tokens (''' etc)
+# the regex cannot distinguish if a token is at the beginning of a line
+# or just the beginning of a partitioned string. The most performant thing
+# seems to be to have two versions of the regex, one used at the beginning
+# of a line (after a newline) and another in other parts of a line; this
+# only costs switching between the two regex patterns inside the for loop.
+TOKEN_RE_BEGINNING_OF_LINE = re.compile(r"|".join(token_list))
+TOKEN_RE_NO_CARET = re.compile(
+    r"|".join(x for x in token_list if not x.startswith(r"^"))
 )
 
 
@@ -2190,7 +2198,11 @@ def token_iter(ctx: "Wtp", text: str) -> Iterator[tuple[bool, str]]:
             pos = 0
             # Revert to single quotes from MAGIC_SQUOTE_CHAR
             part = part.replace(MAGIC_SQUOTE_CHAR, "'")
-            for m in TOKEN_RE.finditer(part):
+            if i == 0:
+                token_re = TOKEN_RE_BEGINNING_OF_LINE
+            else:
+                token_re = TOKEN_RE_NO_CARET
+            for m in token_re.finditer(part):
                 start = m.start()
                 if pos != start:
                     yield False, part[pos:start]
