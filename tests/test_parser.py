@@ -2759,7 +2759,10 @@ def foo(x):
         self.assertEqual(table_cell.children, ["}Test2\n"])
 
     def test_italics_in_table_header(self):
-        self.ctx.start_page("")
+        # GH issue tatuylonen/wiktextract#597
+        # https://en.wiktionary.org/wiki/sledovat
+        # https://en.wiktionary.org/wiki/Template:cs-conj-forms
+        self.ctx.start_page("sledovat")
         root = self.ctx.parse(
             """{|
 !''Italics'' !!colspan="2"|bar
