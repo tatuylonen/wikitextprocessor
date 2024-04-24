@@ -227,9 +227,9 @@ local mw_uri = {
 }
 
 function mw_uri.anchorEncode(s)
-   -- XXX how exactly should this work?
-   s = s:gsub(" ", "_")
-   return s
+    -- XXX how exactly should this work?
+    s = s:gsub(" ", "_"):gsub("&#x2A;", "*")
+    return s
 end
 
 function mw_uri.localUrl(page, query)
