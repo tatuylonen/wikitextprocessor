@@ -1602,13 +1602,6 @@ class Wtp:
                             k, arg = m2.groups()
                             if k.isdigit():
                                 k = int(k)
-                                if k < 1 or k > 1000:
-                                    self.debug(
-                                        "invalid argument number {} "
-                                        "for template {!r}".format(k, name),
-                                        sortid="core/1211",
-                                    )
-                                    k = 1000
                             else:
                                 self.expand_stack.append("ARGNAME")
                                 k = expand_recurse(k, parent, True)
