@@ -2903,6 +2903,23 @@ def foo(x):
         self.assertEqual(root.children[2], "\n")
         self.assertEqual(root.children[3].kind, NodeKind.LIST)
 
+    def test_zh_x_html(self):
+        # https://zh.wiktionary.org/wiki/大家
+        # https://zh.wiktionary.org/wiki/Template:Zh-x
+        self.ctx.start_page("大家")
+        root = self.ctx.parse(
+            """<dl class="zhusex"><span lang="zh-Hant" class="Hant">example text</span><dd>translation text</dd></dl>"""  # noqa: E501
+        )
+        span_text = ""
+        dd_text = ""
+        for dl_tag in root.find_html("dl"):
+            for span_tag in dl_tag.find_html("span"):
+                span_text = span_tag.children[0]
+            for dd_tag in dl_tag.find_html("dd"):
+                dd_text = dd_tag.children[0]
+        self.assertEqual(span_text, "example text")
+        self.assertEqual(dd_text, "translation text")
+
 
 # XXX implement <nowiki/> marking for links, templates
 #  - https://en.wikipedia.org/wiki/Help:Wikitext#Nowiki

@@ -53,22 +53,14 @@ cd wikitextprocessor
 python -m venv .venv
 source .venv/bin/activate
 python -m pip install -U pip
-python -m pip install --use-pep517 .
+python -m pip install -e .
 ```
-
-Alternatively, you can install from pypi.org:
-
-```
-python -m pip install wikitextprocessor
-```
-
-If you are installing wiktextract from source, you also need to install wikitextprocessor from source separately; otherwise, a newer wiktextract version will be installed alongside an older pypi version of wikitextprocessor, which will not work out.
 
 ### Running tests
 
 This package includes tests written using the `unittest` framework.
 The test dependencies can be installed with command
-`python -m pip install --use-pep517 -e ".[dev]"`.
+`python -m pip install -e .[dev]`.
 
 To run the tests, use the following command in the top-level directory:
 
