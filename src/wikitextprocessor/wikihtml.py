@@ -60,7 +60,7 @@ ALLOWED_HTML_TAGS: dict[str, HTMLTagData] = {
     "del": {"parents": ["phrasing"], "content": ["phrasing"]},
     "dfn": {"parents": ["phrasing"], "content": ["phrasing"]},
     "div": {"parents": ["flow", "dl"], "content": ["flow"]},
-    "dl": {"parents": ["flow"], "content": []},
+    "dl": {"parents": ["flow"], "content": ["flow"]},
     "dt": {
         "parents": ["dl", "div"],
         "close-next": ["dd", "dt"],
