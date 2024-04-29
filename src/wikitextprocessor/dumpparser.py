@@ -2,6 +2,7 @@
 #
 # Copyright (c) 2018-2022 Tatu Ylonen.  See file LICENSE and https://ylonen.org
 
+import bz2
 import hashlib
 import json
 import os
@@ -10,7 +11,7 @@ import subprocess
 import sys
 import unicodedata
 from pathlib import Path
-from typing import TYPE_CHECKING, Optional
+from typing import TYPE_CHECKING, Optional, Union
 
 if TYPE_CHECKING:
     from .core import Wtp
@@ -19,8 +20,13 @@ from .interwiki import init_interwiki_map
 from .logging_utils import logger
 
 
-def decompress_dump_file(dump_path: str) -> subprocess.Popen:
+def decompress_dump_file(
+    dump_path: str,
+) -> Union[subprocess.Popen, bz2.BZ2File]:
     if dump_path.endswith(".bz2"):
+        if shutil.which("lbzcat") is None and shutil.which("bzcat") is None:
+            return bz2.open(dump_path, "rb")
+
         decompress_command = (
             "lbzcat" if shutil.which("lbzcat") is not None else "bzcat"
         )
@@ -43,7 +49,7 @@ def parse_dump_xml(wtp: "Wtp", dump_path: str, namespace_ids: set[int]) -> None:
         namespaces = {None: namespace_str}
         page_nums = 0
         for _, page_element in etree.iterparse(
-            p.stdout,  # type: ignore
+            p.stdout if isinstance(p, subprocess.Popen) else p,  # type: ignore
             tag=f"{{{namespace_str}}}page",
         ):
             title = page_element.findtext("title", "", namespaces)
