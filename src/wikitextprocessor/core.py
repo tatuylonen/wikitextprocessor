@@ -1387,7 +1387,9 @@ class Wtp:
                         continue
                     if kind == "A":
                         # Template argument reference
-                        if len(args) > 2:
+                        if len(args) > 2 and any(
+                            len(arg.strip()) > 0 for arg in args[2:]
+                        ):
                             self.debug(
                                 "too many args ({}) in argument "
                                 "reference: {!r}".format(len(args), args),

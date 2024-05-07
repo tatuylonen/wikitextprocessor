@@ -294,3 +294,11 @@ class NodeExpTests(unittest.TestCase):
         self.ctx.start_page("newline")
         self.assertEqual(self.ctx.expand("{{#if: true | text}}"), "text")
         self.assertEqual(self.ctx.expand("{{#if: true | * list}}"), "\n* list")
+
+    def test_no_debug_message_for_extra_empty_template_argument(self):
+        # https://zh.wiktionary.org/wiki/Template:Context
+        # https://de.wiktionary.org/wiki/Vorlage:Literatur
+        self.ctx.start_page("")
+        self.ctx.add_page("Template:test", 10, "{{{1||}}}")
+        self.assertEqual(self.ctx.expand("{{test|t}}"), "t")
+        self.assertEqual(len(self.ctx.debugs), 0)
