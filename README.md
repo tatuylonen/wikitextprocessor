@@ -101,6 +101,7 @@ from wikitextprocessor import Wtp, WikiNode, NodeKind, Page
 from wikitextprocessor.dumpparser import process_dump
 
 def page_handler(wtp: Wtp, page: Page) -> Any:
+    wtp.start_page(page.title)
     # process parse tree
     tree = wtp.parse(page.body)
     # or get expanded plain text
