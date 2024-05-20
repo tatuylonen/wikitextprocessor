@@ -203,38 +203,6 @@
     "issubject": false,
     "istalk": true
   },
-  "Concordance": {
-    "id": 102,
-    "name": "Concordance",
-    "content": false,
-    "aliases": [],
-    "issubject": true,
-    "istalk": false
-  },
-  "Concordance talk": {
-    "id": 103,
-    "name": "Concordance talk",
-    "content": false,
-    "aliases": [],
-    "issubject": false,
-    "istalk": true
-  },
-  "Index": {
-    "id": 104,
-    "name": "Index",
-    "content": false,
-    "aliases": [],
-    "issubject": true,
-    "istalk": false
-  },
-  "Index talk": {
-    "id": 105,
-    "name": "Index talk",
-    "content": false,
-    "aliases": [],
-    "issubject": false,
-    "istalk": true
-  },
   "Rhymes": {
     "id": 106,
     "name": "Rhymes",
@@ -367,38 +335,6 @@
   "Module talk": {
     "id": 829,
     "name": "Module talk",
-    "content": false,
-    "aliases": [],
-    "issubject": false,
-    "istalk": true
-  },
-  "Gadget": {
-    "id": 2300,
-    "name": "Gadget",
-    "content": false,
-    "aliases": [],
-    "issubject": true,
-    "istalk": false
-  },
-  "Gadget talk": {
-    "id": 2301,
-    "name": "Gadget talk",
-    "content": false,
-    "aliases": [],
-    "issubject": false,
-    "istalk": true
-  },
-  "Gadget definition": {
-    "id": 2302,
-    "name": "Gadget definition",
-    "content": false,
-    "aliases": [],
-    "issubject": true,
-    "istalk": false
-  },
-  "Gadget definition talk": {
-    "id": 2303,
-    "name": "Gadget definition talk",
     "content": false,
     "aliases": [],
     "issubject": false,
