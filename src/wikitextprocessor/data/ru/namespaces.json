@@ -281,37 +281,5 @@
     "aliases": [],
     "issubject": false,
     "istalk": true
-  },
-  "Gadget": {
-    "id": 2300,
-    "name": "Гаджет",
-    "content": false,
-    "aliases": [],
-    "issubject": true,
-    "istalk": false
-  },
-  "Gadget talk": {
-    "id": 2301,
-    "name": "Обсуждение гаджета",
-    "content": false,
-    "aliases": [],
-    "issubject": false,
-    "istalk": true
-  },
-  "Gadget definition": {
-    "id": 2302,
-    "name": "Определение гаджета",
-    "content": false,
-    "aliases": [],
-    "issubject": true,
-    "istalk": false
-  },
-  "Gadget definition talk": {
-    "id": 2303,
-    "name": "Обсуждение определения гаджета",
-    "content": false,
-    "aliases": [],
-    "issubject": false,
-    "istalk": true
   }
 }
