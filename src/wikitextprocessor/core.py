@@ -1522,7 +1522,9 @@ class Wtp:
                     tname = (
                         tname.strip()
                         .removeprefix("subst:")
+                        .removeprefix("SUBST:")
                         .removeprefix("safesubst:")
+                        .removeprefix("SAFESUBST:")
                     )
 
                     # Check if it is a parser function call
