@@ -512,6 +512,7 @@ GeneralNode = Union[
     list[WikiNode],
     tuple[str, ...],
     tuple[WikiNode, ...],
+    list[list[Union[str, WikiNode]]],  # for node largs specifically
 ]
 
 TemplateParameters = dict[
