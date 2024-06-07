@@ -45,15 +45,13 @@ def parse_dump_xml(wtp: "Wtp", dump_path: str, namespace_ids: set[int]) -> None:
     from lxml import etree
 
     with decompress_dump_file(dump_path) as p:
-        namespace_str = "http://www.mediawiki.org/xml/export-0.10/"
-        namespaces = {None: namespace_str}
         page_nums = 0
         for _, page_element in etree.iterparse(
             p.stdout if isinstance(p, subprocess.Popen) else p,  # type: ignore
-            tag=f"{{{namespace_str}}}page",
+            tag="{*}page",
         ):
-            title = page_element.findtext("title", "", namespaces)
-            namespace_id = int(page_element.findtext("ns", "0", namespaces))
+            title = page_element.findtext("{*}title", "")
+            namespace_id = int(page_element.findtext("{*}ns", "0"))
             if (
                 namespace_id not in namespace_ids
                 or title.endswith("/documentation")
@@ -64,13 +62,11 @@ def parse_dump_xml(wtp: "Wtp", dump_path: str, namespace_ids: set[int]) -> None:
 
             text: Optional[str] = None
             redirect_to: Optional[str] = None
-            model = page_element.findtext("revision/model", "", namespaces)
+            model = page_element.findtext("{*}revision/{*}model", "")
             if (
-                redirect_element := page_element.find(
-                    "redirect", namespaces=namespaces
-                )
+                redirect_element := page_element.find("{*}redirect")
             ) is not None:
-                redirect_to = redirect_element.get("title", "")
+                redirect_to = redirect_element.get("{*}title", "")
                 # redirect_to existing implies a redirection, but having a
                 # .get default to "" is a bit weird: redirect to empty string?
                 # But you can't use None either..?
@@ -79,7 +75,7 @@ def parse_dump_xml(wtp: "Wtp", dump_path: str, namespace_ids: set[int]) -> None:
                     # ignore css, javascript and sanitized-css pages
                     page_element.clear(keep_tail=True)
                     continue
-                text = page_element.findtext("revision/text", "", namespaces)
+                text = page_element.findtext("{*}revision/{*}text", "")
 
             wtp.add_page(
                 title,
