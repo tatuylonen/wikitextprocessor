@@ -66,7 +66,7 @@ def parse_dump_xml(wtp: "Wtp", dump_path: str, namespace_ids: set[int]) -> None:
             if (
                 redirect_element := page_element.find("{*}redirect")
             ) is not None:
-                redirect_to = redirect_element.get("{*}title", "")
+                redirect_to = redirect_element.get("title", "")
                 # redirect_to existing implies a redirection, but having a
                 # .get default to "" is a bit weird: redirect to empty string?
                 # But you can't use None either..?
