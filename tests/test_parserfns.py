@@ -164,3 +164,30 @@ class TestParserFunctions(TestCase):
         time = datetime.fromisoformat(expanded)
         delta = datetime.now(timezone.utc) - time
         self.assertLess(abs(delta.total_seconds()), 1)
+
+    def test_rel2abs(self):
+        # https://www.mediawiki.org/wiki/Help:Extension:ParserFunctions##rel2abs
+        self.wtp.start_page("test")
+        test_cases = (
+            (
+                "{{#rel2abs: /quok | Help:Foo/bar/baz }}",
+                "Help:Foo/bar/baz/quok",
+            ),
+            (
+                "{{#rel2abs: ./quok | Help:Foo/bar/baz }}",
+                "Help:Foo/bar/baz/quok",
+            ),
+            ("{{#rel2abs: ../quok | Help:Foo/bar/baz }}", "Help:Foo/bar/quok"),
+            ("{{#rel2abs: ../. | Help:Foo/bar/baz }}", "Help:Foo/bar"),
+            (
+                "{{#rel2abs: ../quok/. | Help:Foo/bar/baz }}",
+                "Help:Foo/bar/quok",
+            ),
+            ("{{#rel2abs: ../../quok | Help:Foo/bar/baz }}", "Help:Foo/quok"),
+            ("{{#rel2abs: ../../../quok | Help:Foo/bar/baz }}", "quok"),
+            ("{{#rel2abs: b }}", "b"),
+            ("{{#rel2abs: /b }}", "test/b"),
+        )
+        for wikitext, result in test_cases:
+            with self.subTest(wikitext=wikitext, result=result):
+                self.assertEqual(self.wtp.expand(wikitext), result)
