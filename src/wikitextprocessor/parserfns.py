@@ -8,6 +8,7 @@ import re
 import urllib.parse
 from collections.abc import Callable, Sequence
 from datetime import datetime, timezone
+from pathlib import Path
 from typing import TYPE_CHECKING, Optional, Union
 
 import dateparser
@@ -1623,6 +1624,26 @@ def number_of_articles_fn(
     return str(wtp.saved_page_nums([0], False))
 
 
+def rel2abs_fn(
+    wtp: "Wtp", fn_name: str, args: list[str], expander: Callable[[str], str]
+) -> str:
+    # https://www.mediawiki.org/wiki/Help:Extension:ParserFunctions##rel2abs
+    # https://github.com/wikimedia/mediawiki-extensions-ParserFunctions/blob/ea4d4d94ee0c55b6039e05650ccc322e106ae06b/includes/ParserFunctions.php#L319
+    original_path_str = args[0].strip()
+    path = Path(original_path_str.removeprefix("/"))
+    base_path = Path("/" + (wtp.title or ""))
+    if len(args) > 1:
+        base_path = Path("/" + args[1].strip())
+    # not relative path
+    if (
+        not original_path_str.startswith(("/", "./", "../"))
+        and original_path_str != ".."
+    ):
+        base_path = Path("/")
+    path = base_path / path
+    return str(path.resolve()).removeprefix("/")
+
+
 # This list should include names of predefined parser functions and
 # predefined variables (some of which can take arguments using the same
 # syntax as parser functions and we treat them as parser functions).
@@ -1733,7 +1754,7 @@ PARSER_FUNCTIONS = {
     "anchorencode": anchorencode_fn,
     "ns": ns_fn,
     "nse": ns_fn,  # We don't have spaces in ns names
-    "#rel2abs": unimplemented_fn,
+    "#rel2abs": rel2abs_fn,
     "#titleparts": titleparts_fn,
     "#expr": expr_fn,
     "#if": if_fn,
