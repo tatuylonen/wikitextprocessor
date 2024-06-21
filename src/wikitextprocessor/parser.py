@@ -2256,7 +2256,7 @@ def process_text(ctx: "Wtp", text: str) -> None:
                 subtitle_end_fn(ctx, token)
             elif token.startswith("<"):  # HTML tag like construct
                 tag_fn(ctx, token)
-            elif token.startswith("----"):
+            elif token.startswith("----") and ctx.beginning_of_line:
                 hline_fn(ctx, token)
             elif re.match(list_prefix_re, token):
                 list_fn(ctx, token)

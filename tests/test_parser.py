@@ -2920,6 +2920,18 @@ def foo(x):
         self.assertEqual(span_text, "example text")
         self.assertEqual(dd_text, "translation text")
 
+    def test_horizontal_rule_in_template_arg(self):
+        # GitHub issue tatuylonen/wiktextract#536
+        self.ctx.start_page("shithole")
+        root = self.ctx.parse("{{alt|en|—hole|----hole}}")
+        template_node = root.children[0]
+        self.assertIsInstance(template_node, TemplateNode)
+        self.assertEqual(len(root.children), 1)
+        self.assertEqual(
+            template_node.template_parameters,
+            {1: "en", 2: "—hole", 3: "----hole"},
+        )
+
 
 # XXX implement <nowiki/> marking for links, templates
 #  - https://en.wikipedia.org/wiki/Help:Wikitext#Nowiki
