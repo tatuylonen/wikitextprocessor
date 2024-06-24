@@ -367,19 +367,20 @@ def get_entity_data(
         result = r.json()
         for _, entity_data in result.get("entities", {}).items():
             entity_data["schemaVersion"] = 2
-            insert_item(
-                wtp,
-                WikiDataItem(
-                    item_id=item_id,
-                    label=entity_data.get("labels", {})
-                    .get(wtp.lang_code, {})
-                    .get("value", ""),
-                    description=entity_data.get("descriptions", {})
-                    .get(wtp.lang_code, {})
-                    .get("value", ""),
-                    entity_data=json.dumps(entity_data, ensure_ascii=False),
-                ),
-            )
+            with wtp.db_conn:
+                insert_item(
+                    wtp,
+                    WikiDataItem(
+                        item_id=item_id,
+                        label=entity_data.get("labels", {})
+                        .get(wtp.lang_code, {})
+                        .get("value", ""),
+                        description=entity_data.get("descriptions", {})
+                        .get(wtp.lang_code, {})
+                        .get("value", ""),
+                        entity_data=json.dumps(entity_data, ensure_ascii=False),
+                    ),
+                )
             return entity_data
 
     return None
