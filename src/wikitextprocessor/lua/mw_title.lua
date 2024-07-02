@@ -248,7 +248,7 @@ function mw_title.makeTitle(namespace, title, fragment, interwiki)
         namespace = ns.id,
         id = id,
         interwiki = interwiki or "",
-        fragment = fragment,
+        fragment = fragment or "",
         nsText = ns.name ~= "Main" and ns.name or "",
         subjectNsText = (ns.subject or ns).name,
         text = title,
