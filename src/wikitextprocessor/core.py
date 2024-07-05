@@ -57,7 +57,11 @@ from .parserfns import PARSER_FUNCTIONS, call_parser_function
 from .wikihtml import ALLOWED_HTML_TAGS, HTMLTagData
 
 if TYPE_CHECKING:
-    from lupa.lua51 import LuaNumber, LuaRuntime, _LuaTable
+    from lupa.lua51 import (
+        LuaNumber,
+        LuaRuntime,
+        _LuaTable,
+    )
 
 
 NamespaceDataEntry = TypedDict(
@@ -76,7 +80,7 @@ NamespaceDataEntry = TypedDict(
 JsonValues = Union[str, int, float, list, dict, bool, None]
 # Can't specify _LuaTable contents further, so no use specifying the Dict either
 ParentData = tuple[str, Union["_LuaTable", dict[Union[int, str], str]]]
-TemplateArgs = Union[dict[Union[int, str], str]]
+TemplateArgs = dict[Union[int, str], str]
 TemplateFnCallable = Callable[
     [
         str,  # name
@@ -97,9 +101,9 @@ PostTemplateFnCallable = Callable[
 class ErrorMessageData(TypedDict):
     msg: str
     trace: str
-    title: str
-    section: str
-    subsection: str
+    title: Optional[str]
+    section: Optional[str]
+    subsection: Optional[str]
     called_from: str
     path: tuple[str, ...]
 

@@ -76,7 +76,14 @@ wikitextprocessor = [
 ]
 
 [tool.mypy]
-mypy_path = "typestubs"
+# Have to use $MYPY_CONFIG_FILE_DIR because by default mypy will scan for
+# config files in the directory it is run from, and if the editor (like
+# helix) has as its directory location, say, 'src/wikitextprocessor' mypy
+# will try to find it only there, even if it has loaded configs from
+# pyproject.toml.
+# If you run mypy on the command line, do so from the root directory of
+# the repo, where this config file is, or use `mypy --config-file ...`
+mypy_path = "$MYPY_CONFIG_FILE_DIR/typestubs"
 python_version = 3.9
 
 [[tool.mypy.overrides]]
