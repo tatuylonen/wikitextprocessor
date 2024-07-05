@@ -358,6 +358,20 @@ class WikiNode:
 
     @overload
     def find_child(
+        self,
+        target_kinds: Literal[NodeKind.TEMPLATE],
+        with_index: Literal[True],
+    ) -> Iterator[tuple[int, "TemplateNode"]]: ...
+
+    @overload
+    def find_child(
+        self,
+        target_kinds: Literal[NodeKind.TEMPLATE],
+        with_index: Literal[False] = ...,
+    ) -> Iterator["TemplateNode"]: ...
+
+    @overload
+    def find_child(
         self, target_kinds: NodeKind, with_index: Literal[True]
     ) -> Iterator[tuple[int, "WikiNode"]]: ...
 
