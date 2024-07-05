@@ -57,7 +57,11 @@ from .parserfns import PARSER_FUNCTIONS, call_parser_function
 from .wikihtml import ALLOWED_HTML_TAGS, HTMLTagData
 
 if TYPE_CHECKING:
-    from lupa.lua51 import LuaNumber, LuaRuntime, _LuaTable
+    from lupa.lua51 import (
+        LuaNumber,
+        LuaRuntime,
+        _LuaTable,
+    )
 
 
 NamespaceDataEntry = TypedDict(
