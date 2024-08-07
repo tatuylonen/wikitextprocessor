@@ -1985,6 +1985,7 @@ class Wtp:
             text = self.expand(
                 text, template_fn=template_fn, post_template_fn=post_template_fn
             )
+            text = self.preprocess_text(text)
             # print(f"PARSE EXPAND ALL: {text=!r}")
         elif pre_expand or additional_expand:
             text = self.expand(
@@ -1995,6 +1996,7 @@ class Wtp:
                 template_fn=template_fn,
                 post_template_fn=post_template_fn,
             )
+            text = self.preprocess_text(text)
 
         # print("parse:", repr(text))
 

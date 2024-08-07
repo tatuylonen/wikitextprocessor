@@ -2932,6 +2932,21 @@ def foo(x):
             {1: "en", 2: "—hole", 3: "----hole"},
         )
 
+    def test_nowiki_in_html_attr_value(self):
+        # https://pl.wiktionary.org/wiki/Szablon:skrót/szkielet
+        # used in etymology template https://pl.wiktionary.org/wiki/Szablon:etym
+        self.ctx.start_page("pies")
+        self.ctx.add_page(
+            "Template:skrót/szkielet",
+            10,
+            '<span class="short-container<nowiki/> ">text</span>',
+        )
+        root = self.ctx.parse("{{skrót/szkielet}}", expand_all=True)
+        self.assertEqual(len(root.children), 1)
+        span_node = root.children[0]
+        self.assertIsInstance(span_node, HTMLNode)
+        self.assertEqual(span_node.tag, "span")
+
 
 # XXX implement <nowiki/> marking for links, templates
 #  - https://en.wikipedia.org/wiki/Help:Wikitext#Nowiki
