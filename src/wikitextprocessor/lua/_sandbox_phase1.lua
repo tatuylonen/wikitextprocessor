@@ -144,6 +144,16 @@ local function new_loadData(modname)
     return ret
 end
 
+local function new_loadJsonData(page)
+    if loaddata_cache[page] ~= nil then
+        return loaddata_cache[page]
+    end
+    local json_str = _python_loader(page)
+    local json_data = mw_jsondecode_python(json_str, 0)
+    loaddata_cache[page] = json_data
+    return json_data
+end
+
 -- We don't use the default require. Disable its paths too.
 package.searchers = {}
 package.searchers[0] = nil
@@ -436,6 +446,7 @@ local function _lua_reset_env()
     env["_orig_next"] = _orig_next
     env["_orig_insert"] = _orig_insert
     env["_new_loadData"] = new_loadData
+    env["_new_loadJsonData"] = new_loadJsonData
     env["_new_loader"] = new_loader
     env["_cached_mod"] = _cached_mod
     env["_save_mod"] = _save_mod

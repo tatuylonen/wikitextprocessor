@@ -520,3 +520,21 @@ return "Configuration"
             self.wtp.expand("{{#invoke:Citation/CS1|citation}}"),
             "Configuration",
         )
+
+    def test_mw_load_json_data(self):
+        self.wtp.add_page(
+            "Module:test.json", 828, '{"key": "value"}', model="json"
+        )
+        self.wtp.add_page(
+            "Module:test",
+            828,
+            """local export = {}
+function export.test(frame)
+  local data = mw.loadJsonData('Module:test.json')
+  return data["key"]
+end
+return export""",
+            model="Scribunto",
+        )
+        self.wtp.start_page("")
+        self.assertEqual(self.wtp.expand("{{#invoke:test|test}}"), "value")

@@ -155,7 +155,7 @@ local function _lua_invoke(mod_name, fn_name, frame, page_title, timeout)
             success, mod = pcall(initfn)
             if not success then
                 return false, ("\tLoading module failed in #invoke: " ..
-                    mod_name .. "\n" .. mod)
+                               mod_name .. "\n" .. tostring(mod))
             end
             _save_mod(mod_name, mod)
         else

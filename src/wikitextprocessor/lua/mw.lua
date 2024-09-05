@@ -100,6 +100,10 @@ function mw.loadData(modname)
     return _new_loadData(modname)
 end
 
+function mw.loadJsonData(page)
+    return _new_loadJsonData(page)
+end
+
 function mw.log(...)
     -- print("mw.log", ...)
 end
