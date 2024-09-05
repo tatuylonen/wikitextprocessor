@@ -121,7 +121,12 @@ def to_wikitext(
             parts.append("|".join(map(recurse, node.largs)))
             parts.append("}}}")
         elif kind == NodeKind.PARSER_FN:
-            parts.append("{{" + recurse(node.largs[0]) + ":")
+            first_part = "{{" + recurse(node.largs[0])
+            if len(node.largs) > 1:
+                # extra empty arg could affect expand result
+                # only add ":" if parser function has args
+                first_part += ":"
+            parts.append(first_part)
             parts.append("|".join(map(recurse, node.largs[1:])))
             parts.append("}}")
         elif kind == NodeKind.URL:

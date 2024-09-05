@@ -131,7 +131,7 @@ class NodeExpTests(unittest.TestCase):
         self.backcvt("{{#expr:1+{{v}}}}", "{{#expr:1+{{v}}}}")
 
     def test_parserfn3(self):
-        self.backcvt("{{ROOTPAGENAME}}", "{{ROOTPAGENAME:}}")
+        self.backcvt("{{ROOTPAGENAME}}", "{{ROOTPAGENAME}}")
 
     def test_url1(self):
         self.backcvt("[https://wikipedia.org]", "[https://wikipedia.org]")
@@ -302,3 +302,9 @@ class NodeExpTests(unittest.TestCase):
         self.ctx.add_page("Template:test", 10, "{{{1||}}}")
         self.assertEqual(self.ctx.expand("{{test|t}}"), "t")
         self.assertEqual(len(self.ctx.debugs), 0)
+
+    def test_do_not_add_empty_arg_to_parser_function(self):
+        # {{PAGENAME:}} expands to ""
+        self.ctx.start_page("test_title")
+        root = self.ctx.parse("{{PAGENAME}}")
+        self.assertEqual(self.ctx.node_to_html(root.children[0]), "test_title")
