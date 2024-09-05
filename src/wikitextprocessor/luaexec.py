@@ -312,6 +312,9 @@ def set_lua_env_funcs(lua, wtp):
     set_global_lua_variable(
         lua, "_python_top_env", partial(top_lua_stack, wtp.lua_env_stack)
     )
+    set_global_lua_variable(
+        lua, "mw_jsondecode_python", partial(mw_text_jsondecode, wtp)
+    )
 
 
 def initialize_lua(ctx: "Wtp") -> None:
