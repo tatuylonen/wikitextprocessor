@@ -767,7 +767,11 @@ class Wtp:
         def repl_extlink(m: re.Match) -> CookieChar:
             """Replacement function for external links [...].  This is also
             used to replace bracketed sections, such as [...]."""
-            nowiki = MAGIC_NOWIKI_CHAR in m.group(0)
+
+            # parse as text if <nowiki/> tag at the start
+            nowiki = (
+                re.match(r"\[\s*" + MAGIC_NOWIKI_CHAR, m.group(0)) is not None
+            )
             orig = m.group(1)
             if not orig.startswith(URL_STARTS):
                 return MAGIC_LBRACKET_CHAR + orig + MAGIC_RBRACKET_CHAR
