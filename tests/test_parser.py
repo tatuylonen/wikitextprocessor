@@ -2947,6 +2947,21 @@ def foo(x):
         self.assertIsInstance(span_node, HTMLNode)
         self.assertEqual(span_node.tag, "span")
 
+    def test_nowiki_tag_in_external_link(self):
+        # https://zh.wiktionary.org/wiki/Template:RQ:Qur'an
+        self.ctx.start_page("محمد")
+        root = self.ctx.parse("[https://quran.com/3/144 3<nowiki/>:144]")
+        url_node = root.children[0]
+        self.assertIsInstance(url_node, WikiNode)
+        self.assertEqual(url_node.kind, NodeKind.URL)
+        self.assertEqual(
+            url_node.largs, [["https://quran.com/3/144"], ["3<nowiki />:144"]]
+        )
+
+        root = self.ctx.parse("[ <nowiki/> https://quran.com/3/144 3:144]")
+        text_node = root.children[0]
+        self.assertEqual(text_node, "[ <nowiki /> ")
+
 
 # XXX implement <nowiki/> marking for links, templates
 #  - https://en.wikipedia.org/wiki/Help:Wikitext#Nowiki
