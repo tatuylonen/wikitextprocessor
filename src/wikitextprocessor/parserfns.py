@@ -122,7 +122,7 @@ def switch_fn(
         k = expander(k).strip()
         if k == val or match_next:
             return expander(v).strip()
-        if k == "#default":
+        if k.lower() == "#default":
             defval = v
         last = None
     if defval is not None:
