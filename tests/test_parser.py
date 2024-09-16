@@ -2962,6 +2962,21 @@ def foo(x):
         text_node = root.children[0]
         self.assertEqual(text_node, "[ <nowiki /> ")
 
+    def test_clean_node_lists(self):
+        wikitext = """
+# line 1
+## line 2
+#: example 1
+#: example 2
+    """
+        self.ctx.start_page("test")
+        tree = self.ctx.parse(wikitext)
+        print(tree)
+        # cleaned = clean_node(self.wxr, None, tree)
+        cleaned = self.ctx.node_to_wikitext(tree)
+        print(cleaned)
+        self.assertEqual(cleaned, wikitext)
+
 
 # XXX implement <nowiki/> marking for links, templates
 #  - https://en.wikipedia.org/wiki/Help:Wikitext#Nowiki
