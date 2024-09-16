@@ -95,12 +95,8 @@ def to_wikitext(
             parts.append(recurse(node.children))
         elif kind == NodeKind.LIST_ITEM:
             parts.append(node.sarg)
-            prev_list = False
             for x in node.children:
-                if prev_list:
-                    parts.append(node.sarg + ":")
                 parts.append(recurse(x))
-                prev_list = isinstance(x, WikiNode) and x.kind == NodeKind.LIST
         elif kind == NodeKind.PRE:
             parts.append("<pre>")
             parts.append(recurse(node.children))
