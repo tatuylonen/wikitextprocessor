@@ -2346,10 +2346,14 @@ def print_tree(
     tree: Union[str, WikiNode], indent: int, ret_value: Literal[True]
 ) -> str: ...
 
+
 @overload
 def print_tree(
-    tree: Union[str, WikiNode], indent: int = ..., ret_value: Literal[False]=...
+    tree: Union[str, WikiNode],
+    indent: int = ...,
+    ret_value: Literal[False] = ...,
 ) -> None: ...
+
 
 def print_tree(
     tree: Union[str, WikiNode], indent: int = 0, ret_value=False
