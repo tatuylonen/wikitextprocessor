@@ -2341,20 +2341,43 @@ def parse_encoded(ctx: "Wtp", text: str) -> WikiNode:
     return ret
 
 
-def print_tree(tree: Union[str, WikiNode], indent: int = 0) -> None:
+@overload
+def print_tree(
+    tree: Union[str, WikiNode], indent: int, ret_value: Literal[True]
+) -> str: ...
+
+@overload
+def print_tree(
+    tree: Union[str, WikiNode], indent: int = ..., ret_value: Literal[False]=...
+) -> None: ...
+
+def print_tree(
+    tree: Union[str, WikiNode], indent: int = 0, ret_value=False
+) -> Optional[str]:
     """Prints the parse tree for debugging purposes.  This does not expand
     HTML entities; that should be done after processing templates."""
     assert isinstance(tree, (WikiNode, str))
     assert isinstance(indent, int)
+    parts = []
     if isinstance(tree, str):
-        print("{}{}".format(" " * indent, repr(tree)))
-        return
-    print(
+        parts.append("{}{}".format(" " * indent, repr(tree)))
+        if ret_value:
+            return "\n".join(parts)
+        else:
+            print("\n".join(parts))
+    assert isinstance(tree, WikiNode)
+    parts.append(
         "{}{} {}".format(
             " " * indent, tree.kind.name, tree.sarg if tree.sarg else tree.largs
         )
     )
     for k, v in tree.attrs.items():
-        print("{}    {}={}".format(" " * indent, k, v))
+        parts.append("{}    {}={}".format(" " * indent, k, v))
     for child in tree.children:
-        print_tree(child, indent + 2)
+        parts.append(print_tree(child, indent + 2, ret_value=True))
+
+    if ret_value:
+        return "\n".join(parts)
+    else:
+        print("\n".join(parts))
+        return None
