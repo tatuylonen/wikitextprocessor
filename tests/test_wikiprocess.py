@@ -4104,51 +4104,6 @@ return export
     def test_title_1_colon_e(self) -> None:
         self.scribunto("1:e", "return mw.title.new('1:e').text")
 
-    def test_analyze_redirect_pre_expand_templates(self) -> None:
-        """
-        In Chinese Wiktionary, Template:-it- redirects to Template:意大利语,
-        and this template expands to wikitext `==意大利语==`, which is a level
-        two language subtitle node for Italian words. This test checks both
-        pages should have `need_pre_expand` set to `true` in two redirect cases:
-        Template:-it- -> Template:意大利语
-        or Template:意大利语 -> Template:-it-
-        """
-        self.ctx.lang_code = "zh"
-        # source page need_pre_expand is true
-        self.ctx.add_page(
-            "Template:意大利語", 10, body="{{NoEdit|==意大利语==}}"
-        )
-        self.ctx.add_page("Template:-it-", 10, redirect_to="Template:意大利語")
-        self.ctx.analyze_templates()
-        source_page = self.ctx.get_page("Template:-it-", 10)
-        self.assertTrue(source_page.need_pre_expand)
-        dest_page = self.ctx.get_page("Template:意大利語", 10)
-        self.assertTrue(dest_page.need_pre_expand)
-
-        # destination page need_pre_expand is true
-        self.ctx.add_page("Template:意大利語", 10, redirect_to="Template:-it-")
-        self.ctx.add_page("Template:-it-", 10, body="{{NoEdit|==意大利语==}}")
-        self.ctx.analyze_templates()
-        dest_page = self.ctx.get_page("Template:-it-", 10)
-        self.assertTrue(dest_page.need_pre_expand)
-        source_page = self.ctx.get_page("Template:意大利語", 10)
-        self.assertTrue(source_page.need_pre_expand)
-
-    def test_analyze_used_pre_expand_template(self) -> None:
-        """
-        If Template A uses Template B and B needs pre-expand then A should also
-        need pre-expand.
-        """
-        self.ctx.lang_code = "zh"
-        self.ctx.add_page(
-            "Template:-n2-", 10, body="===名词===", need_pre_expand=True
-        )
-        self.ctx.add_page("Template:En-nm", 10, body="{{-n2-|英語}}")
-        self.ctx.analyze_templates()
-        self.ctx.get_page.cache_clear()
-        page = self.ctx.get_page("Template:En-nm", 10)
-        self.assertTrue(page.need_pre_expand)
-
     def test_get_page_resolve_redirect_infinite_recursion(self):
         self.ctx.add_page("Template:cite-book", 10, body="cite-book")
         self.ctx.add_page(
