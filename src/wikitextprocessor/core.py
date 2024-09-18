@@ -1092,20 +1092,12 @@ class Wtp:
             if len(called_template) > 0:
                 included_templates.add(called_template)
 
-        # Chinese Wiktionary language and POS subtitle template
-        # uses "langhd" template, "langhd" redirects to "語言標題"
-        is_chinese_heading = self.lang_code == "zh" and (
-            len({"langhd", "語言標題", "语言标题"} & included_templates) > 0
-            or is_chinese_subtitle_template(self, name)
-        )
-
         # Determine whether this template should be pre-expanded
         pre_expand = (
             contains_list
             or contains_unpaired_table
             or contains_table_element
             or contains_unbalanced_html
-            or is_chinese_heading
         )
 
         return included_templates, pre_expand
@@ -1138,10 +1130,6 @@ class Wtp:
                 if pre_expand:
                     self.set_template_pre_expand(page.title)
                     expand_stack.append(page)
-            elif self.lang_code == "zh" and is_chinese_subtitle_template(
-                self, page.title
-            ):
-                self.set_template_pre_expand(page.title)
 
         # XXX consider encoding template bodies here (also need to save related
         # cookies).  This could speed up their expansion, where the first
@@ -1156,14 +1144,7 @@ class Wtp:
                 template_ns_local_name + ":"
             )
             if title_no_ns_prefix not in included_map:
-                if self.lang_code == "zh":
-                    title_no_ns_prefix = (
-                        title_no_ns_prefix[0].lower() + title_no_ns_prefix[1:]
-                    )
-                    if title_no_ns_prefix not in included_map:
-                        continue
-                else:
-                    continue
+                continue
 
             for template_title in included_map[title_no_ns_prefix]:
                 self.get_page.cache_clear()  # avoid infinite loop
@@ -2096,22 +2077,3 @@ class Wtp:
                 self.strip_marker_cache["preprocess"] += 1
                 self.strip_marker_cache[content] = num
         return f"""\x7f'"`UNIQ--{node}-{num_str}-QINU`"'\x7f"""
-
-
-def is_chinese_subtitle_template(wtp: Wtp, title: str) -> bool:
-    # Chinese Wiktionary uses templates for language and POS headings
-    # Language templates: https://zh.wiktionary.org/wiki/Category:语言模板
-    # POS templates: https://zh.wiktionary.org/wiki/Category:詞類模板
-    # and their titles are usually starts with "-" or "="
-    template_ns = wtp.NAMESPACE_DATA.get("Template", {"name": None})
-    template_ns_local_name = template_ns.get("name")
-    if template_ns_local_name:
-        title_no_prefix = title.removeprefix(template_ns_local_name + ":")
-    else:
-        title_no_prefix = title
-    for token in ["-", "="]:
-        if title_no_prefix.startswith(token) and title_no_prefix.endswith(
-            token
-        ):
-            return True
-    return False
