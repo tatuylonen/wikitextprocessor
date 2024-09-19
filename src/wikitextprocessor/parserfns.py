@@ -740,6 +740,8 @@ def ns_fn(
     https://www.mediawiki.org/wiki/Help:Magic_words#Namespaces_2
     """
     arg = expander(args[0]).strip() if args else ""
+    if arg in ["0", ""]:
+        return ""
     lc_arg = arg.lower()
     for key, ns in wtp.NAMESPACE_DATA.items():
         if arg.isdigit() and ns["id"] == int(arg):
