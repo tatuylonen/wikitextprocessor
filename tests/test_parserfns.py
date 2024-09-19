@@ -191,3 +191,9 @@ class TestParserFunctions(TestCase):
         for wikitext, result in test_cases:
             with self.subTest(wikitext=wikitext, result=result):
                 self.assertEqual(self.wtp.expand(wikitext), result)
+
+    def test_ns_empty_str(self):
+        # https://ru.wiktionary.org/wiki/Шаблон:--lang--
+        self.wtp.start_page("test")
+        self.assertEqual(self.wtp.expand("{{ns:0}}"), "")
+        self.assertEqual(self.wtp.expand("{{ns:}}"), "")
