@@ -259,27 +259,27 @@ LEVEL_KIND_FLAGS = (
 )
 
 # Node types that have arguments separated by the vertical bar (|)
-HAVE_ARGS_KINDS: tuple[NodeKind, ...] = (
-    NodeKind.LINK,
-    NodeKind.TEMPLATE,
-    NodeKind.TEMPLATE_ARG,
-    NodeKind.PARSER_FN,
-    NodeKind.URL,
+HAVE_ARGS_KIND_FLAGS = (
+    NodeKind.LINK
+    | NodeKind.TEMPLATE
+    | NodeKind.TEMPLATE_ARG
+    | NodeKind.PARSER_FN
+    | NodeKind.URL
 )
 
 
 # Node kinds that generate an error if they have not been properly closed.
-MUST_CLOSE_KINDS: tuple[NodeKind, ...] = (
-    NodeKind.ITALIC,
-    NodeKind.BOLD,
-    NodeKind.PRE,
-    NodeKind.HTML,
-    NodeKind.LINK,
-    NodeKind.TEMPLATE,
-    NodeKind.TEMPLATE_ARG,
-    NodeKind.PARSER_FN,
-    NodeKind.URL,
-    NodeKind.TABLE,
+MUST_CLOSE_KIND_FLAGS = (
+    NodeKind.ITALIC
+    | NodeKind.BOLD
+    | NodeKind.PRE
+    | NodeKind.HTML
+    | NodeKind.LINK
+    | NodeKind.TEMPLATE
+    | NodeKind.TEMPLATE_ARG
+    | NodeKind.PARSER_FN
+    | NodeKind.URL
+    | NodeKind.TABLE
 )
 
 # regex for finding html-tags so that we can replace single-quotes
@@ -714,7 +714,7 @@ def _parser_pop(ctx: "Wtp", warn_unclosed: bool) -> None:
     node = ctx.parser_stack[-1]
 
     # Warn about unclosed syntaxes.
-    if warn_unclosed and node.kind in MUST_CLOSE_KINDS:
+    if warn_unclosed and node.kind in MUST_CLOSE_KIND_FLAGS:
         if node.kind == NodeKind.HTML:
             ctx.debug(
                 "HTML tag <{}> not properly closed".format(node.sarg),
@@ -769,7 +769,7 @@ def _parser_pop(ctx: "Wtp", warn_unclosed: bool) -> None:
 
     # If the node has arguments, move remaining children to be the last
     # argument
-    if node.kind in HAVE_ARGS_KINDS:
+    if node.kind in HAVE_ARGS_KIND_FLAGS:
         node.largs.append(node.children)
         node.children = []
 
@@ -805,11 +805,11 @@ def _parser_pop(ctx: "Wtp", warn_unclosed: bool) -> None:
     ctx.parser_stack.pop()
 
 
-def _parser_have(ctx: "Wtp", kind: NodeKind) -> bool:
+def _parser_have(ctx: "Wtp", kind_flags: NodeKind) -> bool:
     """Returns True if any node on the stack is of the given kind."""
-    assert isinstance(kind, NodeKind)
+    assert isinstance(kind_flags, NodeKind)
     for node in ctx.parser_stack:
-        if node.kind == kind:
+        if node.kind in kind_flags:
             return True
     return False
 
@@ -999,6 +999,8 @@ def subtitle_start_fn(ctx, token) -> None:
         if KIND_TO_LEVEL.get(node.kind, 99) < level:
             break
         if node.kind == NodeKind.HTML and node.sarg not in ("span",):
+            break
+        if node.kind in MUST_CLOSE_KIND_FLAGS & ~NodeKind.HTML:
             break
         _parser_pop(ctx, True)
 
@@ -1552,14 +1554,19 @@ def vbar_fn(ctx: "Wtp", token: str) -> None:
     templates, template argument references, links, etc, and it can
     also separate table row cells."""
     node = ctx.parser_stack[-1]
-    if node.kind in HAVE_ARGS_KINDS and node.kind is not NodeKind.URL:
+    if node.kind in HAVE_ARGS_KIND_FLAGS and node.kind is not NodeKind.URL:
         # [http://url.com these do not use vbars, only one initial space]
         _parser_merge_str_children(ctx)
         node.largs.append(node.children)
         node.children = []
         return
-
-    table_cell_fn(ctx, token)
+    elif _parser_have(ctx, NodeKind.TABLE):
+        table_cell_fn(ctx, token)
+    elif _parser_have(ctx, HAVE_ARGS_KIND_FLAGS):
+        _parser_pop(ctx, True)
+        vbar_fn(ctx, token)
+    else:
+        text_fn(ctx, token)
 
 
 def double_vbar_fn(ctx: "Wtp", token: str) -> None:
@@ -1570,7 +1577,7 @@ def double_vbar_fn(ctx: "Wtp", token: str) -> None:
     contain header cells this actually generates a new header cell in
     MediaWiki, so we'll do the same."""
     node = ctx.parser_stack[-1]
-    if node.kind in HAVE_ARGS_KINDS:
+    if node.kind in HAVE_ARGS_KIND_FLAGS:
         vbar_fn(ctx, "|")
         vbar_fn(ctx, "|")
         return

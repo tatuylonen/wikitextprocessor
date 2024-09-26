@@ -2977,6 +2977,26 @@ def foo(x):
         print(cleaned)
         self.assertEqual(cleaned, wikitext)
 
+    def test_section_in_template(self):
+        # https://fr.wiktionary.org/wiki/Conjugaison:français/bayer
+        # GH issue #310
+        self.ctx.start_page("")
+        root = self.ctx.parse("""{{Onglets conjugaison
+| contenu1 = 1
+| contenu2 = 2
+=== section ===
+text
+| contenu3 = 3
+}}""")
+        self.assertEqual(len(root.children), 1)
+        template = root.children[0]
+        second_arg_list = template.template_parameters.get("contenu2")
+        self.assertEqual(len(second_arg_list), 2)
+        heading_node = second_arg_list[1]
+        self.assertIsInstance(heading_node, WikiNode)
+        self.assertEqual(heading_node.kind, NodeKind.LEVEL3)
+        self.assertEqual(template.template_parameters.get("contenu3"), "3")
+
 
 # XXX implement <nowiki/> marking for links, templates
 #  - https://en.wikipedia.org/wiki/Help:Wikitext#Nowiki
