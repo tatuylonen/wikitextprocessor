@@ -238,6 +238,49 @@ ALL_BRACKETS_RE = re.compile(
     + r")"
 )
 
+INCLUDEONLY_RE = re.compile(r"(?is)<includeonly\s*>(.*?)(\n?)</includeonly\s*>")
+
+CATEGORY_LINK_RE = re.compile(r"(?i)(\[\[ *Category *:.*?\]\])")
+
+
+def includeonly_re_fn(m: re.Match) -> str:
+    """Try to emulate how Wikitext inside includeonly is processed: if the
+    end tag is preceded by a newline, just return everything almost as is; if
+    there is non-Category link texts otherwise, then keep whitespace from the
+    start until the end of the "visible" text. Otherwise remove whitespace and
+    newlines."""
+    assert m is not None
+    if m.group(1) == "":
+        return ""
+    if m.group(2) != "":
+        # There was a newline before the </includeonly>, which seems to
+        # trigger this, and a weird space that causes <pre>-blocks.
+        return m.group(1) + "\n "
+    rev_new_parts: list[str] = []
+
+    # split and reverse: ["...", "[[Category:...]]", "...", cat, ...]
+    rev_old_parts: list[str] = list(
+        reversed(CATEGORY_LINK_RE.split(m.group(1)))
+    )
+
+    for i, part in enumerate(rev_old_parts):
+        # Go backwards until you find non-category link text, then break
+        # Every second element from re.split is a Category link
+        if i % 2 == 1:
+            # a [[Category:..]] link
+            rev_new_parts.append(part)
+            continue
+        # A string that isn't empty
+        if rtext := part.rstrip():
+            rev_new_parts.append(rtext)
+            break
+
+    # add the beginning of the text, i is where we broke the loop, but
+    # using slice syntax doesn't cause error even if i > len
+    rev_new_parts.extend(rev_old_parts[i + 1:])
+
+    return "".join(reversed(rev_new_parts))
+
 
 class Wtp:
     """Context used for processing wikitext and for expanding templates,
@@ -893,10 +936,15 @@ class Wtp:
         )
         if onlys:
             text = "".join(m.group(1) or "" for m in onlys)
-        # Remove <includeonly>.  They mark text that is not visible on the page
+        # Issue 314, newlines in includeonly:
+        # If there's a newline just before </includeonly>, render it. If there's
+        # non-whitespace text inside the element that isn't a category link
+        # (which wouldn't render), then include all the whitespace that appears
+        # from the start to the element until the end of the text. Removes
+        # the tags. includeonly marks text that is not visible on the page
         # itself but is included in transclusion.  Also text outside these tags
         # is included in transclusion.
-        text = re.sub(r"(?is)<\s*(/\s*)?includeonly\s*(/\s*)?>", "", text)
+        text = INCLUDEONLY_RE.sub(includeonly_re_fn, text)
         return text
 
     def add_page(

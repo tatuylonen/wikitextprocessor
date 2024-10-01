@@ -53,3 +53,6 @@ class DumpParserTests(unittest.TestCase):
             {0, 4, 10, 14, 100, 110, 118, 828},
         )
         self.assertGreater(self.wtp.saved_page_nums(), 0)
+
+    def test_removing_includeonly(self):
+        ...
