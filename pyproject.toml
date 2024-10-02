@@ -82,7 +82,7 @@ wikitextprocessor = [
 # If you run mypy on the command line, do so from the root directory of
 # the repo, where this config file is, or use `mypy --config-file ...`
 mypy_path = "$MYPY_CONFIG_FILE_DIR/typestubs"
-python_version = 3.10
+python_version = "3.10"
 
 [[tool.mypy.overrides]]
 module = "importlib_resources.*"
