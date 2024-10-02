@@ -8,18 +8,12 @@ import html
 import html.entities
 import json
 import re
-import sys
 import traceback
 import unicodedata
 from collections import deque
 from datetime import datetime
 from functools import partial
-
-if sys.version_info < (3, 10):
-    from importlib_resources import files
-else:
-    from importlib.resources import files
-
+from importlib.resources import files
 from typing import (
     TYPE_CHECKING,
     Any,
