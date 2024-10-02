@@ -10,11 +10,12 @@ import shutil
 import subprocess
 import sys
 import unicodedata
+from collections.abc import Callable
 from pathlib import Path
-from typing import TYPE_CHECKING, Optional, Union
+from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
-    from .core import Wtp
+    from .core import Page, Wtp
 
 from .interwiki import init_interwiki_map
 from .logging_utils import logger
@@ -22,7 +23,7 @@ from .logging_utils import logger
 
 def decompress_dump_file(
     dump_path: str,
-) -> Union[subprocess.Popen, bz2.BZ2File]:
+) -> subprocess.Popen | bz2.BZ2File:
     if dump_path.endswith(".bz2"):
         if shutil.which("lbzcat") is None and shutil.which("bzcat") is None:
             return bz2.open(dump_path, "rb")
@@ -60,8 +61,8 @@ def parse_dump_xml(wtp: "Wtp", dump_path: str, namespace_ids: set[int]) -> None:
                 page_element.clear(keep_tail=True)
                 continue
 
-            text: Optional[str] = None
-            redirect_to: Optional[str] = None
+            text: str | None = None
+            redirect_to: str | None = None
             model = page_element.findtext("{*}revision/{*}model", "")
             if (
                 redirect_element := page_element.find("{*}redirect")
@@ -94,10 +95,11 @@ def process_dump(
     wtp: "Wtp",
     path: str,
     namespace_ids: set[int],
-    overwrite_folders: Optional[list[Path]] = None,
+    overwrite_folders: list[Path] | None = None,
     skip_extract_dump: bool = False,
-    save_pages_path: Optional[Path] = None,
-    skip_analyze_templates: bool = False,
+    save_pages_path: Path | None = None,
+    analyze_template_func: Callable[["Wtp", "Page"], tuple[set[str], bool]]
+    | None = None,
 ) -> None:
     """Parses a WikiMedia dump file ``path`` (which should point to a
     "<project>-<date>-pages-articles.xml.bz2" file.  This implements
@@ -121,7 +123,7 @@ def process_dump(
 
     add_default_templates(wtp)
     analyze_and_overwrite_pages(
-        wtp, overwrite_folders, skip_extract_dump, skip_analyze_templates
+        wtp, overwrite_folders, skip_extract_dump, analyze_template_func
     )
 
 
@@ -143,9 +145,10 @@ def add_default_templates(wtp: "Wtp") -> None:
 
 def analyze_and_overwrite_pages(
     wtp: "Wtp",
-    overwrite_folders: Optional[list[Path]],
+    overwrite_folders: list[Path] | None,
     skip_extract_dump: bool,
-    skip_analyze_templates: bool,
+    analyze_template_func: Callable[["Wtp", "Page"], tuple[set[str], bool]]
+    | None = None,
 ) -> None:
     if overwrite_folders is not None:
         if overwrite_pages(wtp, overwrite_folders, False):
@@ -153,17 +156,20 @@ def analyze_and_overwrite_pages(
             if skip_extract_dump:
                 wtp.backup_db()
             overwrite_pages(wtp, overwrite_folders, True)
-            if not skip_analyze_templates:
-                wtp.analyze_templates()
+            if analyze_template_func is not None:
+                wtp.analyze_templates(analyze_template_func)
         else:
-            if not skip_analyze_templates and not wtp.has_analyzed_templates():
-                wtp.analyze_templates()
+            if (
+                analyze_template_func is not None
+                and not wtp.has_analyzed_templates()
+            ):
+                wtp.analyze_templates(analyze_template_func)
             if skip_extract_dump:
                 wtp.backup_db()
             overwrite_pages(wtp, overwrite_folders, True)
-    elif not skip_analyze_templates and not wtp.has_analyzed_templates():
-        wtp.analyze_templates()
-    if skip_analyze_templates:
+    elif analyze_template_func is not None and not wtp.has_analyzed_templates():
+        wtp.analyze_templates(analyze_template_func)
+    if analyze_template_func is not None:
         wtp.db_conn.commit()
 
 
@@ -228,10 +234,10 @@ def overwrite_single_page(
     wtp: "Wtp",
     title: str,
     do_overwrite: bool,
-    namespace_id: Optional[int] = None,
-    redirect_to: Optional[str] = None,
+    namespace_id: int | None = None,
+    redirect_to: str | None = None,
     need_pre_expand: bool = False,
-    body: Optional[str] = None,
+    body: str | None = None,
     model: str = "wikitext",
 ) -> bool:
     template_ns_id = wtp.NAMESPACE_DATA.get("Template", {"id": None}).get("id")

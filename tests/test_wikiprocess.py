@@ -4022,7 +4022,7 @@ return export
 
     def test_dbfile1(self):
         self.ctx.add_page("Template:testmod", 10, "test content")
-        self.ctx.analyze_templates()
+        self.ctx.db_conn.commit()
         self.ctx.start_page("Tt")
         ret1 = self.ctx.expand("a{{testmod}}b")
         self.assertEqual(ret1, "atest contentb")
@@ -4035,14 +4035,14 @@ return export
 
     def test_dbfile2(self):
         self.ctx.add_page("Template:testmod", 10, "test content")
-        self.ctx.analyze_templates()
+        self.ctx.db_conn.commit()
         self.ctx.start_page("Tt")
         ret1 = self.ctx.expand("a{{testmod}}b")
         self.assertEqual(ret1, "atest contentb")
         # Now create a new context with the same db and update page
         new_ctx = Wtp(db_path=self.ctx.db_path)
         new_ctx.add_page("Template:testmod", 10, "test content 2")
-        new_ctx.analyze_templates()
+        new_ctx.db_conn.commit()
         new_ctx.start_page("Tt")
         ret2 = new_ctx.expand("a{{testmod}}b")
         new_ctx.close_db_conn()
