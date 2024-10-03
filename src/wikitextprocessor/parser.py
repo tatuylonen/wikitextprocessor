@@ -983,11 +983,12 @@ def hline_fn(ctx: "Wtp", token: str) -> None:
 def subtitle_start_fn(ctx, token) -> None:
     """Processes a subtitle start token.  The token has < prepended to it."""
     assert isinstance(token, str)
-    if ctx.pre_parse:
+    token = token[1:]
+    if ctx.pre_parse or not ctx.beginning_of_line:
         return text_fn(ctx, token)
 
     close_begline_lists(ctx)
-    kind = SUBTITLE_TO_KIND[token[1:]]
+    kind = SUBTITLE_TO_KIND[token]
     level = KIND_TO_LEVEL[kind]
 
     # Keep popping subtitles and other formats until the next subtitle
@@ -1013,24 +1014,29 @@ def subtitle_start_fn(ctx, token) -> None:
 def subtitle_end_fn(ctx: "Wtp", token: str) -> None:
     """Processes a subtitle end token.  The token has > prepended to it."""
     assert isinstance(token, str)
+    token = token[1:]
     if ctx.pre_parse:
         return text_fn(ctx, token)
 
-    kind = SUBTITLE_TO_KIND[token[1:]]
+    kind = SUBTITLE_TO_KIND[token]
 
     # Keep popping formats until we get to the subtitle node
-    while True:
-        node = ctx.parser_stack[-1]
-        if node.kind in KIND_TO_LEVEL:
+    pop_count = 0
+    find_start_node = False
+    for parent_node in reversed(ctx.parser_stack):
+        if parent_node.kind == kind:
+            for _ in range(pop_count):
+                _parser_pop(ctx, True)
+            find_start_node = True
             break
-        _parser_pop(ctx, True)
+        pop_count += 1
+
+    if not find_start_node:
+        ctx.debug("can't find subtitle start token", sortid="parser/545")
+        return text_fn(ctx, token)
 
     # Move children of the subtitle node to be its first argument.
     node = ctx.parser_stack[-1]
-    if node.kind != kind:
-        ctx.debug(
-            "subtitle start and end markers level mismatch", sortid="parser/545"
-        )
     _parser_merge_str_children(ctx)
     node.largs.append(node.children)
     node.children = []

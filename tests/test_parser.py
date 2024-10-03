@@ -2992,9 +2992,21 @@ text
         second_arg_list = template.template_parameters.get("contenu2")
         self.assertEqual(len(second_arg_list), 2)
         heading_node = second_arg_list[1]
-        self.assertIsInstance(heading_node, WikiNode)
+        self.assertIsInstance(heading_node, LevelNode)
         self.assertEqual(heading_node.kind, NodeKind.LEVEL3)
+        self.assertEqual(heading_node.children, ["\ntext\n"])
         self.assertEqual(template.template_parameters.get("contenu3"), "3")
+
+    def test_section_wikitext_in_link(self):
+        # https://zh.wiktionary.org/wiki/≠
+        # should be parsed as plain text
+        self.ctx.start_page("≠")
+        tree = self.ctx.parse("[[=/=]]")
+        self.assertEqual(len(tree.children), 1)
+        link_node = tree.children[0]
+        self.assertIsInstance(link_node, WikiNode)
+        self.assertEqual(link_node.kind, NodeKind.LINK)
+        self.assertEqual(link_node.largs, [["=/="]])
 
 
 # XXX implement <nowiki/> marking for links, templates
