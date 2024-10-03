@@ -18,7 +18,6 @@ from wikitextprocessor.parser import (
 class ParserTests(unittest.TestCase):
     def setUp(self) -> None:
         self.ctx = Wtp()
-        self.ctx.analyze_templates()
 
     def tearDown(self) -> None:
         self.ctx.close_db_conn()
