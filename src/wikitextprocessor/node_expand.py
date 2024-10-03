@@ -28,7 +28,8 @@ if TYPE_CHECKING:
 
 NodeHandlerFnCallable = Callable[[WikiNode], Union[None, GeneralNode]]
 
-kind_to_level: dict[NodeKind, str] = {
+KIND_TO_LEVEL: dict[NodeKind, str] = {
+    NodeKind.LEVEL1: "=",
     NodeKind.LEVEL2: "==",
     NodeKind.LEVEL3: "===",
     NodeKind.LEVEL4: "====",
@@ -83,8 +84,8 @@ def to_wikitext(
 
         kind = node.kind
         parts: list[str] = []
-        if kind in kind_to_level:
-            tag = kind_to_level[kind]
+        if kind in KIND_TO_LEVEL:
+            tag = KIND_TO_LEVEL[kind]
             t = recurse(node.largs)  # This is where WikiNodeListArgs is needed
             # if you were wondering...
             parts.append("\n{} {} {}\n".format(tag, t, tag))
