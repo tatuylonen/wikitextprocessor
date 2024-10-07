@@ -19,6 +19,10 @@
 # contains a list of tags and content types used in permitted_content
 # ("flow", "text", or tag name).  Having "flow" as permitted content implies
 # "phrasing and "text", and "phrasing" implies "text".
+# Use "*" to allow the tag to be used anywhere.
+#
+# HTML content categories:
+# https://developer.mozilla.org/en-US/docs/Web/HTML/Content_categories
 #
 # no-end-tag set to true means the tag should not have an end tag.
 # close-next lists tags that automatically close this tag.  Closing a
@@ -137,7 +141,8 @@ ALLOWED_HTML_TAGS: dict[str, HTMLTagData] = {
         "close-next": ["rt", "rtc", "rp", "rb"],
         "content": ["phrasing"],
     },
-    "ref": {"parents": ["phrasing"], "content": ["phrasing"]},
+    # not HTML tag: https://en.wikipedia.org/wiki/Help:Reftags
+    "ref": {"parents": ["*"], "content": ["*"]},
     "references": {
         "parents": ["flow"],
         # "no-end-tag": True,

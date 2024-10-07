@@ -2999,6 +2999,18 @@ text
         self.assertEqual(link_node.kind, NodeKind.LINK)
         self.assertEqual(link_node.largs, [["=/="]])
 
+    def test_div_in_ref_tag(self):
+        # https://nl.wiktionary.org/wiki/Sjabloon:citeer
+        self.ctx.start_page("")
+        root = self.ctx.parse("<ref><div>text</div></ref>")
+        self.assertEqual(len(root.children), 1)
+        ref_tag = root.children[0]
+        self.assertIsInstance(ref_tag, HTMLNode)
+        self.assertEqual(ref_tag.tag, "ref")
+        div_tag = ref_tag.children[0]
+        self.assertIsInstance(div_tag, HTMLNode)
+        self.assertEqual(div_tag.tag, "div")
+
 
 # XXX implement <nowiki/> marking for links, templates
 #  - https://en.wikipedia.org/wiki/Help:Wikitext#Nowiki
