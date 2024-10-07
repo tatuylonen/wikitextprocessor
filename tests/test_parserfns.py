@@ -197,3 +197,13 @@ class TestParserFunctions(TestCase):
         self.wtp.start_page("test")
         self.assertEqual(self.wtp.expand("{{ns:0}}"), "")
         self.assertEqual(self.wtp.expand("{{ns:}}"), "")
+
+    def test_int(self):
+        # https://nl.wiktionary.org/wiki/Module:ISOdate
+        self.wtp.start_page("test")
+        self.wtp.project = "wiktionary"
+        self.wtp.lang_code = "nl"
+        self.assertEqual(self.wtp.expand("{{int:lang}}"), "nl")
+        self.wtp.project = "wikipedia"
+        self.assertEqual(self.wtp.expand("{{int:lang}}"), "⧼lang⧽")
+        self.assertEqual(self.wtp.expand("{{int:}}"), "[[:Template:int:]]")
