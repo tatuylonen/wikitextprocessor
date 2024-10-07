@@ -137,7 +137,7 @@ ALLOWED_HTML_TAGS: dict[str, HTMLTagData] = {
         "close-next": ["rt", "rtc", "rp", "rb"],
         "content": ["phrasing"],
     },
-    "ref": {"parents": ["phrasing"], "content": ["phrasing"]},
+    "ref": {"parents": ["*"], "content": ["*"]},
     "references": {
         "parents": ["flow"],
         # "no-end-tag": True,
