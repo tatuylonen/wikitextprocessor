@@ -1646,6 +1646,17 @@ def rel2abs_fn(
     return str(path.resolve()).removeprefix("/")
 
 
+def int_fn(
+    wtp: "Wtp", fn_name: str, args: list[str], expander: Callable[[str], str]
+) -> str:
+    # https://www.mediawiki.org/wiki/Help:Magic_words#Localization
+    if wtp.project == "wiktionary" and len(args) > 0 and args[0] == "lang":
+        return wtp.lang_code
+    if len(args) > 0 and len(args[0]) > 0:
+        return f"⧼{args[0]}⧽"
+    return f"[[:{wtp.LOCAL_NS_NAME_BY_ID.get(10, '')}:int:]]"
+
+
 # This list should include names of predefined parser functions and
 # predefined variables (some of which can take arguments using the same
 # syntax as parser functions and we treat them as parser functions).
@@ -1797,6 +1808,7 @@ PARSER_FUNCTIONS = {
     "#trecho-x": unimplemented_fn,
     "#section-x": unimplemented_fn,
     "#language": language_fn,
+    "int": int_fn,
 }
 
 

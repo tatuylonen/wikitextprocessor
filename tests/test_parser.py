@@ -1446,15 +1446,6 @@ def foo(x):
         self.assertEqual(d.children, [])
         self.assertEqual(b.largs[1], ["bar"])
 
-    def test_template8(self):
-        # Namespace specifiers, e.g., {{int:xyz}} should not generate
-        # parser functions
-        tree = self.parse("test", "{{int:xyz}}")
-        self.assertEqual(len(tree.children), 1)
-        b = tree.children[0]
-        self.assertEqual(b.kind, NodeKind.TEMPLATE)
-        self.assertEqual(b.largs, [["int:xyz"]])
-
     def test_template9(self):
         # Main namespace references, e.g., {{:xyz}} should not
         # generate parser functions
