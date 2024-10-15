@@ -240,6 +240,14 @@ SUBTITLE_TO_KIND: dict[str, NodeKind] = {
     "======": NodeKind.LEVEL6,
 }
 
+LITERAL_LEVEL_KINDS = Literal[
+    NodeKind.LEVEL1
+    | NodeKind.LEVEL2
+    | NodeKind.LEVEL3
+    | NodeKind.LEVEL4
+    | NodeKind.LEVEL5
+    | NodeKind.LEVEL6
+]
 
 # Maps subtitle node kind to its level.  Keys include all title/subtitle nodes
 # (this is also used like a set of all subtitle kinds, including the root).
@@ -355,6 +363,20 @@ class WikiNode:
 
     def __repr__(self) -> str:
         return self.__str__()
+
+    @overload
+    def find_child(
+        self,
+        target_kinds: LITERAL_LEVEL_KINDS,
+        with_index: Literal[True],
+    ) -> Iterator[tuple[int, "LevelNode"]]: ...
+
+    @overload
+    def find_child(
+        self,
+        target_kinds: LITERAL_LEVEL_KINDS,
+        with_index: Literal[False] = ...,
+    ) -> Iterator["LevelNode"]: ...
 
     @overload
     def find_child(
