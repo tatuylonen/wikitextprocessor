@@ -636,6 +636,14 @@ class LevelNode(WikiNode):
     def __init__(self, level_type: NodeKind, linenum: int):
         super().__init__(level_type, linenum)
 
+    @overload
+    def find_content(
+        self, target_types: Literal[NodeKind.TEMPLATE]
+    ) -> Iterator[TemplateNode]: ...
+
+    @overload
+    def find_content(self, target_types: NodeKind) -> Iterator[WikiNode]: ...
+
     def find_content(self, target_types: NodeKind) -> Iterator[WikiNode]:
         """
         Find WikiNode in `WikiNode.largs`. This method could be used to find
