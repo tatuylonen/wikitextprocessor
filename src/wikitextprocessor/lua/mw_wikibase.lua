@@ -41,7 +41,7 @@ function mw_wikibase.getLabelByLang(id, languageCode)
 end
 
 function mw_wikibase.getSitelink(id, globalSiteId)
-   return nil
+    return mw_wikibase_getSitelink_py(id, globalSiteId)
 end
 
 function mw_wikibase.getDescription(id)

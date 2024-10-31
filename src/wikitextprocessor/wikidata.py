@@ -391,3 +391,13 @@ def mw_wikibase_getEntity(wtp: "Wtp", item_id: Optional[str]) -> Any:
     if entity_data is None or wtp.lua is None:
         return None
     return wtp.lua.table_from(entity_data, recursive=True)  # type:ignore
+
+
+def mw_wikibase_getSitelink(
+    wtp: "Wtp", item_id: str, globalSiteId: str | None
+) -> str | None:
+    entity_data = get_entity_data(wtp, item_id)
+    if entity_data is None:
+        return None
+    site_id = globalSiteId or wtp.lang_code + wtp.project
+    return entity_data.get("sitelinks", {}).get(site_id, {}).get("title", "")
