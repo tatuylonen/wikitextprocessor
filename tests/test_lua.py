@@ -538,3 +538,35 @@ return export""",
         )
         self.wtp.start_page("")
         self.assertEqual(self.wtp.expand("{{#invoke:test|test}}"), "value")
+
+    @patch(
+        "requests.get",
+        return_value=MockRequests(
+            True,
+            {
+                "entities": {
+                    "Q37041": {
+                        "id": "Q37041",
+                        "sitelinks": {"kowiki": {"title": "한문"}},
+                    }
+                }
+            },
+        ),
+    )
+    def test_wikidata_getsitelink(self, mock_request):
+        self.wtp.add_page(
+            "Module:test",
+            828,
+            """
+local export = {}
+function export.test(frame)
+  local a = mw.wikibase.getSitelink("Q37041", "kowiki")
+  local b = mw.wikibase.getSitelink("Q37041", "kowiki")
+  return a .. b
+end
+return export""",
+            model="Scribunto",
+        )
+        self.wtp.start_page("")
+        self.assertEqual(self.wtp.expand("{{#invoke:test|test}}"), "한문한문")
+        mock_request.assert_called_once()
