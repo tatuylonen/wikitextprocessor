@@ -1147,7 +1147,7 @@ time_fmt_map: dict[
 }
 
 
-# This format is in Python datatime library's format
+# This format is in Python datetime library's format
 MEDIAWIKI_TIMESTAMP_FORMAT = "%Y%m%d%H%M%S"
 
 
