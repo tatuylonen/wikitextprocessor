@@ -3011,6 +3011,18 @@ text
         self.assertIsInstance(div_tag, HTMLNode)
         self.assertEqual(div_tag.tag, "div")
 
+    def test_named_number_template_param(self):
+        # https://nl.wiktionary.org/wiki/aanbalken
+        self.ctx.start_page("aanbalken")
+        root = self.ctx.parse(
+            "{{-nlstam-|{{pn}}|[[balkte aan]]|[[aangebalkt]]|||scheid=s||7={{nlzwak-t}}}}"  # noqa: E501
+        )
+        t_node = root.children[0]
+        self.assertIsInstance(t_node, TemplateNode)
+        param = t_node.template_parameters[7]
+        self.assertIsInstance(param, TemplateNode)
+        self.assertEqual(param.template_name, "nlzwak-t")
+
 
 # XXX implement <nowiki/> marking for links, templates
 #  - https://en.wikipedia.org/wiki/Help:Wikitext#Nowiki
