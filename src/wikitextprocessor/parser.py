@@ -634,7 +634,11 @@ class TemplateNode(WikiNode):
                                 )
                             continue
 
-                if is_named and len(parameter_name) > 0:  # type: ignore
+                if (
+                    is_named
+                    and isinstance(parameter_name, str)
+                    and len(parameter_name) > 0
+                ) or isinstance(parameter_name, int):
                     parameters[parameter_name].append(parameter)
                 else:
                     parameters[unnamed_parameter_index].append(parameter)
