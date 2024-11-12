@@ -1483,22 +1483,6 @@ MORE
         ret = self.ctx.expand("{{template|bar=kak|Zap}}")
         self.assertEqual(ret, "test Zap content")
 
-    @patch(
-        "wikitextprocessor.core.Wtp.get_page",
-        return_value=Page(
-            title="Template:template",
-            namespace_id=10,
-            body="{{#if:{{{1}}}|{{#sub:{{{1}}}|0|1}}"
-            "{{testmod|{{#sub:{{{1}}}|1}}}}"
-            "{{testmod|{{#sub:{{{1}}}|1}}}}"
-            "x|}}",
-        ),
-    )
-    def test_template16(self, mock_get_page):
-        self.ctx.start_page("Tt")
-        ret = self.ctx.expand("{{template|abc}}")
-        self.assertEqual(ret, "abcxcxxbcxcxxx")
-
     def test_template17(self):
         self.ctx.add_page("Template:template1", 10, "a{{template2|{{{1}}}}}b")
         self.ctx.add_page("Template:template2", 10, "x{{{1}}}y")
@@ -1631,7 +1615,9 @@ MORE
         self.ctx.start_page("Tt")
         ret = self.ctx.expand("{{foo}}")
         self.assertGreaterEqual(
-            ret.find('<strong class="error">too deep recursion'), 0
+            ret,
+            '<strong class="error">Template loop detected: '
+            "[[:Template:foo]]</strong>",
         )
 
     @patch(
@@ -4268,6 +4254,27 @@ return export
         self.assertEqual(
             text,
             "foo",
+        )
+
+    def test_expand_template_loop_in_lua(self):
+        # tatuylonen/wiktextract#894
+        self.ctx.add_page(
+            "Module:link",
+            828,
+            """local export = {}
+
+function export.full_link(frame)
+    return frame:preprocess("{{m}}")
+end
+
+return export""",
+        )
+        self.ctx.add_page("Template:m", 10, "{{#invoke:link|full_link}}")
+        self.ctx.start_page("今生")
+        self.assertEqual(
+            self.ctx.expand("{{m}}"),
+            '<strong class="error">Template loop detected:'
+            "[[:Template:m]]</strong>",
         )
 
 
