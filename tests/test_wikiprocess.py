@@ -1613,11 +1613,10 @@ MORE
     def test_template27(self, mock_get_page):
         # Test infinite recursion in template expansion
         self.ctx.start_page("Tt")
-        ret = self.ctx.expand("{{foo}}")
-        self.assertGreaterEqual(
-            ret,
-            '<strong class="error">Template loop detected: '
-            "[[:Template:foo]]</strong>",
+        self.assertEqual(
+            self.ctx.expand("{{foo}}"),
+            'a<strong class="error">Template loop detected: '
+            "[[:Template:foo]]</strong>b",
         )
 
     @patch(
@@ -4273,7 +4272,7 @@ return export""",
         self.ctx.start_page("今生")
         self.assertEqual(
             self.ctx.expand("{{m}}"),
-            '<strong class="error">Template loop detected:'
+            '<strong class="error">Template loop detected: '
             "[[:Template:m]]</strong>",
         )
 

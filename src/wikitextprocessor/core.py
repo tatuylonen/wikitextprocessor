@@ -1413,7 +1413,7 @@ class Wtp:
                     self.expand_stack.append("Template:" + name)
                     if detect_expand_template_loop(self.expand_stack):
                         parts.append(
-                            '<strong class="error">Template loop detected:'
+                            '<strong class="error">Template loop detected: '
                             f"[[:Template:{name}]]</strong>"
                         )
                         self.expand_stack.pop()
