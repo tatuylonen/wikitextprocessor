@@ -1410,7 +1410,18 @@ class Wtp:
                         continue
 
                     # Construct and expand template arguments
-                    self.expand_stack.append(name)
+                    self.expand_stack.append("Template:" + name)
+                    if detect_expand_template_loop(self.expand_stack):
+                        parts.append(
+                            '<strong class="error">Template loop detected:'
+                            f"[[:Template:{name}]]</strong>"
+                        )
+                        self.expand_stack.pop()
+                        self.warning(
+                            f"Template loop detected: {name}",
+                            sortid="core/1422",
+                        )
+                        continue
                     ht: TemplateArgs = {}
                     num = 1
                     for i in range(1, len(args)):
@@ -1450,7 +1461,9 @@ class Wtp:
                     t: Optional[str] = None
                     # print("EXPANDING TEMPLATE: {} {}".format(name, ht))
                     if template_fn is not None:
+                        self.expand_stack.append("TEMPLATE_FN")
                         t = template_fn(urllib.parse.unquote(name), ht)
+                        self.expand_stack.pop()
                         # print("TEMPLATE_FN {}: {} {} -> {}"
                         #      .format(template_fn, name, ht, repr(t)))
                     if t is None:
@@ -1909,3 +1922,16 @@ class Wtp:
                 self.strip_marker_cache["preprocess"] += 1
                 self.strip_marker_cache[content] = num
         return f"""\x7f'"`UNIQ--{node}-{num_str}-QINU`"'\x7f"""
+
+
+def detect_expand_template_loop(stack: list[str]) -> bool:
+    stack_len = len(stack)
+    if stack_len < 2 or stack[-1] not in stack[:-1]:
+        return False
+    for size in range(1, stack_len // 2 + 1):
+        for i in range(stack_len - size):
+            if (stack_len - i) % size == 0:
+                pattern = stack[i : i + size]
+                if pattern * ((stack_len - i) // size) == stack[i:]:
+                    return True
+    return False
