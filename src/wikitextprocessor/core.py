@@ -1925,13 +1925,17 @@ class Wtp:
 
 
 def detect_expand_template_loop(stack: list[str]) -> bool:
+    # return `True` if find repeat pattern in expand stack
+    # GH issue tatuylonen/wiktextract#894
     stack_len = len(stack)
     if stack_len < 2 or stack[-1] not in stack[:-1]:
         return False
-    for size in range(1, stack_len // 2 + 1):
-        for i in range(stack_len - size):
-            if (stack_len - i) % size == 0:
-                pattern = stack[i : i + size]
-                if pattern * ((stack_len - i) // size) == stack[i:]:
+    for pattern_size in range(1, stack_len // 2 + 1):
+        for i in range(stack_len - pattern_size):
+            if (stack_len - i) % pattern_size == 0:
+                pattern = stack[i : i + pattern_size]
+                if pattern[0].startswith("ARGVAL-"):
+                    continue
+                if pattern * ((stack_len - i) // pattern_size) == stack[i:]:
                     return True
     return False

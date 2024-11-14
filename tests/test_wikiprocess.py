@@ -4276,6 +4276,17 @@ return export""",
             "[[:Template:m]]</strong>",
         )
 
+    def test_nested_template_in_template_args(self):
+        # used in nl edition language title templates
+        self.ctx.add_page(
+            "Template:str len",
+            10,
+            """{{str len/core|{{str len/core|{{str len/core|{{{1}}}}}}}}}""",
+        )
+        self.ctx.add_page("Template:str len/core", 10, """{{{1}}}""")
+        self.ctx.start_page("doodgeboren")
+        self.assertEqual(self.ctx.expand("{{str len|a}}"), "a")
+
 
 # XXX Test template_fn
 
