@@ -1290,6 +1290,18 @@ foo
         self.assertEqual(len(tree.children), 1)
         self.assertEqual(tree.children[0], "\nfoo\n")
 
+    def test_ref_ignores_pre(self):
+        # GH issue #336
+        tree = self.parse(
+            "test",
+            """<ref>
+ foo</ref>""",
+        )
+        ref_node = tree.children[0]
+        self.assertIsInstance(ref_node, HTMLNode)
+        self.assertEqual(ref_node.tag, "ref")
+        self.assertEqual(ref_node.children, ["\n foo"])
+
     def test_pre1(self):
         tree = self.parse(
             "test",

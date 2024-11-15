@@ -967,7 +967,14 @@ def text_fn(ctx: "Wtp", token: str) -> None:
             ):
                 return
             # print(f"{token=}")
-            if node.kind != NodeKind.PREFORMATTED and not ctx.pre_parse:
+            if (
+                node.kind != NodeKind.PREFORMATTED
+                and not ctx.pre_parse
+                and not any(  # GH issue #336
+                    isinstance(n, HTMLNode) and n.tag in ["ref", "p"]
+                    for n in ctx.parser_stack
+                )
+            ):
                 node = _parser_push(ctx, NodeKind.PREFORMATTED)
 
     # If the previous child was a link that doesn't yet have children,
