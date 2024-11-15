@@ -570,3 +570,17 @@ return export""",
         self.wtp.start_page("")
         self.assertEqual(self.wtp.expand("{{#invoke:test|test}}"), "한문한문")
         mock_request.assert_called_once()
+
+    def test_math_module_sum(self):
+        # load "Module:math" not Lua's math library
+        self.wtp.start_page("sea")
+        self.wtp.add_page(
+            "Module:math",
+            828,
+            """local export = {}
+function export.sum(frame)
+  return 1
+end
+return export""",
+        )
+        self.assertEqual(self.wtp.expand("{{#invoke:math|sum}}"), "1")

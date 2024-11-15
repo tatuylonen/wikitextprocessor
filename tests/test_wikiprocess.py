@@ -2221,7 +2221,7 @@ return export
         )
         self.ctx.start_page("Tt")
         ret = self.ctx.expand("{{testtempl|{{testtempl2|zz}}|yy}}")
-        self.assertEqual(ret, "testmod")
+        self.assertEqual(ret, "Module:testmod")
 
     def test_frame_parent8(self):
         self.ctx.add_page(
