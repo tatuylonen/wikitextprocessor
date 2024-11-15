@@ -410,6 +410,9 @@ def call_lua_sandbox(
 
     # Get module and function name
     modname = expander(invoke_args[0]).strip()
+    module_ns_prefix = ctx.NAMESPACE_DATA["Module"]["name"] + ":"
+    if not modname.startswith(module_ns_prefix):
+        modname = module_ns_prefix + modname
     modfn = expander(invoke_args[1]).strip()
 
     def make_frame(
@@ -752,10 +755,8 @@ def call_lua_sandbox(
     msg = "Lua execution error"
     if "Lua timeout error" in text:
         msg = "Lua timeout error"
-    return (
-        '<strong class="error">{} in Module:{} function {}' "</strong>".format(
-            msg, html.escape(modname), html.escape(modfn)
-        )
+    return '<strong class="error">{} in {} function {}' "</strong>".format(
+        msg, html.escape(modname), html.escape(modfn)
     )
 
 
