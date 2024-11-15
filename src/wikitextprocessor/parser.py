@@ -945,7 +945,6 @@ def text_fn(ctx: "Wtp", token: str) -> None:
                     and isinstance(node.children[-1], str)
                     and node.children[-1].endswith("\n")
                     and not token.startswith(" ")
-                    and not token.isspace()
                 ):
                     _parser_pop(ctx, False)
                     continue
@@ -961,12 +960,13 @@ def text_fn(ctx: "Wtp", token: str) -> None:
             break
 
         # Spaces at the beginning of a line indicate preformatted text
-        if token.startswith(" ") or token.startswith("\t"):
+        if token.startswith(" "):
             if ctx.parser_stack[-1].kind in (
                 NodeKind.TABLE,
                 NodeKind.TABLE_ROW,
             ):
                 return
+            # print(f"{token=}")
             if node.kind != NodeKind.PREFORMATTED and not ctx.pre_parse:
                 node = _parser_push(ctx, NodeKind.PREFORMATTED)
 
@@ -2170,6 +2170,7 @@ def token_iter(ctx: "Wtp", text: str) -> Iterator[tuple[bool, str]]:
     impossible to always disambiguate them without looking at what follows
     on the same line."""
     assert isinstance(text, str)
+    # print(f"token_iter: {text=}")
     # Replace single quotes inside HTML tags with MAGIC_SQUOTE_CHAR
     tag_parts = ctx.inside_html_tags_re.split(text)
     if len(tag_parts) > 1:
@@ -2185,6 +2186,8 @@ def token_iter(ctx: "Wtp", text: str) -> Iterator[tuple[bool, str]]:
     lines = re.split(r"(\n+)", text)  # Lines and separators
     parts_re = re.compile(r"('{2,})")
     for line in lines:
+        if not line.strip(" \t"):
+            continue
         # Detected headers before partitioning on "''"s
         hm = header_re.match(line)
         if hm:
@@ -2276,11 +2279,13 @@ def token_iter(ctx: "Wtp", text: str) -> Iterator[tuple[bool, str]]:
             pos = 0
             # Revert to single quotes from MAGIC_SQUOTE_CHAR
             part = part.replace(MAGIC_SQUOTE_CHAR, "'")
+            # print(f"{part=}")
             if i == 0:
                 token_re = TOKEN_RE_BEGINNING_OF_LINE
             else:
                 token_re = TOKEN_RE_NO_CARET
             for m in token_re.finditer(part):
+                # print(f"{m=}")
                 start = m.start()
                 if pos != start:
                     yield False, part[pos:start]
