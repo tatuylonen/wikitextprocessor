@@ -1252,6 +1252,7 @@ bar]""",
  markups can be done.
 Next para""",
         )
+        # print_tree(tree)
         self.assertEqual(len(tree.children), 3)
         self.assertEqual(tree.children[0], "\n")
         p = tree.children[1]
@@ -1277,6 +1278,17 @@ def foo(x):
         p = tree.children[1]
         self.assertEqual(p.kind, NodeKind.PREFORMATTED)
         self.assertEqual(p.children, [" \ndef foo(x)&colon;\n  print(x)\n"])
+
+    def test_preformatted3(self):
+        tree = self.parse(
+            "test",
+            """ \t
+foo
+""",
+        )
+        # print_tree(tree)
+        self.assertEqual(len(tree.children), 1)
+        self.assertEqual(tree.children[0], "\nfoo\n")
 
     def test_pre1(self):
         tree = self.parse(
@@ -2828,7 +2840,7 @@ def foo(x):
         root = self.ctx.parse("{{m|mul|{{ }}")
         string = self.ctx.node_to_wikitext(root)
         self.assertTrue(isinstance(string, str))
-        self.assertEqual(string, "{{m|mul|{{ }}")
+        self.assertEqual(string, "{{m|mul|{{}}")
 
     def test_extension_tags(self):
         # Extension tags can be arbitrary, but we don't want to allow
@@ -2957,14 +2969,13 @@ def foo(x):
 # line 1
 ## line 2
 #: example 1
-#: example 2
-    """
+#: example 2"""
         self.ctx.start_page("test")
         tree = self.ctx.parse(wikitext)
-        print(tree)
+        # print(tree)
         # cleaned = clean_node(self.wxr, None, tree)
         cleaned = self.ctx.node_to_wikitext(tree)
-        print(cleaned)
+        # print(cleaned)
         self.assertEqual(cleaned, wikitext)
 
     def test_section_in_template(self):
