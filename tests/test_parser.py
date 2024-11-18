@@ -3046,6 +3046,16 @@ text
         self.assertIsInstance(param, TemplateNode)
         self.assertEqual(param.template_name, "nlzwak-t")
 
+    def test_comment_between_lists(self):
+        # GH issue tatuylonen/wiktextract#912
+        self.ctx.start_page("agnathia")
+        root = self.ctx.parse("""# list 1
+<!-- comment -->
+# list 2""")
+        self.assertEqual(len(root.children), 1)  # one list
+        self.assertIsInstance(root.children[0], WikiNode)
+        self.assertEqual(root.children[0].kind, NodeKind.LIST)
+
 
 # XXX implement <nowiki/> marking for links, templates
 #  - https://en.wikipedia.org/wiki/Help:Wikitext#Nowiki

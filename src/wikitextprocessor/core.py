@@ -1096,7 +1096,7 @@ class Wtp:
             r"(?si)<nowiki\s*>(.*?)</nowiki\s*>", _nowiki_sub_fn, text
         )
         text = re.sub(r"(?si)<nowiki\s*/>", MAGIC_NOWIKI_CHAR, text)
-        text = re.sub(r"(?s)<!--.*?-->", "", text)
+        text = re.sub(r"(?s)<!--.*?-->\n*", "", text)
         # print("PREPROCESSED_TEXT: {!r}".format(text))
         return text
 
