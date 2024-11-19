@@ -3056,6 +3056,12 @@ text
         self.assertIsInstance(root.children[0], WikiNode)
         self.assertEqual(root.children[0].kind, NodeKind.LIST)
 
+        root = self.ctx.parse("""# list 1
+<!-- comment -->
+
+# list 2""")
+        self.assertEqual(len(root.children), 3)  # two lists
+
 
 # XXX implement <nowiki/> marking for links, templates
 #  - https://en.wikipedia.org/wiki/Help:Wikitext#Nowiki
