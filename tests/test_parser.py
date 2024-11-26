@@ -3055,12 +3055,20 @@ text
         self.assertEqual(len(root.children), 1)  # one list
         self.assertIsInstance(root.children[0], WikiNode)
         self.assertEqual(root.children[0].kind, NodeKind.LIST)
-
+        # two lists
         root = self.ctx.parse("""# list 1
 <!-- comment -->
 
 # list 2""")
-        self.assertEqual(len(root.children), 3)  # two lists
+        self.assertEqual(root.children[0].kind, NodeKind.LIST)
+        self.assertEqual(root.children[2].kind, NodeKind.LIST)
+        # GH issue #342
+        root = self.ctx.parse("""# list 1<!-- comment -->
+# list 2""")
+        list_node = root.children[0]
+        self.assertEqual(list_node.kind, NodeKind.LIST)
+        self.assertEqual(list_node.children[0].kind, NodeKind.LIST_ITEM)
+        self.assertEqual(list_node.children[1].kind, NodeKind.LIST_ITEM)
 
 
 # XXX implement <nowiki/> marking for links, templates
