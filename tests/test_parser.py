@@ -3062,6 +3062,22 @@ text
 # list 2""")
         self.assertEqual(len(root.children), 3)  # two lists
 
+    def test_comment_inside_list_item(self):
+        # GH issue tatuylonen/wikitextprocessor#342
+        self.ctx.start_page("test")
+        root = self.ctx.parse("""* foo<!-- bar -->
+* baz
+""")
+        self.assertEqual(len(root.children), 1)  # one list
+        self.assertIsInstance(root.children[0], WikiNode)
+        lis = root.children[0]
+        self.assertEqual(lis.kind, NodeKind.LIST)
+        self.assertEqual(len(lis.children), 2)  # two list items
+        a = lis.children[0].children[0]
+        b = lis.children[1].children[0]
+        self.assertEqual(a, " foo\n")
+        self.assertEqual(b, " baz\n")
+
 
 # XXX implement <nowiki/> marking for links, templates
 #  - https://en.wikipedia.org/wiki/Help:Wikitext#Nowiki
