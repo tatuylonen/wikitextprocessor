@@ -1670,7 +1670,7 @@ class Wtp:
             # https://www.mediawiki.org/wiki/Manual:Page_title#Naming_restrictions
             template_name = title[len(ns_prefix) :]
             upper_case_title = (
-                ns_prefix + template_name[0].upper() + template_name[1:]
+                ns_prefix + template_name[:1].upper() + template_name[1:]
             )
 
         query_str = """
