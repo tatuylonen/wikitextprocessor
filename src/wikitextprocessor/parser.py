@@ -581,13 +581,20 @@ class TemplateNode(WikiNode):
 
     @property
     def template_name(self) -> str:
-        if isinstance(self.largs[0][0], str):
-            name = self.largs[0][0].strip()
-            if name.lower().startswith(self._ns_prefixes):  # remove prefix
-                name = name[name.index(":") + 1 :]
-            return name
-        else:
-            return "<WikiNode>"
+        if (
+            isinstance(self.largs, list)
+            and len(self.largs) > 0
+            and isinstance(self.largs[0], list)
+            and len(self.largs[0]) > 0
+        ):
+            if isinstance(self.largs[0][0], str):
+                name = self.largs[0][0].strip()
+                if name.lower().startswith(self._ns_prefixes):  # remove prefix
+                    name = name[name.index(":") + 1 :]
+                return name
+            else:
+                return "<WikiNode>"
+        return ""
 
     @property
     def template_parameters(self) -> TemplateParameters:

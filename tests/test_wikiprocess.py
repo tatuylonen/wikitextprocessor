@@ -4107,7 +4107,8 @@ return export
         self.assertEqual(page.title, "Template:q")
 
     def test_get_page_empty_title(self):
-        self.assertEqual(self.ctx.get_page(""), None)
+        self.assertIsNone(self.ctx.get_page(""))
+        self.assertIsNone(self.ctx.get_page("Module:", 828))
 
     @patch(
         "wikitextprocessor.interwiki.get_interwiki_data",

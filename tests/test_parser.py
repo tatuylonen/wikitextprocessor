@@ -3070,6 +3070,13 @@ text
         self.assertEqual(list_node.children[0].kind, NodeKind.LIST_ITEM)
         self.assertEqual(list_node.children[1].kind, NodeKind.LIST_ITEM)
 
+    def test_empty_template_name(self):
+        self.ctx.start_page("Allzeithoch")
+        root = self.ctx.parse("{{ }}")
+        t_node = root.children[0]
+        self.assertIsInstance(t_node, TemplateNode)
+        self.assertEqual(t_node.template_name, "")
+
 
 # XXX implement <nowiki/> marking for links, templates
 #  - https://en.wikipedia.org/wiki/Help:Wikitext#Nowiki
