@@ -4236,7 +4236,7 @@ return export
     def test_invoke_aliases(self):
         # Some wikipedias (fr.wikipedia.org) have aliases for #invoke
         self.ctx.start_page("test")
-        self.ctx.invoke_aliases = self.ctx.invoke_aliases | {"#infooque"}
+        self.ctx.parser_function_aliases = {"#invoque": "#invoke"}
         self.ctx.add_page(
             "Module:test",
             828,
@@ -4250,11 +4250,8 @@ return export
             return export
             """,
         )
-        text = self.ctx.expand("{{#infooque|test|test}}")
-        self.assertEqual(
-            text,
-            "foo",
-        )
+        text = self.ctx.expand("{{#invoque|test|test}}")
+        self.assertEqual(text, "foo")
 
     def test_expand_template_loop_in_lua(self):
         # tatuylonen/wiktextract#894
