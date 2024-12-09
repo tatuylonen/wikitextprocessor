@@ -141,6 +141,7 @@ def add_default_templates(wtp: "Wtp") -> None:
         title = f"{ns_local_name}:{title}"
         if not wtp.page_exists(title, ns_id):
             wtp.add_page(title, ns_id, body)
+    wtp.db_conn.commit()
 
 
 def analyze_and_overwrite_pages(
