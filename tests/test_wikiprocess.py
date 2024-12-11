@@ -8,7 +8,7 @@ import unittest
 from typing import Optional
 from unittest.mock import patch
 
-from wikitextprocessor import Page, Wtp
+from wikitextprocessor import NodeKind, Page, Wtp
 from wikitextprocessor.common import MAGIC_NOWIKI_CHAR
 
 
@@ -4293,6 +4293,23 @@ return export""",
         )
         self.ctx.start_page("cane")
         self.assertEqual(self.ctx.expand("{{Wiktionary:test}}"), "text")
+
+    def test_expand_templates_in_pre_expand_template(self):
+        self.ctx.lang_code = "it"
+        self.ctx.add_page(
+            "Template:-sost-", 10, "{{Sezione voce}}", need_pre_expand=True
+        )
+        self.ctx.add_page("Template:Sezione voce", 10, "===Sostantivo===")
+        self.ctx.start_page("cane")
+        root = self.ctx.parse(
+            """== {{-it-}} ==
+{{-sost-|it}}""",
+            pre_expand=True,
+        )
+        level2_node = root.children[0]
+        self.assertEqual(level2_node.kind, NodeKind.LEVEL2)
+        level3_node = level2_node.children[1]
+        self.assertEqual(level3_node.kind, NodeKind.LEVEL3)
 
 
 # XXX Test template_fn

@@ -1516,7 +1516,16 @@ class Wtp:
                             #  on next iteration anyway (assuming parent
                             # unchanged). Otherwise expand the body
                             t = expand_recurse(
-                                encoded_body, new_parent, expand_all
+                                encoded_body,
+                                new_parent,
+                                expand_all
+                                or (
+                                    template_page.need_pre_expand
+                                    and not (
+                                        self.lang_code == "en"
+                                        and self.project == "wiktionary"
+                                    )
+                                ),
                             )
                         else:
                             # template doesn't exist
