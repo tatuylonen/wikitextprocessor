@@ -1482,10 +1482,20 @@ class Wtp:
                         template_page = self.get_page_resolve_redirect(
                             name, ns_id
                         )
-                        if template_page is not None:
+                        if template_page is None and ":" in name:
+                            # not in template namespace
+                            template_page = self.get_page_resolve_redirect(
+                                name, None
+                            )
+                            if template_page is not None:
+                                template_page.body = self._template_to_body(
+                                    name, template_page.body
+                                )
+                        if (
+                            template_page is not None
+                            and template_page.body is not None
+                        ):
                             body = template_page.body
-                            if TYPE_CHECKING:
-                                assert body is not None
                             # XXX optimize by pre-encoding bodies during
                             # preprocessing
                             # (Each template is typically used many times)

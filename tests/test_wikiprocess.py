@@ -4285,6 +4285,15 @@ return export""",
         self.ctx.start_page("doodgeboren")
         self.assertEqual(self.ctx.expand("{{str len|a}}"), "a")
 
+    def test_expand_template_not_in_template_namespace(self):
+        # https://it.wiktionary.org/wiki/Template:Intestazione_voce
+        # https://it.wiktionary.org/wiki/Wikizionario:switch_lang
+        self.ctx.add_page(
+            "Wiktionary:test", 4, "text<noinclude>doc</noinclude>"
+        )
+        self.ctx.start_page("cane")
+        self.assertEqual(self.ctx.expand("{{Wiktionary:test}}"), "text")
+
 
 # XXX Test template_fn
 
