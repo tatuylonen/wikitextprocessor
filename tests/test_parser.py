@@ -3093,6 +3093,14 @@ text
         self.assertEqual(heading.kind, NodeKind.LEVEL2)
         self.assertEqual(heading.largs, [["Foo"]])
 
+    def test_broken_heading_control_3(self):
+        self.ctx.start_page("Foo")
+        root = self.ctx.parse("==Foo=Bar==")
+        heading = root.children[0]
+        self.assertIsInstance(heading, LevelNode)
+        self.assertEqual(heading.kind, NodeKind.LEVEL2)
+        self.assertEqual(heading.largs, [["Foo=Bar"]])
+
     def test_broken_heading_1(self):
         self.ctx.start_page("Foo")
         root = self.ctx.parse("=Foo==")
