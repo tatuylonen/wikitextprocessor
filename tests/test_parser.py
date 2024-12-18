@@ -3077,6 +3077,85 @@ text
         self.assertIsInstance(t_node, TemplateNode)
         self.assertEqual(t_node.template_name, "")
 
+    def test_broken_heading_control_1(self):
+        self.ctx.start_page("Foo")
+        root = self.ctx.parse("= Foo =")
+        heading = root.children[0]
+        self.assertIsInstance(heading, LevelNode)
+        self.assertEqual(heading.kind, NodeKind.LEVEL1)
+        self.assertEqual(heading.largs, [["Foo"]])
+
+    def test_broken_heading_control_2(self):
+        self.ctx.start_page("Foo")
+        root = self.ctx.parse("==Foo==")
+        heading = root.children[0]
+        self.assertIsInstance(heading, LevelNode)
+        self.assertEqual(heading.kind, NodeKind.LEVEL2)
+        self.assertEqual(heading.largs, [["Foo"]])
+
+    def test_broken_heading_1(self):
+        self.ctx.start_page("Foo")
+        root = self.ctx.parse("=Foo==")
+        heading = root.children[0]
+        self.assertIsInstance(heading, LevelNode)
+        self.assertEqual(heading.kind, NodeKind.LEVEL1)
+        self.assertEqual(heading.largs, [["Foo="]])
+
+    def test_broken_heading_2(self):
+        self.ctx.start_page("Foo")
+        root = self.ctx.parse("=Foo===")
+        heading = root.children[0]
+        self.assertIsInstance(heading, LevelNode)
+        self.assertEqual(heading.kind, NodeKind.LEVEL1)
+        self.assertEqual(heading.largs, [["Foo=="]])
+
+    def test_broken_heading_3(self):
+        self.ctx.start_page("Foo")
+        root = self.ctx.parse("==Foo===")
+        heading = root.children[0]
+        self.assertIsInstance(heading, LevelNode)
+        self.assertEqual(heading.kind, NodeKind.LEVEL2)
+        self.assertEqual(heading.largs, [["Foo="]])
+
+    def test_broken_heading_4(self):
+        self.ctx.start_page("Foo")
+        root = self.ctx.parse("==Foo=")
+        heading = root.children[0]
+        self.assertIsInstance(heading, LevelNode)
+        self.assertEqual(heading.kind, NodeKind.LEVEL1)
+        self.assertEqual(heading.largs, [["=Foo"]])
+
+    def test_broken_heading_5(self):
+        self.ctx.start_page("Foo")
+        root = self.ctx.parse("===Foo=")
+        heading = root.children[0]
+        self.assertIsInstance(heading, LevelNode)
+        self.assertEqual(heading.kind, NodeKind.LEVEL1)
+        self.assertEqual(heading.largs, [["==Foo"]])
+
+    def test_broken_heading_6(self):
+        self.ctx.start_page("Foo")
+        root = self.ctx.parse("===Foo==")
+        heading = root.children[0]
+        self.assertIsInstance(heading, LevelNode)
+        self.assertEqual(heading.kind, NodeKind.LEVEL2)
+        self.assertEqual(heading.largs, [["=Foo"]])
+
+    def test_broken_heading_7(self):
+        self.ctx.start_page("Foo")
+        root = self.ctx.parse("=Foo")
+        self.assertEqual(root.children[0], "=Foo")
+
+    def test_broken_heading_8(self):
+        self.ctx.start_page("Foo")
+        root = self.ctx.parse("==Foo")
+        self.assertEqual(root.children[0], "==Foo")
+
+    def test_broken_heading_9(self):
+        self.ctx.start_page("Foo")
+        root = self.ctx.parse("Foo==")
+        self.assertEqual(root.children[0], "Foo==")
+
 
 # XXX implement <nowiki/> marking for links, templates
 #  - https://en.wikipedia.org/wiki/Help:Wikitext#Nowiki
