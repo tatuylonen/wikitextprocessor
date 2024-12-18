@@ -2213,10 +2213,22 @@ def token_iter(ctx: "Wtp", text: str) -> Iterator[tuple[bool, str]]:
                 # the heading itself. Fixes issue #352.
                 start, mid, _, end = hm.groups()
                 if len(start) < len(end):
-                    mid += end[len(start):]
+                    ctx.debug(
+                        f"Heading `{start}`, `{mid}`, `{end}` "
+                        f"has a start token shorter than end token: "
+                        f"shorten end and append ='s to title",
+                        sortid="parser20241218-2219",
+                    )
+                    mid += end[len(start) :]
                 elif len(start) > len(end):
-                    mid = start[len(end):] + mid
-                    start = start[:len(end)]
+                    ctx.debug(
+                        f"Heading `{start}`, `{mid}`, `{end}` "
+                        f"has an end token shorter than start token: "
+                        f"shorten start and prepend ='s to title",
+                        sortid="parser20241218-2219",
+                    )
+                    mid = start[len(end) :] + mid
+                    start = start[: len(end)]
                 yield True, "<" + start
                 # Tokenize header contents
                 for x in token_iter(ctx, mid):
