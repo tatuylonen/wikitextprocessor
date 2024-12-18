@@ -2207,11 +2207,24 @@ def token_iter(ctx: "Wtp", text: str) -> Iterator[tuple[bool, str]]:
         if hm:
             token = hm.group(0)
             if token.startswith("="):
-                yield True, "<" + hm.group(1)
+                # Wikimedia parses heading tokens from inside out:
+                # == Foo = is parsed as  =, "= Foo ", =, with leftover
+                # `=` characters in-between the bookends ending up in the
+                # the heading itself. Fixes issue #352.
+                start, mid, _, end = hm.groups()
+                if len(start) < len(end):
+                    mid += end[len(start):]
+                elif len(start) > len(end):
+                    mid = start[len(end):] + mid
+                    start = start[:len(end)]
+                yield True, "<" + start
                 # Tokenize header contents
-                for x in token_iter(ctx, hm.group(2)):
+                for x in token_iter(ctx, mid):
                     yield x
-                yield True, ">" + hm.group(4)
+                # The two heading tokens returned here should be identical,
+                # so we use `start` for both, which has been modified if
+                # the length is longer than the end token was.
+                yield True, ">" + start
             continue
         # Partition on '', so that we can detect bold/italics
         parts = re.split(parts_re, line)
