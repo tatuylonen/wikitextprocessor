@@ -118,7 +118,8 @@ def save_statement_cache(
         )
         wtp.db_conn.execute(
             """
-            INSERT INTO wikidata_property_values (value, item_id, property_id)
+            INSERT OR IGNORE INTO wikidata_property_values
+            (value, item_id, property_id)
             VALUES(?, ?, ?);
             """,
             (prop_value, item_id, prop_id),
