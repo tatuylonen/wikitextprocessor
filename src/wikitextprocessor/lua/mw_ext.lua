@@ -6,7 +6,10 @@
 -- https://www.mediawiki.org/wiki/Extension:Scribunto/Lua_reference_manual#mw.ext.data
 -- https://www.mediawiki.org/wiki/Extension:JsonConfig/Tabular
 -- https://www.mediawiki.org/wiki/Help:Tabular_Data
-local mw_ext = { data = {} }
+local mw_ext = {
+    data = {},
+    ParserFunctions = {}
+}
 
 -- https://github.com/wikimedia/mediawiki-extensions-JsonConfig/blob/master/includes/JCLuaLibrary.php
 function mw_ext.data.get(title, lang_code)
@@ -16,5 +19,12 @@ function mw_ext.data.get(title, lang_code)
         data = {},
     }
 end
+
+
+function mw_ext.ParserFunctions.expr(arg)
+    local frame = mw.getCurrentFrame()
+    return frame:callParserFunction("#expr", arg)
+end
+
 
 return mw_ext
