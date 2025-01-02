@@ -875,7 +875,7 @@ binary_or_fns: dict[str, BinaryCallable] = {
 def expr_fn(
     ctx: "Wtp", fn_name: str, args: list[str], expander: Callable[[str], str]
 ) -> str:
-    """Implements the #titleparts parser function."""
+    """Implements the #expr parser function."""
     full_expr = expander(args[0]).strip().lower() if args else ""
     full_expr = full_expr or ""
     tokens = list(

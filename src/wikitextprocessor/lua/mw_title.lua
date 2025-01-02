@@ -35,10 +35,6 @@ function mw_title_meta:__index(key)
     return nil
 end
 
-function mw_title_meta.__eq(a, b)
-    return a.prefixedText == b.prefixedText
-end
-
 function mw_title_meta.__lt(a, b)
     return a.prefixedText < b.prefixedText
 end
@@ -297,8 +293,12 @@ function mw_title.getCurrentTitle()
 end
 
 function mw_title.equals(a, b)
-    return a.fullText == b.fullText
+	return a.interwiki == b.interwiki and
+		a.namespace == b.namespace and
+		a.text == b.text
 end
+
+mw_title_meta.__eq = mw_title.equals
 
 function mw_title.compare(a, b)
     if a.interwiki < b.interwiki then return -1 end
