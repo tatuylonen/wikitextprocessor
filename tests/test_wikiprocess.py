@@ -291,8 +291,7 @@ return export
 
     def test_iferror15(self):
         self.parserfn(
-            '{{#iferror: <strong class="error">a</strong> '
-            "| error | correct }}",
+            '{{#iferror: <strong class="error">a</strong> | error | correct }}',
             "error",
         )
 
@@ -349,8 +348,7 @@ return export
 
     def test_switch11(self):
         self.parserfn(
-            "{{#switch: d |\na\n=\none\n|\nc\n|"
-            "\nd\n=\nfour\n|\nb\n=\ntwo\n}}",
+            "{{#switch: d |\na\n=\none\n|\nc\n|\nd\n=\nfour\n|\nb\n=\ntwo\n}}",
             "four",
         )
 
@@ -716,8 +714,7 @@ MORE
     def test_expr1(self):
         self.parserfn(
             "{{#expr}}",
-            '<strong class="error">Expression error near '
-            "&lt;end&gt;</strong>",
+            '<strong class="error">Expression error near &lt;end&gt;</strong>',
         )
 
     def test_expr2(self):
@@ -2652,7 +2649,7 @@ return export
 
     def test_mw_text_nowiki1(self):
         self.scribunto(
-            "&num;&lsqb;foo&rsqb;&lbrace;&lbrace;a&vert;" "b&rbrace;&rbrace;",
+            "&num;&lsqb;foo&rsqb;&lbrace;&lbrace;a&vert;b&rbrace;&rbrace;",
             """
                        return mw.text.nowiki("#[foo]{{a|b}}")""",
         )
@@ -2666,7 +2663,7 @@ return export
 
     def test_mw_text_nowiki3(self):
         self.scribunto(
-            "&quot;test&quot;\n&minus;---\n" "http&colon;//example.com\n",
+            "&quot;test&quot;\n&minus;---\nhttp&colon;//example.com\n",
             r"""
           return mw.text.nowiki('"test"\n----\nhttp://example.com\n')""",
         )

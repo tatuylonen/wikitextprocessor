@@ -1958,7 +1958,7 @@ def tag_fn(ctx: "Wtp", token: str) -> None:
         if name not in ctx.allowed_html_tags:
             if not name.isdigit() and not SILENT_HTML_LIKE:
                 ctx.debug(
-                    "html tag <{}{}> not allowed in WikiText" "".format(
+                    "html tag <{}{}> not allowed in WikiText".format(
                         name, "/" if also_end else ""
                     ),
                     sortid="parser/1251",
@@ -2034,7 +2034,7 @@ def tag_fn(ctx: "Wtp", token: str) -> None:
     # tags that are allowed.
     if name not in ctx.allowed_html_tags and name != "nowiki":
         ctx.debug(
-            "html tag </{}> not allowed in WikiText" "".format(name),
+            "html tag </{}> not allowed in WikiText".format(name),
             sortid="parser/1320",
         )
 

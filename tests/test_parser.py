@@ -160,10 +160,7 @@ dasfasddasfdas
         self.assertEqual(h2b.kind, NodeKind.LEVEL2)
         self.assertEqual(
             h2a.children,
-            [
-                "\na\n&equals;&equals;&equals;Bar"
-                "&equals;&equals;&equals;\nb\n"
-            ],
+            ["\na\n&equals;&equals;&equals;Bar&equals;&equals;&equals;\nb\n"],
         )
         self.assertEqual(h2b.largs, [["Zappa"]])
         self.assertEqual(h2b.children, ["\nc\n"])
@@ -253,7 +250,7 @@ dasfasddasfdas
         tree = self.parse("test", "{{{x|1}<nowiki />}}")
         self.assertEqual(
             tree.children,
-            ["&lbrace;&lbrace;&lbrace;x&vert;1" "&rbrace;&rbrace;&rbrace;"],
+            ["&lbrace;&lbrace;&lbrace;x&vert;1&rbrace;&rbrace;&rbrace;"],
         )
 
     def test_nowiki21(self):
@@ -384,7 +381,7 @@ dasfasddasfdas
         self.assertEqual(self.ctx.errors, [])
 
     def test_html8(self):
-        tree = self.parse("test", "==Title==\n<ul><li>foo<li>bar</ul>" "</div>")
+        tree = self.parse("test", "==Title==\n<ul><li>foo<li>bar</ul></div>")
         self.assertEqual(len(tree.children), 1)
         h = tree.children[0]
         self.assertEqual(h.kind, NodeKind.LEVEL2)
@@ -760,7 +757,7 @@ dasfasddasfdas
 
     def test_ul(self):
         tree = self.parse(
-            "test", "foo\n\n* item1\n** item1.1\n** item1.2\n" "* item2\n"
+            "test", "foo\n\n* item1\n** item1.1\n** item1.2\n* item2\n"
         )
         self.assertEqual(len(tree.children), 2)
         a, b = tree.children
@@ -790,7 +787,7 @@ dasfasddasfdas
 
     def test_ol(self):
         tree = self.parse(
-            "test", "foo\n\n# item1\n##item1.1\n## item1.2\n" "# item2\n"
+            "test", "foo\n\n# item1\n##item1.1\n## item1.2\n# item2\n"
         )
         self.assertEqual(len(tree.children), 2)
         a, b = tree.children
