@@ -859,7 +859,7 @@ class Wtp:
         """Extracts the portion to be transcluded from a template body."""
         assert isinstance(title, str)
         assert isinstance(text, str), (
-            f"{text=!r} was passed " "into _template_to_body"
+            f"{text=!r} was passed into _template_to_body"
         )
         # Remove all comments
         text = re.sub(r"(?s)<!--.*?-->", "", text)
@@ -1719,8 +1719,7 @@ class Wtp:
                 )
         except sqlite3.ProgrammingError as e:
             raise sqlite3.ProgrammingError(
-                f"{' '.join(e.args)}"
-                f" Current database file path: {self.db_path}"
+                f"{' '.join(e.args)} Current database file path: {self.db_path}"
             ) from e
         return None
 

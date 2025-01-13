@@ -12,37 +12,41 @@ local loader_cache = {}
 local loaddata_cache = {}
 local _orig_package = package
 
--- Copied from https://github.com/wikimedia/mediawiki-extensions-Scribunto/blob/8d69dc173e33ae936ff4401d41ee5e6a1fd1ba67/includes/Engines/LuaCommon/lualib/mwInit.lua#L38-L66
+-- https://github.com/wikimedia/mediawiki-extensions-Scribunto/blob/d35ca1f8d5fd23f1a9915e497cc00cac238f28c4/includes/Engines/LuaCommon/lualib/mwInit.lua#L38-L71
 --- Do a "deep copy" of a table or other value.
-function mw_clone(val)
-    local tableRefs = {}
-    local function recursiveClone(val)
-        if type(val) == 'table' then
-            -- Encode circular references correctly
-            if tableRefs[val] ~= nil then
-                return tableRefs[val]
-            end
+do
+    -- Declare global variables as locals to reduce access times
+    local getmetatable = getmetatable
+    local pairs = pairs
+    local setmetatable = setmetatable
+    local type = type
+    local function recursiveClone(val, tableRefs)
+        local retVal = {}
+        -- Encode circular references correctly
+        tableRefs[val] = retVal
 
-            local retVal
-            retVal = {}
-            tableRefs[val] = retVal
+        local mt = getmetatable(val)
+        if mt then
+            setmetatable(retVal, tableRefs[mt] or recursiveClone(mt, tableRefs))
+        end
 
-            -- Copy metatable
-            if getmetatable(val) then
-                setmetatable(retVal, recursiveClone(getmetatable(val)))
+        for key, elt in pairs(val) do
+            if type(elt) == 'table' then
+                retVal[key] = tableRefs[elt] or recursiveClone(elt, tableRefs)
+            else
+                retVal[key] = elt
             end
+        end
+        return retVal
+    end
 
-            for key, elt in pairs(val) do
-                retVal[key] = recursiveClone(elt)
-            end
-            return retVal
-        else
+    function mw_clone(val)
+        if type(val) ~= 'table' then
             return val
         end
+        return recursiveClone(val, {})
     end
-    return recursiveClone(val)
 end
-
 -- This function loads new a new module, whether built-in or defined in the
 -- data file, and returns its initialization function.  This caches the
 -- initialization function.

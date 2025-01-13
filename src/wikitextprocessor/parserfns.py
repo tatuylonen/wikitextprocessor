@@ -1234,10 +1234,8 @@ def parse_timestamp(
                 "unrecognized time syntax in {}: {!r}".format(fn_name, orig_dt),
                 sortid="parserfns/1040",
             )
-            return (
-                '<strong class="error">Bad time syntax: ' "{}</strong>".format(
-                    html.escape(orig_dt)
-                )
+            return '<strong class="error">Bad time syntax: {}</strong>'.format(
+                html.escape(orig_dt)
             )
     return t
 

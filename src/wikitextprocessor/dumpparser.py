@@ -298,7 +298,9 @@ def get_windows_invalid_chars() -> set[str]:
 
 def invalid_char_to_charname(char: str) -> str:
     default_name = f"__0x{ord(char):X}__"
-    return f"__{unicodedata.name(char, default_name).replace(' ','')}__".lower()
+    return (
+        f"__{unicodedata.name(char, default_name).replace(' ', '')}__".lower()
+    )
 
 
 def replace_invalid_substrings(s: str) -> str:
@@ -325,7 +327,7 @@ def save_pages_to_file(wtp: "Wtp", directory: Path) -> None:
         if page.namespace_id == 0:
             file_path = directory.joinpath(f"Words/{title[0:2]}/{title}.txt")
         else:
-            file_path = directory.joinpath(f'{title.replace(":", "/", 1)}.txt')
+            file_path = directory.joinpath(f"{title.replace(':', '/', 1)}.txt")
 
         if len(file_path.name.encode()) > name_max_length:
             file_path = file_path.with_stem(

@@ -444,8 +444,7 @@ def call_lua_sandbox(
                         k = int(k)
                         if k < 1 or k > 1000:
                             ctx.warning(
-                                "Template argument index <1 "
-                                f"or >1000: {k=!r}",
+                                f"Template argument index <1 or >1000: {k=!r}",
                                 sortid="luaexec/477/20230710",
                             )
                             k = 1000
@@ -739,23 +738,22 @@ def call_lua_sandbox(
     else:
         if "check deprecated lang param usage" in ctx.expand_stack:
             ctx.debug(
-                "LUA error but likely not bug"
-                "-- in #invoke {} parent {}".format(invoke_args, parent),
+                "LUA error but likely not bug-- in #invoke {} parent {}".format(
+                    invoke_args, parent
+                ),
                 trace=text,
                 sortid="luaexec/679",
             )
         else:
             ctx.error(
-                "LUA error in #invoke" "{} parent {}".format(
-                    invoke_args, parent
-                ),
+                "LUA error in #invoke{} parent {}".format(invoke_args, parent),
                 trace=text,
                 sortid="luaexec/683",
             )
     msg = "Lua execution error"
     if "Lua timeout error" in text:
         msg = "Lua timeout error"
-    return '<strong class="error">{} in {} function {}' "</strong>".format(
+    return '<strong class="error">{} in {} function {}</strong>'.format(
         msg, html.escape(modname), html.escape(modfn)
     )
 
