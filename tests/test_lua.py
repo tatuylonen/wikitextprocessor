@@ -584,3 +584,17 @@ end
 return export""",
         )
         self.assertEqual(self.wtp.expand("{{#invoke:math|sum}}"), "1")
+
+    def test_mw_uri_anchorEncode(self):
+        # GH PR #276
+        self.wtp.start_page("Reconstruction:Proto-Turkic/us-")
+        self.wtp.add_page(
+            "Module:test",
+            828,
+            """local export = {}
+function export.test(frame)
+  return mw.uri.anchorEncode("&#42;") .. mw.uri.anchorEncode("&#x2A;")
+end
+return export""",
+        )
+        self.assertEqual(self.wtp.expand("{{#invoke:test|test}}"), "**")

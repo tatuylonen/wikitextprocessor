@@ -228,7 +228,11 @@ local mw_uri = {
 
 function mw_uri.anchorEncode(s)
     -- XXX how exactly should this work?
-    s = s:gsub(" ", "_"):gsub("&#x2A;", "*")
+    s = s:gsub(" ", "_"):gsub("&#x(%x+);", function(hex)
+        return string.char(tonumber(hex, 16))
+    end):gsub("&#(%d+);", function(num)
+        return string.char(tonumber(num))
+    end)
     return s
 end
 
