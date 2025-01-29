@@ -2,6 +2,7 @@
   "Media": {
     "id": -2,
     "name": "Media",
+    "subpages": false,
     "content": false,
     "aliases": [],
     "issubject": true,
@@ -10,6 +11,7 @@
   "Special": {
     "id": -1,
     "name": "Special",
+    "subpages": false,
     "content": false,
     "aliases": [],
     "issubject": true,
@@ -18,6 +20,7 @@
   "Main": {
     "id": 0,
     "name": "Main",
+    "subpages": false,
     "content": true,
     "aliases": [],
     "issubject": true,
@@ -26,6 +29,7 @@
   "Talk": {
     "id": 1,
     "name": "Talk",
+    "subpages": true,
     "content": false,
     "aliases": [],
     "issubject": false,
@@ -34,6 +38,7 @@
   "User": {
     "id": 2,
     "name": "User",
+    "subpages": true,
     "content": false,
     "aliases": [],
     "issubject": true,
@@ -42,6 +47,7 @@
   "User talk": {
     "id": 3,
     "name": "User talk",
+    "subpages": true,
     "content": false,
     "aliases": [],
     "issubject": false,
@@ -50,6 +56,7 @@
   "Project": {
     "id": 4,
     "name": "Wiktionary",
+    "subpages": true,
     "content": false,
     "aliases": [
       "WT"
@@ -60,6 +67,7 @@
   "Project talk": {
     "id": 5,
     "name": "Wiktionary talk",
+    "subpages": true,
     "content": false,
     "aliases": [],
     "issubject": false,
@@ -68,6 +76,7 @@
   "File": {
     "id": 6,
     "name": "File",
+    "subpages": false,
     "content": false,
     "aliases": [
       "Image"
@@ -78,6 +87,7 @@
   "File talk": {
     "id": 7,
     "name": "File talk",
+    "subpages": true,
     "content": false,
     "aliases": [
       "Image talk"
@@ -88,6 +98,7 @@
   "MediaWiki": {
     "id": 8,
     "name": "MediaWiki",
+    "subpages": true,
     "content": false,
     "aliases": [],
     "issubject": true,
@@ -96,6 +107,7 @@
   "MediaWiki talk": {
     "id": 9,
     "name": "MediaWiki talk",
+    "subpages": true,
     "content": false,
     "aliases": [],
     "issubject": false,
@@ -104,6 +116,7 @@
   "Template": {
     "id": 10,
     "name": "Template",
+    "subpages": true,
     "content": false,
     "aliases": [
       "T"
@@ -114,6 +127,7 @@
   "Template talk": {
     "id": 11,
     "name": "Template talk",
+    "subpages": true,
     "content": false,
     "aliases": [],
     "issubject": false,
@@ -122,6 +136,7 @@
   "Help": {
     "id": 12,
     "name": "Help",
+    "subpages": true,
     "content": false,
     "aliases": [],
     "issubject": true,
@@ -130,6 +145,7 @@
   "Help talk": {
     "id": 13,
     "name": "Help talk",
+    "subpages": true,
     "content": false,
     "aliases": [],
     "issubject": false,
@@ -138,6 +154,7 @@
   "Category": {
     "id": 14,
     "name": "Category",
+    "subpages": false,
     "content": false,
     "aliases": [
       "CAT"
@@ -148,6 +165,7 @@
   "Category talk": {
     "id": 15,
     "name": "Category talk",
+    "subpages": true,
     "content": false,
     "aliases": [],
     "issubject": false,
@@ -156,6 +174,7 @@
   "Thread": {
     "id": 90,
     "name": "Thread",
+    "subpages": false,
     "content": false,
     "aliases": [],
     "issubject": true,
@@ -164,6 +183,7 @@
   "Thread talk": {
     "id": 91,
     "name": "Thread talk",
+    "subpages": false,
     "content": false,
     "aliases": [],
     "issubject": false,
@@ -172,6 +192,7 @@
   "Summary": {
     "id": 92,
     "name": "Summary",
+    "subpages": false,
     "content": false,
     "aliases": [],
     "issubject": true,
@@ -180,6 +201,7 @@
   "Summary talk": {
     "id": 93,
     "name": "Summary talk",
+    "subpages": false,
     "content": false,
     "aliases": [],
     "issubject": false,
@@ -188,6 +210,7 @@
   "Appendix": {
     "id": 100,
     "name": "Appendix",
+    "subpages": true,
     "content": false,
     "aliases": [
       "AP"
@@ -198,6 +221,7 @@
   "Appendix talk": {
     "id": 101,
     "name": "Appendix talk",
+    "subpages": true,
     "content": false,
     "aliases": [],
     "issubject": false,
@@ -206,6 +230,7 @@
   "Rhymes": {
     "id": 106,
     "name": "Rhymes",
+    "subpages": true,
     "content": false,
     "aliases": [],
     "issubject": true,
@@ -214,6 +239,7 @@
   "Rhymes talk": {
     "id": 107,
     "name": "Rhymes talk",
+    "subpages": true,
     "content": false,
     "aliases": [],
     "issubject": false,
@@ -222,6 +248,7 @@
   "Transwiki": {
     "id": 108,
     "name": "Transwiki",
+    "subpages": true,
     "content": false,
     "aliases": [],
     "issubject": true,
@@ -230,6 +257,7 @@
   "Transwiki talk": {
     "id": 109,
     "name": "Transwiki talk",
+    "subpages": true,
     "content": false,
     "aliases": [],
     "issubject": false,
@@ -238,6 +266,7 @@
   "Thesaurus": {
     "id": 110,
     "name": "Thesaurus",
+    "subpages": true,
     "content": false,
     "aliases": [
       "WS",
@@ -249,6 +278,7 @@
   "Thesaurus talk": {
     "id": 111,
     "name": "Thesaurus talk",
+    "subpages": true,
     "content": false,
     "aliases": [
       "Wikisaurus talk"
@@ -259,6 +289,7 @@
   "Citations": {
     "id": 114,
     "name": "Citations",
+    "subpages": true,
     "content": false,
     "aliases": [],
     "issubject": true,
@@ -267,6 +298,7 @@
   "Citations talk": {
     "id": 115,
     "name": "Citations talk",
+    "subpages": true,
     "content": false,
     "aliases": [],
     "issubject": false,
@@ -275,6 +307,7 @@
   "Sign gloss": {
     "id": 116,
     "name": "Sign gloss",
+    "subpages": true,
     "content": false,
     "aliases": [],
     "issubject": true,
@@ -283,6 +316,7 @@
   "Sign gloss talk": {
     "id": 117,
     "name": "Sign gloss talk",
+    "subpages": true,
     "content": false,
     "aliases": [],
     "issubject": false,
@@ -291,6 +325,7 @@
   "Reconstruction": {
     "id": 118,
     "name": "Reconstruction",
+    "subpages": true,
     "content": false,
     "aliases": [
       "RC"
@@ -301,6 +336,7 @@
   "Reconstruction talk": {
     "id": 119,
     "name": "Reconstruction talk",
+    "subpages": true,
     "content": false,
     "aliases": [],
     "issubject": false,
@@ -309,6 +345,7 @@
   "TimedText": {
     "id": 710,
     "name": "TimedText",
+    "subpages": false,
     "content": false,
     "aliases": [],
     "issubject": true,
@@ -317,6 +354,7 @@
   "TimedText talk": {
     "id": 711,
     "name": "TimedText talk",
+    "subpages": false,
     "content": false,
     "aliases": [],
     "issubject": false,
@@ -325,6 +363,7 @@
   "Module": {
     "id": 828,
     "name": "Module",
+    "subpages": true,
     "content": false,
     "aliases": [
       "MOD"
@@ -335,6 +374,7 @@
   "Module talk": {
     "id": 829,
     "name": "Module talk",
+    "subpages": true,
     "content": false,
     "aliases": [],
     "issubject": false,

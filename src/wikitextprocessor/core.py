@@ -67,6 +67,7 @@ NamespaceDataEntry = TypedDict(
         "issubject": bool,
         "istalk": bool,
         "name": str,
+        "subpages": bool,
     },
     total=True,  # fields are obligatory
 )
@@ -111,15 +112,6 @@ class CollatedErrorReturnData(TypedDict):
 CookieData = tuple[str, Sequence[str], bool]
 
 CookieChar = str
-
-EMPTY_NAMESPACEDATA: NamespaceDataEntry = {
-    "id": -1,
-    "name": "NAMESPACE_DATA_ERROR",
-    "aliases": [],
-    "content": False,
-    "istalk": False,
-    "issubject": False,
-}
 
 
 @dataclass

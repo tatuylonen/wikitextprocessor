@@ -2,6 +2,7 @@
   "Media": {
     "id": -2,
     "name": "Медиа",
+    "subpages": false,
     "content": false,
     "aliases": [],
     "issubject": true,
@@ -10,6 +11,7 @@
   "Special": {
     "id": -1,
     "name": "Служебная",
+    "subpages": false,
     "content": false,
     "aliases": [],
     "issubject": true,
@@ -18,6 +20,7 @@
   "Main": {
     "id": 0,
     "name": "Main",
+    "subpages": false,
     "content": true,
     "aliases": [],
     "issubject": true,
@@ -26,6 +29,7 @@
   "Talk": {
     "id": 1,
     "name": "Обсуждение",
+    "subpages": true,
     "content": false,
     "aliases": [],
     "issubject": false,
@@ -34,6 +38,7 @@
   "User": {
     "id": 2,
     "name": "Участник",
+    "subpages": true,
     "content": false,
     "aliases": [
       "U",
@@ -46,6 +51,7 @@
   "User talk": {
     "id": 3,
     "name": "Обсуждение участника",
+    "subpages": true,
     "content": false,
     "aliases": [
       "UT",
@@ -58,6 +64,7 @@
   "Project": {
     "id": 4,
     "name": "Викисловарь",
+    "subpages": true,
     "content": false,
     "aliases": [
       "WT",
@@ -70,6 +77,7 @@
   "Project talk": {
     "id": 5,
     "name": "Обсуждение Викисловаря",
+    "subpages": true,
     "content": false,
     "aliases": [
       "Wiktionary talk"
@@ -80,6 +88,7 @@
   "File": {
     "id": 6,
     "name": "Файл",
+    "subpages": false,
     "content": false,
     "aliases": [
       "Image",
@@ -91,6 +100,7 @@
   "File talk": {
     "id": 7,
     "name": "Обсуждение файла",
+    "subpages": true,
     "content": false,
     "aliases": [
       "Image talk",
@@ -102,6 +112,7 @@
   "MediaWiki": {
     "id": 8,
     "name": "MediaWiki",
+    "subpages": true,
     "content": false,
     "aliases": [],
     "issubject": true,
@@ -110,6 +121,7 @@
   "MediaWiki talk": {
     "id": 9,
     "name": "Обсуждение MediaWiki",
+    "subpages": true,
     "content": false,
     "aliases": [],
     "issubject": false,
@@ -118,6 +130,7 @@
   "Template": {
     "id": 10,
     "name": "Шаблон",
+    "subpages": true,
     "content": false,
     "aliases": [
       "T",
@@ -129,6 +142,7 @@
   "Template talk": {
     "id": 11,
     "name": "Обсуждение шаблона",
+    "subpages": true,
     "content": false,
     "aliases": [],
     "issubject": false,
@@ -137,6 +151,7 @@
   "Help": {
     "id": 12,
     "name": "Справка",
+    "subpages": true,
     "content": false,
     "aliases": [],
     "issubject": true,
@@ -145,6 +160,7 @@
   "Help talk": {
     "id": 13,
     "name": "Обсуждение справки",
+    "subpages": true,
     "content": false,
     "aliases": [],
     "issubject": false,
@@ -153,6 +169,7 @@
   "Category": {
     "id": 14,
     "name": "Категория",
+    "subpages": false,
     "content": false,
     "aliases": [
       "К"
@@ -163,6 +180,7 @@
   "Category talk": {
     "id": 15,
     "name": "Обсуждение категории",
+    "subpages": true,
     "content": false,
     "aliases": [],
     "issubject": false,
@@ -171,6 +189,7 @@
   "Приложение": {
     "id": 100,
     "name": "Приложение",
+    "subpages": true,
     "content": false,
     "aliases": [
       "Appendix"
@@ -181,6 +200,7 @@
   "Обсуждение приложения": {
     "id": 101,
     "name": "Обсуждение приложения",
+    "subpages": true,
     "content": false,
     "aliases": [
       "Appendix talk"
@@ -191,6 +211,7 @@
   "Конкорданс": {
     "id": 102,
     "name": "Конкорданс",
+    "subpages": true,
     "content": false,
     "aliases": [
       "Concordance"
@@ -201,6 +222,7 @@
   "Обсуждение конкорданса": {
     "id": 103,
     "name": "Обсуждение конкорданса",
+    "subpages": true,
     "content": false,
     "aliases": [
       "Concordance talk"
@@ -211,6 +233,7 @@
   "Индекс": {
     "id": 104,
     "name": "Индекс",
+    "subpages": true,
     "content": false,
     "aliases": [
       "Index"
@@ -221,6 +244,7 @@
   "Обсуждение индекса": {
     "id": 105,
     "name": "Обсуждение индекса",
+    "subpages": true,
     "content": false,
     "aliases": [
       "Index talk"
@@ -231,6 +255,7 @@
   "Рифмы": {
     "id": 106,
     "name": "Рифмы",
+    "subpages": true,
     "content": false,
     "aliases": [
       "Rhymes"
@@ -241,6 +266,7 @@
   "Обсуждение рифм": {
     "id": 107,
     "name": "Обсуждение рифм",
+    "subpages": true,
     "content": false,
     "aliases": [
       "Rhymes talk"
@@ -251,6 +277,7 @@
   "TimedText": {
     "id": 710,
     "name": "TimedText",
+    "subpages": false,
     "content": false,
     "aliases": [],
     "issubject": true,
@@ -259,6 +286,7 @@
   "TimedText talk": {
     "id": 711,
     "name": "TimedText talk",
+    "subpages": false,
     "content": false,
     "aliases": [],
     "issubject": false,
@@ -267,6 +295,7 @@
   "Module": {
     "id": 828,
     "name": "Модуль",
+    "subpages": true,
     "content": false,
     "aliases": [
       "М"
@@ -277,6 +306,7 @@
   "Module talk": {
     "id": 829,
     "name": "Обсуждение модуля",
+    "subpages": true,
     "content": false,
     "aliases": [],
     "issubject": false,

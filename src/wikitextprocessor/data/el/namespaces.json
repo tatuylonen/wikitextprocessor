@@ -2,6 +2,7 @@
   "Media": {
     "id": -2,
     "name": "Μέσο",
+    "subpages": false,
     "content": false,
     "aliases": [
       "Μέσον"
@@ -12,6 +13,7 @@
   "Special": {
     "id": -1,
     "name": "Ειδικό",
+    "subpages": false,
     "content": false,
     "aliases": [],
     "issubject": true,
@@ -20,6 +22,7 @@
   "Main": {
     "id": 0,
     "name": "Main",
+    "subpages": false,
     "content": true,
     "aliases": [],
     "issubject": true,
@@ -28,6 +31,7 @@
   "Talk": {
     "id": 1,
     "name": "Συζήτηση",
+    "subpages": true,
     "content": false,
     "aliases": [],
     "issubject": false,
@@ -36,6 +40,7 @@
   "User": {
     "id": 2,
     "name": "Χρήστης",
+    "subpages": true,
     "content": false,
     "aliases": [],
     "issubject": true,
@@ -44,6 +49,7 @@
   "User talk": {
     "id": 3,
     "name": "Συζήτηση χρήστη",
+    "subpages": true,
     "content": false,
     "aliases": [],
     "issubject": false,
@@ -52,6 +58,7 @@
   "Project": {
     "id": 4,
     "name": "Βικιλεξικό",
+    "subpages": true,
     "content": false,
     "aliases": [
       "WT",
@@ -63,6 +70,7 @@
   "Project talk": {
     "id": 5,
     "name": "Συζήτηση βικιλεξικού",
+    "subpages": true,
     "content": false,
     "aliases": [
       "Wiktionary talk",
@@ -74,6 +82,7 @@
   "File": {
     "id": 6,
     "name": "Αρχείο",
+    "subpages": false,
     "content": false,
     "aliases": [
       "Image",
@@ -85,6 +94,7 @@
   "File talk": {
     "id": 7,
     "name": "Συζήτηση αρχείου",
+    "subpages": true,
     "content": false,
     "aliases": [
       "Image talk",
@@ -96,6 +106,7 @@
   "MediaWiki": {
     "id": 8,
     "name": "MediaWiki",
+    "subpages": true,
     "content": false,
     "aliases": [],
     "issubject": true,
@@ -104,6 +115,7 @@
   "MediaWiki talk": {
     "id": 9,
     "name": "Συζήτηση MediaWiki",
+    "subpages": true,
     "content": false,
     "aliases": [],
     "issubject": false,
@@ -112,6 +124,7 @@
   "Template": {
     "id": 10,
     "name": "Πρότυπο",
+    "subpages": true,
     "content": false,
     "aliases": [],
     "issubject": true,
@@ -120,6 +133,7 @@
   "Template talk": {
     "id": 11,
     "name": "Συζήτηση προτύπου",
+    "subpages": true,
     "content": false,
     "aliases": [],
     "issubject": false,
@@ -128,6 +142,7 @@
   "Help": {
     "id": 12,
     "name": "Βοήθεια",
+    "subpages": true,
     "content": false,
     "aliases": [],
     "issubject": true,
@@ -136,6 +151,7 @@
   "Help talk": {
     "id": 13,
     "name": "Συζήτηση βοήθειας",
+    "subpages": true,
     "content": false,
     "aliases": [],
     "issubject": false,
@@ -144,6 +160,7 @@
   "Category": {
     "id": 14,
     "name": "Κατηγορία",
+    "subpages": false,
     "content": false,
     "aliases": [],
     "issubject": true,
@@ -152,6 +169,7 @@
   "Category talk": {
     "id": 15,
     "name": "Συζήτηση κατηγορίας",
+    "subpages": true,
     "content": false,
     "aliases": [],
     "issubject": false,
@@ -160,6 +178,7 @@
   "Appendix": {
     "id": 100,
     "name": "Παράρτημα",
+    "subpages": true,
     "content": false,
     "aliases": [],
     "issubject": true,
@@ -168,6 +187,7 @@
   "Appendix talk": {
     "id": 101,
     "name": "Συζήτηση παραρτήματος",
+    "subpages": true,
     "content": false,
     "aliases": [],
     "issubject": false,
@@ -176,6 +196,7 @@
   "TimedText": {
     "id": 710,
     "name": "TimedText",
+    "subpages": false,
     "content": false,
     "aliases": [],
     "issubject": true,
@@ -184,6 +205,7 @@
   "TimedText talk": {
     "id": 711,
     "name": "TimedText talk",
+    "subpages": false,
     "content": false,
     "aliases": [],
     "issubject": false,
@@ -192,6 +214,7 @@
   "Module": {
     "id": 828,
     "name": "Module",
+    "subpages": true,
     "content": false,
     "aliases": [],
     "issubject": true,
@@ -200,6 +223,7 @@
   "Module talk": {
     "id": 829,
     "name": "Module talk",
+    "subpages": true,
     "content": false,
     "aliases": [],
     "issubject": false,
