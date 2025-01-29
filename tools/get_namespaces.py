@@ -20,7 +20,7 @@ def get_namespace_data(domain, siprop):
     return r.json()
 
 
-SAVED_KEYS = {"id", "name", "content", "canonical"}
+SAVED_KEYS = {"id", "name", "content", "canonical", "subpages"}
 
 
 def main():

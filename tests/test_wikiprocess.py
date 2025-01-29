@@ -3752,7 +3752,7 @@ return export
 
     def test_mw_title47(self):
         self.scribunto(
-            "Test/foo",
+            "Test/foo/bar",
             r"""
         local t = mw.title.makeTitle("Main", "Test/foo/bar", "Frag")
         return t.basePageTitle.fullText""",
@@ -3760,7 +3760,7 @@ return export
 
     def test_mw_title48(self):
         self.scribunto(
-            "Test",
+            "Test/foo/bar",
             r"""
         local t = mw.title.makeTitle("Main", "Test/foo/bar", "Frag")
         return t.rootPageTitle.fullText""",

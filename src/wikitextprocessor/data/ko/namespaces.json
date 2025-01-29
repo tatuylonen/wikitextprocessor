@@ -2,6 +2,7 @@
   "Media": {
     "id": -2,
     "name": "미디어",
+    "subpages": false,
     "content": false,
     "aliases": [],
     "issubject": true,
@@ -10,6 +11,7 @@
   "Special": {
     "id": -1,
     "name": "특수",
+    "subpages": false,
     "content": false,
     "aliases": [
       "특",
@@ -21,6 +23,7 @@
   "Main": {
     "id": 0,
     "name": "Main",
+    "subpages": false,
     "content": true,
     "aliases": [],
     "issubject": true,
@@ -29,6 +32,7 @@
   "Talk": {
     "id": 1,
     "name": "토론",
+    "subpages": true,
     "content": false,
     "aliases": [],
     "issubject": false,
@@ -37,6 +41,7 @@
   "User": {
     "id": 2,
     "name": "사용자",
+    "subpages": true,
     "content": false,
     "aliases": [],
     "issubject": true,
@@ -45,6 +50,7 @@
   "User talk": {
     "id": 3,
     "name": "사용자토론",
+    "subpages": true,
     "content": false,
     "aliases": [],
     "issubject": false,
@@ -53,6 +59,7 @@
   "Project": {
     "id": 4,
     "name": "위키낱말사전",
+    "subpages": true,
     "content": false,
     "aliases": [
       "WT",
@@ -65,6 +72,7 @@
   "Project talk": {
     "id": 5,
     "name": "위키낱말사전토론",
+    "subpages": true,
     "content": false,
     "aliases": [
       "Wiktionary talk"
@@ -75,6 +83,7 @@
   "File": {
     "id": 6,
     "name": "파일",
+    "subpages": false,
     "content": false,
     "aliases": [
       "Image",
@@ -86,6 +95,7 @@
   "File talk": {
     "id": 7,
     "name": "파일토론",
+    "subpages": true,
     "content": false,
     "aliases": [
       "Image talk",
@@ -97,6 +107,7 @@
   "MediaWiki": {
     "id": 8,
     "name": "미디어위키",
+    "subpages": true,
     "content": false,
     "aliases": [],
     "issubject": true,
@@ -105,6 +116,7 @@
   "MediaWiki talk": {
     "id": 9,
     "name": "미디어위키토론",
+    "subpages": true,
     "content": false,
     "aliases": [
       "MediaWiki토론"
@@ -115,6 +127,7 @@
   "Template": {
     "id": 10,
     "name": "틀",
+    "subpages": true,
     "content": false,
     "aliases": [],
     "issubject": true,
@@ -123,6 +136,7 @@
   "Template talk": {
     "id": 11,
     "name": "틀토론",
+    "subpages": true,
     "content": false,
     "aliases": [],
     "issubject": false,
@@ -131,6 +145,7 @@
   "Help": {
     "id": 12,
     "name": "도움말",
+    "subpages": true,
     "content": false,
     "aliases": [],
     "issubject": true,
@@ -139,6 +154,7 @@
   "Help talk": {
     "id": 13,
     "name": "도움말토론",
+    "subpages": true,
     "content": false,
     "aliases": [],
     "issubject": false,
@@ -147,6 +163,7 @@
   "Category": {
     "id": 14,
     "name": "분류",
+    "subpages": false,
     "content": false,
     "aliases": [],
     "issubject": true,
@@ -155,6 +172,7 @@
   "Category talk": {
     "id": 15,
     "name": "분류토론",
+    "subpages": true,
     "content": false,
     "aliases": [],
     "issubject": false,
@@ -163,6 +181,7 @@
   "Appendix": {
     "id": 100,
     "name": "부록",
+    "subpages": true,
     "content": false,
     "aliases": [],
     "issubject": true,
@@ -171,6 +190,7 @@
   "Appendix talk": {
     "id": 101,
     "name": "부록 토론",
+    "subpages": true,
     "content": false,
     "aliases": [],
     "issubject": false,
@@ -179,6 +199,7 @@
   "TimedText": {
     "id": 710,
     "name": "TimedText",
+    "subpages": false,
     "content": false,
     "aliases": [],
     "issubject": true,
@@ -187,6 +208,7 @@
   "TimedText talk": {
     "id": 711,
     "name": "TimedText talk",
+    "subpages": false,
     "content": false,
     "aliases": [],
     "issubject": false,
@@ -195,6 +217,7 @@
   "Module": {
     "id": 828,
     "name": "모듈",
+    "subpages": true,
     "content": false,
     "aliases": [],
     "issubject": true,
@@ -203,6 +226,7 @@
   "Module talk": {
     "id": 829,
     "name": "모듈토론",
+    "subpages": true,
     "content": false,
     "aliases": [],
     "issubject": false,

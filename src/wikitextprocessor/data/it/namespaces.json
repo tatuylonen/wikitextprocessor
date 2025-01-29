@@ -2,6 +2,7 @@
   "Media": {
     "id": -2,
     "name": "Media",
+    "subpages": false,
     "content": false,
     "aliases": [],
     "issubject": true,
@@ -10,6 +11,7 @@
   "Special": {
     "id": -1,
     "name": "Speciale",
+    "subpages": false,
     "content": false,
     "aliases": [],
     "issubject": true,
@@ -18,6 +20,7 @@
   "Main": {
     "id": 0,
     "name": "Main",
+    "subpages": false,
     "content": true,
     "aliases": [],
     "issubject": true,
@@ -26,6 +29,7 @@
   "Talk": {
     "id": 1,
     "name": "Discussione",
+    "subpages": true,
     "content": false,
     "aliases": [],
     "issubject": false,
@@ -34,6 +38,7 @@
   "User": {
     "id": 2,
     "name": "Utente",
+    "subpages": true,
     "content": false,
     "aliases": [],
     "issubject": true,
@@ -42,6 +47,7 @@
   "User talk": {
     "id": 3,
     "name": "Discussioni utente",
+    "subpages": true,
     "content": false,
     "aliases": [],
     "issubject": false,
@@ -50,6 +56,7 @@
   "Project": {
     "id": 4,
     "name": "Wikizionario",
+    "subpages": true,
     "content": false,
     "aliases": [
       "WT",
@@ -62,6 +69,7 @@
   "Project talk": {
     "id": 5,
     "name": "Discussioni Wikizionario",
+    "subpages": true,
     "content": false,
     "aliases": [
       "Wiktionary talk"
@@ -72,6 +80,7 @@
   "File": {
     "id": 6,
     "name": "File",
+    "subpages": false,
     "content": false,
     "aliases": [
       "Image",
@@ -83,6 +92,7 @@
   "File talk": {
     "id": 7,
     "name": "Discussioni file",
+    "subpages": true,
     "content": false,
     "aliases": [
       "Discussioni immagine",
@@ -94,6 +104,7 @@
   "MediaWiki": {
     "id": 8,
     "name": "MediaWiki",
+    "subpages": true,
     "content": false,
     "aliases": [],
     "issubject": true,
@@ -102,6 +113,7 @@
   "MediaWiki talk": {
     "id": 9,
     "name": "Discussioni MediaWiki",
+    "subpages": true,
     "content": false,
     "aliases": [],
     "issubject": false,
@@ -110,6 +122,7 @@
   "Template": {
     "id": 10,
     "name": "Template",
+    "subpages": true,
     "content": false,
     "aliases": [],
     "issubject": true,
@@ -118,6 +131,7 @@
   "Template talk": {
     "id": 11,
     "name": "Discussioni template",
+    "subpages": true,
     "content": false,
     "aliases": [],
     "issubject": false,
@@ -126,6 +140,7 @@
   "Help": {
     "id": 12,
     "name": "Aiuto",
+    "subpages": true,
     "content": false,
     "aliases": [],
     "issubject": true,
@@ -134,6 +149,7 @@
   "Help talk": {
     "id": 13,
     "name": "Discussioni aiuto",
+    "subpages": true,
     "content": false,
     "aliases": [],
     "issubject": false,
@@ -142,6 +158,7 @@
   "Category": {
     "id": 14,
     "name": "Categoria",
+    "subpages": false,
     "content": false,
     "aliases": [],
     "issubject": true,
@@ -150,6 +167,7 @@
   "Category talk": {
     "id": 15,
     "name": "Discussioni categoria",
+    "subpages": true,
     "content": false,
     "aliases": [],
     "issubject": false,
@@ -158,6 +176,7 @@
   "Appendix": {
     "id": 100,
     "name": "Appendice",
+    "subpages": true,
     "content": false,
     "aliases": [],
     "issubject": true,
@@ -166,6 +185,7 @@
   "Appendix talk": {
     "id": 101,
     "name": "Discussioni appendice",
+    "subpages": true,
     "content": false,
     "aliases": [],
     "issubject": false,
@@ -174,6 +194,7 @@
   "TimedText": {
     "id": 710,
     "name": "TimedText",
+    "subpages": false,
     "content": false,
     "aliases": [],
     "issubject": true,
@@ -182,6 +203,7 @@
   "TimedText talk": {
     "id": 711,
     "name": "TimedText talk",
+    "subpages": false,
     "content": false,
     "aliases": [],
     "issubject": false,
@@ -190,6 +212,7 @@
   "Module": {
     "id": 828,
     "name": "Modulo",
+    "subpages": true,
     "content": false,
     "aliases": [],
     "issubject": true,
@@ -198,6 +221,7 @@
   "Module talk": {
     "id": 829,
     "name": "Discussioni modulo",
+    "subpages": true,
     "content": false,
     "aliases": [],
     "issubject": false,

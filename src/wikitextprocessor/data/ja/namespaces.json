@@ -2,6 +2,7 @@
   "Media": {
     "id": -2,
     "name": "メディア",
+    "subpages": false,
     "content": false,
     "aliases": [],
     "issubject": true,
@@ -10,6 +11,7 @@
   "Special": {
     "id": -1,
     "name": "特別",
+    "subpages": false,
     "content": false,
     "aliases": [],
     "issubject": true,
@@ -18,6 +20,7 @@
   "Main": {
     "id": 0,
     "name": "Main",
+    "subpages": false,
     "content": true,
     "aliases": [],
     "issubject": true,
@@ -26,6 +29,7 @@
   "Talk": {
     "id": 1,
     "name": "トーク",
+    "subpages": true,
     "content": false,
     "aliases": [
       "ノート"
@@ -36,6 +40,7 @@
   "User": {
     "id": 2,
     "name": "利用者",
+    "subpages": true,
     "content": false,
     "aliases": [],
     "issubject": true,
@@ -44,6 +49,7 @@
   "User talk": {
     "id": 3,
     "name": "利用者・トーク",
+    "subpages": true,
     "content": false,
     "aliases": [
       "利用者‐会話"
@@ -54,6 +60,7 @@
   "Project": {
     "id": 4,
     "name": "Wiktionary",
+    "subpages": true,
     "content": false,
     "aliases": [
       "WT"
@@ -64,6 +71,7 @@
   "Project talk": {
     "id": 5,
     "name": "Wiktionary・トーク",
+    "subpages": true,
     "content": false,
     "aliases": [
       "Wiktionary talk",
@@ -75,6 +83,7 @@
   "File": {
     "id": 6,
     "name": "ファイル",
+    "subpages": false,
     "content": false,
     "aliases": [
       "Image",
@@ -86,6 +95,7 @@
   "File talk": {
     "id": 7,
     "name": "ファイル・トーク",
+    "subpages": true,
     "content": false,
     "aliases": [
       "Image talk",
@@ -98,6 +108,7 @@
   "MediaWiki": {
     "id": 8,
     "name": "MediaWiki",
+    "subpages": true,
     "content": false,
     "aliases": [],
     "issubject": true,
@@ -106,6 +117,7 @@
   "MediaWiki talk": {
     "id": 9,
     "name": "MediaWiki・トーク",
+    "subpages": true,
     "content": false,
     "aliases": [
       "MediaWiki‐ノート"
@@ -116,6 +128,7 @@
   "Template": {
     "id": 10,
     "name": "テンプレート",
+    "subpages": true,
     "content": false,
     "aliases": [],
     "issubject": true,
@@ -124,6 +137,7 @@
   "Template talk": {
     "id": 11,
     "name": "テンプレート・トーク",
+    "subpages": true,
     "content": false,
     "aliases": [
       "Template‐ノート"
@@ -134,6 +148,7 @@
   "Help": {
     "id": 12,
     "name": "ヘルプ",
+    "subpages": true,
     "content": false,
     "aliases": [],
     "issubject": true,
@@ -142,6 +157,7 @@
   "Help talk": {
     "id": 13,
     "name": "ヘルプ・トーク",
+    "subpages": true,
     "content": false,
     "aliases": [
       "Help‐ノート"
@@ -152,6 +168,7 @@
   "Category": {
     "id": 14,
     "name": "カテゴリ",
+    "subpages": false,
     "content": false,
     "aliases": [],
     "issubject": true,
@@ -160,6 +177,7 @@
   "Category talk": {
     "id": 15,
     "name": "カテゴリ・トーク",
+    "subpages": true,
     "content": false,
     "aliases": [
       "Category‐ノート"
@@ -170,6 +188,7 @@
   "Appendix": {
     "id": 100,
     "name": "付録",
+    "subpages": true,
     "content": false,
     "aliases": [],
     "issubject": true,
@@ -178,6 +197,7 @@
   "Appendix talk": {
     "id": 101,
     "name": "付録・トーク",
+    "subpages": true,
     "content": false,
     "aliases": [],
     "issubject": false,
@@ -186,6 +206,7 @@
   "TimedText": {
     "id": 710,
     "name": "TimedText",
+    "subpages": false,
     "content": false,
     "aliases": [],
     "issubject": true,
@@ -194,6 +215,7 @@
   "TimedText talk": {
     "id": 711,
     "name": "TimedText talk",
+    "subpages": false,
     "content": false,
     "aliases": [],
     "issubject": false,
@@ -202,6 +224,7 @@
   "Module": {
     "id": 828,
     "name": "モジュール",
+    "subpages": true,
     "content": false,
     "aliases": [],
     "issubject": true,
@@ -210,6 +233,7 @@
   "Module talk": {
     "id": 829,
     "name": "モジュール・トーク",
+    "subpages": true,
     "content": false,
     "aliases": [],
     "issubject": false,

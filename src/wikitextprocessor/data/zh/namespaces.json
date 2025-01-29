@@ -2,11 +2,15 @@
   "Media": {
     "id": -2,
     "name": "Media",
+    "subpages": false,
     "content": false,
     "aliases": [
       "媒体",
       "媒体文件",
-      "媒體"
+      "媒体档案",
+      "媒體",
+      "媒體文件",
+      "媒體檔案"
     ],
     "issubject": true,
     "istalk": false
@@ -14,6 +18,7 @@
   "Special": {
     "id": -1,
     "name": "Special",
+    "subpages": false,
     "content": false,
     "aliases": [
       "特殊"
@@ -24,6 +29,7 @@
   "Main": {
     "id": 0,
     "name": "Main",
+    "subpages": false,
     "content": true,
     "aliases": [],
     "issubject": true,
@@ -32,6 +38,7 @@
   "Talk": {
     "id": 1,
     "name": "Talk",
+    "subpages": true,
     "content": false,
     "aliases": [
       "对话",
@@ -45,8 +52,10 @@
   "User": {
     "id": 2,
     "name": "User",
+    "subpages": true,
     "content": false,
     "aliases": [
+      "使用者",
       "用戶",
       "用户"
     ],
@@ -56,8 +65,13 @@
   "User talk": {
     "id": 3,
     "name": "User talk",
+    "subpages": true,
     "content": false,
     "aliases": [
+      "使用者对话",
+      "使用者對話",
+      "使用者討論",
+      "使用者讨论",
       "用戶對話",
       "用戶討論",
       "用户对话",
@@ -69,9 +83,12 @@
   "Project": {
     "id": 4,
     "name": "Wiktionary",
+    "subpages": true,
     "content": false,
     "aliases": [
       "WT",
+      "专案",
+      "專案",
       "維基詞典",
       "维基词典"
     ],
@@ -81,8 +98,15 @@
   "Project talk": {
     "id": 5,
     "name": "Wiktionary talk",
+    "subpages": true,
     "content": false,
     "aliases": [
+      "Wiktionary对话",
+      "Wiktionary對話",
+      "Wiktionary討論",
+      "Wiktionary讨论",
+      "专案讨论",
+      "專案討論",
       "維基詞典討論",
       "维基词典讨论"
     ],
@@ -92,10 +116,12 @@
   "File": {
     "id": 6,
     "name": "File",
+    "subpages": false,
     "content": false,
     "aliases": [
       "Image",
       "图像",
+      "图片",
       "圖像",
       "圖片",
       "文件",
@@ -108,11 +134,13 @@
   "File talk": {
     "id": 7,
     "name": "File talk",
+    "subpages": true,
     "content": false,
     "aliases": [
       "Image talk",
       "图像对话",
       "图像讨论",
+      "图片讨论",
       "圖像對話",
       "圖像討論",
       "圖片討論",
@@ -131,6 +159,7 @@
   "MediaWiki": {
     "id": 8,
     "name": "MediaWiki",
+    "subpages": true,
     "content": false,
     "aliases": [],
     "issubject": true,
@@ -139,6 +168,7 @@
   "MediaWiki talk": {
     "id": 9,
     "name": "MediaWiki talk",
+    "subpages": true,
     "content": false,
     "aliases": [
       "MediaWiki討論",
@@ -150,6 +180,7 @@
   "Template": {
     "id": 10,
     "name": "Template",
+    "subpages": true,
     "content": false,
     "aliases": [
       "T",
@@ -163,6 +194,7 @@
   "Template talk": {
     "id": 11,
     "name": "Template talk",
+    "subpages": true,
     "content": false,
     "aliases": [
       "样板对话",
@@ -180,10 +212,15 @@
   "Help": {
     "id": 12,
     "name": "Help",
+    "subpages": true,
     "content": false,
     "aliases": [
+      "使用說明",
+      "使用说明",
       "帮助",
-      "幫助"
+      "幫助",
+      "說明",
+      "说明"
     ],
     "issubject": true,
     "istalk": false
@@ -191,12 +228,17 @@
   "Help talk": {
     "id": 13,
     "name": "Help talk",
+    "subpages": true,
     "content": false,
     "aliases": [
+      "使用說明討論",
+      "使用说明讨论",
       "帮助对话",
       "帮助讨论",
       "幫助對話",
-      "幫助討論"
+      "幫助討論",
+      "說明討論",
+      "说明讨论"
     ],
     "issubject": false,
     "istalk": true
@@ -204,6 +246,7 @@
   "Category": {
     "id": 14,
     "name": "Category",
+    "subpages": false,
     "content": false,
     "aliases": [
       "CAT",
@@ -216,6 +259,7 @@
   "Category talk": {
     "id": 15,
     "name": "Category talk",
+    "subpages": true,
     "content": false,
     "aliases": [
       "分类对话",
@@ -229,6 +273,7 @@
   "Appendix": {
     "id": 100,
     "name": "Appendix",
+    "subpages": true,
     "content": false,
     "aliases": [
       "附录",
@@ -240,6 +285,7 @@
   "Appendix talk": {
     "id": 101,
     "name": "Appendix talk",
+    "subpages": true,
     "content": false,
     "aliases": [
       "附录讨论",
@@ -251,6 +297,7 @@
   "Transwiki": {
     "id": 102,
     "name": "Transwiki",
+    "subpages": true,
     "content": false,
     "aliases": [],
     "issubject": true,
@@ -259,6 +306,7 @@
   "Transwiki talk": {
     "id": 103,
     "name": "Transwiki talk",
+    "subpages": true,
     "content": false,
     "aliases": [],
     "issubject": false,
@@ -267,6 +315,7 @@
   "Rhymes": {
     "id": 106,
     "name": "Rhymes",
+    "subpages": true,
     "content": false,
     "aliases": [
       "韵部",
@@ -278,6 +327,7 @@
   "Rhymes talk": {
     "id": 107,
     "name": "Rhymes talk",
+    "subpages": true,
     "content": false,
     "aliases": [
       "韵部讨论",
@@ -289,6 +339,7 @@
   "Thesaurus": {
     "id": 110,
     "name": "Thesaurus",
+    "subpages": true,
     "content": false,
     "aliases": [
       "类义词库",
@@ -302,6 +353,7 @@
   "Thesaurus talk": {
     "id": 111,
     "name": "Thesaurus talk",
+    "subpages": true,
     "content": false,
     "aliases": [
       "类义词库讨论",
@@ -315,6 +367,7 @@
   "Citations": {
     "id": 114,
     "name": "Citations",
+    "subpages": true,
     "content": false,
     "aliases": [
       "引文"
@@ -325,6 +378,7 @@
   "Citations talk": {
     "id": 115,
     "name": "Citations talk",
+    "subpages": true,
     "content": false,
     "aliases": [
       "引文討論",
@@ -336,6 +390,7 @@
   "Reconstruction": {
     "id": 118,
     "name": "Reconstruction",
+    "subpages": true,
     "content": false,
     "aliases": [
       "RC",
@@ -349,6 +404,7 @@
   "Reconstruction talk": {
     "id": 119,
     "name": "Reconstruction talk",
+    "subpages": true,
     "content": false,
     "aliases": [
       "重建討論",
@@ -362,6 +418,7 @@
   "TimedText": {
     "id": 710,
     "name": "TimedText",
+    "subpages": false,
     "content": false,
     "aliases": [],
     "issubject": true,
@@ -370,6 +427,7 @@
   "TimedText talk": {
     "id": 711,
     "name": "TimedText talk",
+    "subpages": false,
     "content": false,
     "aliases": [],
     "issubject": false,
@@ -378,6 +436,7 @@
   "Module": {
     "id": 828,
     "name": "Module",
+    "subpages": true,
     "content": false,
     "aliases": [
       "模块",
@@ -391,6 +450,7 @@
   "Module talk": {
     "id": 829,
     "name": "Module talk",
+    "subpages": true,
     "content": false,
     "aliases": [
       "模块对话",
@@ -402,38 +462,6 @@
       "模组对话",
       "模组讨论"
     ],
-    "issubject": false,
-    "istalk": true
-  },
-  "Gadget": {
-    "id": 2300,
-    "name": "Gadget",
-    "content": false,
-    "aliases": [],
-    "issubject": true,
-    "istalk": false
-  },
-  "Gadget talk": {
-    "id": 2301,
-    "name": "Gadget talk",
-    "content": false,
-    "aliases": [],
-    "issubject": false,
-    "istalk": true
-  },
-  "Gadget definition": {
-    "id": 2302,
-    "name": "Gadget definition",
-    "content": false,
-    "aliases": [],
-    "issubject": true,
-    "istalk": false
-  },
-  "Gadget definition talk": {
-    "id": 2303,
-    "name": "Gadget definition talk",
-    "content": false,
-    "aliases": [],
     "issubject": false,
     "istalk": true
   }

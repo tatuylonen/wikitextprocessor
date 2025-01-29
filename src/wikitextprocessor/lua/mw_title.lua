@@ -196,7 +196,10 @@ function mw_title.makeTitle(namespace, title, fragment, interwiki)
     end
 
     -- Copided from: https://github.com/wikimedia/mediawiki-extensions-Scribunto/blob/2ee5768ef565965cf5a5057233c557b281aaa837/includes/Engines/LuaCommon/lualib/mw.title.lua#L85
-    local firstSlash, lastSlash = string.match(title, '^[^/]*().*()/[^/]*$')
+    local firstSlash, lastSlash
+    if ns.hasSubpages then
+        firstSlash, lastSlash = string.match(title, '^[^/]*().*()/[^/]*$')
+    end
     local isSubpage, rootText, baseText, subpageText
     if firstSlash then
         isSubpage = true
