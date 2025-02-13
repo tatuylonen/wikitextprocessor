@@ -10,22 +10,37 @@ assert(_new_loadData ~= nil)
 
 local function frame_args_index(new_args, key)
     -- print("frame_args_index", key)
-    local i = tonumber(key)
-    if key ~= "inf" and key ~= "nan" and i ~= nil then
-        key = i
-    end
     local v = new_args._orig[key]
     if v == nil then
-        return nil
+        local i = tonumber(key)
+        if i ~= nil then
+            key = i
+        else
+            return nil
+        end
+        v = new_args._orig[key]
+        if v == nil then
+            return nil
+        end
     end
     if not new_args._preprocessed[key] then
         local frame = new_args._frame
-        v = frame:preprocess(v)
+        if type(v) == "userdata" then
+            -- Python tuple in luaexec.call_lua_sandbox.make_frame()
+            local is_named = v[1]
+            v = frame:preprocess(v[0])
+            -- https://en.wikipedia.org/wiki/Help:Template#Whitespace_handling
+            if is_named then
+                v = v:match "^%s*(.-)%s*$"
+            end
+        else
+            v = frame:preprocess(v)
+        end
         -- Cache preprocessed value so we only preprocess each argument once
         new_args._preprocessed[key] = true
         new_args._orig[key] = v
     end
-    -- print("frame_args_index", key, "->", v)
+    -- print("frame_args_index", key, "->", "'"..v.."'")
     return v
 end
 
