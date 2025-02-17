@@ -632,7 +632,10 @@ class TemplateNode(WikiNode):
                             parameter_value = parameter[
                                 equal_sign_index + 1 :
                             ].strip()
-                            if parameter_name.isdigit():  # value contains "="
+                            if (
+                                parameter_name.isdigit()
+                                and int(parameter_name) > 0
+                            ):  # value contains "="
                                 parameter_name = int(parameter_name)
                                 is_named = False
                             if len(parameter_value) > 0:

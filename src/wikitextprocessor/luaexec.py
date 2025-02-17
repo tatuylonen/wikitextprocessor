@@ -135,7 +135,7 @@ def mw_text_jsondecode(ctx: "Wtp", s: str, flags: int) -> dict[Any, Any]:
         # Convert numeric keys to integers and see if we can make it a
         # table with sequential integer keys.
         for k, v in list(x.items()):
-            if k.isdigit():
+            if k.isdigit() and int(k) > 0:
                 del x[k]
                 x[int(k)] = recurse(v)
             else:
@@ -429,7 +429,7 @@ def call_lua_sandbox(
             frame_args = {}
             for k, arg in args.items():
                 arg = re.sub(r"(?si)(<\s*noinclude\s*/\s*>|\n$)", "", arg)
-                frame_args[k] = arg
+                frame_args[k] = (arg, False)
         else:
             assert isinstance(args, (list, tuple))
             frame_args = {}
@@ -437,21 +437,23 @@ def call_lua_sandbox(
             for arg in args:
                 # |-separated strings in {{templates|arg=value|...}}
                 m = re.match(r"""(?s)^\s*([^<>="']+?)\s*=\s*(.*?)\s*$""", arg)
-                if m:
-                    # Have argument name
+                if m is not None:
+                    # named parameter
                     k, arg = m.groups()
-                    if k.isdigit():
+                    if k.isdigit() and int(k) > 0:
+                        # Greek wiktionary uses '0', '00' and '000' as
+                        # parameter names...
                         k = int(k)
-                        if k < 1 or k > 1000:
+                        if k > 1000:
                             ctx.warning(
-                                f"Template argument index <1 or >1000: {k=!r}",
+                                f"Template argument index >1000: {k=!r}",
                                 sortid="luaexec/477/20230710",
                             )
                             k = 1000
                         if num <= k:
                             num = k + 1
                 else:
-                    # No argument name
+                    # unnamed parameter
                     k = num
                     num += 1
                 if k in frame_args:
@@ -465,7 +467,7 @@ def call_lua_sandbox(
                 # does not always like them (e.g., remove_links() in
                 # Module:links).
                 arg = re.sub(r"(?si)(<\s*noinclude\s*/\s*>|\n$)", "", arg)
-                frame_args[k] = arg
+                frame_args[k] = (arg, m is not None)
         frame_args_lt: "_LuaTable" = lua.table_from(frame_args)  # type: ignore[union-attr]
 
         def extensionTag(frame: "_LuaTable", *args: Any) -> str:

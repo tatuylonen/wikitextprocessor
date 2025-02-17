@@ -598,3 +598,45 @@ end
 return export""",
         )
         self.assertEqual(self.wtp.expand("{{#invoke:test|test}}"), "**")
+
+    def test_el_zero_arg(self):
+        # https://el.wiktionary.org/wiki/Πρότυπο:ετ
+        # Unnamed template parameters and numbered parameters can only
+        # be positive non-zero integers; zero or "00" or negative is a string
+        self.wtp.start_page("θηλυκός")
+        self.wtp.add_page(
+            "Module:test",
+            828,
+            """local export = {}
+function export.test(frame)
+  return tostring(frame.args['0']) .. "|" ..
+         --tostring(frame.args[0]) .. "|" ..
+         tostring(frame.args['00']) .. "|" ..
+         tostring(frame.args[1]) .. "|" ..
+         tostring(frame.args[2]) .. "|" ..
+         tostring(frame.args['named'])
+end
+return export""",
+        )
+        self.assertEqual(
+            self.wtp.expand(
+                "{{#invoke:test|test|0= 0 |00= 00 | first |2= second |named= named }}"  # noqa: E501
+            ),
+            "0|00| first |second|named",
+        )
+
+    def test_el_strip_arg(self):
+        self.wtp.start_page("θηλυκός")
+        self.wtp.add_page(
+            "Module:test",
+            828,
+            """local export = {}
+function export.test(frame)
+  return tostring(frame.args['foo'])
+end
+return export""",
+        )
+        self.assertEqual(
+            self.wtp.expand("{{#invoke:test|test|foo=  {{#if||}} {{#if||}} }}"),
+            "",
+        )
