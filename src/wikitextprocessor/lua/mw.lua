@@ -83,7 +83,90 @@ function mw.clone(v)
 end
 
 function mw.dumpObject(obj)
-    print("mw.dumpObject", obj)
+    -- https://github.com/wikimedia/mediawiki-extensions-Scribunto/blob/184216759e22635bd25a0844e6f68979ecf7bc2a/includes/Engines/LuaCommon/lualib/mw.lua#L551
+    local doneTable = {}
+    local doneObj = {}
+    local ct = {}
+    local function sorter( a, b )
+        local ta, tb = type( a ), type( b )
+        if ta ~= tb then
+            return ta < tb
+        end
+        if ta == 'string' or ta == 'number' then
+            return a < b
+        end
+        if ta == 'boolean' then
+            return tostring( a ) < tostring( b )
+        end
+        return false -- Incomparable
+    end
+    local function _dumpObject( object, indent, expandTable )
+        local tp = type( object )
+        if tp == 'number' or tp == 'nil' or tp == 'boolean' then
+            return tostring( object )
+        elseif tp == 'string' then
+            return string.format( "%q", object )
+        elseif tp == 'table' then
+            if not doneObj[object] then
+                local s = tostring( object )
+                if string.sub(s, 1, 6) == 'table:' then  -- this line changed
+                    ct[tp] = ( ct[tp] or 0 ) + 1
+                    doneObj[object] = 'table#' .. ct[tp]
+                else
+                    doneObj[object] = s
+                    doneTable[object] = true
+                end
+            end
+            if doneTable[object] or not expandTable then
+                return doneObj[object]
+            end
+            doneTable[object] = true
+
+            local ret = { doneObj[object], ' {\n' }
+            local mt = getmetatable( object )
+            local indentString = "  "
+            if mt then
+                ret[#ret + 1] = string.rep( indentString, indent + 2 )
+                ret[#ret + 1] = 'metatable = '
+                ret[#ret + 1] = _dumpObject( mt, indent + 2, false )
+                ret[#ret + 1] = "\n"
+            end
+
+            local doneKeys = {}
+            for key, value in ipairs( object ) do
+                doneKeys[key] = true
+                ret[#ret + 1] = string.rep( indentString, indent + 2 )
+                ret[#ret + 1] = _dumpObject( value, indent + 2, true )
+                ret[#ret + 1] = ',\n'
+            end
+            local keys = {}
+            for key in pairs( object ) do
+                if not doneKeys[key] then
+                    keys[#keys + 1] = key
+                end
+            end
+            table.sort( keys, sorter )
+            for i = 1, #keys do
+                local key = keys[i]
+                ret[#ret + 1] = string.rep( indentString, indent + 2 )
+                ret[#ret + 1] = '['
+                ret[#ret + 1] = _dumpObject( key, indent + 3, false )
+                ret[#ret + 1] = '] = '
+                ret[#ret + 1] = _dumpObject( object[key], indent + 2, true )
+                ret[#ret + 1] = ",\n"
+            end
+            ret[#ret + 1] = string.rep( indentString, indent )
+            ret[#ret + 1] = '}'
+            return table.concat( ret )
+        else
+            if not doneObj[object] then
+                ct[tp] = ( ct[tp] or 0 ) + 1
+                doneObj[object] = tostring( object ) .. '#' .. ct[tp]
+            end
+            return doneObj[object]
+        end
+    end
+    return _dumpObject( obj, 0, true )
 end
 
 function mw.incrementExpensiveFunctionCount()
