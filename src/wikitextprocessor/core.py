@@ -944,13 +944,12 @@ class Wtp:
         included_map: defaultdict[str, set[str]] = defaultdict(set)
 
         for page in self.get_all_pages([template_ns_id]):
-            if page.body is not None:
-                used_templates, pre_expand = check_template_func(self, page)
-                for used_template in used_templates:
-                    included_map[used_template].add(page.title)
-                if pre_expand:
-                    self.set_template_pre_expand(page.title)
-                    expand_stack.append(page)
+            used_templates, pre_expand = check_template_func(self, page)
+            for used_template in used_templates:
+                included_map[used_template].add(page.title)
+            if pre_expand:
+                self.set_template_pre_expand(page.title)
+                expand_stack.append(page)
 
         # XXX consider encoding template bodies here (also need to save related
         # cookies).  This could speed up their expansion, where the first
