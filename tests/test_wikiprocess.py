@@ -334,6 +334,12 @@ return export
     def test_switch6(self):
         self.parserfn("{{#switch:b|a=one|#default=three|b=two}}", "two")
 
+    def test_switch6b(self):
+        self.parserfn("{{#switch:|a=one|#default|b=three|c=two}}", "three")
+
+    def test_switch6c(self):
+        self.parserfn("{{#switch:b|a=one|#default|b=three|c=two}}", "three")
+
     def test_switch7(self):
         self.parserfn("{{#switch:c|a=one|c|d=four|b=two}}", "four")
 
