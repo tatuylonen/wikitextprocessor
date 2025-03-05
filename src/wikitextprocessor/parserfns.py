@@ -108,6 +108,7 @@ def switch_fn(
     """Implements #switch parser function."""
     val = expander(args[0]).strip() if args else ""
     match_next = False
+    next_val_is_default = False
     defval: Optional[str] = None
     last: Optional[str] = None
     for i in range(1, len(args)):
@@ -117,12 +118,18 @@ def switch_fn(
             last = expander(arg).strip()
             if last == val:
                 match_next = True
+            if last.lower() == "#default":
+                next_val_is_default = True
             continue
         k, v = m.groups()
+        if next_val_is_default is True and v:
+            defval = v
+            next_val_is_default = False
         k = expander(k).strip()
         if k == val or match_next:
             return expander(v).strip()
         if k.lower() == "#default":
+            # No need to touch next_val_is_default, v is guaranteed
             defval = v
         last = None
     if defval is not None:
