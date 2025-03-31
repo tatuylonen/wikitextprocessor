@@ -7,7 +7,7 @@ name = "wikitextprocessor"
 version = "0.4.96"
 description = "Parser and expander for Wikipedia, Wiktionary etc. dump files, with Lua execution support"
 readme = "README.md"
-license = {text = "MIT License"}
+license = "MIT"
 authors = [
     {name = "Tatu Ylonen", email = "ylo@clausal.com"},
 ]
@@ -24,7 +24,6 @@ classifiers = [
     "Development Status :: 3 - Alpha",
     "Intended Audience :: Developers",
     "Intended Audience :: Science/Research",
-    "License :: OSI Approved :: MIT License",
     "Natural Language :: English",
     "Operating System :: POSIX :: Linux",
     "Programming Language :: Python",
