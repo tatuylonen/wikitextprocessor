@@ -967,6 +967,7 @@ def text_fn(ctx: "Wtp", token: str) -> None:
                     sortid="parser/449",
                 )
                 _parser_pop(ctx, False)
+                continue
             break
 
         # Spaces at the beginning of a line indicate preformatted text
@@ -2241,9 +2242,9 @@ def token_iter(ctx: "Wtp", text: str) -> Iterator[tuple[bool, str]]:
                 # the length is longer than the end token was.
                 yield True, ">" + start
             continue
-        # Partition on '', so that we can detect bold/italics
+        # Partition on ''+, so that we can detect bold/italics
         parts = re.split(parts_re, line)
-        state = 0  # 1=in italic 2=in bold 3=in both
+        state = 0  # 1=in italic, 2=in bold, 3=in both
         for i, part in enumerate(parts):
             if part.startswith("''"):
                 # This is a bold/italic part.  Scan the rest of the line
