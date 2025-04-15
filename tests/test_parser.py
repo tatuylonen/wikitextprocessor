@@ -3161,6 +3161,15 @@ text
         root = self.ctx.parse("Foo==")
         self.assertEqual(root.children[0], "Foo==")
 
+    def test_unbalance_bold(self):
+        # tatuylonen/wiktextract#1120, tatuylonen/wiktextract#1085
+        # pr #372
+        self.ctx.start_page("embryo")
+        root = self.ctx.parse("'''ʊbar''\n\n===Pronunciation===")
+        self.assertEqual(root.children[0].kind, NodeKind.BOLD)
+        self.assertEqual(root.children[0].children[1].kind, NodeKind.ITALIC)
+        self.assertEqual(root.children[2].kind, NodeKind.LEVEL3)
+
 
 # XXX implement <nowiki/> marking for links, templates
 #  - https://en.wikipedia.org/wiki/Help:Wikitext#Nowiki
