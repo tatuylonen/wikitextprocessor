@@ -199,16 +199,13 @@ return export
         )
         self.assertEqual(ret, "Aa[[:hu:állati|(hu)]]bB")
 
-    @patch(
-        "wikitextprocessor.core.Wtp.get_page",
-        return_value=Page(
-            title="Template:templ",
-            namespace_id=10,
-            body="a{{#ifeq:{{{interwiki|}}}|1|[[:{{{1}}}:{{{2}}}|({{{1}}})]]}}b",
-        ),
-    )
-    def test_basic17(self, mock_get_page):
+    def test_basic17(self):
         self.ctx.start_page("Tt")
+        self.ctx.add_page(
+            "Template:templ",
+            10,
+            "a{{#ifeq:{{{interwiki|}}}|1|[[:{{{1}}}:{{{2}}}|({{{1}}})]]}}b",
+        )
         ret = self.ctx.expand(
             "A{{templ|hu|állati|langname=Hungarian|interwiki=1}}B"
         )
@@ -307,12 +304,9 @@ return export
     def test_ifexist2(self):
         self.parserfn("{{#ifexist:Nonexxxx|T}}", "")
 
-    @patch(
-        "wikitextprocessor.core.Wtp.get_page",
-        return_value=Page(title="Test title", namespace_id=0, body="FOO"),
-    )
-    def test_ifexist3(self, mock_get_page):
+    def test_ifexist3(self):
         self.ctx.start_page("Tt")
+        self.ctx.add_page("Test title", 0, "FOO")
         ret = self.ctx.expand("{{#ifexist:Test title|T|F}}")
         self.assertEqual(ret, "T")
 
@@ -368,12 +362,12 @@ return export
         # string.
         self.parserfn("{{#categorytree:Foo|mode=all}}", "")
 
-    @patch(
-        "wikitextprocessor.core.Wtp.get_page",
-        return_value=Page(
-            title="Test title",
-            namespace_id=0,
-            body="""
+    def test_lst_fn(self):
+        self.ctx.start_page("Tt")
+        self.ctx.add_page(
+            "testpage",
+            0,
+            """
 <section begin="foo" />
 === Test section ===
 A
@@ -390,10 +384,7 @@ MORE
 NOT
 <section end="bar" />
 """,
-        ),
-    )
-    def test_lst_fn(self, mock_get_page):
-        self.ctx.start_page("Tt")
+        )
         ret = self.ctx.expand("{{#lst:testpage|foo}}")
         self.assertEqual(
             ret,

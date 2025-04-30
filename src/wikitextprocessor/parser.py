@@ -827,7 +827,7 @@ def _parser_pop(ctx: "Wtp", warn_unclosed: bool) -> None:
         and node.largs
         and len(node.largs[0]) == 1
         and isinstance(node.largs[0][0], str)
-        and node.largs[0][0] in PARSER_FUNCTIONS
+        and ctx.is_parser_function(node.largs[0][0])
     ):
         # Change node type to PARSER_FN.  Otherwise it has identical
         # structure to a TEMPLATE.

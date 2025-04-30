@@ -2610,6 +2610,7 @@ foo
         # https://en.wiktionary.org/wiki/落葉歸根
         wikitext = "{{zh-x|3=CL|葉落歸根，來 時 無 口。||ref=宋·釋道原《景德傳燈錄》|collapsed=y}}"  # noqa: E501
         self.ctx.start_page("落葉歸根")
+        self.ctx.add_page("Template:zh-x", 10, "{{{1}}}")
         tree = self.ctx.parse(wikitext)
         template_node = tree.children[0]
         self.assertTrue(isinstance(template_node, TemplateNode))
@@ -2624,7 +2625,6 @@ foo
                 "collapsed": "y",
             },
         )
-        self.ctx.add_page("Template:zh-x", 10, "{{{1}}}")
         self.assertEqual(self.ctx.expand(wikitext), "葉落歸根，來 時 無 口。")
 
     def test_level_1_header(self):
@@ -3169,6 +3169,14 @@ text
         self.assertEqual(root.children[0].kind, NodeKind.BOLD)
         self.assertEqual(root.children[0].children[1].kind, NodeKind.ITALIC)
         self.assertEqual(root.children[2].kind, NodeKind.LEVEL3)
+
+    def test_not_parser_function_template(self):
+        # https://es.wiktionary.org/wiki/gatos
+        self.ctx.start_page("gotos")
+        self.ctx.add_page("Template:plural", 10, "text")
+        root = self.ctx.parse("{{plural}}")
+        self.assertIsInstance(root.children[0], TemplateNode)
+        self.assertEqual(self.ctx.node_to_html(root), "text")
 
 
 # XXX implement <nowiki/> marking for links, templates
