@@ -3173,10 +3173,22 @@ text
     def test_not_parser_function_template(self):
         # https://es.wiktionary.org/wiki/gatos
         self.ctx.start_page("gotos")
-        self.ctx.add_page("Template:plural", 10, "text")
-        root = self.ctx.parse("{{plural}}")
-        self.assertIsInstance(root.children[0], TemplateNode)
-        self.assertEqual(self.ctx.node_to_html(root), "text")
+        self.ctx.add_page("Template:plural", 10, "text{{{1}}}")
+        root = self.ctx.parse("{{plural|arg}}")
+        self.assertEqual(root.children[0].kind, NodeKind.TEMPLATE)
+        self.assertEqual(self.ctx.node_to_html(root), "textarg")
+
+        # https://zh.wiktionary.org/wiki/Template:PAGENAME
+        self.ctx.add_page("Template:PAGENAME", 10, "text{{{1}}}")
+        root = self.ctx.parse("{{PAGENAME}}")
+        self.assertEqual(root.children[0].kind, NodeKind.PARSER_FN)
+        self.assertEqual(self.ctx.node_to_html(root), "gotos")
+        root = self.ctx.parse("{{PAGENAME:aaa}}")
+        self.assertEqual(root.children[0].kind, NodeKind.PARSER_FN)
+        self.assertEqual(self.ctx.node_to_html(root), "aaa")
+        root = self.ctx.parse("{{PAGENAME|aaa}}")
+        self.assertEqual(root.children[0].kind, NodeKind.TEMPLATE)
+        self.assertEqual(self.ctx.node_to_html(root), "textaaa")
 
 
 # XXX implement <nowiki/> marking for links, templates

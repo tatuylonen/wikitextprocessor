@@ -715,196 +715,196 @@ MORE
         )
 
     def test_expr2(self):
-        self.parserfn("{{#expr|1 + 2.34}}", "3.34")
+        self.parserfn("{{#expr:1 + 2.34}}", "3.34")
 
     def test_expr3(self):
-        self.parserfn("{{#expr|1 + 2.34}}", "3.34")
+        self.parserfn("{{#expr:1 + 2.34}}", "3.34")
 
     def test_expr4(self):
-        self.parserfn("{{#expr|-12}}", "-12")
+        self.parserfn("{{#expr:-12}}", "-12")
 
     def test_expr5(self):
-        self.parserfn("{{#expr|-trunc12}}", "-12")
+        self.parserfn("{{#expr:-trunc12}}", "-12")
 
     def test_expr6(self):
-        self.parserfn("{{#expr|-trunc(-2^63)}}", "9223372036854775808")
+        self.parserfn("{{#expr:-trunc(-2^63)}}", "9223372036854775808")
 
     def test_expr7(self):
-        self.parserfn("{{#expr|-trunc(-2^63)}}", "9223372036854775808")
+        self.parserfn("{{#expr:-trunc(-2^63)}}", "9223372036854775808")
 
     def test_expr8(self):
-        self.parserfn("{{#expr|2e3}}", "2000")
+        self.parserfn("{{#expr:2e3}}", "2000")
 
     def test_expr9(self):
-        self.parserfn("{{#expr|-2.3e-4}}", "-0.00022999999999999998")
+        self.parserfn("{{#expr:-2.3e-4}}", "-0.00022999999999999998")
 
     def test_expr10(self):
-        self.parserfn("{{#expr|(trunc2)e(trunc-3)}}", "0.002")
+        self.parserfn("{{#expr:(trunc2)e(trunc-3)}}", "0.002")
 
     def test_expr11(self):
-        self.parserfn("{{#expr|(trunc2)e(trunc0)}}", "2")
+        self.parserfn("{{#expr:(trunc2)e(trunc0)}}", "2")
 
     def test_expr12(self):
-        self.parserfn("{{#expr|(trunc2)e(trunc18)}}", "2000000000000000000")
+        self.parserfn("{{#expr:(trunc2)e(trunc18)}}", "2000000000000000000")
 
     def test_expr13(self):
-        self.parserfn("{{#expr|6e(5-2)e-2}}", "60")
+        self.parserfn("{{#expr:6e(5-2)e-2}}", "60")
 
     def test_expr14(self):
-        self.parserfn("{{#expr|1e.5}}", "3.1622776601683795")
+        self.parserfn("{{#expr:1e.5}}", "3.1622776601683795")
 
     def test_expr15(self):
-        self.parserfn("{{#expr|exp43}}", "4727839468229346304")
+        self.parserfn("{{#expr:exp43}}", "4727839468229346304")
 
     def test_expr16(self):
-        self.parserfn("{{#expr|exp trunc0}}", "1")
+        self.parserfn("{{#expr:exp trunc0}}", "1")
 
     def test_expr17(self):
-        self.parserfn("{{#expr|ln2}}", "0.6931471805599453")
+        self.parserfn("{{#expr:ln2}}", "0.6931471805599453")
 
     def test_expr18(self):
-        self.parserfn("{{#expr|ln trunc1}}", "0")
+        self.parserfn("{{#expr:ln trunc1}}", "0")
 
     def test_expr19(self):
-        self.parserfn("{{#expr|ln.5e-323}}", "-744.4400719213812")
+        self.parserfn("{{#expr:ln.5e-323}}", "-744.4400719213812")
 
     def test_expr20(self):
-        self.parserfn("{{#expr|abs-2}}", "2")
+        self.parserfn("{{#expr:abs-2}}", "2")
 
     def test_expr21(self):
-        self.parserfn("{{#expr|sqrt 4}}", "2")
+        self.parserfn("{{#expr:sqrt 4}}", "2")
 
     def test_expr22(self):
-        self.parserfn("{{#expr|trunc1.2}}", "1")
+        self.parserfn("{{#expr:trunc1.2}}", "1")
 
     def test_expr23(self):
-        self.parserfn("{{#expr|trunc-1.2}}", "-1")
+        self.parserfn("{{#expr:trunc-1.2}}", "-1")
 
     def test_expr24(self):
-        self.parserfn("{{#expr|floor1.2}}", "1")
+        self.parserfn("{{#expr:floor1.2}}", "1")
 
     def test_expr25(self):
-        self.parserfn("{{#expr|floor-1.2}}", "-2")
+        self.parserfn("{{#expr:floor-1.2}}", "-2")
 
     def test_expr26(self):
-        self.parserfn("{{#expr|ceil1.2}}", "2")
+        self.parserfn("{{#expr:ceil1.2}}", "2")
 
     def test_expr27(self):
-        self.parserfn("{{#expr|ceil-1.2}}", "-1")
+        self.parserfn("{{#expr:ceil-1.2}}", "-1")
 
     def test_expr28(self):
-        self.parserfn("{{#expr|sin(30*pi/180)}}", "0.49999999999999994")
+        self.parserfn("{{#expr:sin(30*pi/180)}}", "0.49999999999999994")
 
     def test_expr29(self):
-        self.parserfn("{{#expr|cos.1}}", "0.9950041652780258")
+        self.parserfn("{{#expr:cos.1}}", "0.9950041652780258")
 
     def test_expr30(self):
-        self.parserfn("{{#expr|tan.1}}", 0.10033467208545055, True)
+        self.parserfn("{{#expr:tan.1}}", 0.10033467208545055, True)
 
     def test_expr31(self):
-        self.parserfn("{{#expr|asin.1}}", "0.1001674211615598")
+        self.parserfn("{{#expr:asin.1}}", "0.1001674211615598")
 
     def test_expr32(self):
-        self.parserfn("{{#expr|acos.1}}", "1.4706289056333368")
+        self.parserfn("{{#expr:acos.1}}", "1.4706289056333368")
 
     def test_expr33(self):
-        self.parserfn("{{#expr|atan.1}}", "0.09966865249116204")
+        self.parserfn("{{#expr:atan.1}}", "0.09966865249116204")
 
     def test_expr34(self):
-        self.parserfn("{{#expr|not0}}", "1")
+        self.parserfn("{{#expr:not0}}", "1")
 
     def test_expr35(self):
-        self.parserfn("{{#expr|not1}}", "0")
+        self.parserfn("{{#expr:not1}}", "0")
 
     def test_expr36(self):
-        self.parserfn("{{#expr|not trunc2.1}}", "0")
+        self.parserfn("{{#expr:not trunc2.1}}", "0")
 
     def test_expr37(self):
-        self.parserfn("{{#expr|2^3}}", "8")
+        self.parserfn("{{#expr:2^3}}", "8")
 
     def test_expr38(self):
-        self.parserfn("{{#expr|2^-3}}", "0.125")
+        self.parserfn("{{#expr:2^-3}}", "0.125")
 
     def test_expr39(self):
-        self.parserfn("{{#expr|2*3}}", "6")
+        self.parserfn("{{#expr:2*3}}", "6")
 
     def test_expr40(self):
-        self.parserfn("{{#expr|(trunc2)*3}}", "6")
+        self.parserfn("{{#expr:(trunc2)*3}}", "6")
 
     def test_expr41(self):
-        self.parserfn("{{#expr|1 + 2 * 3}}", "7")
+        self.parserfn("{{#expr:1 + 2 * 3}}", "7")
 
     def test_expr42(self):
-        self.parserfn("{{#expr|4/2}}", "2")
+        self.parserfn("{{#expr:4/2}}", "2")
 
     def test_expr43(self):
-        self.parserfn("{{#expr|5 div 2}}", "2.5")
+        self.parserfn("{{#expr:5 div 2}}", "2.5")
 
     def test_expr44(self):
-        self.parserfn("{{#expr|5 mod 2}}", "1")
+        self.parserfn("{{#expr:5 mod 2}}", "1")
 
     def test_expr45(self):
-        self.parserfn("{{#expr|5+2}}", "7")
+        self.parserfn("{{#expr:5+2}}", "7")
 
     def test_expr46(self):
-        self.parserfn("{{#expr|5.1--2.7}}", "7.8")
+        self.parserfn("{{#expr:5.1--2.7}}", "7.8")
 
     def test_expr47(self):
-        self.parserfn("{{#expr|9.876round2}}", "9.88")
+        self.parserfn("{{#expr:9.876round2}}", "9.88")
 
     def test_expr48(self):
-        self.parserfn("{{#expr|trunc1234round trunc-2}}", "1200")
+        self.parserfn("{{#expr:trunc1234round trunc-2}}", "1200")
 
     def test_expr49(self):
-        self.parserfn("{{#expr|3.0=3}}", "1")
+        self.parserfn("{{#expr:3.0=3}}", "1")
 
     def test_expr50(self):
-        self.parserfn("{{#expr|3.1=3.0}}", "0")
+        self.parserfn("{{#expr:3.1=3.0}}", "0")
 
     def test_expr51(self):
-        self.parserfn("{{#expr|3.0<>3.0}}", "0")
+        self.parserfn("{{#expr:3.0<>3.0}}", "0")
 
     def test_expr52(self):
-        self.parserfn("{{#expr|3.1!=3.0}}", "1")
+        self.parserfn("{{#expr:3.1!=3.0}}", "1")
 
     def test_expr53(self):
-        self.parserfn("{{#expr|3.0<3.1}}", "1")
+        self.parserfn("{{#expr:3.0<3.1}}", "1")
 
     def test_expr54(self):
-        self.parserfn("{{#expr|3.0<3.0}}", "0")
+        self.parserfn("{{#expr:3.0<3.0}}", "0")
 
     def test_expr55(self):
-        self.parserfn("{{#expr|3.1>3.0}}", "1")
+        self.parserfn("{{#expr:3.1>3.0}}", "1")
 
     def test_expr56(self):
-        self.parserfn("{{#expr|3.1>3.1}}", "0")
+        self.parserfn("{{#expr:3.1>3.1}}", "0")
 
     def test_expr57(self):
-        self.parserfn("{{#expr|3.1>=3.0}}", "1")
+        self.parserfn("{{#expr:3.1>=3.0}}", "1")
 
     def test_expr58(self):
-        self.parserfn("{{#expr|3.1>=3.1}}", "1")
+        self.parserfn("{{#expr:3.1>=3.1}}", "1")
 
     def test_expr59(self):
-        self.parserfn("{{#expr|3.0<=3.1}}", "1")
+        self.parserfn("{{#expr:3.0<=3.1}}", "1")
 
     def test_expr60(self):
-        self.parserfn("{{#expr|3.0<=3.0}}", "1")
+        self.parserfn("{{#expr:3.0<=3.0}}", "1")
 
     def test_expr61(self):
-        self.parserfn("{{#expr|3.1<=3.0}}", "0")
+        self.parserfn("{{#expr:3.1<=3.0}}", "0")
 
     def test_expr62(self):
-        self.parserfn("{{#expr|e}}", str(math.e))
+        self.parserfn("{{#expr:e}}", str(math.e))
 
     def test_expr63(self):
-        self.parserfn("{{#expr|pi}}", str(math.pi))
+        self.parserfn("{{#expr:pi}}", str(math.pi))
 
     def test_expr64(self):
-        self.parserfn("{{#expr|+trunc1.1}}", "1")
+        self.parserfn("{{#expr:+trunc1.1}}", "1")
 
     def test_expr65(self):
-        self.parserfn("{{#expr|.}}", "0")
+        self.parserfn("{{#expr:.}}", "0")
 
     def test_padleft1(self):
         self.parserfn("{{padleft:xyz|5}}", "00xyz")
@@ -1237,7 +1237,7 @@ MORE
 
     def test_localurl2(self):
         self.ctx.start_page("test page")
-        ret = self.ctx.expand("{{localurl|Reconstruction:another title}}")
+        ret = self.ctx.expand("{{localurl:Reconstruction:another title}}")
         self.assertEqual(ret, "/wiki/Reconstruction:another_title")
 
     def test_currentmonthname1(self):
@@ -4244,7 +4244,7 @@ return export
             return export
             """,
         )
-        text = self.ctx.expand("{{#invoque|test|test}}")
+        text = self.ctx.expand("{{#invoque:test|test}}")
         self.assertEqual(text, "foo")
 
     def test_expand_template_loop_in_lua(self):
