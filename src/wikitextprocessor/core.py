@@ -1344,7 +1344,10 @@ class Wtp:
                         # It might be a parser function call
                         fn_name = self._canonicalize_parserfn_name(tname[:ofs])
                         # Check if it is a recognized parser function name
-                        if self.is_parser_function(fn_name):
+                        # if self.is_parser_function(fn_name):
+                        if fn_name in PARSER_FUNCTIONS or fn_name.startswith(
+                            "#"
+                        ):
                             self.expand_stack.append(fn_name)
                             ret = expand_parserfn(
                                 fn_name, (tname[ofs + 1 :].lstrip(),) + args[1:]
@@ -1359,7 +1362,9 @@ class Wtp:
                     # for magic words and some parser functions have an implicit
                     # compatibility template that essentially does this.
                     fn_name = self._canonicalize_parserfn_name(tname)
-                    if self.is_parser_function(fn_name):
+                    if (
+                        fn_name in PARSER_FUNCTIONS and len(args) == 1
+                    ) or fn_name.startswith("#"):
                         ret = expand_parserfn(fn_name, args[1:])
                         parts.append(ret)
                         continue
@@ -1928,15 +1933,6 @@ class Wtp:
                 self.strip_marker_cache["preprocess"] += 1
                 self.strip_marker_cache[content] = num
         return f"""\x7f'"`UNIQ--{node}-{num_str}-QINU`"'\x7f"""
-
-    def is_parser_function(self, template_name: str) -> bool:
-        if self.page_exists(
-            template_name, self.NAMESPACE_DATA["Template"]["id"]
-        ):
-            return False
-        return template_name in PARSER_FUNCTIONS or template_name.startswith(
-            "#"
-        )
 
 
 def detect_expand_template_loop(stack: list[str]) -> bool:
