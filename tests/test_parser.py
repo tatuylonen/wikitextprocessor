@@ -3190,6 +3190,23 @@ text
         self.assertEqual(root.children[0].kind, NodeKind.TEMPLATE)
         self.assertEqual(self.ctx.node_to_html(root), "textaaa")
 
+    def test_deformed_level_nodes(self):
+        # the section end "==" token in "{{==Türkçe==" shouldn't close the
+        # first level 2 node and move all the nodes in between to `.largs`
+        root = self.parse(
+            "deist",
+            """==Türkçe==
+====Çeviriler====
+* Almanca: {{==Türkçe==
+
+===Kaynakça===
+* {{Kaynak-TDK}}}}
+""",
+        )
+        level_2 = root.children[0]
+        self.assertEqual(level_2.kind, NodeKind.LEVEL2)
+        self.assertEqual(level_2.children[1].kind, NodeKind.LEVEL4)
+
 
 # XXX implement <nowiki/> marking for links, templates
 #  - https://en.wikipedia.org/wiki/Help:Wikitext#Nowiki
