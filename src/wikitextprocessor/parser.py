@@ -1076,7 +1076,7 @@ def subtitle_end_fn(ctx: "Wtp", token: str) -> None:
     pop_count = 0
     find_start_node = False
     for parent_node in reversed(ctx.parser_stack):
-        if parent_node.kind == kind:
+        if parent_node.kind == kind and parent_node.loc == ctx.linenum:
             for _ in range(pop_count):
                 _parser_pop(ctx, True)
             find_start_node = True
