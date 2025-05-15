@@ -3207,6 +3207,32 @@ text
         self.assertEqual(level_2.kind, NodeKind.LEVEL2)
         self.assertEqual(level_2.children[1].kind, NodeKind.LEVEL4)
 
+    def test_new_line_in_ref(self):
+        # shouldn't break ref tag and list
+        root = self.parse(
+            "bump",
+            """<div>
+# To <ref>
+text</ref>
+</div>""",
+        )
+        div_node = root.children[0]
+        self.assertEqual(len(div_node.children), 2)
+        self.assertEqual(div_node.children[0], "\n")
+        self.assertEqual(div_node.children[1].kind, NodeKind.LIST)
+        # list and span should be sibling
+        root = self.parse(
+            "bump",
+            """<div>
+# List
+<span>text</span>
+</div>""",
+        )
+        div_node = root.children[0]
+        self.assertEqual(len(div_node.children), 4)
+        self.assertEqual(div_node.children[1].kind, NodeKind.LIST)
+        self.assertEqual(div_node.children[2].tag, "span")
+
 
 # XXX implement <nowiki/> marking for links, templates
 #  - https://en.wikipedia.org/wiki/Help:Wikitext#Nowiki
