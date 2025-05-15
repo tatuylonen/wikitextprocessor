@@ -862,6 +862,11 @@ def close_begline_lists(ctx: "Wtp") -> None:
     """Closes currently open list if at the beginning of a line."""
     if not (ctx.beginning_of_line and ctx.begline_enabled):
         return
+    # only check if the last direct parent node is HTML
+    # if list doesn't close properly, update this code
+    node = ctx.parser_stack[-1]
+    if isinstance(node, HTMLNode) and node.tag in ctx.paired_html_tags:
+        return
     while _parser_have(ctx, NodeKind.LIST):
         _parser_pop(ctx, True)
 
