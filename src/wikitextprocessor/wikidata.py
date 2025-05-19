@@ -306,10 +306,25 @@ def query_entity_id_for_title(
     cache = get_entity_id_cache(wtp, title, site_id)
     if cache != "not found":
         return cache
-    if site_id is None or site_id == "":
+    lang_code = wtp.lang_code
+    project = wtp.project
+    if site_id == "":
         site_id = wtp.lang_code + wtp.project
-    lang_code = site_id[:2]
-    project = site_id[2:]
+    else:
+        for p_code in [
+            "wiki",
+            "wiktionary",
+            "wikibooks",
+            "wikinews",
+            "wikiquote",
+            "wikisource",
+            "wikiversity",
+            "wikivoyage",
+        ]:
+            if site_id.endswith(p_code):
+                project = p_code
+                lang_code = site_id.removesuffix(p_code)
+                break
     if project == "wiki":
         project = "wikipedia"
     wiki_url = f"https://{lang_code}.{project}.org/"
