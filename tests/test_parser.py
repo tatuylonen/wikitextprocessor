@@ -3233,6 +3233,16 @@ text</ref>
         self.assertEqual(div_node.children[1].kind, NodeKind.LIST)
         self.assertEqual(div_node.children[2].tag, "span")
 
+    def test_space_in_named_template_arg(self):
+        # wiktextract/#1218
+        self.ctx.start_page("break")
+        root = self.ctx.parse(
+            "{{пример| перевод = Она {{выдел|нарушает}} закон. }}"
+        )
+        t_node = root.children[0]
+        self.assertEqual(t_node.template_parameters["перевод"][0], "Она ")
+        self.assertEqual(t_node.template_parameters["перевод"][2], " закон.")
+
 
 # XXX implement <nowiki/> marking for links, templates
 #  - https://en.wikipedia.org/wiki/Help:Wikitext#Nowiki

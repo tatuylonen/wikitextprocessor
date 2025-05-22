@@ -620,8 +620,6 @@ class TemplateNode(WikiNode):
                             is_named = True
                         else:
                             unnamed_parameter_index += 1
-                        if is_named:
-                            parameter = parameter.strip()
                         if len(parameter) == 0:
                             continue
                         if "=" in parameter:
@@ -631,7 +629,7 @@ class TemplateNode(WikiNode):
                             ].strip()
                             parameter_value = parameter[
                                 equal_sign_index + 1 :
-                            ].strip()
+                            ].lstrip()
                             if (
                                 parameter_name.isdigit()
                                 and int(parameter_name) > 0
@@ -639,6 +637,8 @@ class TemplateNode(WikiNode):
                                 parameter_name = int(parameter_name)
                                 is_named = False
                             if len(parameter_value) > 0:
+                                if len(parameter_list) == 1:
+                                    parameter_value = parameter_value.strip()
                                 parameters[parameter_name].append(
                                     parameter_value
                                 )
@@ -648,7 +648,13 @@ class TemplateNode(WikiNode):
                     is_named
                     and isinstance(parameter_name, str)
                     and len(parameter_name) > 0
-                ) or isinstance(parameter_name, int):
+                ):
+                    if index == len(parameter_list) - 1 and isinstance(
+                        parameter, str
+                    ):
+                        parameter = parameter.rstrip()
+                    parameters[parameter_name].append(parameter)
+                elif isinstance(parameter_name, int):
                     parameters[parameter_name].append(parameter)
                 else:
                     parameters[unnamed_parameter_index].append(parameter)
