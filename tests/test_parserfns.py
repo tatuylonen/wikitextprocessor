@@ -207,3 +207,10 @@ class TestParserFunctions(TestCase):
         self.wtp.project = "wikipedia"
         self.assertEqual(self.wtp.expand("{{int:lang}}"), "⧼lang⧽")
         self.assertEqual(self.wtp.expand("{{int:}}"), "[[:Template:int:]]")
+
+    def test_padleft_zero_division(self):
+        # https://en.wiktionary.org/wiki/land
+        # https://en.wiktionary.org/wiki/Template:R:osx:Kobler
+        self.wtp.start_page("land")
+        self.assertEqual(self.wtp.expand("{{padleft:|1|}}"), "")
+        self.assertEqual(self.wtp.expand("{{padleft:|1}}"), "0")
