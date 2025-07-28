@@ -214,3 +214,8 @@ class TestParserFunctions(TestCase):
         self.wtp.start_page("land")
         self.assertEqual(self.wtp.expand("{{padleft:|1|}}"), "")
         self.assertEqual(self.wtp.expand("{{padleft:|1}}"), "0")
+
+    def test_padright_zero_division(self):
+        self.wtp.start_page("land")
+        self.assertEqual(self.wtp.expand("{{padright:|1|}}"), "")
+        self.assertEqual(self.wtp.expand("{{padright:|1}}"), "0")
