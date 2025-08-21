@@ -392,6 +392,7 @@ class Wtp:
 
     def close_db_conn(self) -> None:
         assert self.db_path
+        self.db_conn.commit()
         self.db_conn.close()
         if self.db_path.parent.samefile(Path(tempfile.gettempdir())):
             for path in self.db_path.parent.glob(self.db_path.name + "*"):
