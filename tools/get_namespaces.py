@@ -16,7 +16,11 @@ def get_namespace_data(domain, siprop):
         "siprop": siprop,
         "formatversion": "2",
     }
-    r = requests.get(f"https://{domain}/w/api.php", params=params)
+    r = requests.get(
+        f"https://{domain}/w/api.php",
+        params=params,
+        headers={"user-agent": "wikitextprocessor"},
+    )
     return r.json()
 
 
