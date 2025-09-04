@@ -1654,6 +1654,12 @@ def int_fn(
     wtp: "Wtp", fn_name: str, args: list[str], expander: Callable[[str], str]
 ) -> str:
     # https://www.mediawiki.org/wiki/Help:Magic_words#Localization
+    def expand_int_fn_args(m):
+        index = int(m.group(1))
+        if index < len(args):
+            return expander(args[index])
+        return m.group()
+
     if wtp.project == "wiktionary" and len(args) > 0 and args[0] == "lang":
         return wtp.lang_code
     if len(args) > 0 and len(args[0]) > 0:
@@ -1661,7 +1667,7 @@ def int_fn(
             args[0], wtp.NAMESPACE_DATA["MediaWiki"]["id"]
         )
         if page_body is not None:
-            return page_body
+            return re.sub(r"\$(\d+)", expand_int_fn_args, page_body)
         return f"⧼{args[0]}⧽"
     return f"[[:{wtp.LOCAL_NS_NAME_BY_ID.get(10, '')}:int:]]"
 

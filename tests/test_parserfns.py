@@ -220,16 +220,11 @@ class TestParserFunctions(TestCase):
         self.assertEqual(self.wtp.expand("{{padright:|1|}}"), "")
         self.assertEqual(self.wtp.expand("{{padright:|1}}"), "0")
 
-    def test_int_mediawiki_page(self):
-        # https://vi.wiktionary.org/wiki/Thảo_luận_Mô_đun:ViePron
-        # https://vi.wiktionary.org/wiki/Bản_mẫu:vie-pron/Bảng
-        self.wtp.start_page("test")
-        self.wtp.add_page(
-            "MediaWiki:wiktionary-vie-pron",
-            8,
-            "[[Wiktionary:IPA|IPA]] theo giọng",
-        )
+    def test_expand_int_fn_args(self):
+        # https://vi.wiktionary.org/wiki/Bản_mẫu:like-entry
+        self.wtp.start_page("trở thành")
+        self.wtp.add_page("MediaWiki:wiktionary-like", 8, "Như $1")
         self.assertEqual(
-            self.wtp.expand("{{int:wiktionary-vie-pron}}"),
-            "[[Wiktionary:IPA|IPA]] theo giọng",
+            self.wtp.expand("{{int:wiktionary-like|first arg}}"),
+            "Như first arg",
         )
