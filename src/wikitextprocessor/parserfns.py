@@ -1657,6 +1657,11 @@ def int_fn(
     if wtp.project == "wiktionary" and len(args) > 0 and args[0] == "lang":
         return wtp.lang_code
     if len(args) > 0 and len(args[0]) > 0:
+        page_body = wtp.get_page_body(
+            args[0], wtp.NAMESPACE_DATA["MediaWiki"]["id"]
+        )
+        if page_body is not None:
+            return page_body
         return f"⧼{args[0]}⧽"
     return f"[[:{wtp.LOCAL_NS_NAME_BY_ID.get(10, '')}:int:]]"
 
