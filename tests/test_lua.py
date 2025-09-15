@@ -640,3 +640,18 @@ return export""",
             self.wtp.expand("{{#invoke:test|test|foo=  {{#if||}} {{#if||}} }}"),
             "",
         )
+
+    def test_mw_site_canonical_ns_key(self):
+        # https://cs.wiktionary.org/wiki/Modul:Maintenance#L-193
+        # `mw.site.namespaces.Category.name`
+        self.wtp.start_page("")
+        self.wtp.add_page(
+            "Module:test",
+            828,
+            """local export = {}
+function export.test(frame)
+  return mw.site.namespaces.Project.name
+end
+return export""",
+        )
+        self.assertEqual(self.wtp.expand("{{#invoke:test|test}}"), "Wiktionary")

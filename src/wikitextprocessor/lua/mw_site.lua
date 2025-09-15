@@ -46,6 +46,7 @@ for ns_canonical_name in pairs(NAMESPACE_DATA) do
   }
   mw_site_namespaces[ns_data.id] = ns
   mw_site_namespaces[ns_data.name] = ns
+  mw_site_namespaces[ns_canonical_name] = ns
 
   if ns_data.content then
     mw_site_contentNamespaces[ns_data.id] = ns
