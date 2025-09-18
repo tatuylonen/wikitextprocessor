@@ -1625,8 +1625,9 @@ def vbar_fn(ctx: "Wtp", token: str) -> None:
     templates, template argument references, links, etc, and it can
     also separate table row cells."""
     node = ctx.parser_stack[-1]
-    if node.kind in HAVE_ARGS_KIND_FLAGS and node.kind is not NodeKind.URL:
-        # [http://url.com these do not use vbars, only one initial space]
+    if node.kind == NodeKind.URL:
+        text_fn(ctx, token)
+    elif node.kind in HAVE_ARGS_KIND_FLAGS:
         _parser_merge_str_children(ctx)
         node.largs.append(node.children)
         node.children = []

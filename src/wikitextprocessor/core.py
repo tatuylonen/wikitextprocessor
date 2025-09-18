@@ -185,7 +185,7 @@ LINKS_RE = re.compile(LINKS)
 
 # Encode external links: [something]
 # [test]]+ breaks in sandbox, so prevent with negative lookahead
-EXTERNAL_LINKS = r"\[([^][{}<>|\n]+)\](?!\])"
+EXTERNAL_LINKS = r"\[([^][{}<>\n]+)\](?!\])"
 
 EXTERNAL_LINKS_RE = re.compile(EXTERNAL_LINKS)
 
