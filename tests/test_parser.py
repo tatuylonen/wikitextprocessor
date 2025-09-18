@@ -3243,6 +3243,23 @@ text</ref>
         self.assertEqual(t_node.template_parameters["перевод"][0], "Она ")
         self.assertEqual(t_node.template_parameters["перевод"][2], " закон.")
 
+    def test_pipe_in_external_link(self):
+        # https://cs.wiktionary.org/wiki/veselé_Vánoce
+        self.ctx.start_page("veselé Vánoce")
+        root = self.ctx.parse(
+            "[http://learn101.org/armenian_phrases.php Armenian Phrases | learn101.org]"  # noqa:E501
+        )
+        self.assertEqual(len(root.children), 1)
+        url_node = root.children[0]
+        self.assertEqual(url_node.kind, NodeKind.URL)
+        self.assertEqual(
+            url_node.largs,
+            [
+                ["http://learn101.org/armenian_phrases.php"],
+                ["Armenian Phrases | learn101.org"],
+            ],
+        )
+
 
 # XXX implement <nowiki/> marking for links, templates
 #  - https://en.wikipedia.org/wiki/Help:Wikitext#Nowiki
