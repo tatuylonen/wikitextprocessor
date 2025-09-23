@@ -37,7 +37,7 @@ classifiers = [
 ]
 requires-python = ">=3.10"
 dependencies = [
-    "dateparser==1.2.1",
+    "dateparser",
     "lupa",
     "lxml",
     "mediawiki_langcodes",
