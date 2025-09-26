@@ -897,7 +897,7 @@ def pop_until_nth_list(ctx: "Wtp", list_token: str) -> None:
         # in order to add a new nested list node
         passed_nodes += 1
 
-    # pop until the stack top is the taregt list node
+    # pop until the stack top is the target list node
     for _ in range(len(ctx.parser_stack) - passed_nodes):
         _parser_pop(ctx, True)
 
