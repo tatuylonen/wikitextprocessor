@@ -107,6 +107,8 @@ class CollatedErrorReturnData(TypedDict):
     errors: list[ErrorMessageData]
     warnings: list[ErrorMessageData]
     debugs: list[ErrorMessageData]
+    notes: list[ErrorMessageData]
+    wiki_notices: list[ErrorMessageData]
 
 
 CookieData = tuple[str, Sequence[str], bool]
@@ -275,6 +277,8 @@ class Wtp:
         "paired_html_tags",
         "inside_html_tags_re",
         "parser_function_aliases",
+        "notes",  # NOTE error messages
+        "wiki_notices",  # WIKI error messages
     )
 
     def __init__(
@@ -295,6 +299,8 @@ class Wtp:
         self.errors: list[ErrorMessageData] = []
         self.warnings: list[ErrorMessageData] = []
         self.debugs: list[ErrorMessageData] = []
+        self.notes: list[ErrorMessageData] = []
+        self.wiki_notices: list[ErrorMessageData] = []
         self.section: Optional[str] = None
         self.subsection: Optional[str] = None
         self.lua: Optional["LuaRuntime"] = None
@@ -571,6 +577,50 @@ class Wtp:
         )
         self._fmt_errmsg("DEBUG", msg, trace)
 
+    def note(
+        self, msg: str, trace: Optional[str] = None, sortid="XYZunsorted"
+    ) -> None:
+        """Prints a note message to stdout.  The error is also saved in
+        self.notes."""
+        assert isinstance(msg, str)
+        assert isinstance(trace, (str, type(None)))
+        assert isinstance(sortid, str)
+
+        self.notes.append(
+            {
+                "msg": msg,
+                "trace": trace or "",
+                "title": self.title or "ERROR_TITLE",
+                "section": self.section or "",
+                "subsection": self.subsection or "",
+                "called_from": sortid,
+                "path": tuple(self.expand_stack),
+            }
+        )
+        self._fmt_errmsg("NOTE", msg, trace)
+
+    def wiki_notice(
+        self, msg: str, trace: Optional[str] = None, sortid="XYZunsorted"
+    ) -> None:
+        """Prints a wiki-related note message to stdout.  The error is also
+        saved in self.notes."""
+        assert isinstance(msg, str)
+        assert isinstance(trace, (str, type(None)))
+        assert isinstance(sortid, str)
+
+        self.wiki_notices.append(
+            {
+                "msg": msg,
+                "trace": trace or "",
+                "title": self.title or "ERROR_TITLE",
+                "section": self.section or "",
+                "subsection": self.subsection or "",
+                "called_from": sortid,
+                "path": tuple(self.expand_stack),
+            }
+        )
+        self._fmt_errmsg("WIKI", msg, trace)
+
     def to_return(self) -> CollatedErrorReturnData:
         """Returns a dictionary with errors, warnings, and debug messages
         from the context.  Note that the values are reset whenever starting
@@ -580,6 +630,8 @@ class Wtp:
             "errors": self.errors,
             "warnings": self.warnings,
             "debugs": self.debugs,
+            "notes": self.notes,
+            "wiki_notices": self.wiki_notices,
         }
 
     def _canonicalize_parserfn_name(self, name: str) -> str:
@@ -1005,16 +1057,18 @@ class Wtp:
         )
 
     def start_page(self, title: str) -> None:
-        """Starts a new page for expanding Wikitext.  This saves the title and
-        full page source in the context.  Calling this is mandatory
-        for each page; expand_wikitext() can then be called multiple
-        times for the same page.  This clears the self.errors,
-        self.warnings, and self.debugs lists and any current section
-        or subsection."""
+        """Starts a new page for expanding Wikitext.  This saves the title
+        and full page source in the context.  Calling this is mandatory for
+        each page; expand_wikitext() can then be called multiple times for the
+        same page.  This clears the self.errors, self.warnings, self.debugs,
+        self.notes and self.wiki_notices lists and any current section or
+        subsection."""
         self.title = title
         self.errors = []
         self.warnings = []
         self.debugs = []
+        self.notes = []
+        self.wiki_notices = []
         self.section = None
         self.subsection = None
         self.cookies = []
