@@ -2058,7 +2058,17 @@ foo
         self.assertEqual(b.kind, NodeKind.TABLE_HEADER_CELL)
 
     def test_table_hdr4(self):
-        tree = self.parse("test", "{|\n! Hdr\n||bar\n| |baz\n| zap\n|}")
+        # en edition page "山歩き", Template:ja-suru
+        # fr edition page "amare", Template:es-verbe-flexion
+        tree = self.parse(
+            "test",
+            """{|
+! Hdr
+||bar
+| |baz
+| zap
+|}""",
+        )
         self.assertEqual(self.ctx.errors, [])
         self.assertEqual(self.ctx.warnings, [])
         self.assertEqual(self.ctx.debugs, [])
@@ -2068,7 +2078,7 @@ foo
         self.assertEqual(len(t.children), 1)
         row = t.children[0]
         self.assertEqual(row.kind, NodeKind.TABLE_ROW)
-        self.assertEqual(len(row.children), 5)
+        self.assertEqual(len(row.children), 4)
         for c, kind in zip(
             row.children,
             [
@@ -2076,10 +2086,19 @@ foo
                 NodeKind.TABLE_CELL,
                 NodeKind.TABLE_CELL,
                 NodeKind.TABLE_CELL,
-                NodeKind.TABLE_CELL,
             ],
         ):
             self.assertEqual(c.kind, kind)
+        tree = self.parse(
+            "test",
+            """{|
+||bar
+| |baz
+| zap
+|}""",
+        )
+        row = tree.children[0].children[0]
+        self.assertEqual(len(row.children), 3)
 
     def test_table_bang1(self):
         # Testing that the single exclamation mark in the middle of a table
