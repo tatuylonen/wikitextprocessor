@@ -1655,11 +1655,13 @@ def double_vbar_fn(ctx: "Wtp", token: str) -> None:
         return
 
     # If it is at the beginning of a line, interpret it as starting a new
-    # cell, without any HTML attributes.  We do this by emitting two individual
-    # vbars.
+    # cell, without any HTML attributes.  We do this by emitting one vbar.
     if ctx.beginning_of_line and ctx.begline_enabled:
-        vbar_fn(ctx, "|")
-        vbar_fn(ctx, "|")
+        if _parser_have(ctx, NodeKind.TABLE):
+            vbar_fn(ctx, "|")
+        else:
+            vbar_fn(ctx, "|")
+            vbar_fn(ctx, "|")
         return
 
     while True:
@@ -2397,7 +2399,7 @@ def process_text(ctx: "Wtp", text: str) -> None:
                 hline_fn(ctx, token)
             elif re.match(list_prefix_re, token):
                 list_fn(ctx, token)
-            elif token.startswith("https://") or token.startswith("http://"):
+            elif token.startswith(("https://", "http://")):
                 url_fn(ctx, token)
             elif (
                 len(token) == 1
