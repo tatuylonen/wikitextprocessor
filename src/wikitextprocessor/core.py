@@ -1942,7 +1942,7 @@ class Wtp:
         template_fn=None,
         post_template_fn=None,
         node_handler_fn=None,
-    ):
+    ) -> str:
         """Converts the given parse tree node to plain text."""
         return to_text(
             self,
