@@ -11,6 +11,8 @@ from wikitextprocessor.parser import (
     NodeKind,
     TemplateNode,
     WikiNode,
+    is_list,
+    is_list_item,
     print_tree,
 )
 
@@ -3259,6 +3261,76 @@ text</ref>
                 ["Armenian Phrases | learn101.org"],
             ],
         )
+
+    def test_is_list_fn(self):
+        self.ctx.start_page("test")
+        root = self.ctx.parse(
+            """* test
+** test2
+"""
+        )
+        self.assertFalse(is_list(root))
+        main_list = root.children[0]
+        self.assertTrue(is_list(main_list))
+        item1 = main_list.children[0]
+        test_text = item1.children[0]
+        test2_list = item1.children[1]
+        self.assertFalse(is_list(item1))
+        self.assertFalse(is_list(test_text))
+        self.assertTrue(is_list(test2_list))
+
+    def test_is_list_fn_2(self):
+        self.ctx.start_page("test")
+        root = self.ctx.parse(
+            """<ul><li>test<ul><li>test2</li></ul></ul>
+"""
+        )
+        self.assertFalse(is_list(root))
+        main_list = root.children[0]
+        self.assertTrue(is_list(main_list))
+        item1 = main_list.children[0]
+        test_text = item1.children[0]
+        test2_list = item1.children[1]
+        self.assertFalse(is_list(item1))
+        self.assertFalse(is_list(test_text))
+        self.assertTrue(is_list(test2_list))
+
+    def test_is_list_item_fn(self):
+        self.ctx.start_page("test")
+        root = self.ctx.parse(
+            """* test
+** test2
+"""
+        )
+        self.assertFalse(is_list_item(root))
+        main_list = root.children[0]
+        self.assertFalse(is_list_item(main_list))
+        item1 = main_list.children[0]
+        test_text = item1.children[0]
+        test2_list = item1.children[1]
+        self.assertTrue(is_list_item(item1))
+        self.assertFalse(is_list_item(test_text))
+        self.assertFalse(is_list_item(test2_list))
+        item2 = test2_list.children[0]
+        self.assertTrue(is_list_item(item2))
+
+    def test_is_list_item_fn_2(self):
+        self.ctx.start_page("test")
+        root = self.ctx.parse(
+            """<ul><li>test<ul><li>test2</li></ul></ul>
+"""
+        )
+        self.assertFalse(is_list_item(root))
+        main_list = root.children[0]
+        self.assertFalse(is_list_item(main_list))
+        item1 = main_list.children[0]
+        test_text = item1.children[0]
+        test2_list = item1.children[1]
+        self.assertTrue(is_list_item(item1))
+        self.assertFalse(is_list_item(test_text))
+        self.assertFalse(is_list_item(test2_list))
+        item2 = test2_list.children[0]
+        self.assertTrue(is_list_item(item2))
 
 
 # XXX implement <nowiki/> marking for links, templates
