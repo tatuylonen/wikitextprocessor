@@ -2496,3 +2496,19 @@ def print_tree(
     else:
         print("\n".join(parts))
         return None
+
+
+def is_list(node: WikiNode) -> bool:
+    return (
+        isinstance(node, WikiNode)
+        and node.kind == NodeKind.LIST
+        or (isinstance(node, HTMLNode) and node.tag in ("ul", "ol"))
+    )
+
+
+def is_list_item(node: WikiNode) -> bool:
+    return (
+        isinstance(node, WikiNode)
+        and node.kind == NodeKind.LIST_ITEM
+        or (isinstance(node, HTMLNode) and node.tag == "li")
+    )
