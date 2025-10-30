@@ -7,6 +7,8 @@ if TYPE_CHECKING:
 def get_interwiki_data(wtp: "Wtp") -> list[dict[str, Union[str, bool]]]:
     import requests
 
+    from .wikidata import get_user_agent
+
     r = requests.get(
         f"https://{wtp.lang_code}.{wtp.project}.org/w/api.php",
         params={  # type: ignore
@@ -16,7 +18,7 @@ def get_interwiki_data(wtp: "Wtp") -> list[dict[str, Union[str, bool]]]:
             "format": "json",
             "formatversion": 2,
         },
-        headers={"user-agent": "wikitextprocessor"},
+        headers={"user-agent": get_user_agent()},
     )
     if r.ok:
         results = r.json()
