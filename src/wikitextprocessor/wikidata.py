@@ -9,13 +9,30 @@ if TYPE_CHECKING:
     from .core import Wtp
 
 
-def query_wikidata(wtp: "Wtp", query: str) -> dict[str, dict[str, str]]:
-    import requests
+def get_user_agent() -> str:
+    from importlib.metadata import version
 
-    r = requests.get(
+    return f"wikitextprocessor/{version('wikitextprocessor')} (https://github.com/tatuylonen/wikitextprocessor)"
+
+
+def init_wikidata_session(wtp: "Wtp"):
+    from requests import Session
+    from requests.adapters import HTTPAdapter
+    from urllib3.util import Retry
+
+    wtp.wikidata_session = Session()
+    wtp.wikidata_session.mount(
+        "https://", HTTPAdapter(max_retries=Retry(total=5, backoff_factor=0.1))
+    )
+    wtp.wikidata_session.headers.update({"user-agent": get_user_agent()})
+
+
+def query_wikidata(wtp: "Wtp", query: str) -> dict[str, dict[str, str]]:
+    if wtp.wikidata_session is None:
+        init_wikidata_session(wtp)
+    r = wtp.wikidata_session.get(  # type:ignore
         "https://query.wikidata.org/sparql",
         params={"query": query, "format": "json"},
-        headers={"user-agent": "wikitextprocessor"},
     )
     if r.ok:
         result = r.json()
@@ -362,7 +379,8 @@ def get_entity_data(
 ) -> Optional[dict[str, Any]]:
     # https://www.mediawiki.org/wiki/Wikibase/DataModel
     # https://doc.wikimedia.org/Wikibase/master/php/docs_topics_json.html
-    import requests
+    if wtp.wikidata_session is None:
+        init_wikidata_session(wtp)
 
     if item_id is None:
         item_id = query_entity_id_for_title(wtp, wtp.title or "", "")
@@ -375,29 +393,34 @@ def get_entity_data(
         if entity_data_str is not None and len(entity_data_str) > 0:
             return json.loads(entity_data_str)
 
-    r = requests.get(
-        f"https://www.wikidata.org/wiki/Special:EntityData/{item_id}.json",
-        headers={"user-agent": "wikitextprocessor"},
+    r = wtp.wikidata_session.get(  # type:ignore
+        f"https://www.wikidata.org/wiki/Special:EntityData/{item_id}.json"
     )
     if r.ok:
         result = r.json()
         for _, entity_data in result.get("entities", {}).items():
             entity_data["schemaVersion"] = 2
             with wtp.db_conn:
+                label_dict = entity_data.get("labels", {})
+                label_str = label_dict.get(
+                    wtp.lang_code, label_dict.get("en", {})
+                ).get("value", "")
+                desc_dict = entity_data.get("descriptions", {})
+                desc_str = desc_dict.get(
+                    wtp.lang_code, label_dict.get("en", {})
+                ).get("value", "")
                 insert_item(
                     wtp,
                     WikiDataItem(
                         item_id=item_id,
-                        label=entity_data.get("labels", {})
-                        .get(wtp.lang_code, {})
-                        .get("value", ""),
-                        description=entity_data.get("descriptions", {})
-                        .get(wtp.lang_code, {})
-                        .get("value", ""),
+                        label=label_str,
+                        description=desc_str,
                         entity_data=json.dumps(entity_data, ensure_ascii=False),
                     ),
                 )
             return entity_data
+    else:
+        wtp.error("WIKIDATA QUERY failed", r.text, "query_wikidata_json")
 
     return None
 

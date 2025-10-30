@@ -421,7 +421,7 @@ return export""",
         )
 
     @patch(
-        "requests.get",
+        "requests.Session.get",
         return_value=MockRequests(True, {"entities": {"Q42": {"id": "Q42"}}}),
     )
     def test_wikidata_get_entity(self, mock_request):
@@ -443,7 +443,7 @@ return export""",
         mock_request.assert_called_once()
 
     @patch(
-        "requests.get",
+        "requests.Session.get",
         return_value=MockRequests(
             True,
             {
@@ -540,7 +540,7 @@ return export""",
         self.assertEqual(self.wtp.expand("{{#invoke:test|test}}"), "value")
 
     @patch(
-        "requests.get",
+        "requests.Session.get",
         return_value=MockRequests(
             True,
             {

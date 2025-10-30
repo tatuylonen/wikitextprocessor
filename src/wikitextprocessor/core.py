@@ -25,6 +25,8 @@ from typing import (
     Union,
 )
 
+from requests import Session
+
 from .common import (
     MAGIC_FIRST,
     MAGIC_LBRACKET_CHAR,
@@ -279,6 +281,7 @@ class Wtp:
         "parser_function_aliases",
         "notes",  # NOTE error messages
         "wiki_notices",  # WIKI error messages
+        "wikidata_session",
     )
 
     def __init__(
@@ -351,6 +354,7 @@ class Wtp:
         self.parser_function_aliases = parser_function_aliases
         if not quiet:
             logger.setLevel(logging.DEBUG)
+        self.wikidata_session: Session | None = None
 
     def create_db(self) -> None:
         from .wikidata import init_wikidata_cache
@@ -404,6 +408,8 @@ class Wtp:
             for path in self.db_path.parent.glob(self.db_path.name + "*"):
                 # also remove SQLite -wal and -shm file
                 path.unlink(True)
+        if self.wikidata_session is not None:
+            self.wikidata_session.close()
 
     def has_analyzed_templates(self) -> bool:
         for (result,) in self.db_conn.execute(
