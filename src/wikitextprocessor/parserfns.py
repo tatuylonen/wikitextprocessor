@@ -111,10 +111,10 @@ def switch_fn(
     next_val_is_default = False
     defval: Optional[str] = None
     last: Optional[str] = None
-    for i in range(1, len(args)):
-        arg = args[i]
+    for arg in args[1:]:
         m = re.match(r"(?s)^([^=]*)=(.*)$", arg)
-        if not m:
+        # "=" in HTML attribute is not switch argument
+        if m is None or ("<" in m.group(1) and ">" in m.group(2)):
             last = expander(arg).strip()
             if last == val:
                 match_next = True
