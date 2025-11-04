@@ -228,3 +228,18 @@ class TestParserFunctions(TestCase):
             self.wtp.expand("{{int:wiktionary-like|first arg}}"),
             "Như first arg",
         )
+
+    def test_html_attibute_in_switch_arg(self):
+        # https://ru.wiktionary.org/wiki/больной
+        self.wtp.start_page("больной")
+        self.wtp.add_page(
+            "Template:прил",
+            10,
+            "{{#switch:{{{краткая}}}|?|−|✕=not this|{{{srt-sg-m}}}}}",
+        )
+        self.assertEqual(
+            self.wtp.expand(
+                '{{прил|краткая=1|srt-sg-m=бо́лен<span style="color:#c0a300;"><sup>△</sup></span>}}'  # noqa: E501
+            ),
+            'бо́лен<span style="color:#c0a300;"><sup>△</sup></span>',
+        )
