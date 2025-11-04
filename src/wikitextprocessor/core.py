@@ -1478,8 +1478,7 @@ class Wtp:
                         continue
                     ht: TemplateArgs = {}
                     num = 1
-                    for i in range(1, len(args)):
-                        arg = str(args[i])
+                    for arg in map(str, args[1:]):
                         k: Union[str, int]
                         m2 = re.match(
                             r"""(?s)^\s*([^][&<>="]+?)\s*=\s*(.*?)\s*$""",
