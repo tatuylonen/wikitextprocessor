@@ -3351,6 +3351,23 @@ text</ref>
         item2 = test2_list.children[0]
         self.assertTrue(is_list_item(item2))
 
+    def test_newline_in_ref(self):
+        self.ctx.start_page("aderedor")
+        root = self.ctx.parse(
+            """* {{alt|roa-ole|deredor}}<ref> Diccionario del Español Medieval,
+http://purl.uni-rostock.de/demel/d00649426</ref>"""
+        )
+        list_item = root.children[0].children[0]
+        self.assertEqual(len(list_item.children), 3)
+        ref_node = list_item.children[2]
+        self.assertIsInstance(ref_node, HTMLNode)
+        self.assertEqual(ref_node.tag, "ref")
+        url_node = ref_node.children[1]
+        self.assertEqual(url_node.kind, NodeKind.URL)
+        self.assertEqual(
+            url_node.largs, [["http://purl.uni-rostock.de/demel/d00649426"]]
+        )
+
 
 # XXX implement <nowiki/> marking for links, templates
 #  - https://en.wikipedia.org/wiki/Help:Wikitext#Nowiki
