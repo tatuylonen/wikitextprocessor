@@ -497,6 +497,12 @@ class WikiNode:
     def find_html(
         self,
         target_tags: str | list[str],
+    ) -> Iterator["HTMLNode"]: ...
+
+    @overload
+    def find_html(
+        self,
+        target_tags: str | list[str],
         with_index: Literal[True],
         attr_name: str,
         attr_value: str,
@@ -506,9 +512,23 @@ class WikiNode:
     def find_html(
         self,
         target_tags: str | list[str],
-        with_index: Literal[False] = ...,
-        attr_name: str = ...,
-        attr_value: str = ...,
+        with_index: Literal[False],
+        attr_name: str,
+        attr_value: str,
+    ) -> Iterator["HTMLNode"]: ...
+
+    @overload
+    def find_html(
+        self,
+        target_tags: str | list[str],
+        with_index: Literal[True],
+    ) -> Iterator[tuple[int, "HTMLNode"]]: ...
+
+    @overload
+    def find_html(
+        self,
+        target_tags: str | list[str],
+        with_index: Literal[False],
     ) -> Iterator["HTMLNode"]: ...
 
     def find_html(
