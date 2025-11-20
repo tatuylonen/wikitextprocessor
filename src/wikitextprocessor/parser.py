@@ -1607,23 +1607,23 @@ def table_cell_fn(ctx: "Wtp", token: str) -> None:
         # data cells
         _parser_merge_str_children(ctx)
         node = ctx.parser_stack[-1]
-        if (
-            not node.attrs
-            and len(node.children) == 1
-            and isinstance(attrs := node.children[0], str)
+        if node.kind in (
+            NodeKind.TABLE_CAPTION,
+            NodeKind.TABLE_HEADER_CELL,
+            NodeKind.TABLE_CELL,
         ):
-            if node.kind in (
-                NodeKind.TABLE_CAPTION,
-                NodeKind.TABLE_HEADER_CELL,
-                NodeKind.TABLE_CELL,
-            ):
-                node.children.pop()
-                # Using the walrus operator and pop()ing without return
-                # is just to make the type-checker happy without using
-                # an assert that attrs is definitely a str...
-                parse_attrs(node, attrs)
+            if len(node.attrs) == 0:
+                if len(node.children) == 1 and isinstance(
+                    attrs := node.children[0], str
+                ):
+                    node.children.pop()
+                    # Using the walrus operator and pop()ing without return
+                    # is just to make the type-checker happy without using
+                    # an assert that attrs is definitely a str...
+                    parse_attrs(node, attrs)
                 return
-        return text_fn(ctx, token)
+            else:
+                return text_fn(ctx, token)
 
     while True:
         node = ctx.parser_stack[-1]
@@ -1674,16 +1674,6 @@ def double_vbar_fn(ctx: "Wtp", token: str) -> None:
     if node.kind in HAVE_ARGS_KIND_FLAGS:
         vbar_fn(ctx, "|")
         vbar_fn(ctx, "|")
-        return
-
-    # If it is at the beginning of a line, interpret it as starting a new
-    # cell, without any HTML attributes.  We do this by emitting one vbar.
-    if ctx.beginning_of_line and ctx.begline_enabled:
-        if _parser_have(ctx, NodeKind.TABLE):
-            vbar_fn(ctx, "|")
-        else:
-            vbar_fn(ctx, "|")
-            vbar_fn(ctx, "|")
         return
 
     while True:
@@ -2147,6 +2137,7 @@ token_list: list[str] = [
     r"!!",
     r"\s*https?://[\w.-]+(/[^][{}<>|\s]*)?",
     r"^[ \t]*!",
+    r"^\|",
     r"\|\|",
     r"\|",
     r"^----+",

@@ -2101,6 +2101,9 @@ foo
         )
         row = tree.children[0].children[0]
         self.assertEqual(len(row.children), 3)
+        self.assertEqual(row.children[0].children, ["bar\n"])
+        self.assertEqual(row.children[1].children, ["baz\n"])
+        self.assertEqual(row.children[2].children, [" zap\n"])
 
     def test_table_bang1(self):
         # Testing that the single exclamation mark in the middle of a table
@@ -2114,6 +2117,29 @@ foo
         self.assertEqual(self.ctx.errors, [])
         self.assertEqual(self.ctx.warnings, [])
         self.assertEqual(self.ctx.debugs, [])
+
+    def test_table_triple_vbar(self):
+        # Testing parsing for an empty cell at the beginning of the row.
+        # en edition page "돌아가시다", Template:ko-conj/verb
+        tree = self.parse(
+            "test",
+            """{|
+|-
+|||foo
+|}""",
+        )
+        self.assertEqual(len(tree.children), 1)
+        t = tree.children[0]
+        self.assertEqual(t.kind, NodeKind.TABLE)
+        self.assertEqual(len(t.children), 1)
+        row = t.children[0]
+        self.assertEqual(row.kind, NodeKind.TABLE_ROW)
+        self.assertEqual(len(row.children), 2)
+        a, b = row.children
+        self.assertEqual(a.kind, NodeKind.TABLE_CELL)
+        self.assertEqual(a.children, [])
+        self.assertEqual(b.kind, NodeKind.TABLE_CELL)
+        self.assertEqual(b.children, ["foo\n"])
 
     def test_error1(self):
         self.parse("test", "'''")
