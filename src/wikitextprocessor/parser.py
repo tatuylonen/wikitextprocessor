@@ -1571,8 +1571,15 @@ def table_row_fn(ctx: "Wtp", token: str) -> None:
         return text_fn(ctx, token)
 
     if not (ctx.beginning_of_line or ctx.wsp_beginning_of_line):
-        vbar_fn(ctx, "|")
-        return text_fn(ctx, "-")
+        node = ctx.parser_stack[-1]
+        # ignore "|-" token before first row and not at line beginning
+        if node.kind == NodeKind.TABLE and not node.contain_node(
+            NodeKind.TABLE_ROW
+        ):
+            return
+        else:
+            vbar_fn(ctx, "|")
+            return text_fn(ctx, "-")
 
     close_begline_lists(ctx)
     table_check_attrs(ctx)
