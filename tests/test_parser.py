@@ -3394,6 +3394,22 @@ http://purl.uni-rostock.de/demel/d00649426</ref>"""
             url_node.largs, [["http://purl.uni-rostock.de/demel/d00649426"]]
         )
 
+    def test_incorrt_row_separator(self):
+        # tatuylonen/wiktextract#1509
+        self.ctx.start_page("αζωικός")
+        root = self.ctx.parse("""{| class="wikitable"|-
+! Header A
+|-
+| row 1 A
+|}""")
+        table = root.children[0]
+        first_row = table.children[0]
+        self.assertEqual(first_row.kind, NodeKind.TABLE_ROW)
+        self.assertEqual(len(first_row.children), 1)
+        header = first_row.children[0]
+        self.assertEqual(header.kind, NodeKind.TABLE_HEADER_CELL)
+        self.assertEqual(header.children, [" Header A\n"])
+
 
 # XXX implement <nowiki/> marking for links, templates
 #  - https://en.wikipedia.org/wiki/Help:Wikitext#Nowiki
