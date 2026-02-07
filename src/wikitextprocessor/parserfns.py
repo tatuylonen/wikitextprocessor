@@ -1108,9 +1108,11 @@ time_fmt_map: dict[
 ] = {
     "Y": "%Y",
     "y": "%y",
-    "L": lambda ctx, t: 1
-    if (t.year % 4 == 0 and (t.year % 100 != 0 or t.year % 400 == 0))
-    else 0,
+    "L": lambda ctx, t: (
+        1
+        if (t.year % 4 == 0 and (t.year % 100 != 0 or t.year % 400 == 0))
+        else 0
+    ),
     "o": "%G",
     "n": lambda ctx, t: t.month,
     "m": "%m",
@@ -1120,8 +1122,8 @@ time_fmt_map: dict[
     "j": lambda ctx, t: t.day,
     "d": "%d",
     "z": lambda ctx, t: (
-        t - datetime(year=t.year, month=1, day=1, tzinfo=t.tzinfo)
-    ).days,
+        (t - datetime(year=t.year, month=1, day=1, tzinfo=t.tzinfo)).days
+    ),
     "W": "%V",
     "N": "%u",
     "w": "%w",
