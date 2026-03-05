@@ -1101,7 +1101,7 @@ dasfasddasfdas
         self.assertEqual(link.kind, NodeKind.LINK)
         self.assertEqual(link.largs, [["foo"], ["\n[bar"]])
 
-    def test_link_trailing(self):
+    def test_link_trailing_1(self):
         tree = self.parse("test", "[[Help]]ing heal")
         self.assertEqual(len(tree.children), 2)
         a, b = tree.children
@@ -1109,6 +1109,15 @@ dasfasddasfdas
         self.assertEqual(a.largs, [["Help"]])
         self.assertEqual(a.children, ["ing"])
         self.assertEqual(b, " heal")
+
+    def test_link_trailing_not_latin(self):
+        tree = self.parse("test", "[[appellāre]]の直説法所相現在第 foo")
+        self.assertEqual(len(tree.children), 2)
+        a, b = tree.children
+        self.assertEqual(a.kind, NodeKind.LINK)
+        self.assertEqual(a.largs, [["appellāre"]])
+        self.assertEqual(a.children, [])
+        self.assertEqual(b, "の直説法所相現在第 foo")
 
     def test_url1(self):
         tree = self.parse("test", "this https://wikipedia.com link")

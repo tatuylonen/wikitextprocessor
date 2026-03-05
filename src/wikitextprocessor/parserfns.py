@@ -9,7 +9,7 @@ import urllib.parse
 from collections.abc import Callable, Sequence
 from datetime import datetime, timezone
 from pathlib import Path
-from typing import TYPE_CHECKING, Optional, Union
+from typing import TYPE_CHECKING, Any, Optional, Union
 
 import dateparser
 
@@ -1185,7 +1185,7 @@ def parse_timestamp(
     if not dt:
         dt = "now"
 
-    settings: dateparser._Settings = {"RETURN_AS_TIMEZONE_AWARE": True}
+    settings: dict[str, Any] = {"RETURN_AS_TIMEZONE_AWARE": True}
     if loc in ("", "0"):
         dt += " UTC"
 
@@ -1206,15 +1206,15 @@ def parse_timestamp(
         # php's strtotime() (which is the original function used)
         # but we can handle special cases here and hope
         # people on wiktionary don't go crazy with weird formatting
-        t = dateparser.parse(dt, settings=settings)
+        t = dateparser.parse(dt, settings=settings)  # type: ignore
         if t is None:
             m = re.match(
                 r"([^+]*)\s*(\+\s*\d+\s*(day|year|month)s?)\s*$", orig_dt
             )
             if m:
-                main_date = dateparser.parse(m.group(1), settings=settings)
-                add_time = dateparser.parse(m.group(2), settings=settings)
-                now = dateparser.parse("now", settings=settings)
+                main_date = dateparser.parse(m.group(1), settings=settings)  # type: ignore
+                add_time = dateparser.parse(m.group(2), settings=settings)  # type: ignore
+                now = dateparser.parse("now", settings=settings)  # type: ignore
                 if main_date and add_time is not None and now is not None:
                     # this is just a kludge: dateparser parses "+2 days" as
                     # "2 days AGO". The now-datetime object is used to check
