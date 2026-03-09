@@ -2,6 +2,7 @@
 #
 # Copyright (c) 2020-2022 Tatu Ylonen.  See file LICENSE and https://ylonen.org
 
+import re
 import unittest
 
 from wikitextprocessor import Wtp
@@ -1111,7 +1112,12 @@ dasfasddasfdas
         self.assertEqual(b, " heal")
 
     def test_link_trailing_not_latin(self):
+        _linktrailing_re = self.ctx.linktrailing_re
+        # Normally this alternative pattern would be provided by Wiktextract's
+        # WiktextractConfig or something similar.
+        self.ctx.linktrailing_re = re.compile(r"(?s)([a-z]+)(.*)")
         tree = self.parse("test", "[[appellāre]]の直説法所相現在第 foo")
+        self.ctx.linktrailing_re = _linktrailing_re
         self.assertEqual(len(tree.children), 2)
         a, b = tree.children
         self.assertEqual(a.kind, NodeKind.LINK)
