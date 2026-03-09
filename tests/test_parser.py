@@ -2,6 +2,7 @@
 #
 # Copyright (c) 2020-2022 Tatu Ylonen.  See file LICENSE and https://ylonen.org
 
+import re
 import unittest
 
 from wikitextprocessor import Wtp
@@ -1101,7 +1102,7 @@ dasfasddasfdas
         self.assertEqual(link.kind, NodeKind.LINK)
         self.assertEqual(link.largs, [["foo"], ["\n[bar"]])
 
-    def test_link_trailing(self):
+    def test_link_trailing_1(self):
         tree = self.parse("test", "[[Help]]ing heal")
         self.assertEqual(len(tree.children), 2)
         a, b = tree.children
@@ -1109,6 +1110,20 @@ dasfasddasfdas
         self.assertEqual(a.largs, [["Help"]])
         self.assertEqual(a.children, ["ing"])
         self.assertEqual(b, " heal")
+
+    def test_link_trailing_not_latin(self):
+        _linktrailing_re = self.ctx.linktrailing_re
+        # Normally this alternative pattern would be provided by Wiktextract's
+        # WiktextractConfig or something similar.
+        self.ctx.linktrailing_re = re.compile(r"(?s)([a-z]+)(.*)")
+        tree = self.parse("test", "[[appellāre]]の直説法所相現在第 foo")
+        self.ctx.linktrailing_re = _linktrailing_re
+        self.assertEqual(len(tree.children), 2)
+        a, b = tree.children
+        self.assertEqual(a.kind, NodeKind.LINK)
+        self.assertEqual(a.largs, [["appellāre"]])
+        self.assertEqual(a.children, [])
+        self.assertEqual(b, "の直説法所相現在第 foo")
 
     def test_url1(self):
         tree = self.parse("test", "this https://wikipedia.com link")

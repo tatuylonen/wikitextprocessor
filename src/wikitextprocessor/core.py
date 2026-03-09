@@ -282,6 +282,7 @@ class Wtp:
         "notes",  # NOTE error messages
         "wiki_notices",  # WIKI error messages
         "wikidata_session",
+        "linktrailing_re",
     )
 
     def __init__(
@@ -355,6 +356,14 @@ class Wtp:
         if not quiet:
             logger.setLevel(logging.DEBUG)
         self.wikidata_session: Session | None = None
+        # Default regex pattern, will sometimes cause trouble.
+        # Linktrailing is when you have [[a li]]nk that consumes the
+        # trailing suffix so that the whole word is blue. Languages
+        # without spaces, like Japanese, should use the English
+        # [a-z] pattern, other languages their own if `w+` actually
+        # causes problems in them.
+        # Will be modified later in wiktextract wxr through WiktionaryConfig.
+        self.linktrailing_re = re.compile(r"(?s)(\w+)(.*)")
 
     def create_db(self) -> None:
         from .wikidata import init_wikidata_cache

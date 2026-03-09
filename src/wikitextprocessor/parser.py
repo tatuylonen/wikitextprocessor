@@ -1029,7 +1029,7 @@ def text_fn(ctx: "Wtp", token: str) -> None:
         and not node.children[-1].children
         and not ctx.suppress_special
     ):
-        m = re.match(r"(?s)(\w+)(.*)", token)
+        m = ctx.linktrailing_re.match(token)
         if m:
             node.children[-1].children.append(m.group(1))
             token = m.group(2)
