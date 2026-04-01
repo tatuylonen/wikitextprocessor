@@ -283,6 +283,7 @@ class Wtp:
         "wiki_notices",  # WIKI error messages
         "wikidata_session",
         "linktrailing_re",
+        "quiet_output", # Prevent errors printed to stdout
     )
 
     def __init__(
@@ -294,6 +295,7 @@ class Wtp:
         extension_tags: Optional[dict[str, HTMLTagData]] = None,
         parser_function_aliases: dict[str, str] = {},
         quiet: bool = False,
+        quiet_output: bool = False,
     ):
         if isinstance(db_path, str):
             self.db_path: Optional[Path] = Path(db_path)
@@ -355,6 +357,7 @@ class Wtp:
         self.parser_function_aliases = parser_function_aliases
         if not quiet:
             logger.setLevel(logging.DEBUG)
+        self.quiet_output = quiet_output
         self.wikidata_session: Session | None = None
         # Default regex pattern, will sometimes cause trouble.
         # Linktrailing is when you have [[a li]]nk that consumes the
@@ -494,6 +497,8 @@ class Wtp:
             }
 
     def _fmt_errmsg(self, kind: str, msg: str, trace: Optional[str]) -> None:
+        if self.quiet_output:
+            return
         assert isinstance(kind, str)
         assert isinstance(msg, str)
         assert isinstance(trace, (str, type(None)))
