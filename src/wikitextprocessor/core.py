@@ -283,7 +283,7 @@ class Wtp:
         "wiki_notices",  # WIKI error messages
         "wikidata_session",
         "linktrailing_re",
-        "quiet_output", # Prevent errors printed to stdout
+        "quiet_output",  # Prevent errors printed to stdout
     )
 
     def __init__(
