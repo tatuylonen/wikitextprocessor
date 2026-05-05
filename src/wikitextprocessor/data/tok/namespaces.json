@@ -1,0 +1,267 @@
+{
+  "Media": {
+    "id": -2,
+    "name": "Media",
+    "subpages": false,
+    "content": false,
+    "aliases": [],
+    "issubject": true,
+    "istalk": false
+  },
+  "Special": {
+    "id": -1,
+    "name": "ilo",
+    "subpages": false,
+    "content": false,
+    "aliases": [],
+    "issubject": true,
+    "istalk": false
+  },
+  "Main": {
+    "id": 0,
+    "name": "Main",
+    "subpages": false,
+    "content": true,
+    "aliases": [],
+    "issubject": true,
+    "istalk": false
+  },
+  "Talk": {
+    "id": 1,
+    "name": "toki",
+    "subpages": true,
+    "content": false,
+    "aliases": [],
+    "issubject": false,
+    "istalk": true
+  },
+  "User": {
+    "id": 2,
+    "name": "jan",
+    "subpages": true,
+    "content": false,
+    "aliases": [],
+    "issubject": true,
+    "istalk": false
+  },
+  "User talk": {
+    "id": 3,
+    "name": "jan la toki",
+    "subpages": true,
+    "content": false,
+    "aliases": [
+      "toki jan"
+    ],
+    "issubject": false,
+    "istalk": true
+  },
+  "Project": {
+    "id": 4,
+    "name": "pali",
+    "subpages": true,
+    "content": false,
+    "aliases": [
+      "WP",
+      "Wikipedia",
+      "Wikipesija",
+      "lipu Wikipesija"
+    ],
+    "issubject": true,
+    "istalk": false
+  },
+  "Project talk": {
+    "id": 5,
+    "name": "pali la toki",
+    "subpages": true,
+    "content": false,
+    "aliases": [
+      "Wikipedia talk",
+      "Wikipesija la toki",
+      "lipu Wikipesija la toki"
+    ],
+    "issubject": false,
+    "istalk": true
+  },
+  "File": {
+    "id": 6,
+    "name": "sitelen",
+    "subpages": false,
+    "content": false,
+    "aliases": [
+      "Image",
+      "ijo"
+    ],
+    "issubject": true,
+    "istalk": false
+  },
+  "File talk": {
+    "id": 7,
+    "name": "sitelen la toki",
+    "subpages": true,
+    "content": false,
+    "aliases": [
+      "Image talk",
+      "toki ijo",
+      "toki sitelen"
+    ],
+    "issubject": false,
+    "istalk": true
+  },
+  "MediaWiki": {
+    "id": 8,
+    "name": "MediaWiki",
+    "subpages": true,
+    "content": false,
+    "aliases": [],
+    "issubject": true,
+    "istalk": false
+  },
+  "MediaWiki talk": {
+    "id": 9,
+    "name": "MediaWiki la toki",
+    "subpages": true,
+    "content": false,
+    "aliases": [
+      "toki MediaWiki"
+    ],
+    "issubject": false,
+    "istalk": true
+  },
+  "Template": {
+    "id": 10,
+    "name": "kipisi",
+    "subpages": true,
+    "content": false,
+    "aliases": [],
+    "issubject": true,
+    "istalk": false
+  },
+  "Template talk": {
+    "id": 11,
+    "name": "kipisi la toki",
+    "subpages": true,
+    "content": false,
+    "aliases": [
+      "toki kipisi"
+    ],
+    "issubject": false,
+    "istalk": true
+  },
+  "Help": {
+    "id": 12,
+    "name": "nasin ilo",
+    "subpages": true,
+    "content": false,
+    "aliases": [],
+    "issubject": true,
+    "istalk": false
+  },
+  "Help talk": {
+    "id": 13,
+    "name": "nasin ilo la toki",
+    "subpages": true,
+    "content": false,
+    "aliases": [
+      "toki pi nasin ilo"
+    ],
+    "issubject": false,
+    "istalk": true
+  },
+  "Category": {
+    "id": 14,
+    "name": "kulupu",
+    "subpages": false,
+    "content": false,
+    "aliases": [],
+    "issubject": true,
+    "istalk": false
+  },
+  "Category talk": {
+    "id": 15,
+    "name": "kulupu la toki",
+    "subpages": true,
+    "content": false,
+    "aliases": [
+      "toki kulupu"
+    ],
+    "issubject": false,
+    "istalk": true
+  },
+  "nimi": {
+    "id": 100,
+    "name": "nimi",
+    "subpages": false,
+    "content": true,
+    "aliases": [
+      "Word"
+    ],
+    "issubject": true,
+    "istalk": false
+  },
+  "nimi la toki": {
+    "id": 101,
+    "name": "nimi la toki",
+    "subpages": true,
+    "content": false,
+    "aliases": [
+      "Word talk",
+      "toki nimi"
+    ],
+    "issubject": false,
+    "istalk": true
+  },
+  "TimedText": {
+    "id": 710,
+    "name": "TimedText",
+    "subpages": false,
+    "content": false,
+    "aliases": [],
+    "issubject": true,
+    "istalk": false
+  },
+  "TimedText talk": {
+    "id": 711,
+    "name": "TimedText talk",
+    "subpages": false,
+    "content": false,
+    "aliases": [],
+    "issubject": false,
+    "istalk": true
+  },
+  "Module": {
+    "id": 828,
+    "name": "Module",
+    "subpages": true,
+    "content": false,
+    "aliases": [],
+    "issubject": true,
+    "istalk": false
+  },
+  "Module talk": {
+    "id": 829,
+    "name": "Module talk",
+    "subpages": true,
+    "content": false,
+    "aliases": [],
+    "issubject": false,
+    "istalk": true
+  },
+  "Event": {
+    "id": 1728,
+    "name": "Event",
+    "subpages": true,
+    "content": false,
+    "aliases": [],
+    "issubject": true,
+    "istalk": false
+  },
+  "Event talk": {
+    "id": 1729,
+    "name": "Event talk",
+    "subpages": true,
+    "content": false,
+    "aliases": [],
+    "issubject": false,
+    "istalk": true
+  }
+}
