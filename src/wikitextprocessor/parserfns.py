@@ -1673,6 +1673,20 @@ def int_fn(
     return f"[[:{wtp.LOCAL_NS_NAME_BY_ID.get(10, '')}:int:]]"
 
 
+def isbn_fn(
+    wtp: "Wtp", fn_name: str, args: list[str], expander: Callable[[str], str]
+) -> str:
+    # https://www.mediawiki.org/wiki/Help:Magic_words#Miscellaneous
+    # `#isbn` actually parses the values given to it to check if
+    # they're real ISBN numbers (or in the database? either way)
+    # but we won't be implementing something like that for Wikitextprocessor.
+    if len(args) >= 1:
+        # We will not be handling ISBN numbers correctly for this, too much
+        # work or an extra dependency
+        return f"ISBN {args[0]}"
+    return ""
+
+
 # This list should include names of predefined parser functions and
 # predefined variables (some of which can take arguments using the same
 # syntax as parser functions and we treat them as parser functions).
@@ -1825,6 +1839,7 @@ PARSER_FUNCTIONS = {
     "#section-x": unimplemented_fn,
     "#language": language_fn,
     "int": int_fn,
+    "#isbn": isbn_fn,
 }
 
 
