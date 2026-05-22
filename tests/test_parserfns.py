@@ -243,3 +243,24 @@ class TestParserFunctions(TestCase):
             ),
             'бо́лен<span style="color:#c0a300;"><sup>△</sup></span>',
         )
+
+    def test_isbn_fn1(self) -> None:
+        self.wtp.start_page("Test")
+        self.assertEqual(
+            self.wtp.expand("{{#isbn}}"),
+            "",
+        )
+
+    def test_isbn_fn2(self) -> None:
+        self.wtp.start_page("Test")
+        self.assertEqual(
+            self.wtp.expand("{{#isbn:12345}}"),
+            "ISBN 12345",
+        )
+
+    def test_isbn_fn3(self) -> None:
+        self.wtp.start_page("Test")
+        self.assertEqual(
+            self.wtp.expand("{{#isbn:12345|2}}"),
+            "ISBN 12345",
+        )
