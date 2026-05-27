@@ -154,7 +154,13 @@ class NodeExpTests(unittest.TestCase):
         self.backcvt('{| class="x"\n|}', '\n{| class="x"\n\n|}\n')
 
     def test_tablecaption1(self):
-        self.backcvt("{|\n|+\ncapt\n|}", "\n{| \n\n|+ \n\ncapt\n\n|}\n")
+        self.backcvt("{|\n|+\ncapt\n|}", "\n{| \n\n|+\n\ncapt\n\n|}\n")
+
+    def test_tablecaption2(self):
+        self.backcvt(
+            "{|\n |+ class='foo' |\ncapt\n|}",
+            '\n{| \n\n|+ class="foo" |\n\ncapt\n\n|}\n',
+        )
 
     def test_tablerowcell1(self):
         self.backcvt(

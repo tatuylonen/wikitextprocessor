@@ -139,7 +139,10 @@ def to_wikitext(
             parts.append(recurse(node.children))
             parts.append("\n|}\n")
         elif kind == NodeKind.TABLE_CAPTION:
-            parts.append("\n|+ {}\n".format(to_attrs(node)))
+            if tc_attrs := to_attrs(node):
+                parts.append("\n|+ {} |\n".format(tc_attrs))
+            else:
+                parts.append("\n|+\n")
             parts.append(recurse(node.children))
         elif kind == NodeKind.TABLE_ROW:
             parts.append("\n|- {}\n".format(to_attrs(node)))
