@@ -1414,7 +1414,8 @@ def table_start_fn(ctx: "Wtp", token: str) -> None:
 
 # something=other, something="other", something = 'other'
 attr_assignment_pair = (
-    r"""\s*[^"'>/=\0-\037\s]+""" r"""\s*=\s*("[^"]*"|'[^']*'|[^"'<>`\s]+)"""
+    r"""\s*[^"'>/=\0-\037\s]+"""
+    r"""\s*=\s*("[^"]*"|'[^']*'|[^"'<>`\s]+)"""
 )
 
 attr_assignments_re = re.compile(
@@ -1428,7 +1429,7 @@ def check_for_attributes(ctx: "Wtp", node: WikiNode) -> tuple[bool, str]:
 
     # Old behavior added here to return earlier without needing
     # to use regex matching; if the old version worked, why not?
-    # If this fail, then resort to the reverse parsing + regex.
+    # If this fails, then resort to the reverse parsing + regex.
     _parser_merge_str_children(ctx)
     if len(node.children) == 1 and isinstance(node.children[0], str):
         ret = node.children.pop()
@@ -1623,7 +1624,10 @@ def table_cell_fn(ctx: "Wtp", token: str) -> None:
                 if len(node.children) == 1 and isinstance(
                     attrs := node.children[0], str
                 ):
-                    node.children.pop()
+                    # At this point of parsing, we're just behind the start
+                    # of one of the above node types; if they are followed
+                    # by a `|`, that means the first child is an attr section
+                    node.children.pop(0)
                     # Using the walrus operator and pop()ing without return
                     # is just to make the type-checker happy without using
                     # an assert that attrs is definitely a str...
