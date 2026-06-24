@@ -608,6 +608,30 @@ MORE
     def test_formatnum10(self):
         self.parserfn("{{formatnum:12345}}", "12,345")
 
+    def test_formatnum11(self):
+        # only numerals + . + ,
+        self.parserfn("{{formatnum:µ<sub>B</sub>}}", "µ<sub>B</sub>")
+
+    def test_formatnum12(self):
+        # no bad decimals
+        self.parserfn("{{formatnum:123.4.5}}", "123.4.5")
+
+    def test_formatnum13(self):
+        # no spaces
+        self.parserfn("{{formatnum:123 4.5}}", "123 4.5")
+
+    def test_formatnum13_b(self):
+        # ... except a the start and end
+        self.parserfn("{{formatnum:  1234.5 }}", "1,234.5")
+
+    def test_formatnum14(self):
+        # bad commas allowed when |R|eversing
+        self.parserfn("{{formatnum:123,4.5|R}}", "1234.5")
+
+    def test_formatnum15(self):
+        # commas in decimals allowed when |R|eversing
+        self.parserfn("{{formatnum:1234.5,4|R}}", "1234.54")
+
     def test_dateformat1(self):
         self.parserfn("{{#dateformat:25 dec 2009|ymd}}", "2009 Dec 25")
 

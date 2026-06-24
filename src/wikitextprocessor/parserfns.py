@@ -586,12 +586,20 @@ def ucfirst_fn(
     return capitalizeFirstOnly(t)
 
 
+ALLOWED = {".", ",", "1", "2", "3", "4", "5", "6", "7", "8", "9", "0"}
+
+
 def formatnum_fn(
     ctx: "Wtp", fn_name: str, args: list[str], expander: Callable[[str], str]
 ) -> str:
     """Implements the formatnum parser function."""
     arg0 = expander(args[0]).strip() if args else ""
+    if arg0 == "" or not (set(arg0) <= ALLOWED) or arg0.count(".") > 1:
+        return arg0
     arg1 = expander(args[1]).strip() if len(args) >= 2 else ""
+    if "," in arg0:
+        if arg1 != "R":
+            return arg0
     if arg1 == "R":
         # Reverse formatting
         # XXX this is a very simplified implementation, should handle more cases
