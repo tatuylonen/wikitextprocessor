@@ -632,6 +632,38 @@ MORE
         # commas in decimals allowed when |R|eversing
         self.parserfn("{{formatnum:1234.5,4|R}}", "1234.54")
 
+    def test_formatnum_fr_locale_1(self):
+        self.ctx.lang_code = "fr"
+        self.ctx.init_data_folder()
+        self.ctx.init_localization_data()
+        self.parserfn("{{formatnum:1234.54}}", "1\xa0234,54")
+
+    def test_formatnum_fr_locale_2(self):
+        self.ctx.lang_code = "fr"
+        self.ctx.init_data_folder()
+        self.ctx.init_localization_data()
+        self.parserfn("{{formatnum:1 234,54|R}}", "1234.54")
+
+    def test_formatnum_fr_locale_3(self):
+        # French locale data has non-breaking space as the numeral separator,
+        # which has a separate kludge so that normal space works too.
+        self.ctx.lang_code = "fr"
+        self.ctx.init_data_folder()
+        self.ctx.init_localization_data()
+        self.parserfn("{{formatnum:1\xa0234,54|R}}", "1234.54")
+
+    def test_formatnum_hi_locale_1(self):
+        self.ctx.lang_code = "hi"
+        self.ctx.init_data_folder()
+        self.ctx.init_localization_data()
+        self.parserfn("{{formatnum:123456789.0123}}", "12,34,56,789.0123")
+
+    def test_formatnum_hi_locale_2(self):
+        self.ctx.lang_code = "hi"
+        self.ctx.init_data_folder()
+        self.ctx.init_localization_data()
+        self.parserfn("{{formatnum:12,34,56,789.0123|R}}", "123456789.0123")
+
     def test_dateformat1(self):
         self.parserfn("{{#dateformat:25 dec 2009|ymd}}", "2009 Dec 25")
 
