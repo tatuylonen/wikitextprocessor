@@ -74,6 +74,16 @@ NamespaceDataEntry = TypedDict(
     total=True,  # fields are obligatory
 )
 
+LocalizationData = TypedDict(
+    "LocalizationData",
+    {
+        "decimal_point": str,
+        "grouping_separator": str,
+        "grouping_method": tuple[int, ...],
+    },
+    total=True,
+)
+
 JsonValues = Union[str, int, float, list, dict, bool, None]
 # Can't specify _LuaTable contents further, so no use specifying the Dict either
 ParentData = tuple[str, Union["_LuaTable", dict[Union[int, str], str]]]
@@ -265,6 +275,8 @@ class Wtp:
         "suppress_special",  # XXX never set to True???
         "data_folder",
         "NAMESPACE_DATA",
+        "LOCALIZATION_DATA",
+        "LOCALIZATION_ALLOWED_REVERSABLE_NUMBER_CHARS",
         "LOCAL_NS_NAME_BY_ID",  # Local namespace names dictionary
         "NS_ID_BY_LOCAL_NAME",
         "lang_code",
@@ -322,8 +334,9 @@ class Wtp:
         self.expand_stack: list[str] = []  # XXX: this has a confusing name
         self.parser_stack: list["WikiNode"] = []
         self.lang_code = lang_code  # dump file language code
-        self.data_folder = files("wikitextprocessor") / "data" / lang_code
+        self.init_data_folder()
         self.init_namespace_data()
+        self.init_localization_data()
         self.create_db()
         self.template_override_funcs = template_override_funcs
         self.beginning_of_line = False
@@ -495,6 +508,39 @@ class Wtp:
                 data["name"]: data["id"]
                 for data in self.NAMESPACE_DATA.values()
             }
+
+    def init_localization_data(self) -> None:
+        loc_path = self.data_folder.joinpath("localization.json")
+        if not loc_path.is_file():
+            # default localization
+            self.LOCALIZATION_DATA: LocalizationData = {
+                "decimal_point": ".",
+                "grouping_separator": ",",
+                "grouping_method": (3, 0),
+            }
+            self.LOCALIZATION_ALLOWED_REVERSABLE_NUMBER_CHARS: set[str] = set(
+                ",.0123456789"
+            )
+            return
+        with loc_path.open(encoding="utf-8") as f:
+            self.LOCALIZATION_DATA = json.load(f)
+
+        self.LOCALIZATION_ALLOWED_REVERSABLE_NUMBER_CHARS = set(
+            # XXX this could also be other numeral characters
+            # locale.ALT_DIGITS is buggy in our version of Python,
+            # check later if it's usable.
+            "1234567890"
+            + self.LOCALIZATION_DATA["decimal_point"]
+            + self.LOCALIZATION_DATA["grouping_separator"]
+            + (
+                " "
+                if self.LOCALIZATION_DATA["grouping_separator"] == "\xa0"
+                else ""
+            ),
+        )
+
+    def init_data_folder(self) -> None:
+        self.data_folder = files("wikitextprocessor") / "data" / self.lang_code
 
     def _fmt_errmsg(self, kind: str, msg: str, trace: Optional[str]) -> None:
         if self.quiet_output:

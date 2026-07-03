@@ -586,33 +586,118 @@ def ucfirst_fn(
     return capitalizeFirstOnly(t)
 
 
+# XXX If we implement different numeral characters (western arabic numerals,
+# bengali, etc.) this should be only used for "raw" strings and R)eversable
+# strings need to allow for those other numeral characters, and if the R-flag
+# is set, those numeral characters (and other things) should be allowed.
+# XXX if implementing other numeral chars, check out str.maketrans() and
+# translate; the mapping needs to be hardcoded or a separate config file,
+# because I haven't found any sensible standard library thing for this.
+ALLOWED_FORMATNUM_CHARS_NOT_R = {
+    ".",
+    ",",
+    "1",
+    "2",
+    "3",
+    "4",
+    "5",
+    "6",
+    "7",
+    "8",
+    "9",
+    "0",
+}
+
+
 def formatnum_fn(
     ctx: "Wtp", fn_name: str, args: list[str], expander: Callable[[str], str]
 ) -> str:
     """Implements the formatnum parser function."""
     arg0 = expander(args[0]).strip() if args else ""
     arg1 = expander(args[1]).strip() if len(args) >= 2 else ""
+
     if arg1 == "R":
-        # Reverse formatting
-        # XXX this is a very simplified implementation, should handle more cases
-        return arg0.replace(",", "")
+        return _formatnum_reverse(ctx, arg0)
+
+    if (
+        arg0 == ""
+        # <= is a set subset comparison, for those of you who
+        # don't know (like me, who wrote this piece of code)
+        or not (set(arg0) <= ALLOWED_FORMATNUM_CHARS_NOT_R)
+        or arg0.count(".") > 1
+    ):
+        return arg0
+
     if arg1 == "NOSEP":
         sep = ""
     else:
-        sep = ","
-    comma = "."  # Really should depend on locale
+        sep = ctx.LOCALIZATION_DATA["grouping_separator"]
+
+    if sep in arg0:
+        # separator only allowed when R)eversing
+        return arg0
+
+    decimal_point = ctx.LOCALIZATION_DATA["decimal_point"]
     # XXX implement support for non-english locales for digits
-    orig = arg0.split(".")
+    orig = arg0.split(".")  # remember, raw input strungs "." always decimal
     first = orig[0]
-    parts = []
-    first = "".join(reversed(first))
-    for i in range(0, len(first), 3):
-        parts.append("".join(reversed(first[i : i + 3])))
-    parts = [sep.join(reversed(parts))]
+
+    parts: list[str] = []
+    # Tuple with ints, usually (3, 0).
+    # (2, 2, 2, 3, 0) means "first do three groups of 2 and then a group of 3;
+    # at 0, just start repeating the previous group.
+    # TECHNICALLY the docs/specs say that instead of ending with a "0" this
+    # could end with locale.
+    algo = ctx.LOCALIZATION_DATA["grouping_method"]
+    if len(algo) > 0:
+        first = "".join(reversed(first))
+        i = 0
+        algo_i = 0
+        group_size = algo[algo_i]
+        while i < len(first):
+            parts.append("".join(reversed(first[i : i + group_size])))
+            i += group_size
+            if algo_i + 1 < len(algo):
+                algo_i += 1
+                if algo[algo_i] > 0:
+                    group_size = algo[algo_i]
+        # for i in range(0, len(first), 3):
+        #     parts.append("".join(reversed(first[i : i + 3])))
+        parts = [sep.join(reversed(parts))]
+    else:
+        parts = [first]
+
     if len(orig) > 1:
-        parts.append(comma)
-        parts.append(".".join(orig[1:]))
+        parts.append(decimal_point)
+        parts.extend(orig[1:])
+
     return "".join(parts)
+
+
+def _formatnum_reverse(ctx: "Wtp", arg0: str) -> str:
+    # Reverse formatting
+    # XXX this is a very simplified implementation, should handle more cases
+    decimal = ctx.LOCALIZATION_DATA["decimal_point"]
+    if (
+        arg0 == ""
+        # <= is a set subset comparison, for those of you who
+        # don't know (like me, who wrote this piece of code)
+        or not (set(arg0) <= ctx.LOCALIZATION_ALLOWED_REVERSABLE_NUMBER_CHARS)
+        or arg0.count(decimal) > 1
+    ):
+        return arg0
+
+    sep = ctx.LOCALIZATION_DATA["grouping_separator"]
+
+    # XXX implement other numeral systems, like west arabic or bengali
+
+    # Kludge for French; the locale data has non-breaking spaces as the
+    # separators, but it seems clear we must also allow normal spaces
+    if sep == "\xa0":  # non-breaking space
+        return arg0.replace(decimal, ".").replace(sep, "").replace(" ", "")
+
+    # Currently only doing the minimum by removing thousand separators
+    return arg0.replace(decimal, ".").replace(sep, "")
 
 
 def dateformat_fn(
