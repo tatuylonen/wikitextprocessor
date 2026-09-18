@@ -2208,15 +2208,66 @@ for x in MAGIC_WORDS:
 
 
 def bold_follows(parts: list[str], i: int) -> bool:
-    """Checks if there is a bold (''') in parts after parts[i].  We allow
-    intervening italics ('')."""
-    parts = parts[i + 1 :]
-    for p in parts:
-        if not p.startswith("''"):
+    """Checks whether the marker after parts[i] is a bold one.  This picks
+    which tag a ''''' opens outermost: doQuotes commits at the next marker,
+    so a closing '' puts the bold outside and a ''' the italic."""
+    return i + 2 < len(parts) and parts[i + 2] != "''"
+
+
+def balance_apostrophes(parts: list[str]) -> list[str]:
+    """Normalizes one line's apostrophe runs: the two preliminary passes of
+    ``Parser::doQuotes()`` in MediaWiki core (``includes/Parser/Parser.php``).
+    ``parts`` is its ``$arr``, text and runs alternating on ``('{2,})``.
+
+    Pass one shortens each run to a 2, 3 or 5 apostrophe marker, moving the
+    excess into the preceding text.  Pass two re-reads a bold marker as
+    apostrophe + italic marker when both counts are odd, so ``l'''orient''``
+    gives ``l'`` plus italic ``orient``.
+    """
+    num_bold = 0
+    num_italics = 0
+    for i in range(1, len(parts), 2):
+        # 4 = literal apostrophe + bold, >5 = literals + both (T15227).
+        length = len(parts[i])
+        if length == 4:
+            parts[i - 1] += "'"
+            parts[i] = "'''"
+        elif length > 5:
+            parts[i - 1] += "'" * (length - 5)
+            parts[i] = "'''''"
+        if parts[i] != "'''":
+            num_italics += 1
+        if parts[i] != "''":
+            num_bold += 1
+
+    if num_italics % 2 == 0 or num_bold % 2 == 0:
+        return parts
+
+    # Prefer a marker after a single-letter word, then a word, then a space.
+    first_single_letter_word = -1
+    first_multi_letter_word = -1
+    first_space = -1
+    for i in range(1, len(parts), 2):
+        if parts[i] != "'''":
             continue
-        if p.startswith("'''"):
-            return True
-    return False
+        before = parts[i - 1]
+        if before.endswith(" "):
+            if first_space < 0:
+                first_space = i
+        elif before[-2:-1] == " ":
+            first_single_letter_word = i
+            break
+        elif first_multi_letter_word < 0:
+            first_multi_letter_word = i
+
+    # Give the apostrophe back to the text and shorten the marker.
+    for i in (first_single_letter_word, first_multi_letter_word, first_space):
+        if i > -1:
+            parts[i - 1] += "'"
+            parts[i] = "''"
+            break
+
+    return parts
 
 
 def token_iter(ctx: "Wtp", text: str) -> Iterator[tuple[bool, str]]:
@@ -2281,83 +2332,36 @@ def token_iter(ctx: "Wtp", text: str) -> Iterator[tuple[bool, str]]:
                 yield True, ">" + start
             continue
         # Partition on ''+, so that we can detect bold/italics
-        parts = re.split(parts_re, line)
-        state = 0  # 1=in italic, 2=in bold, 3=in both
+        parts = balance_apostrophes(re.split(parts_re, line))
+        # Bit flags: 1 = in italic, 2 = in bold, 3 = in both, 0 = neither.
+        # Each marker opens its tag if closed and closes it if open, so XOR
+        # toggles the flag: ^= 1 flips italic, ^= 2 bold, ^= 3 both.
+        state = 0
         for i, part in enumerate(parts):
-            if part.startswith("''"):
-                # This is a bold/italic part.  Scan the rest of the line
-                # to determine how it should be interpreted if there are
-                # more than two apostrophes.
-                if part.startswith("'''''"):
-                    if state == 1:  # in italic
-                        yield True, "''"
-                        yield True, "'''"
-                        part = part[5:]
-                        state = 2
-                    elif state == 2:  # in bold
-                        yield True, "'''"
-                        yield True, "''"
-                        part = part[5:]
-                        state = 1
-                    elif state == 3:  # in both
-                        yield True, "'''"
-                        yield True, "''"
-                        state = 0
-                        part = part[5:]
-                    else:  # in nothing
-                        if bold_follows(parts, i):
-                            yield True, "''"
-                            yield True, "'''"
-                        else:
-                            yield True, "'''"
-                            yield True, "''"
-                        part = part[5:]
-                        state = 3
-                elif part.startswith("'''"):
-                    if state == 1:  # in italic
-                        if bold_follows(parts, i):
-                            yield True, "'''"
-                            part = part[3:]
-                            state = 3
-                        else:
-                            yield True, "''"
-                            part = part[2:]
-                            state = 0
-                    elif state == 2:  # in bold
-                        yield True, "'''"
-                        part = part[3:]
-                        state = 0
-                    elif state == 3:  # in both
-                        yield True, "'''"
-                        part = part[3:]
-                        state = 1
-                    else:  # in nothing
-                        yield True, "'''"
-                        part = part[3:]
-                        state = 2
-                elif part.startswith("''"):
-                    if state == 1:  # in italic
-                        yield True, "''"
-                        part = part[2:]
-                        state = 0
-                    elif state == 2:  # in bold
-                        yield True, "''"
-                        part = part[2:]
-                        state = 3
-                    elif state == 3:  # in both
-                        yield True, "''"
-                        part = part[2:]
-                        state = 2
-                    else:  # in nothing
-                        yield True, "''"
-                        part = part[2:]
-                        state = 1
-                if part:
-                    # Shouldn't contain MAGIC_SQUOTE_CHAR
-                    yield False, part
+            # Markers are at the odd indices; go by index, since an even part
+            # can now start with apostrophes that are literal text.
+            if i % 2 == 1:
+                # Each marker is 2, 3 or 5 apostrophes: italic, bold, both.
+                if len(part) != 5:
+                    yield True, part
+                    state ^= 1 if len(part) == 2 else 2
+                    continue
+                # Inner tag first: italic if it closes, or if bold outlives it.
+                if state == 1 or (state == 0 and bold_follows(parts, i)):
+                    yield True, "''"
+                    yield True, "'''"
+                else:
+                    yield True, "'''"
+                    yield True, "''"
+                state ^= 3
                 continue
             # All other parts handled with normal tokenization
             pos = 0
+            # Trailing apostrophes here are literal text from
+            # balance_apostrophes(); strip before MAGIC_SQUOTE_CHAR adds more.
+            stripped = part.rstrip("'")
+            literal_quotes = part[len(stripped) :]
+            part = stripped
             # Revert to single quotes from MAGIC_SQUOTE_CHAR
             part = part.replace(MAGIC_SQUOTE_CHAR, "'")
             # print(f"{part=}")
@@ -2384,8 +2388,8 @@ def token_iter(ctx: "Wtp", text: str) -> Iterator[tuple[bool, str]]:
                         yield True, token
                 else:
                     yield True, token
-            if pos != len(part):
-                yield False, part[pos:]
+            if pos != len(part) or literal_quotes:
+                yield False, part[pos:] + literal_quotes
 
 
 def process_text(ctx: "Wtp", text: str) -> None:

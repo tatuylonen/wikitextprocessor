@@ -560,8 +560,158 @@ dasfasddasfdas
         a, b, c = tree.children
         self.assertEqual(a, "a")
         self.assertEqual(b.kind, NodeKind.ITALIC)
-        self.assertEqual(b.children, ["test"])
-        self.assertEqual(c, "'b")
+        self.assertEqual(b.children, ["test'"])
+        self.assertEqual(c, "b")
+
+    # The tests below come from MediaWiki core's apostrophe corpus, the
+    # reference for what doQuotes() (see balance_apostrophes()) produces,
+    # under https://github.com/wikimedia/mediawiki/blob/HEAD/ :
+    #   tests/parser/quotes.txt      -- the dedicated quote test file
+    #   tests/parser/parserTests.txt -- "Mixing markup for italics and bold"
+    #   includes/Parser/Parser.php   -- doQuotes() and the comments in it
+    #
+    # Each test names the upstream "!! test" it came from and expects the
+    # PHP parser's output, not Parsoid's.
+
+    def quotes_html(self, text: str) -> str:
+        """Renders only the bold/italic markup of ``text``, so the tests
+        below can be written like ``quotes.txt``.
+        """
+
+        def render(node) -> str:
+            if isinstance(node, str):
+                return node
+            inner = "".join(render(c) for c in node.children)
+            if node.kind == NodeKind.ITALIC:
+                return "<i>" + inner + "</i>"
+            if node.kind == NodeKind.BOLD:
+                return "<b>" + inner + "</b>"
+            return inner
+
+        return render(self.parse("test", text))
+
+    def test_quotes_opening_sequences(self):
+        # quotes.txt, "### N-quote opening sequence tests"; (N,M) = the runs.
+        for text, expected in [
+            ("''foo''", "<i>foo</i>"),  # (2,2)
+            ("''foo'''", "<i>foo'</i>"),  # (2,3)
+            ("''foo''''", "<i>foo''</i>"),  # (2,4)
+            ("''foo'''''", "<i>foo</i>"),  # (2,5)
+            ("'''foo''", "'<i>foo</i>"),  # (3,2)
+            ("'''foo'''", "<b>foo</b>"),  # (3,3)
+            ("'''foo''''", "<b>foo'</b>"),  # (3,4)
+            ("'''foo'''''", "<b>foo</b>"),  # (3,5)
+            ("''''foo''", "''<i>foo</i>"),  # (4,2)
+            ("''''foo'''", "'<b>foo</b>"),  # (4,3)
+            ("''''foo''''", "'<b>foo'</b>"),  # (4,4)
+            ("''''foo'''''", "'<b>foo</b>"),  # (4,5)
+            ("'''''foo''", "<b><i>foo</i></b>"),  # (5,2)
+            ("'''''foo'''", "<i><b>foo</b></i>"),  # (5,3)
+            ("'''''foo''''", "<i><b>foo'</b></i>"),  # (5,4)
+            ("'''''foo'''''", "<i><b>foo</b></i>"),  # (5,5)
+            ("'''''foo''''''", "<i><b>foo'</b></i>"),  # (5,6)
+        ]:
+            with self.subTest(text=text):
+                self.assertEqual(self.quotes_html(text), expected)
+
+    def test_quotes_four_apostrophes(self):
+        # quotes.txt, "Italics and bold: 4-quote opening sequence: (4,4)"
+        # and "(3,4)".  T15227: "If there are ever four apostrophes, assume
+        # the first is supposed to be text", so it lands *before* the marker.
+        self.assertEqual(self.quotes_html("''''foo''''"), "'<b>foo'</b>")
+        tree = self.parse("test", "'''foo''''")
+        self.assertEqual(len(tree.children), 1)
+        self.assertEqual(tree.children[0].kind, NodeKind.BOLD)
+        self.assertEqual(tree.children[0].children, ["foo'"])
+
+    def test_quotes_odd_markers_prefer_single_letter_word(self):
+        # quotes.txt, "Italics and bold", last-but-one list item.  A marker
+        # with "a single-letter word before it" beats an earlier space one.
+        # Real markup: https://de.wiktionary.org/wiki/orient (ca) has
+        # "per l'''orient.''", from a language that elides the article.
+        self.assertEqual(
+            self.quotes_html("plain l'''italic''plain"),
+            "plain l'<i>italic</i>plain",
+        )
+
+    def test_quotes_odd_markers_prefer_multi_letter_word(self):
+        # quotes.txt, "Unclosed and unmatched quotes": no single-letter word.
+        self.assertEqual(
+            self.quotes_html("Plain ''italic'''s plain"),
+            "Plain <i>italic'</i>s plain",
+        )
+
+    def test_quotes_even_markers_untouched(self):
+        # quotes.txt, "multiple quote sequences: (2,4,2)": even italics
+        # count, so the bold marker is left alone even though it follows a
+        # word.  The fix needs *both* counts odd.
+        self.assertEqual(
+            self.quotes_html("''foo''''bar''"), "<i>foo'<b>bar</b></i>"
+        )
+
+    def test_quotes_bolditalic_nesting_follows_next_marker(self):
+        # quotes.txt, "Italics and bold" (items 11, 10) and "Unclosed and
+        # unmatched quotes": a closing '' keeps bold outside, a ''' italic.
+        self.assertEqual(
+            self.quotes_html("plain'''''bold-italic''bold'''plain"),
+            "plain<b><i>bold-italic</i>bold</b>plain",
+        )
+        self.assertEqual(
+            self.quotes_html("plain'''''bold-italic'''italic''plain"),
+            "plain<i><b>bold-italic</b>italic</i>plain",
+        )
+        self.assertEqual(
+            self.quotes_html(
+                "'''''Bold italic text ''with italic deactivated''"
+                " in between.'''''"
+            ),
+            "<b><i>Bold italic text </i>with italic deactivated"
+            "<i> in between.</i></b>",
+        )
+        self.assertEqual(
+            self.quotes_html(
+                "'''''Bold italic text '''with bold deactivated'''"
+                " in between.'''''"
+            ),
+            "<i><b>Bold italic text </b>with bold deactivated"
+            "<b> in between.</b></i>",
+        )
+
+    def test_quotes_possessives(self):
+        # quotes.txt, "Unclosed and unmatched quotes", under "Unmatching".
+        self.assertEqual(
+            self.quotes_html(
+                "'''This year''''s election ''should'' beat '''last year''''s."
+            ),
+            "<b>This year'</b>s election <i>should</i> beat"
+            " <b>last year'</b>s.",
+        )
+        self.assertEqual(
+            self.quotes_html("''Tom'''s car is bigger than ''Susan'''s."),
+            "<i>Tom<b>s car is bigger than </b></i><b>Susan</b>s.",
+        )
+        # quotes.txt, "Italics and possessives (2)" (T51926, Flaming Pie).
+        self.assertEqual(
+            self.quotes_html(
+                "'''''Flaming Pie''''' is ... released in 1997."
+                " In ''Flaming Pie'''s liner notes"
+            ),
+            "<i><b>Flaming Pie</b></i> is ... released in 1997."
+            " In <i>Flaming Pie'</i>s liner notes",
+        )
+
+    def test_quotes_pathological(self):
+        # parserTests.txt, "Mixing markup for italics and bold": the T15227
+        # shift and the odd-marker fix at once, upstream's "pathological".
+        self.assertEqual(
+            self.quotes_html("'''bold''''''bold''bolditalics'''''"),
+            "'<i>bold'</i><b>bold<i>bolditalics</i></b>",
+        )
+        # quotes.txt, "Bold conversion test".
+        self.assertEqual(
+            self.quotes_html("a b'''c ''d e'''f'' g h'''i ''j"),
+            "a b'<i>c </i>d e<b>f<i> g h</i></b><i>i </i>j",
+        )
 
     def test_italic3(self):
         tree = self.parse("test", "a''t{{test}}t''b")
@@ -626,8 +776,8 @@ dasfasddasfdas
         self.assertEqual(len(tree.children), 2)
         a, b = tree.children
         self.assertEqual(a.kind, NodeKind.BOLD)
-        self.assertEqual(a.children, ["C"])
-        self.assertEqual(b, "'est")
+        self.assertEqual(a.children, ["C'"])
+        self.assertEqual(b, "est")
         t = self.ctx.node_to_wikitext(tree)
         self.assertEqual(t, "'''C''''est")
 
@@ -3228,9 +3378,10 @@ text
         # pr #372
         self.ctx.start_page("embryo")
         root = self.ctx.parse("'''ʊbar''\n\n===Pronunciation===")
-        self.assertEqual(root.children[0].kind, NodeKind.BOLD)
-        self.assertEqual(root.children[0].children[1].kind, NodeKind.ITALIC)
-        self.assertEqual(root.children[2].kind, NodeKind.LEVEL3)
+        self.assertEqual(root.children[0], "'")
+        self.assertEqual(root.children[1].kind, NodeKind.ITALIC)
+        self.assertEqual(root.children[1].children, ["ʊbar"])
+        self.assertEqual(root.children[3].kind, NodeKind.LEVEL3)
 
     def test_not_parser_function_template(self):
         # https://es.wiktionary.org/wiki/gatos
