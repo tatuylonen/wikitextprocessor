@@ -641,6 +641,36 @@ return export""",
             "",
         )
 
+    def test_mw_message_raw_message_params(self):
+        # Module:Citation/CS1 substitutes message parameters with mw.message
+        self.wtp.start_page("")
+        self.wtp.add_page(
+            "Module:test",
+            828,
+            """local export = {}
+function export.test(frame)
+  return mw.message.newRawMessage("$1 and $2 and $3", "one", "two"):plain()
+end
+return export""",
+        )
+        self.assertEqual(
+            self.wtp.expand("{{#invoke:test|test}}"), "one and two and $3"
+        )
+
+    def test_mw_message_raw_message_double_digit_param(self):
+        self.wtp.start_page("")
+        self.wtp.add_page(
+            "Module:test",
+            828,
+            """local export = {}
+function export.test(frame)
+  return mw.message.newRawMessage("$10 $1", "one", "two", "three", "four",
+      "five", "six", "seven", "eight", "nine", "ten"):plain()
+end
+return export""",
+        )
+        self.assertEqual(self.wtp.expand("{{#invoke:test|test}}"), "ten one")
+
     def test_mw_site_canonical_ns_key(self):
         # https://cs.wiktionary.org/wiki/Modul:Maintenance#L-193
         # `mw.site.namespaces.Category.name`

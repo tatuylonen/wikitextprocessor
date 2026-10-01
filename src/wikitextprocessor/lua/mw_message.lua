@@ -127,7 +127,13 @@ local function makeMessage(options)
 
     function obj:plain()
         checkSelf(self, 'plain')
-        return data.keys
+        if not data.rawMessage then
+            return data.keys
+        end
+        -- https://www.mediawiki.org/wiki/Manual:Messages_API
+        return (data.rawMessage:gsub('$(%d+)', function(n)
+            return tostring(data.params[tonumber(n)] or '$' .. n)
+        end))
     end
 
     function obj:exists()
