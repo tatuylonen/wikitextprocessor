@@ -723,7 +723,12 @@ class Wtp:
         assert isinstance(args, (list, tuple))
         assert nowiki in (True, False)
         # print("save_value", kind, args, nowiki)
-        args = tuple(args)
+        args = tuple(
+            arg.replace(MAGIC_LBRACKET_CHAR, "[").replace(
+                MAGIC_RBRACKET_CHAR, "]"
+            )
+            for arg in args
+        )
         v: CookieData = (kind, args, nowiki)
         if v in self.rev_ht:
             return self.rev_ht[v]
@@ -962,8 +967,9 @@ class Wtp:
         # text = re.sub(r"[^|]\}", r"\1&rbrace;", text)
         # text = re.sub(r"[^|]\}", r"\1&rbrace;", text)
         # text = re.sub(r"\|", "&vert;", text)
-        text = text.replace(MAGIC_LBRACKET_CHAR, "[")
-        text = text.replace(MAGIC_RBRACKET_CHAR, "]")
+        text = text.replace(MAGIC_LBRACKET_CHAR, "[").replace(
+            MAGIC_RBRACKET_CHAR, "]"
+        )
         return text
 
     def _template_to_body(self, title: str, text: Optional[str]) -> str:
