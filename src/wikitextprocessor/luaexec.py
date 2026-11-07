@@ -335,6 +335,11 @@ def initialize_lua(ctx: "Wtp") -> None:
     )
     set_lua_env_funcs(lua, ctx)
 
+    # Give the string library the C locale's character classes, whatever
+    # locale the process runs in (see the file's comment).
+    with (LUA_DIR / "_c_locale_string.lua").open(encoding="utf-8") as f:
+        lua.execute(f.read())
+
     # Load Lua sandbox Phase 1.  This is a very minimal file that only sets
     # the Lua loader to our custom loader; we will then use it to load the
     # bigger phase 2 of the sandbox.  This way, most of the sandbox loading
