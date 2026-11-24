@@ -51,6 +51,10 @@ BUILTIN_LUA_SEARCH_PATHS: list[tuple[str, list[str]]] = [
 # Determine which directory our data files are in
 LUA_DIR = files("wikitextprocessor") / "lua"
 
+# Tests set this to run the wrappers in lua/_c_locale_string.lua also where
+# the locale needs none, as on Linux.
+ALWAYS_C_LOCALE_STRING = False
+
 
 def lua_loader(ctx: "Wtp", modname: str) -> Optional[str]:
     """This function is called from the Lua sandbox to load a Lua module.
@@ -335,10 +339,11 @@ def initialize_lua(ctx: "Wtp") -> None:
     )
     set_lua_env_funcs(lua, ctx)
 
-    # Give the string library the C locale's character classes, whatever
-    # locale the process runs in (see the file's comment).
+    # Give the string library the C locale's character classes if the
+    # process locale gives it others, as macOS does in a UTF-8 locale (see
+    # the file's comment).  On Linux this changes nothing.
     with (LUA_DIR / "_c_locale_string.lua").open(encoding="utf-8") as f:
-        lua.execute(f.read())
+        lua.execute(f.read(), ALWAYS_C_LOCALE_STRING)
 
     # Load Lua sandbox Phase 1.  This is a very minimal file that only sets
     # the Lua loader to our custom loader; we will then use it to load the

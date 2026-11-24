@@ -10,9 +10,14 @@
 -- mw.ustring calls fail with "string is not UTF-8".  MediaWiki's servers, and
 -- Linux in any UTF-8 locale, classify only ASCII.
 --
--- This replaces those functions with versions that give the C locale's
+-- Where the C library classifies any byte differently than the C locale
+-- does, this replaces those functions with versions that give the C locale's
 -- results: patterns are rewritten so that each class becomes an explicit set
--- of bytes, and lower()/upper() change only A-Z and a-z.
+-- of bytes, and lower()/upper() change only A-Z and a-z.  Elsewhere (Linux in
+-- a UTF-8 locale, any system in the C locale) it changes nothing, unless the
+-- chunk's argument is true, as in tests.  Returns whether it replaced them.
+
+local always = ...
 
 local concat = table.concat
 local sub = string.sub
@@ -52,6 +57,34 @@ local CLASS_ITEMS = {
 local CLASS_SETS = {}
 for letter, items in pairs(CLASS_ITEMS) do
     CLASS_SETS[letter] = "[" .. items .. "]"
+end
+
+local TO_LOWER = {}
+local TO_UPPER = {}
+for b = 65, 90 do
+    TO_LOWER[string.char(b)] = string.char(b + 32)
+    TO_UPPER[string.char(b + 32)] = string.char(b)
+end
+
+-- True if the C library puts every byte in the classes the C locale puts it
+-- in, and changes the case of A-Z and a-z only.
+local function follows_c_locale()
+    local bytes = {}
+    for b = 0, 255 do
+        bytes[#bytes + 1] = string.char(b)
+    end
+    bytes = concat(bytes)
+    for letter, set in pairs(CLASS_SETS) do
+        if gsub(bytes, "%" .. letter, "") ~= gsub(bytes, set, "") then
+            return false
+        end
+    end
+    return lower(bytes) == gsub(bytes, "[A-Z]", TO_LOWER)
+        and upper(bytes) == gsub(bytes, "[a-z]", TO_UPPER)
+end
+
+if not always and follows_c_locale() then
+    return false
 end
 
 -- Rewrites the set that starts at p[i] ("["), reading it the way lstrlib.c
@@ -180,13 +213,6 @@ string.gsub = function(s, pattern, repl, n)
     return gsub(s, c_locale_pattern(pattern), repl, n)
 end
 
-local TO_LOWER = {}
-local TO_UPPER = {}
-for b = 65, 90 do
-    TO_LOWER[string.char(b)] = string.char(b + 32)
-    TO_UPPER[string.char(b + 32)] = string.char(b)
-end
-
 string.lower = function(s)
     if type(s) == "string" and find(s, "[\128-\255]") then
         return (gsub(s, "[A-Z]", TO_LOWER))
@@ -201,5 +227,4 @@ string.upper = function(s)
     return (upper(s))
 end
 
--- For tests.
-return translate
+return true

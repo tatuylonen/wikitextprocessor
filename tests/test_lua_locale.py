@@ -1,11 +1,11 @@
 import locale
 import string
 from contextlib import contextmanager
-from unittest import TestCase
+from unittest import TestCase, mock
 
 import lupa.lua51 as lupa
 
-from wikitextprocessor import Wtp
+from wikitextprocessor import Wtp, luaexec
 from wikitextprocessor.luaexec import initialize_lua
 
 # Locales in which some C libraries count bytes above 0x7F as spaces or
@@ -46,6 +46,32 @@ def misclassifying_locale():
         yield None
     finally:
         locale.setlocale(locale.LC_CTYPE, saved)
+
+
+@contextmanager
+def c_locale():
+    saved = locale.setlocale(locale.LC_CTYPE)
+    try:
+        locale.setlocale(locale.LC_CTYPE, "C")
+        yield
+    finally:
+        locale.setlocale(locale.LC_CTYPE, saved)
+
+
+def always_wrapped():
+    """Installs the wrappers even where the locale needs none, as on
+    Linux, so that every system tests them."""
+    return mock.patch.object(luaexec, "ALWAYS_C_LOCALE_STRING", True)
+
+
+# How many of the string functions are wrappers written in Lua: 0 or 6.
+WRAPPED_FUNCTIONS = r"""
+local n = 0
+for _, name in ipairs({"find", "match", "gmatch", "gsub", "lower", "upper"}) do
+  if debug.getinfo(string[name], "S").what == "Lua" then n = n + 1 end
+end
+return n
+"""
 
 
 # The members of each class in the C locale.
@@ -122,13 +148,31 @@ class TestLuaLocale(TestCase):
     def test_c_locale_classes(self):
         self.check_c_locale_classes()
 
+    def test_c_locale_classes_always_wrapped(self):
+        with always_wrapped():
+            self.check_c_locale_classes()
+        self.assertEqual(self.wtp.lua.execute(WRAPPED_FUNCTIONS), 6)
+
     def test_c_locale_classes_in_misclassifying_locale(self):
         with misclassifying_locale() as name:
             if name is None:
                 self.skipTest("no locale here classifies bytes above 0x7F")
             self.check_c_locale_classes()
+        self.assertEqual(self.wtp.lua.execute(WRAPPED_FUNCTIONS), 6)
+
+    def test_no_wrappers_in_c_locale(self):
+        with c_locale():
+            self.check_c_locale_classes()
+        self.assertEqual(self.wtp.lua.execute(WRAPPED_FUNCTIONS), 0)
 
     def test_utf8_survives_trim_and_lower(self):
+        self.check_module_calls()
+
+    def test_utf8_survives_trim_and_lower_always_wrapped(self):
+        with always_wrapped():
+            self.check_module_calls()
+
+    def check_module_calls(self):
         # "à" is C3 A0 and "ム" is E3 83 A0: on macOS in a UTF-8 locale,
         # `%s` took the A0 byte and mw.text.trim() then failed with
         # "string is not UTF-8" (also wikitextprocessor issue #301).
@@ -174,7 +218,8 @@ class TestLuaLocale(TestCase):
                     )
 
     def test_pattern_rewrite_keeps_other_syntax(self):
-        initialize_lua(self.wtp)
+        with always_wrapped():
+            initialize_lua(self.wtp)
         find = self.wtp.lua.eval(
             "function(s, p) return table.concat({string.find(s, p)}, ',') end"
         )
